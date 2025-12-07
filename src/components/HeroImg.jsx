@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HeroImage() {
   const [imgWidth, setImgWidth] = useState(400);
@@ -110,7 +111,7 @@ export default function HeroImage() {
           >
             <ul className="space-y-2 text-sm text-gray-700">
               <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
-                View Profile
+                <Link href={"/profile"}>View Profile</Link>
               </li>
               <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
                 Settings

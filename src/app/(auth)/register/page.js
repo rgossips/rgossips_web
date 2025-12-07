@@ -1,10 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// ShadCN
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Form,
   FormField,
@@ -14,144 +37,237 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// FIREBASE
+import { auth, db, RecaptchaVerifier } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { signInWithPhoneNumber } from "firebase/auth";
 
-// -------------------------------------------------------
-//                 🔵 BRAND SCHEMA
-// -------------------------------------------------------
-
-const BrandSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(10),
-  companyName: z.string().min(2),
-  website: z.string().optional(),
-  logo: z.any().optional(),
-});
-
-// -------------------------------------------------------
-//              🟣 INFLUENCER SCHEMA
-// -------------------------------------------------------
-
-const SocialLinkSchema = z.object({
-  platform: z.string().min(1),
-  url: z.string().url("Enter a valid URL"),
-});
-
+// ==========================
+// SCHEMA
+// ==========================
 const InfluencerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   phone: z.string().min(10),
-  socials: z
-    .array(SocialLinkSchema)
-    .min(1, "At least 1 social link is required"),
+  dob: z.string().optional(),
+  gender: z.string().optional(),
+  city: z.string().min(2),
+  state: z.string().optional(),
+  country: z.string().min(2),
+  instagram: z.string().min(2),
+  profilePic: z.string().optional(),
 });
 
-// -------------------------------------------------------
-//               ⭐ MAIN REGISTRATION PAGE
-// -------------------------------------------------------
+// ==========================
+// MOCK INSTAGRAM API
+// ==========================
+async function fetchInstagramDataMock(username) {
+  await new Promise((r) => setTimeout(r, 700));
+  const u = username.replace("@", "");
 
-export default function RegisterPage() {
-  const [tab, setTab] = useState("influencer"); // "brand" | "influencer"
+  return {
+    username: u,
+    fullName: `${u} Creator`,
+    profilePic: `https://avatars.dicebear.com/api/identicon/${encodeURIComponent(
+      u
+    )}.svg`,
+    followers: Math.floor(Math.random() * 50_000),
+  };
+}
 
-  // BRAND form
-  const brandForm = useForm({
-    resolver: zodResolver(BrandSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      companyName: "",
-      website: "",
-      logo: null,
-    },
-  });
-
-  // INFLUENCER form
-  const influencerForm = useForm({
+// ======================================
+// 🚀 FULLY FIXED REGISTER PAGE
+// ======================================
+export default function RegisterInfluencer() {
+  const form = useForm({
     resolver: zodResolver(InfluencerSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
-      socials: [{ platform: "", url: "" }],
+      dob: "",
+      gender: "",
+      city: "",
+      state: "",
+      country: "",
+      instagram: "",
+      profilePic: "",
     },
   });
 
-  // Dynamic fields for socials
-  const { fields, append, remove } = useFieldArray({
-    control: influencerForm.control,
-    name: "socials",
-  });
+  const [instaInfo, setInstaInfo] = useState(null);
+  const [instaValidated, setInstaValidated] = useState(false);
 
-  // ------------------------ SUBMIT HANDLERS ------------------------
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
 
-  const handleBrandSubmit = async (data) => {
-    console.log("BRAND DATA:", data);
-    alert("Brand Registered Successfully!");
+  const [emailOtpDialog, setEmailOtpDialog] = useState(false);
+  const [enteredEmailOtp, setEnteredEmailOtp] = useState("");
+
+  const [confirmationResult, setConfirmationResult] = useState(null);
+
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [successDialog, setSuccessDialog] = useState(false);
+
+  // ======================================================
+  // RECAPTCHA (FINAL FIX)
+  // ======================================================
+  const initRecaptcha = async () => {
+    if (typeof window === "undefined") return;
+
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        { size: "invisible" }
+      );
+      await window.recaptchaVerifier.render(); // ✔ no error now
+    }
   };
 
-  const handleInfluencerSubmit = async (data) => {
-    console.log("INFLUENCER DATA:", data);
-    alert("Influencer Registered Successfully!");
+  // ======================================================
+  // SEND PHONE OTP
+  // ======================================================
+  const sendPhoneOtp = async (rawPhone) => {
+    let phone = rawPhone.trim();
+    if (!phone || phone.length < 10) return alert("Invalid phone number");
+
+    try {
+      setSendingOtp(true);
+
+      await initRecaptcha();
+
+      if (!phone.startsWith("+") && phone.length === 10) {
+        phone = "+91" + phone;
+      }
+
+      const result = await signInWithPhoneNumber(
+        auth,
+        phone,
+        window.recaptchaVerifier
+      );
+
+      setConfirmationResult(result);
+      setOtpDialogOpen(true);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      setSendingOtp(false);
+    }
   };
 
-  // ------------------------ UI ------------------------
+  // ======================================================
+  // VERIFY PHONE OTP
+  // ======================================================
+  const verifyPhoneOtp = async () => {
+    try {
+      setVerifyingOtp(true);
 
+      await confirmationResult.confirm(enteredOtp);
+
+      setPhoneVerified(true);
+      setOtpDialogOpen(false);
+    } catch {
+      alert("Invalid OTP");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  // ======================================================
+  // EMAIL OTP MOCK
+  // ======================================================
+  const sendEmailOtp = async (email) => {
+    if (!email) return alert("Enter email");
+
+    setSendingEmailOtp(true);
+    await new Promise((r) => setTimeout(r, 600));
+
+    setEmailOtpDialog(true);
+    setSendingEmailOtp(false);
+  };
+
+  const verifyEmailOtp = async () => {
+    setVerifyingEmailOtp(true);
+
+    await new Promise((r) => setTimeout(r, 800));
+
+    if (enteredEmailOtp === "123456") {
+      setEmailVerified(true);
+      setEmailOtpDialog(false);
+    } else {
+      alert("Incorrect Email OTP");
+    }
+
+    setVerifyingEmailOtp(false);
+  };
+
+  // ======================================================
+  // INSTAGRAM VALIDATION
+  // ======================================================
+  const handleValidateInstagram = async () => {
+    const username = form.getValues("instagram");
+    if (!username) return alert("Enter username");
+
+    const info = await fetchInstagramDataMock(username);
+    setInstaInfo(info);
+    setInstaValidated(true);
+    form.setValue("profilePic", info.profilePic);
+  };
+
+  // ======================================================
+  // SUBMIT
+  // ======================================================
+  const onSubmit = async (data) => {
+    if (!phoneVerified) return alert("Verify phone");
+    if (!emailVerified) return alert("Verify email");
+    if (!instaValidated) return alert("Validate Instagram");
+
+    if (!auth.currentUser)
+      return alert("Firebase user not authenticated after OTP");
+
+    await setDoc(doc(db, "influencers", auth.currentUser.uid), {
+      uid: auth.currentUser.uid,
+      ...data,
+      profilePic: data.profilePic || instaInfo?.profilePic,
+      role: "influencer",
+      createdAt: serverTimestamp(),
+    });
+
+    setSuccessDialog(true);
+  };
+
+  useEffect(() => {
+    console.log(auth);
+  }, [auth]);
+
+  // ======================================================
+  // RENDER
+  // ======================================================
   return (
-    <div className="flex flex-col justify-center h-full w-full px-10">
-      {/* HEADER */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold">Create an Account</h1>
-        <p className="text-gray-600 mt-1">Register as a Brand or Influencer.</p>
-      </div>
+    <>
+      <div className="px-10 py-8 w-full">
+        <h1 className="text-3xl font-semibold mb-2">
+          Create Influencer Account
+        </h1>
+        <p className="text-gray-600 mb-6">Verify Phone & Email to continue.</p>
 
-      {/* TABS */}
-      {/* <div className="flex mb-8">
-        <button
-          onClick={() => setTab("brand")}
-          className={`px-4 py-2 font-medium cursor-pointer rounded-l-full ${
-            tab === "brand" ? "bg-blue-600 text-white" : "bg-gray-100"
-          }`}
-        >
-          Brand
-        </button>
-
-        <button
-          onClick={() => setTab("influencer")}
-          className={`px-4 py-2 rounded-r-full font-medium cursor-pointer ${
-            tab === "influencer" ? "bg-blue-600 text-white" : "bg-gray-100"
-          }`}
-        >
-          Influencer
-        </button>
-      </div> */}
-
-      {/* ================================================================
-                       BRAND REGISTRATION FORM
-      ================================================================ */}
-
-      {tab === "brand" && (
-        <Form {...brandForm}>
-          <form
-            onSubmit={brandForm.handleSubmit(handleBrandSubmit)}
-            className="w-full max-w-md space-y-6"
-          >
-            {/* Name */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* NAME */}
             <FormField
-              control={brandForm.control}
               name="name"
+              control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Your name" {...field} />
                   </FormControl>
@@ -160,232 +276,257 @@ export default function RegisterPage() {
               )}
             />
 
-            {/* Email */}
-            <FormField
-              control={brandForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="brand@mail.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Phone */}
-            <FormField
-              control={brandForm.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="9876543210" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Company Name */}
-            <FormField
-              control={brandForm.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your Brand Pvt Ltd" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Website */}
-            <FormField
-              control={brandForm.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://brand.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Logo Upload */}
-            <FormField
-              control={brandForm.control}
-              name="logo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Logo</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => field.onChange(e.target.files?.[0])}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button className="w-full py-6 text-md">Register as Brand</Button>
-          </form>
-        </Form>
-      )}
-
-      {/* ================================================================
-                     INFLUENCER REGISTRATION FORM
-      ================================================================ */}
-
-      {tab === "influencer" && (
-        <Form {...influencerForm}>
-          <form
-            onSubmit={influencerForm.handleSubmit(handleInfluencerSubmit)}
-            className="w-full max-w-md space-y-6"
-          >
-            {/* Name */}
-            <FormField
-              control={influencerForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Email */}
-            <FormField
-              control={influencerForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="creator@mail.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Phone */}
-            <FormField
-              control={influencerForm.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="9876543210" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* SOCIAL LINKS (DYNAMIC) */}
-            <div>
-              <FormLabel>Social Links</FormLabel>
-
-              {fields.map((fieldItem, index) => (
-                <div key={fieldItem.id} className="flex gap-3 mt-3">
-                  {/* PLATFORM */}
-                  <FormField
-                    control={influencerForm.control}
-                    name={`socials.${index}.platform`}
-                    render={({ field }) => (
-                      <FormItem className="w-[40%]">
-                        <Select onValueChange={field.onChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Platform" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Instagram">Instagram</SelectItem>
-                            <SelectItem value="YouTube">YouTube</SelectItem>
-                            <SelectItem value="Twitter">Twitter</SelectItem>
-                            <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                            <SelectItem value="Facebook">Facebook</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* URL */}
-                  <FormField
-                    control={influencerForm.control}
-                    name={`socials.${index}.url`}
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <Input placeholder="https://link..." {...field} />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Remove */}
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-500 text-sm"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              {/* Add new social */}
+            {/* EMAIL */}
+            <div className="flex items-end gap-3">
+              <FormField
+                name="email"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="creator@mail.com" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <Button
                 type="button"
-                variant="outline"
-                className="mt-4"
-                onClick={() => append({ platform: "", url: "" })}
+                disabled={emailVerified || sendingEmailOtp}
+                onClick={() => sendEmailOtp(form.getValues("email"))}
               >
-                + Add Social
+                {emailVerified
+                  ? "Verified"
+                  : sendingEmailOtp
+                  ? "Sending..."
+                  : "Verify"}
               </Button>
             </div>
 
-            <Button className="w-full py-6 text-md">
-              Register as Influencer
+            {/* PHONE + OTP */}
+            <div className="flex items-end gap-3">
+              <FormField
+                name="phone"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="9876543210" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="button"
+                disabled={phoneVerified || sendingOtp}
+                onClick={() => sendPhoneOtp(form.getValues("phone"))}
+              >
+                {phoneVerified
+                  ? "Verified"
+                  : sendingOtp
+                  ? "Sending..."
+                  : "Verify"}
+              </Button>
+            </div>
+
+            {/* GENDER + DOB */}
+            <div className="flex gap-3">
+              <FormField
+                name="gender"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Gender</FormLabel>
+                    <Select onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="dob"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Date of Birth</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* CITY */}
+            <FormField
+              name="city"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Chandigarh" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* STATE */}
+            <FormField
+              name="state"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>State</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Punjab" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* COUNTRY */}
+            <FormField
+              name="country"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country</FormLabel>
+                  <FormControl>
+                    <Input placeholder="India" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* INSTAGRAM */}
+            <div className="flex items-end gap-3">
+              <FormField
+                name="instagram"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormLabel>Instagram Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="@username" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="button"
+                disabled={instaValidated}
+                onClick={handleValidateInstagram}
+              >
+                {instaValidated ? "Validated" : "Validate"}
+              </Button>
+            </div>
+
+            {instaValidated && instaInfo && (
+              <div className="flex items-center gap-3 mt-2">
+                <Image
+                  src={instaInfo.profilePic}
+                  width={50}
+                  height={50}
+                  className="rounded-full"
+                  alt="profile"
+                />
+                <div>
+                  <div>@{instaInfo.username}</div>
+                  <div className="text-sm text-gray-600">
+                    {instaInfo.fullName}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Followers: {instaInfo.followers}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full py-4">
+              Register
             </Button>
           </form>
         </Form>
-      )}
+      </div>
 
-      {/* FOOTER */}
-      <p className="text-sm text-gray-600 mt-6">
-        Already have an account?{" "}
-        <a href="/login" className="text-blue-600 hover:underline">
-          Login
-        </a>
-      </p>
-    </div>
+      {/* PHONE OTP DIALOG */}
+      <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Phone OTP</DialogTitle>
+          </DialogHeader>
+
+          <InputOTP value={enteredOtp} onChange={setEnteredOtp} maxLength={6}>
+            <InputOTPGroup>
+              {[...Array(6)].map((_, i) => (
+                <InputOTPSlot key={i} index={i} />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
+
+          <DialogFooter>
+            <Button className="w-full" onClick={verifyPhoneOtp}>
+              {verifyingOtp ? "Verifying..." : "Verify"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EMAIL OTP DIALOG */}
+      <Dialog open={emailOtpDialog} onOpenChange={setEmailOtpDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Email OTP</DialogTitle>
+          </DialogHeader>
+
+          <InputOTP
+            value={enteredEmailOtp}
+            onChange={setEnteredEmailOtp}
+            maxLength={6}
+          >
+            <InputOTPGroup>
+              {[...Array(6)].map((_, i) => (
+                <InputOTPSlot key={i} index={i} />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
+
+          <DialogFooter>
+            <Button className="w-full" onClick={verifyEmailOtp}>
+              {verifyingEmailOtp ? "Verifying..." : "Verify"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* SUCCESS DIALOG */}
+      <Dialog open={successDialog} onOpenChange={setSuccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registration Successful</DialogTitle>
+          </DialogHeader>
+          <p>Your influencer profile has been created.</p>
+          <Button
+            className="w-full mt-4"
+            onClick={() => setSuccessDialog(false)}
+          >
+            Continue
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* RECAPTCHA */}
+      <div id="recaptcha-container"></div>
+    </>
   );
 }
