@@ -232,11 +232,15 @@ export default function RegisterInfluencer() {
     if (!emailVerified) return alert("Verify email");
     if (!instaValidated) return alert("Validate Instagram");
 
-    if (!auth.currentUser)
-      return alert("Firebase user not authenticated after OTP");
+    console.log("Firebase User:", firebaseUser);
 
-    await setDoc(doc(db, "influencers", auth.currentUser.uid), {
-      uid: auth.currentUser.uid,
+    if (!firebaseUser) {
+      alert("User not ready. Please wait 1 second and try again.");
+      return;
+    }
+
+    await setDoc(doc(db, "influencers", firebaseUser.uid), {
+      uid: firebaseUser.uid,
       ...data,
       profilePic: data.profilePic || instaInfo?.profilePic,
       role: "influencer",
@@ -245,10 +249,6 @@ export default function RegisterInfluencer() {
 
     setSuccessDialog(true);
   };
-
-  useEffect(() => {
-    console.log(auth);
-  }, [auth]);
 
   // ======================================================
   // RENDER
