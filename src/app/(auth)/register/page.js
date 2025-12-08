@@ -42,7 +42,7 @@ import {
 import { auth, db, RecaptchaVerifier } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { signInWithPhoneNumber } from "firebase/auth";
-import ProfileStepPopup from "@/components/ProfileStepPopup";
+import { onAuthStateChanged } from "firebase/auth";
 
 // ==========================
 // SCHEMA
@@ -116,6 +116,15 @@ export default function RegisterInfluencer() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
+
+  const [firebaseUser, setFirebaseUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // ======================================================
   // RECAPTCHA (FINAL FIX)
