@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Echo | Portfolio & Blog",
+  title: "RecentGossips",
   description: "Modern Next.js website built with Tailwind CSS.",
 };
 

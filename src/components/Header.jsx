@@ -46,7 +46,7 @@ const Header = () => {
           className="text-2xl font-bold tracking-tight cursor-pointer"
           onClick={() => router.push("/")}
         >
-          <span className="text-blue-600">My</span>Brand
+          <span className="text-blue-600">Recent</span>Gossips
         </div>
 
         {/* Desktop Menu */}

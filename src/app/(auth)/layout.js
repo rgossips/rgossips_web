@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Influencers | Influencer Login/Register Page",
+  title: "RecentGossips | Influencer Login/Register Page",
   description: "Modern Next.js website built with Tailwind CSS.",
 };
 

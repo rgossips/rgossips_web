@@ -41,6 +41,7 @@ import {
 import { auth, db, RecaptchaVerifier } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { signInWithPhoneNumber } from "firebase/auth";
+import ProfileStepPopup from "@/components/ProfileStepPopup";
 
 // ==========================
 // SCHEMA
@@ -254,6 +255,7 @@ export default function RegisterInfluencer() {
   return (
     <>
       <div className="px-10 py-8 w-full">
+        <ProfileStepPopup />
         <h1 className="text-3xl font-semibold mb-2">
           Create Influencer Account
         </h1>
