@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
@@ -255,7 +256,7 @@ export default function RegisterInfluencer() {
   return (
     <>
       <div className="px-10 py-8 w-full">
-        <ProfileStepPopup />
+        {/* <ProfileStepPopup /> */}
         <h1 className="text-3xl font-semibold mb-2">
           Create Influencer Account
         </h1>
