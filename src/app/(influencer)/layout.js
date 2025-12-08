@@ -3,6 +3,7 @@ import "../globals.css";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/context/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,18 +26,16 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f8fafc] text-gray-800 relative`}
       >
-        {/* Main Content Wrapper */}
-        <main className="min-h-screen flex flex-col relative">
-          <Navbar />
-          {/* Page Content */}
-          <div className="flex-1">{children}</div>
+        {/* Wrap entire app in AuthProvider */}
+        <AuthProvider>
+          <main className="min-h-screen flex flex-col relative">
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <ScrollToTop />
+          </main>
 
-          {/* Scroll to Top Button */}
-          <ScrollToTop />
-        </main>
-
-        {/* Footer */}
-        <Footer />
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

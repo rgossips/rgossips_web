@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
+import { useRouter } from "next/navigation"; // <-- import router
+
 // ------------------ VALIDATION SCHEMA ------------------
 
 const LoginSchema = z.object({
@@ -30,6 +35,11 @@ const LoginSchema = z.object({
 // ------------------ COMPONENT ------------------
 
 export default function LoginPage() {
+  const [loading, setLoading] = useState(false);
+  const [firebaseError, setFirebaseError] = useState("");
+
+  const router = useRouter(); // <-- initialize router
+
   const form = useForm({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
@@ -38,8 +48,25 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = (values) => {
-    console.log("FORM VALUES:", values);
+  const onSubmit = async (values) => {
+    setLoading(true);
+    setFirebaseError("");
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+
+      console.log("Logged In User:", userCredential.user);
+      router.push("/dashboard"); // <-- client-side navigation
+    } catch (error) {
+      console.error("Firebase Login Error:", error);
+      setFirebaseError(error.message);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -92,8 +119,17 @@ export default function LoginPage() {
             )}
           />
 
-          <Button className="w-full py-6 text-md cursor-pointer" type="submit">
-            Login
+          {/* Firebase Error */}
+          {firebaseError && (
+            <p className="text-red-500 text-sm">{firebaseError}</p>
+          )}
+
+          <Button
+            className="w-full py-6 text-md cursor-pointer"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </Button>
         </form>
       </Form>

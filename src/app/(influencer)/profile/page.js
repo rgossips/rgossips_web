@@ -13,7 +13,7 @@ export default function ProfilePage() {
   return (
     <div className="w-full min-h-screen bg-gray-50 pb-24 pt-[150px]">
       {/* Top Section */}
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 -mt-16">
+      <div className="max-w-[80vw] mx-auto px-4 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 -mt-16">
         {/* Left — User Info */}
         <UserHeader />
 
@@ -26,18 +26,41 @@ export default function ProfilePage() {
       </div>
 
       {/* Bottom Tabs */}
-      <div className="max-w-6xl mx-auto mt-24 px-4">
+      <div className="max-w-[80vw] mx-auto mt-24 px-4">
         <Tabs defaultValue="earnings" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 bg-gray-100 rounded-lg overflow-hidden mb-5">
+          <TabsList
+            className="
+      w-full 
+      grid grid-cols-2 
+      bg-gray-100 
+      rounded-md
+       
+      mb-10          
+      shadow-sm
+    "
+          >
             <TabsTrigger
               value="earnings"
-              className="text-lg font-semibold py-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+              className="
+        text-lg font-semibold rounded-l-md
+        data-[state=active]:bg-blue-600 
+        data-[state=active]:text-white 
+        data-[state=active]:shadow-md
+        
+      "
             >
               Earnings & Analytics
             </TabsTrigger>
+
             <TabsTrigger
               value="campaigns"
-              className="text-lg font-semibold py-1 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+              className="
+        text-lg font-semibold  rounded-r-md
+        data-[state=active]:bg-blue-600 
+        data-[state=active]:text-white 
+        data-[state=active]:shadow-md
+       
+      "
             >
               My Campaigns
             </TabsTrigger>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 
 // ShadCN
 import {
@@ -41,24 +42,35 @@ import {
 // FIREBASE
 import { auth, db, RecaptchaVerifier } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { signInWithPhoneNumber } from "firebase/auth";
+import {
+  signInWithPhoneNumber,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
+import ProfileStepPopup from "@/components/ProfileStepPopup";
 
 // ==========================
 // SCHEMA
 // ==========================
-const InfluencerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(10),
-  dob: z.string().optional(),
-  gender: z.string().optional(),
-  city: z.string().min(2),
-  state: z.string().optional(),
-  country: z.string().min(2),
-  instagram: z.string().min(2),
-  profilePic: z.string().optional(),
-});
+const InfluencerSchema = z
+  .object({
+    name: z.string().min(2),
+    email: z.string().email(),
+    phone: z.string().min(10),
+    dob: z.string().min(1, "Date of birth is required"),
+    gender: z.string().min(1, "Gender is required"),
+    city: z.string().min(2),
+    state: z.string().optional(),
+    country: z.string().min(2),
+    instagram: z.string().min(2),
+    profilePic: z.string().optional(),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(6),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 // ==========================
 // MOCK INSTAGRAM API
@@ -78,9 +90,10 @@ async function fetchInstagramDataMock(username) {
 }
 
 // ======================================
-// 🚀 FULLY FIXED REGISTER PAGE
+// 🚀 REGISTER PAGE
 // ======================================
 export default function RegisterInfluencer() {
+  const router = useRouter();
   const form = useForm({
     resolver: zodResolver(InfluencerSchema),
     defaultValues: {
@@ -94,6 +107,8 @@ export default function RegisterInfluencer() {
       country: "",
       instagram: "",
       profilePic: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -102,22 +117,18 @@ export default function RegisterInfluencer() {
 
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
-
-  const [emailOtpDialog, setEmailOtpDialog] = useState(false);
-  const [enteredEmailOtp, setEnteredEmailOtp] = useState("");
-
   const [confirmationResult, setConfirmationResult] = useState(null);
 
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
-  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
 
   const [phoneVerified, setPhoneVerified] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
 
   const [firebaseUser, setFirebaseUser] = useState(null);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -126,9 +137,6 @@ export default function RegisterInfluencer() {
     return () => unsubscribe();
   }, []);
 
-  // ======================================================
-  // RECAPTCHA (FINAL FIX)
-  // ======================================================
   const initRecaptcha = async () => {
     if (typeof window === "undefined") return;
 
@@ -138,20 +146,16 @@ export default function RegisterInfluencer() {
         "recaptcha-container",
         { size: "invisible" }
       );
-      await window.recaptchaVerifier.render(); // ✔ no error now
+      await window.recaptchaVerifier.render();
     }
   };
 
-  // ======================================================
-  // SEND PHONE OTP
-  // ======================================================
   const sendPhoneOtp = async (rawPhone) => {
     let phone = rawPhone.trim();
     if (!phone || phone.length < 10) return alert("Invalid phone number");
 
     try {
       setSendingOtp(true);
-
       await initRecaptcha();
 
       if (!phone.startsWith("+") && phone.length === 10) {
@@ -174,13 +178,9 @@ export default function RegisterInfluencer() {
     }
   };
 
-  // ======================================================
-  // VERIFY PHONE OTP
-  // ======================================================
   const verifyPhoneOtp = async () => {
     try {
       setVerifyingOtp(true);
-
       await confirmationResult.confirm(enteredOtp);
 
       setPhoneVerified(true);
@@ -192,37 +192,6 @@ export default function RegisterInfluencer() {
     }
   };
 
-  // ======================================================
-  // EMAIL OTP MOCK
-  // ======================================================
-  const sendEmailOtp = async (email) => {
-    if (!email) return alert("Enter email");
-
-    setSendingEmailOtp(true);
-    await new Promise((r) => setTimeout(r, 600));
-
-    setEmailOtpDialog(true);
-    setSendingEmailOtp(false);
-  };
-
-  const verifyEmailOtp = async () => {
-    setVerifyingEmailOtp(true);
-
-    await new Promise((r) => setTimeout(r, 800));
-
-    if (enteredEmailOtp === "123456") {
-      setEmailVerified(true);
-      setEmailOtpDialog(false);
-    } else {
-      alert("Incorrect Email OTP");
-    }
-
-    setVerifyingEmailOtp(false);
-  };
-
-  // ======================================================
-  // INSTAGRAM VALIDATION
-  // ======================================================
   const handleValidateInstagram = async () => {
     const username = form.getValues("instagram");
     if (!username) return alert("Enter username");
@@ -233,243 +202,299 @@ export default function RegisterInfluencer() {
     form.setValue("profilePic", info.profilePic);
   };
 
-  // ======================================================
-  // SUBMIT
-  // ======================================================
   const onSubmit = async (data) => {
     if (!phoneVerified) return alert("Verify phone");
-    if (!emailVerified) return alert("Verify email");
     if (!instaValidated) return alert("Validate Instagram");
 
-    console.log("Firebase User:", firebaseUser);
+    try {
+      // Create Firebase Auth User
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
 
-    if (!firebaseUser) {
-      alert("User not ready. Please wait 1 second and try again.");
-      return;
+      const uid = userCredential.user.uid;
+
+      await setDoc(doc(db, "influencers", uid), {
+        uid,
+        ...data,
+        profilePic: data.profilePic || instaInfo?.profilePic,
+        role: "influencer",
+        verificationState: 1,
+        createdAt: serverTimestamp(),
+      });
+
+      setSuccessDialog(true);
+
+      // Redirect to influencer page after success
+      router.push("/influencer");
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
     }
-
-    await setDoc(doc(db, "influencers", firebaseUser.uid), {
-      uid: firebaseUser.uid,
-      ...data,
-      profilePic: data.profilePic || instaInfo?.profilePic,
-      role: "influencer",
-      createdAt: serverTimestamp(),
-    });
-
-    setSuccessDialog(true);
   };
 
-  // ======================================================
-  // RENDER
-  // ======================================================
   return (
-    <>
-      <div className="px-10 py-8 w-full">
-        {/* <ProfileStepPopup /> */}
-        <h1 className="text-3xl font-semibold mb-2">
-          Create Influencer Account
-        </h1>
-        <p className="text-gray-600 mb-6">Verify Phone & Email to continue.</p>
+    <div className="px-6 py-2 w-full h-screen overflow-auto flex flex-col justify-center">
+      <h1 className="text-3xl font-semibold mb-5">Create Influencer Account</h1>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          {/* NAME */}
+          <FormField
+            name="name"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* NAME */}
+          {/* EMAIL */}
+          <FormField
+            name="email"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="creator@mail.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* PHONE + OTP */}
+          <div className="flex items-end gap-2">
             <FormField
-              name="name"
+              name="phone"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                <FormItem className="flex-1">
+                  <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your name" {...field} />
+                    <Input placeholder="9876543210" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <Button
+              type="button"
+              disabled={phoneVerified || sendingOtp}
+              onClick={() => sendPhoneOtp(form.getValues("phone"))}
+            >
+              {phoneVerified
+                ? "Verified"
+                : sendingOtp
+                ? "Sending..."
+                : "Verify"}
+            </Button>
+          </div>
 
-            {/* EMAIL */}
-            <div className="flex items-end gap-3">
-              <FormField
-                name="email"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="creator@mail.com" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="button"
-                disabled={emailVerified || sendingEmailOtp}
-                onClick={() => sendEmailOtp(form.getValues("email"))}
-              >
-                {emailVerified
-                  ? "Verified"
-                  : sendingEmailOtp
-                  ? "Sending..."
-                  : "Verify"}
-              </Button>
-            </div>
+          {/* GENDER + DOB */}
+          <div className="flex gap-2">
+            <FormField
+              name="gender"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel>Gender</FormLabel>
+                  <Select onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="dob"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-            {/* PHONE + OTP */}
-            <div className="flex items-end gap-3">
-              <FormField
-                name="phone"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="9876543210" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="button"
-                disabled={phoneVerified || sendingOtp}
-                onClick={() => sendPhoneOtp(form.getValues("phone"))}
-              >
-                {phoneVerified
-                  ? "Verified"
-                  : sendingOtp
-                  ? "Sending..."
-                  : "Verify"}
-              </Button>
-            </div>
+          {/* PASSWORD */}
+          <FormField
+            name="password"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-2 text-sm text-gray-600"
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            {/* GENDER + DOB */}
-            <div className="flex gap-3">
-              <FormField
-                name="gender"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
+          {/* CONFIRM PASSWORD */}
+          <FormField
+            name="confirmPassword"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm Password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm Password"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-2 top-2 text-sm text-gray-600"
+                    >
+                      {showConfirmPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              <FormField
-                name="dob"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* CITY */}
+          {/* CITY/STATE */}
+          <div className="flex gap-2">
             <FormField
               name="city"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex-1">
                   <FormLabel>City</FormLabel>
                   <FormControl>
                     <Input placeholder="Chandigarh" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
-
-            {/* STATE */}
             <FormField
               name="state"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex-1">
                   <FormLabel>State</FormLabel>
                   <FormControl>
                     <Input placeholder="Punjab" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+          </div>
 
-            {/* COUNTRY */}
+          {/* COUNTRY */}
+          <FormField
+            name="country"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Country</FormLabel>
+                <FormControl>
+                  <Input placeholder="India" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* INSTAGRAM */}
+          <div className="flex items-end gap-2">
             <FormField
-              name="country"
+              name="instagram"
               control={form.control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
+                <FormItem className="flex-1">
+                  <FormLabel>Instagram Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="India" {...field} />
+                    <Input placeholder="@username" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            <Button
+              type="button"
+              disabled={instaValidated}
+              onClick={handleValidateInstagram}
+            >
+              {instaValidated ? "Validated" : "Validate"}
+            </Button>
+          </div>
 
-            {/* INSTAGRAM */}
-            <div className="flex items-end gap-3">
-              <FormField
-                name="instagram"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Instagram Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="@username" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
+          {instaValidated && instaInfo && (
+            <div className="flex items-center gap-2 mt-1">
+              <Image
+                src={instaInfo.profilePic}
+                width={40}
+                height={40}
+                className="rounded-full"
+                alt="profile"
               />
-              <Button
-                type="button"
-                disabled={instaValidated}
-                onClick={handleValidateInstagram}
-              >
-                {instaValidated ? "Validated" : "Validate"}
-              </Button>
-            </div>
-
-            {instaValidated && instaInfo && (
-              <div className="flex items-center gap-3 mt-2">
-                <Image
-                  src={instaInfo.profilePic}
-                  width={50}
-                  height={50}
-                  className="rounded-full"
-                  alt="profile"
-                />
-                <div>
-                  <div>@{instaInfo.username}</div>
-                  <div className="text-sm text-gray-600">
-                    {instaInfo.fullName}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Followers: {instaInfo.followers}
-                  </div>
+              <div>
+                <div>@{instaInfo.username}</div>
+                <div className="text-sm text-gray-600">
+                  {instaInfo.fullName}
+                </div>
+                <div className="text-sm text-gray-500">
+                  Followers: {instaInfo.followers}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            <Button type="submit" className="w-full py-4">
-              Register
-            </Button>
-          </form>
-        </Form>
-      </div>
+          <Button type="submit" className="w-full py-3">
+            Register
+          </Button>
+        </form>
+      </Form>
+
+      <p className="text-sm text-gray-600 mt-4">
+        Already have an account?{" "}
+        <a href="/login" className="text-blue-600 hover:underline">
+          Login
+        </a>
+      </p>
 
       {/* PHONE OTP DIALOG */}
       <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
@@ -477,7 +502,6 @@ export default function RegisterInfluencer() {
           <DialogHeader>
             <DialogTitle>Enter Phone OTP</DialogTitle>
           </DialogHeader>
-
           <InputOTP value={enteredOtp} onChange={setEnteredOtp} maxLength={6}>
             <InputOTPGroup>
               {[...Array(6)].map((_, i) => (
@@ -485,37 +509,9 @@ export default function RegisterInfluencer() {
               ))}
             </InputOTPGroup>
           </InputOTP>
-
           <DialogFooter>
             <Button className="w-full" onClick={verifyPhoneOtp}>
               {verifyingOtp ? "Verifying..." : "Verify"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* EMAIL OTP DIALOG */}
-      <Dialog open={emailOtpDialog} onOpenChange={setEmailOtpDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enter Email OTP</DialogTitle>
-          </DialogHeader>
-
-          <InputOTP
-            value={enteredEmailOtp}
-            onChange={setEnteredEmailOtp}
-            maxLength={6}
-          >
-            <InputOTPGroup>
-              {[...Array(6)].map((_, i) => (
-                <InputOTPSlot key={i} index={i} />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-
-          <DialogFooter>
-            <Button className="w-full" onClick={verifyEmailOtp}>
-              {verifyingEmailOtp ? "Verifying..." : "Verify"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -539,6 +535,6 @@ export default function RegisterInfluencer() {
 
       {/* RECAPTCHA */}
       <div id="recaptcha-container"></div>
-    </>
+    </div>
   );
 }

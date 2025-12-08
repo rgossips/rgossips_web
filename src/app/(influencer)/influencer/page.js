@@ -6,6 +6,7 @@ import ExploreStates from "@/components/ExploreStates";
 import FoodMoodGrid from "@/components/FoodMood";
 import HeroImage from "@/components/HeroImg";
 import Hero from "@/components/InfluencerHero";
+import ProfileStepPopup from "@/components/ProfileStepPopup";
 import SelectionMenu from "@/components/SelectionMenu";
 import StayCarousel from "@/components/StayCarousel";
 import TopExperiencesCarousel from "@/components/TopExperienceCarousel";
@@ -14,6 +15,7 @@ import TopPicksCarousel from "@/components/TopPicksCarousel";
 export default function HomePage() {
   return (
     <main className="relative w-full bg-[#0D7753]">
+      <ProfileStepPopup />
       <Hero />
       <HeroImage />
 

@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
           </div>
 
           {/* RIGHT SIDE AUTH FORMS */}
-          <div className="flex-1 flex justify-center items-center p-6">
+          <div className="flex-1 flex justify-center items-center px-6">
             {children}
           </div>
         </main>

@@ -2,33 +2,51 @@
 
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import Image from "next/image";
 
 export default function MyCampaignsTable() {
-  const allCampaigns = Array.from({ length: 25 }, (_, i) => ({
+  const brandNames = [
+    "Zomato",
+    "Swiggy",
+    "Mamaearth",
+    "Boat",
+    "Nykaa",
+    "Tata 1mg",
+    "Flipkart",
+    "Myntra",
+    "Amazon India",
+    "Ajio",
+    "Meesho",
+    "Sugar Cosmetics",
+    "Lenskart",
+    "Beardo",
+    "Cult Fit",
+    "Paytm",
+    "PhonePe",
+    "BigBasket",
+    "BluSmart",
+    "Ola Electric",
+  ];
+
+  const statuses = ["Applied", "In Progress", "Completed"];
+
+  const statusClasses = {
+    Applied: "bg-blue-100 text-blue-700 border border-blue-300",
+    "In Progress": "bg-yellow-100 text-yellow-700 border border-yellow-300",
+    Completed: "bg-green-100 text-green-700 border border-green-300",
+  };
+
+  const allCampaigns = brandNames.map((brand, i) => ({
     id: i + 1,
-    brandImg:
-      "https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=50&h=50",
-    title: `Brand ${i + 1}`,
-    status: ["Applied", "Shortlisted", "Completed"][i % 3],
-    date: `2025-${(i % 12) + 1}-0${(i % 28) + 1}`,
-    details: {
-      transactionStatus: ["Pending", "Paid"][i % 2],
-      amount: `₹${(i + 1) * 1000}`,
-      receivedDate: i % 2 === 0 ? "-" : `2025-12-${(i % 28) + 1}`,
-    },
+    brand,
+    status: statuses[i % 3],
+    date: `2025-${String((i % 12) + 1).padStart(2, "0")}-${String(
+      (i % 28) + 1
+    ).padStart(2, "0")}`,
+    amount: `₹${(Math.floor(Math.random() * 15) + 5) * 1000}`, // 5k–20k
   }));
 
-  const [expandedRows, setExpandedRows] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const toggleRow = (id) => {
-    setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
 
   const totalPages = Math.ceil(allCampaigns.length / itemsPerPage);
   const campaigns = allCampaigns.slice(
@@ -48,68 +66,29 @@ export default function MyCampaignsTable() {
                 <th className="p-3 text-left">Brand</th>
                 <th className="p-3 text-left">Status</th>
                 <th className="p-3 text-left">Date</th>
-                <th className="p-3"></th>
+                <th className="p-3 text-left">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
-              {campaigns.map((c) => {
-                const isExpanded = expandedRows.includes(c.id);
-                return (
-                  <React.Fragment key={c.id}>
-                    <tr className="bg-white hover:bg-gray-50">
-                      <td className="p-3 flex items-center gap-3">
-                        <Image
-                          src={c.brandImg}
-                          width={60}
-                          height={60}
-                          alt={c.title}
-                          className="rounded-full aspect-square object-cover"
-                        />
-                        <span className="font-semibold">{c.title}</span>
-                      </td>
-                      <td className="p-3">{c.status}</td>
-                      <td className="p-3">{c.date}</td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => toggleRow(c.id)}
-                          className="p-1 rounded hover:bg-gray-100"
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
 
-                    {isExpanded && (
-                      <tr className="bg-gray-50">
-                        <td colSpan={4} className="p-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-700">
-                            <div>
-                              <span className="font-semibold">
-                                Transaction Status:
-                              </span>{" "}
-                              {c.details.transactionStatus}
-                            </div>
-                            <div>
-                              <span className="font-semibold">Amount:</span>{" "}
-                              {c.details.amount}
-                            </div>
-                            <div>
-                              <span className="font-semibold">
-                                Received Date:
-                              </span>{" "}
-                              {c.details.receivedDate}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+            <tbody className="divide-y">
+              {campaigns.map((c) => (
+                <tr key={c.id} className="bg-white hover:bg-gray-50">
+                  <td className="p-3 font-semibold">{c.brand}</td>
+
+                  <td className="p-3">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        statusClasses[c.status]
+                      }`}
+                    >
+                      {c.status}
+                    </span>
+                  </td>
+
+                  <td className="p-3">{c.date}</td>
+                  <td className="p-3">{c.amount}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
