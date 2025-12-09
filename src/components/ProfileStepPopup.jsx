@@ -199,6 +199,7 @@ export default function ProfileStepPopup() {
 
   // Fetch remote influencer doc and populate forms + step
   useEffect(() => {
+    console.log(user);
     if (!user?.uid) return;
 
     let mounted = true;

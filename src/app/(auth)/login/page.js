@@ -60,7 +60,7 @@ export default function LoginPage() {
       );
 
       console.log("Logged In User:", userCredential.user);
-      router.push("/dashboard"); // <-- client-side navigation
+      router.push("/influencer");
     } catch (error) {
       console.error("Firebase Login Error:", error);
       setFirebaseError(error.message);
