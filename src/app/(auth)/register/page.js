@@ -207,27 +207,28 @@ export default function RegisterInfluencer() {
     if (!instaValidated) return alert("Validate Instagram");
 
     try {
-      // Create Firebase Auth User
+      // 1. CREATE AUTH USER
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         data.email,
         data.password
       );
-
       const uid = userCredential.user.uid;
 
+      // 2. REMOVE PASSWORD FIELDS BEFORE STORING IN FIRESTORE
+      const { password, confirmPassword, ...safeData } = data;
+
+      // 3. SAVE PROFILE WITHOUT PASSWORD
       await setDoc(doc(db, "influencers", uid), {
         uid,
-        ...data,
-        profilePic: data.profilePic || instaInfo?.profilePic,
+        ...safeData,
+        profilePic: safeData.profilePic || instaInfo?.profilePic,
         role: "influencer",
         verificationState: 1,
         createdAt: serverTimestamp(),
       });
 
       setSuccessDialog(true);
-
-      // Redirect to influencer page after success
       router.push("/influencer");
     } catch (err) {
       console.error(err);
@@ -287,6 +288,7 @@ export default function RegisterInfluencer() {
             />
             <Button
               type="button"
+              className="cursor-pointer"
               disabled={phoneVerified || sendingOtp}
               onClick={() => sendPhoneOtp(form.getValues("phone"))}
             >
@@ -336,7 +338,7 @@ export default function RegisterInfluencer() {
           </div>
 
           {/* PASSWORD */}
-          <FormField
+          {/* <FormField
             name="password"
             control={form.control}
             render={({ field }) => (
@@ -361,10 +363,10 @@ export default function RegisterInfluencer() {
                 <FormMessage />
               </FormItem>
             )}
-          />
+          /> */}
 
           {/* CONFIRM PASSWORD */}
-          <FormField
+          {/* <FormField
             name="confirmPassword"
             control={form.control}
             render={({ field }) => (
@@ -391,7 +393,7 @@ export default function RegisterInfluencer() {
                 <FormMessage />
               </FormItem>
             )}
-          />
+          /> */}
 
           {/* CITY/STATE */}
           <div className="flex gap-2">
@@ -454,6 +456,7 @@ export default function RegisterInfluencer() {
               )}
             />
             <Button
+              className="cursor-pointer"
               type="button"
               disabled={instaValidated}
               onClick={handleValidateInstagram}
@@ -483,7 +486,7 @@ export default function RegisterInfluencer() {
             </div>
           )}
 
-          <Button type="submit" className="w-full py-3">
+          <Button type="submit" className="cursor-pointer w-full py-3">
             Register
           </Button>
         </form>
@@ -510,7 +513,7 @@ export default function RegisterInfluencer() {
             </InputOTPGroup>
           </InputOTP>
           <DialogFooter>
-            <Button className="w-full" onClick={verifyPhoneOtp}>
+            <Button className="w-full cursor-pointer" onClick={verifyPhoneOtp}>
               {verifyingOtp ? "Verifying..." : "Verify"}
             </Button>
           </DialogFooter>
@@ -525,7 +528,7 @@ export default function RegisterInfluencer() {
           </DialogHeader>
           <p>Your influencer profile has been created.</p>
           <Button
-            className="w-full mt-4"
+            className="w-full mt-4 cursor-pointer"
             onClick={() => setSuccessDialog(false)}
           >
             Continue
