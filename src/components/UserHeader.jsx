@@ -1,52 +1,174 @@
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-export default function UserHeader() {
+const PEXELS_BANNERS = [
+  {
+    id: 1,
+    url: "https://images.pexels.com/photos/1261728/pexels-photo-1261728.jpeg",
+  },
+  {
+    id: 2,
+    url: "https://images.pexels.com/photos/210186/pexels-photo-210186.jpeg",
+  },
+  {
+    id: 3,
+    url: "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg",
+  },
+  {
+    id: 4,
+    url: "https://images.pexels.com/photos/1699020/pexels-photo-1699020.jpeg",
+  },
+];
+
+export default function UserHeader({ userData }) {
+  const [banner, setBanner] = useState(
+    userData?.banner || "/banners/default-banner.jpg"
+  );
+
+  const { user } = useAuth();
+  const [pendingBanner, setPendingBanner] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState(null); // "select" | "upload"
+
+  /* ---------- Banner Selection ---------- */
+  const handleSelectBanner = (url) => {
+    setPendingBanner(url);
+    setDialogType("select");
+    setIsDialogOpen(true);
+  };
+
+  /* ---------- Upload ---------- */
+  const handleBannerUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setPendingBanner(url);
+    setDialogType("upload");
+    setIsDialogOpen(true);
+  };
+
+  /* ---------- Confirm ---------- */
+  const confirmBannerChange = async () => {
+    if (!pendingBanner || !user) return;
+
+    try {
+      // Update Firestore
+      const userRef = doc(db, "influencers", user.uid);
+      await updateDoc(userRef, { banner: pendingBanner });
+
+      // Update local state
+      setBanner(pendingBanner);
+      setPendingBanner(null);
+      setIsDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to update banner URL:", err);
+    }
+  };
+  /* ---------- Cancel ---------- */
+  const cancelBannerChange = () => {
+    setPendingBanner(null);
+    setIsDialogOpen(false);
+  };
+
   return (
-    <div className="flex flex-col items-center md:items-center text-center bg-white shadow-md rounded-xl p-6">
-      {/* Profile Image */}
-      <div className="relative">
+    <div className="bg-white shadow-md rounded-xl overflow-hidden">
+      {/* Banner */}
+      <div className="relative h-48 w-full">
+        <Image src={banner} alt="Banner" fill className="object-cover" />
+      </div>
+
+      {/* Profile */}
+      <div className="flex flex-col items-center text-center p-6 -mt-20">
         <Image
           width={300}
           height={300}
-          alt="userImg"
-          src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg"
-          className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-white shadow-lg"
+          alt="user"
+          src={userData?.profilePic || "/default-profile.png"}
+          className="w-40 h-40 rounded-full border-4 border-white shadow-lg z-20"
         />
 
-        {/* Verified Badge */}
-        <div className="absolute bottom-2 right-2 bg-blue-600 text-white rounded-full p-[7px] shadow-md flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="3"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </div>
+        <h2 className="text-2xl font-semibold mt-3">{userData?.name}</h2>
+        <p className="text-gray-500 text-sm">Influencer • Creator</p>
+        <p className="text-pink-500 text-sm">@{userData?.instagram}</p>
       </div>
 
-      {/* Upload Button */}
-      <label className="mt-4 text-sm text-blue-600 cursor-pointer hover:underline">
-        Upload Profile Picture
-        <input type="file" className="hidden" />
-      </label>
+      {/* Presets */}
+      <div className="px-6 pb-6">
+        <p className="text-sm font-medium mb-3">Choose a banner</p>
 
-      {/* User Name */}
-      <h2 className="text-2xl font-semibold mt-3">Your Name</h2>
-      <p className="text-gray-500 text-sm">Influencer • Creator</p>
+        <div className="flex gap-3 overflow-x-auto">
+          {PEXELS_BANNERS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleSelectBanner(item.url)}
+              className="cursor-pointer relative h-20 w-36 rounded-lg overflow-hidden border hover:border-blue-500"
+            >
+              <Image
+                src={item.url}
+                alt="banner"
+                fill
+                className="object-cover"
+              />
+            </button>
+          ))}
+        </div>
 
-      {/* Instagram Handle */}
-      <p className="text-gray-600 text-sm mt-1">
-        <span className="text-pink-500 font-medium">@your_instagram</span>
-      </p>
+        {/* Upload Button */}
+        <label className="block mt-4">
+          <div className="w-full text-center py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
+            Upload New Banner
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={handleBannerUpload}
+          />
+        </label>
+      </div>
+
+      {/* Confirmation Dialog */}
+      {isDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 w-[90%] max-w-sm text-center">
+            <h3 className="text-lg font-semibold mb-2">
+              {dialogType === "upload"
+                ? "Upload banner for your profile?"
+                : "Apply this banner?"}
+            </h3>
+
+            {pendingBanner && (
+              <div className="relative h-32 w-full rounded-lg overflow-hidden mb-4">
+                <Image
+                  src={pendingBanner}
+                  alt="preview"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelBannerChange}
+                className="w-full py-2 rounded-lg border cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBannerChange}
+                className="w-full py-2 cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

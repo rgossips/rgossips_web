@@ -40,37 +40,30 @@ import {
 } from "@/components/ui/form";
 
 // FIREBASE
-import { auth, db, RecaptchaVerifier } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import {
   signInWithPhoneNumber,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, RecaptchaVerifier } from "firebase/auth";
 import ProfileStepPopup from "@/components/ProfileStepPopup";
 
 // ==========================
 // SCHEMA
 // ==========================
-const InfluencerSchema = z
-  .object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string().min(10),
-    dob: z.string().min(1, "Date of birth is required"),
-    gender: z.string().min(1, "Gender is required"),
-    city: z.string().min(2),
-    state: z.string().optional(),
-    country: z.string().min(2),
-    instagram: z.string().min(2),
-    profilePic: z.string().optional(),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(6),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
+const InfluencerSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().min(10),
+  dob: z.string().min(1, "Date of birth is required"),
+  gender: z.string().min(1, "Gender is required"),
+  city: z.string().min(2),
+  state: z.string().optional(),
+  country: z.string().min(2),
+  instagram: z.string().min(2),
+  profilePic: z.string().optional(),
+});
 
 // ==========================
 // MOCK INSTAGRAM API
@@ -82,9 +75,7 @@ async function fetchInstagramDataMock(username) {
   return {
     username: u,
     fullName: `${u} Creator`,
-    profilePic: `https://avatars.dicebear.com/api/identicon/${encodeURIComponent(
-      u
-    )}.svg`,
+    profilePic: `https://images.pexels.com/photos/35298999/pexels-photo-35298999.jpeg`,
     followers: Math.floor(Math.random() * 50_000),
   };
 }
@@ -107,8 +98,6 @@ export default function RegisterInfluencer() {
       country: "",
       instagram: "",
       profilePic: "",
-      password: "",
-      confirmPassword: "",
     },
   });
 
@@ -122,7 +111,7 @@ export default function RegisterInfluencer() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(true);
   const [successDialog, setSuccessDialog] = useState(false);
 
   const [firebaseUser, setFirebaseUser] = useState(null);

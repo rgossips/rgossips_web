@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import SectionTitle from "./SectionTitle";
 import {
   Carousel,
@@ -9,84 +9,30 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { db } from "@/lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function BrandsCarousel() {
-  const brands = [
-    {
-      image: "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg",
-      name: "Romeo Lane",
-    },
-    {
-      image: "https://images.pexels.com/photos/775280/pexels-photo-775280.jpeg",
-      name: "Centaury Birds Park Gurgaon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
-      name: "Geetanjali Salon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3735611/pexels-photo-3735611.jpeg",
-      name: "Nomad's Tour and Travels",
-    },
-    {
-      image: "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg",
-      name: "Romeo Lane",
-    },
-    {
-      image: "https://images.pexels.com/photos/775280/pexels-photo-775280.jpeg",
-      name: "Centaury Birds Park Gurgaon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
-      name: "Geetanjali Salon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3735611/pexels-photo-3735611.jpeg",
-      name: "Nomad's Tour and Travels",
-    },
-    {
-      image: "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg",
-      name: "Romeo Lane",
-    },
-    {
-      image: "https://images.pexels.com/photos/775280/pexels-photo-775280.jpeg",
-      name: "Centaury Birds Park Gurgaon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
-      name: "Geetanjali Salon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3735611/pexels-photo-3735611.jpeg",
-      name: "Nomad's Tour and Travels",
-    },
-    {
-      image: "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg",
-      name: "Romeo Lane",
-    },
-    {
-      image: "https://images.pexels.com/photos/775280/pexels-photo-775280.jpeg",
-      name: "Centaury Birds Park Gurgaon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg",
-      name: "Geetanjali Salon",
-    },
-    {
-      image:
-        "https://images.pexels.com/photos/3735611/pexels-photo-3735611.jpeg",
-      name: "Nomad's Tour and Travels",
-    },
-  ];
-
+  const [brands, setBrands] = useState([]);
   const [api, setApi] = useState(null);
+
+  // Fetch brands
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const snap = await getDocs(collection(db, "brands"));
+        const list = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setBrands(list);
+      } catch (err) {
+        console.error("Failed to fetch brands:", err);
+      }
+    };
+
+    fetchBrands();
+  }, []);
 
   // Auto slide
   useEffect(() => {
@@ -99,32 +45,30 @@ export default function BrandsCarousel() {
     return () => clearInterval(interval);
   }, [api]);
 
+  if (!brands.length) return null;
+
   return (
     <section className="w-full px-3 py-6">
-      <SectionTitle text={`BRANDS YOU'LL LOVE`} />
+      <SectionTitle text="BRANDS YOU'LL LOVE" />
 
       <div className="relative w-full">
-        {/* Left Arrow */}
+        {/* Left */}
         <button
           onClick={() => api?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full hover:scale-105"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
         >
           <FaChevronLeft size={18} />
         </button>
 
-        {/* Carousel */}
         <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
+          opts={{ align: "start", loop: true }}
           setApi={setApi}
           className="w-full"
         >
           <CarouselContent className="-ml-3">
-            {brands.map((b, index) => (
+            {brands.map((b) => (
               <CarouselItem
-                key={index}
+                key={b.id}
                 className="pl-3 basis-1/2 sm:basis-1/3 md:basis-1/5 lg:basis-1/6"
               >
                 <div className="flex flex-col items-center w-full">
@@ -136,7 +80,6 @@ export default function BrandsCarousel() {
                       className="object-cover"
                     />
                   </div>
-
                   <p className="text-sm mt-3 text-center">{b.name}</p>
                 </div>
               </CarouselItem>
@@ -144,10 +87,10 @@ export default function BrandsCarousel() {
           </CarouselContent>
         </Carousel>
 
-        {/* Right Arrow */}
+        {/* Right */}
         <button
           onClick={() => api?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full hover:scale-105"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
         >
           <FaChevronRight size={18} />
         </button>

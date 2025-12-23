@@ -19,12 +19,12 @@ const profileSchema = z.object({
   password: z.string().optional(),
 });
 
-export default function UserSettingsForm() {
+export default function UserSettingsForm({ userData }) {
   const form = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      name: userData?.name || "",
+      email: userData?.email || "",
     },
   });
 
@@ -42,13 +42,13 @@ export default function UserSettingsForm() {
         ["upi", "UPI ID"],
         ["bank", "Bank Details"],
       ].map(([key, label]) => (
-        <div key={key}>
+        <div key={key} className="flex flex-col gap-2">
           <Label>{label}</Label>
           <Input {...form.register(key)} placeholder={label} />
         </div>
       ))}
 
-      <div>
+      <div className="flex flex-col gap-2">
         <Label>Change Password</Label>
         <Input
           type="password"
@@ -57,7 +57,9 @@ export default function UserSettingsForm() {
         />
       </div>
 
-      <Button className="col-span-full mt-4">Save Changes</Button>
+      <Button className="col-span-full mt-4 cursor-pointer">
+        Save Changes
+      </Button>
     </form>
   );
 }

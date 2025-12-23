@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 
 import {
   Form,
@@ -13,57 +14,95 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
-
-import { useRouter } from "next/navigation"; // <-- import router
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 // ------------------ VALIDATION SCHEMA ------------------
 
 const LoginSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password too long"),
+  phone: z.string().min(10, "Enter a valid phone number"),
 });
 
 // ------------------ COMPONENT ------------------
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState(false);
-  const [firebaseError, setFirebaseError] = useState("");
+  const router = useRouter();
 
-  const router = useRouter(); // <-- initialize router
+  const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [firebaseError, setFirebaseError] = useState("");
 
   const form = useForm({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      phone: "",
     },
   });
 
-  const onSubmit = async (values) => {
+  // ------------------ INIT RECAPTCHA ------------------
+
+  const initRecaptcha = () => {
+    if (typeof window === "undefined") return;
+
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+        }
+      );
+    }
+  };
+
+  // ------------------ SEND OTP ------------------
+
+  const sendOtp = async ({ phone }) => {
     setLoading(true);
     setFirebaseError("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      await initRecaptcha();
+
+      const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+
+      const result = await signInWithPhoneNumber(
         auth,
-        values.email,
-        values.password
+        formattedPhone,
+        window.recaptchaVerifier
       );
 
-      console.log("Logged In User:", userCredential.user);
+      setConfirmationResult(result);
+      setOtpSent(true);
+    } catch (err) {
+      console.error(err);
+      setFirebaseError(err.message || "Failed to send OTP");
+    }
+
+    setLoading(false);
+  };
+
+  // ------------------ VERIFY OTP ------------------
+
+  const verifyOtp = async () => {
+    if (!confirmationResult || otp.length !== 6) return;
+
+    setLoading(true);
+    setFirebaseError("");
+
+    try {
+      await confirmationResult.confirm(otp);
+
+      // ✅ USER LOGGED IN
       router.push("/influencer");
-    } catch (error) {
-      console.error("Firebase Login Error:", error);
-      setFirebaseError(error.message);
+    } catch (err) {
+      console.error(err);
+      setFirebaseError("Invalid OTP");
     }
 
     setLoading(false);
@@ -74,50 +113,52 @@ export default function LoginPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-semibold">Welcome Back</h1>
-        <p className="text-gray-600 mt-1">
-          Login to access your influencer dashboard.
-        </p>
+        <p className="text-gray-600 mt-1">Login using your phone number.</p>
       </div>
 
       {/* Form */}
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={
+            otpSent
+              ? (e) => {
+                  e.preventDefault();
+                  verifyOtp();
+                }
+              : form.handleSubmit(sendOtp)
+          }
           className="w-full max-w-md space-y-6"
         >
-          {/* Email */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="example@mail.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* PHONE INPUT */}
+          {!otpSent && (
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="9876543210" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-          {/* Password */}
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="•••••••" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* OTP INPUT */}
+          {otpSent && (
+            <FormItem>
+              <FormLabel>Enter OTP</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="6-digit OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
 
           {/* Firebase Error */}
           {firebaseError && (
@@ -129,7 +170,7 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Please wait..." : otpSent ? "Verify OTP" : "Send OTP"}
           </Button>
         </form>
       </Form>
@@ -141,6 +182,9 @@ export default function LoginPage() {
           Register
         </a>
       </p>
+
+      {/* REQUIRED FOR FIREBASE */}
+      <div id="recaptcha-container"></div>
     </div>
   );
 }

@@ -1,14 +1,22 @@
 "use client";
 
-export default function Hero() {
+export default function Hero({ user }) {
   return (
-    <section className="relative w-full h-full max-h-[60vh] lg:max-h-[80vh] bg-[#0D7753] pt-5 lg:pt-20 overflow-visible">
+    <section
+      style={{
+        backgroundImage: user?.banner ? `url(${user.banner})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+      className="relative w-full h-full max-h-[60vh] lg:max-h-[80vh] bg-[#0D7753] pt-5 lg:pt-20 overflow-visible"
+    >
       {/* LAYOUT */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 mt-20 grid grid-cols-1 lg:grid-cols-3 gap-12 pb-10 lg:pb-32">
         {/* LEFT SIDE */}
         <div className="flex flex-col justify-start">
           <h2 className="text-white text-[48px] sm:text-[64px] md:text-[80px] lg:text-[90px] font-black leading-tight">
-            Rayan Bever
+            {user?.name || "Rayan Bever"}
           </h2>
 
           <svg
@@ -27,7 +35,7 @@ export default function Hero() {
           </svg>
 
           <p className="text-white text-base sm:text-xl mt-3 opacity-90">
-            Travel Influencer
+            {user?.primaryCategories?.[0] || "Travel & Lifestyle Influencer"}
           </p>
         </div>
 
@@ -39,21 +47,21 @@ export default function Hero() {
           <div className="p-6 rounded-2xl flex flex-col items-center">
             <p className="text-lg text-center">Total Collaborations</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
-              121
+              {user?.totalCollabs || 27}
             </p>
           </div>
 
           <div className="p-6 rounded-2xl flex flex-col items-center">
             <p className="text-lg text-center">Active Collaborations</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
-              12
+              {user?.activeCollabs || 5}
             </p>
           </div>
 
           <div className="p-6 rounded-2xl flex flex-col items-center">
             <p className="text-lg text-center">Total Clients</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
-              53
+              {user?.totalClients || 15}
             </p>
           </div>
         </div>

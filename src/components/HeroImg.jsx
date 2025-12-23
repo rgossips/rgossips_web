@@ -1,10 +1,10 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function HeroImage() {
+export default function HeroImage({ userData }) {
   const [imgWidth, setImgWidth] = useState(400);
   const [imgHeight, setImgHeight] = useState(550);
   const [openMenu, setOpenMenu] = useState(false);
@@ -13,6 +13,10 @@ export default function HeroImage() {
   const [imgLeft, setImgLeft] = useState("50%");
   const [imgTransform, setImgTransform] = useState("translateX(-50%)");
   const [borderStyle, setBorderStyle] = useState("partial");
+
+  useEffect(() => {
+    console.log("Profile Pic changed:", userData);
+  }, [userData]);
 
   useLayoutEffect(() => {
     const initialTop = window.innerHeight * 0.25;
@@ -83,7 +87,7 @@ export default function HeroImage() {
   return (
     <>
       <Image
-        src="https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d"
+        src={userData?.profilePic}
         alt="dummy"
         width={imgWidth}
         height={imgHeight}

@@ -27,6 +27,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
+import { IoIosClose } from "react-icons/io";
 
 // ---------- ZOD Schemas for each step ----------
 const professionalSchema = z.object({
@@ -445,15 +446,15 @@ export default function ProfileStepPopup() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen} className="">
-        <DialogContent className="absolute top-[50vh] h-[80vh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 [&>button]:hidden">
+        <DialogContent className="absolute top-[50vh] h-[85vh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 [&>button]:hidden">
           {/* Close button top-right */}
           <div className="absolute right-4 top-4">
             <Button
               variant="ghost"
               onClick={handleConfirmClose}
-              className="text-red-500"
+              className="text-red-500 cursor-pointer"
             >
-              Close
+              <IoIosClose />
             </Button>
           </div>
 
@@ -463,7 +464,7 @@ export default function ProfileStepPopup() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="p-4">
+          <div className="px-4 pb-4 pt-2">
             {/* Progress Steps */}
             <div className="flex items-center justify-between my-6">
               {[1, 2, 3, 4].map((s, i) => (
@@ -501,7 +502,7 @@ export default function ProfileStepPopup() {
               <div className="flex-1">Additional</div>
             </div>
 
-            <div className="max-h-[50vh] overflow-y-auto">
+            <div className="max-h-[60vh] overflow-y-auto">
               {/* STEP 1 */}
               {step === 1 && (
                 <form
@@ -511,7 +512,7 @@ export default function ProfileStepPopup() {
                   }}
                   className="space-y-4 overflow-y-auto"
                 >
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label>Primary Content Categories</Label>
                     <MultiSelectInput
                       options={PRIMARY_OPTIONS}
@@ -528,7 +529,7 @@ export default function ProfileStepPopup() {
                     )}
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-col gap-2">
                     <Label>Secondary Content Categories</Label>
                     <MultiSelectInput
                       options={PRIMARY_OPTIONS}
@@ -540,9 +541,9 @@ export default function ProfileStepPopup() {
                     />
                   </div>
 
-                  <div>
+                  <div className="flex flex-col gap-2">
                     <Label>Content Languages</Label>
-                    <div className="flex gap-2 flex-wrap mt-2">
+                    <div className="flex gap-2 flex-wrap">
                       {LANGUAGES.map((lang) => (
                         <button
                           key={lang}
@@ -568,7 +569,7 @@ export default function ProfileStepPopup() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="">
                     <Label>Years of Experience</Label>
                     <select
                       {...profForm.register("yearsOfExperience")}
@@ -630,6 +631,7 @@ export default function ProfileStepPopup() {
                                   type="button"
                                   variant="ghost"
                                   onClick={() => remove(idx)}
+                                  className="cursor-pointer"
                                 >
                                   Remove
                                 </Button>
@@ -709,6 +711,7 @@ export default function ProfileStepPopup() {
                         <Button
                           type="button"
                           disabled={!platformToAdd}
+                          className="cursor-pointer"
                           onClick={() => {
                             append({
                               platform: platformToAdd,
@@ -961,7 +964,7 @@ export default function ProfileStepPopup() {
       {/* Confirm-close dialog */}
       {confirmClose && (
         <Dialog open={confirmClose} onOpenChange={setConfirmClose}>
-          <DialogContent className="p-6 rounded-xl">
+          <DialogContent className="p-6 rounded-xl [&>button]:cursor-pointer">
             <DialogHeader>
               <DialogTitle>Leave this step?</DialogTitle>
             </DialogHeader>
@@ -972,11 +975,15 @@ export default function ProfileStepPopup() {
             </p>
 
             <DialogFooter className="flex justify-end gap-3 mt-4">
-              <Button variant="ghost" onClick={() => setConfirmClose(false)}>
+              <Button
+                variant="ghost"
+                className="cursor-pointer"
+                onClick={() => setConfirmClose(false)}
+              >
                 Cancel
               </Button>
               <Button
-                className="bg-red-500 text-white"
+                className="bg-red-500 cursor-pointer text-white"
                 onClick={handleCloseNow}
               >
                 Yes, Close

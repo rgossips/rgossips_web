@@ -1,201 +1,218 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
-import Image from "next/image";
-import { FaInstagram } from "react-icons/fa";
+import { FaInstagram, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import SectionTitle from "./SectionTitle";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
-const stays = [
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  limit,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+/* ---------------------------------- */
+/* Seed Data                           */
+/* ---------------------------------- */
+
+const initialStays = [
   {
     title: "Villa Nautica",
-    nights: "2 Nights 3 Days",
-    image:
-      "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg?auto=compress",
-    location: "Lankanfinolhu, Maldives",
-    avgPrice: "₹",
-    followers: "100K+",
-    priceType: "FREE",
+    tag: "Luxury Stay",
+    imageUrl:
+      "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg",
+    category: "hotels",
+    brand: {
+      id: "villa_nautica",
+      name: "Villa Nautica",
+      instagramFollowers: "100K+",
+    },
+    metadata: {
+      nights: "2 Nights 3 Days",
+      location: "Lankanfinolhu, Maldives",
+      avgPrice: "₹",
+      priceType: "FREE",
+    },
+    applications: [],
+    isActive: true,
   },
   {
     title: "Geetanjali Salon",
-    nights: "1 Day Luxury",
-    image:
-      "https://images.pexels.com/photos/318236/pexels-photo-318236.jpeg?auto=compress",
-    location: "Gurugram, India",
-    avgPrice: "₹₹",
-    followers: "30K+",
-    priceType: "FREE",
+    tag: "Luxury Salon",
+    imageUrl:
+      "https://images.pexels.com/photos/318236/pexels-photo-318236.jpeg",
+    category: "hotels",
+    brand: {
+      id: "geetanjali",
+      name: "Geetanjali Salon",
+      instagramFollowers: "30K+",
+    },
+    metadata: {
+      nights: "1 Day Luxury",
+      location: "Gurugram, India",
+      avgPrice: "₹₹",
+      priceType: "FREE",
+    },
+    applications: [],
+    isActive: true,
   },
   {
     title: "Taj Exotica",
-    nights: "3 Nights 4 Days",
-    image:
-      "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress",
-    location: "South Male Atoll",
-    avgPrice: "₹₹₹",
-    followers: "200K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Villa Nautica",
-    nights: "2 Nights 3 Days",
-    image:
-      "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg?auto=compress",
-    location: "Lankanfinolhu, Maldives",
-    avgPrice: "₹",
-    followers: "100K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Geetanjali Salon",
-    nights: "1 Day Luxury",
-    image:
-      "https://images.pexels.com/photos/318236/pexels-photo-318236.jpeg?auto=compress",
-    location: "Gurugram, India",
-    avgPrice: "₹₹",
-    followers: "30K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Taj Exotica",
-    nights: "3 Nights 4 Days",
-    image:
-      "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress",
-    location: "South Male Atoll",
-    avgPrice: "₹₹₹",
-    followers: "200K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Villa Nautica",
-    nights: "2 Nights 3 Days",
-    image:
-      "https://images.pexels.com/photos/237272/pexels-photo-237272.jpeg?auto=compress",
-    location: "Lankanfinolhu, Maldives",
-    avgPrice: "₹",
-    followers: "100K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Geetanjali Salon",
-    nights: "1 Day Luxury",
-    image:
-      "https://images.pexels.com/photos/318236/pexels-photo-318236.jpeg?auto=compress",
-    location: "Gurugram, India",
-    avgPrice: "₹₹",
-    followers: "30K+",
-    priceType: "FREE",
-  },
-  {
-    title: "Taj Exotica",
-    nights: "3 Nights 4 Days",
-    image:
-      "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress",
-    location: "South Male Atoll",
-    avgPrice: "₹₹₹",
-    followers: "200K+",
-    priceType: "FREE",
+    tag: "Luxury Resort",
+    imageUrl:
+      "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg",
+    category: "hotels",
+    brand: {
+      id: "taj_exotica",
+      name: "Taj Exotica",
+      instagramFollowers: "200K+",
+    },
+    metadata: {
+      nights: "3 Nights 4 Days",
+      location: "South Male Atoll",
+      avgPrice: "₹₹₹",
+      priceType: "FREE",
+    },
+    applications: [],
+    isActive: true,
   },
 ];
+
+/* ---------------------------------- */
+/* Firebase Helpers                    */
+/* ---------------------------------- */
+
+const seedStaysIfEmpty = async () => {
+  const q = query(
+    collection(db, "offers"),
+    where("category", "==", "hotels"),
+    limit(1)
+  );
+
+  const snapshot = await getDocs(q);
+  // if (!snapshot.empty) return;
+
+  for (const stay of initialStays) {
+    await addDoc(collection(db, "offers"), {
+      ...stay,
+      createdAt: new Date(),
+    });
+  }
+
+  console.log("✅ Stays seeded");
+};
+
+const fetchStays = async () => {
+  const snapshot = await getDocs(
+    query(
+      collection(db, "offers"),
+      where("category", "==", "hotels"),
+      where("isActive", "==", true)
+    )
+  );
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+/* ---------------------------------- */
+/* Component                           */
+/* ---------------------------------- */
 
 export default function StayCarousel() {
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
+  const [stays, setStays] = useState([]);
+  const router = useRouter();
+
+  // Seed + fetch
+  useEffect(() => {
+    const init = async () => {
+      // await seedStaysIfEmpty();
+      const data = await fetchStays();
+      setStays(data);
+    };
+    init();
+  }, []);
 
   // Auto slide
   useEffect(() => {
     if (!api) return;
-
-    const interval = setInterval(() => {
-      api.scrollNext();
-    }, 3000);
-
+    const interval = setInterval(() => api.scrollNext(), 3000);
     return () => clearInterval(interval);
   }, [api]);
 
-  // Sync current dot
+  // Sync dots
   useEffect(() => {
     if (!api) return;
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
+    api.on("select", () => setCurrent(api.selectedScrollSnap()));
   }, [api]);
-
-  const router = useRouter();
 
   return (
     <section className="w-full px-3 py-6">
-      <SectionTitle text={"PLAN YOUR STAY WITH US"} />
+      <SectionTitle text="PLAN YOUR STAY WITH US" />
 
-      {/* Wrapper with arrows */}
       <div className="relative w-full">
-        {/* Left Arrow */}
+        {/* Left */}
         <button
           onClick={() => api?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full hover:scale-105"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
         >
           <FaChevronLeft size={18} />
         </button>
 
-        {/* Carousel */}
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          setApi={setApi}
-          className="w-full"
-        >
+        <Carousel opts={{ align: "start", loop: true }} setApi={setApi}>
           <CarouselContent className="-ml-3">
             {stays.map((stay, index) => (
               <CarouselItem
-                key={index}
+                key={stay.id}
                 className="pl-3 basis-11/12 sm:basis-1/2 md:basis-1/3 cursor-pointer"
-                onClick={() => router.push(`/hotel/${index + 1}`)}
+                onClick={() => router.push(`/hotel/${stay.id}`)}
               >
                 <div className="rounded-2xl bg-white shadow-sm border overflow-hidden">
                   {/* Image */}
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden">
+                  <div className="relative w-full h-48 overflow-hidden">
                     <Image
-                      src={stay.image}
+                      src={stay.imageUrl}
                       alt={stay.title}
                       fill
                       className="object-cover"
                     />
 
-                    {/* Badge */}
-                    <div className="absolute top-3 left-3 bg-white/90 px-3 py-[6px] rounded-full text-sm font-semibold text-purple-600 shadow">
-                      ✨ {stay.nights}
+                    <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-sm font-semibold text-purple-600">
+                      ✨ {stay?.metadata?.nights}
                     </div>
                   </div>
 
                   {/* Content */}
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {stay.title}
-                    </h3>
+                    <h3 className="text-lg font-semibold">{stay.title}</h3>
 
                     <div className="flex items-center gap-2 text-gray-500 text-sm mt-1">
                       <span>📍</span>
-                      <span>{stay.location}</span>
+                      <span>{stay?.metadata?.location}</span>
                     </div>
 
                     <div className="flex justify-between items-center mt-4">
-                      <div className="flex items-center gap-2 text-gray-700 font-medium">
+                      <div className="flex items-center gap-2 font-medium">
                         <FaInstagram className="text-pink-500" />
-                        {stay.followers}
+                        {stay?.brand?.instagramFollowers}
                       </div>
 
                       <span className="bg-purple-600 text-white text-xs px-3 py-1 rounded-full">
-                        {stay.priceType}
+                        {stay?.metadata?.priceType}
                       </span>
                     </div>
                   </div>
@@ -205,10 +222,10 @@ export default function StayCarousel() {
           </CarouselContent>
         </Carousel>
 
-        {/* Right Arrow */}
+        {/* Right */}
         <button
           onClick={() => api?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full hover:scale-105"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
         >
           <FaChevronRight size={18} />
         </button>
