@@ -69,6 +69,7 @@ export default function ProfilePage() {
               value="earnings"
               className="
         text-lg font-semibold rounded-l-md py-2
+        data-[state=inactive]:py-2 
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md cursor-pointer
@@ -81,6 +82,7 @@ export default function ProfilePage() {
               value="campaigns"
               className="
         text-lg font-semibold cursor-pointer rounded-r-md py-2
+        data-[state=inactive]:py-2 
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md
@@ -93,6 +95,7 @@ export default function ProfilePage() {
               value="instagram"
               className="
         text-lg font-semibold cursor-pointer rounded-r-md py-2
+        data-[state=inactive]:py-2 
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md

@@ -59,7 +59,9 @@ export default function UserSettingsForm({ userData }) {
         </div>
       ))}
 
-      <Button className="col-span-full mt-4 bg-blue-700">Save Changes</Button>
+      <Button className="col-span-full mt-4 bg-blue-700 cursor-pointer hover:bg-blue-800">
+        Save Changes
+      </Button>
     </form>
   );
 }
