@@ -1,12 +1,28 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { FaBars, FaTimes, FaCog, FaSignOutAlt } from "react-icons/fa";
 
 const Navbar = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [showButton, setShowButton] = useState(true);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 350) {
+        setShowButton(false);
+      } else {
+        setShowButton(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const router = useRouter();
   const navItems = [
     "Trending",
     "My Coollabs",
@@ -36,7 +52,20 @@ const Navbar = () => {
               {" "}
               {btn}{" "}
             </button>
-          ))}{" "}
+          ))}
+          {showButton && (
+            <button
+              key={"btn"}
+              onClick={() => {
+                router.push("/profile");
+              }}
+              className="px-4 py-2 rounded-full cursor-pointer bg-white/50 dark:bg-white/10 
+          text-black dark:text-white hover:bg-white/70 dark:hover:bg-white/20 
+          transition whitespace-nowrap hover:underline underline-offset-2"
+            >
+              My Profile
+            </button>
+          )}
         </div>{" "}
       </nav>
       {/* NAVBAR */}
