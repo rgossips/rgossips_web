@@ -24,7 +24,9 @@ const PEXELS_BANNERS = [
 ];
 
 export default function UserHeader({ userData }) {
-  const [banner, setBanner] = useState(userData?.banner || "./bg/green.png");
+  const [banner, setBanner] = useState(
+    userData?.banner ? userData.banner : "./bg/green.png"
+  );
 
   const { user } = useAuth();
   const [pendingBanner, setPendingBanner] = useState(null);
