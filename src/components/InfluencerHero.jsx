@@ -36,7 +36,7 @@ export default function Hero({ user }) {
           </svg>
 
           <p className="text-white text-base sm:text-xl mt-3 opacity-90">
-            {(user?.primaryCategories?.[0] || "") + "Influencer"}
+            {(user?.primaryCategories?.[0] || "") + " Influencer"}
           </p>
         </div>
 

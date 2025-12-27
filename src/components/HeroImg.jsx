@@ -92,7 +92,7 @@ export default function HeroImage({ userData }) {
         width={imgWidth}
         height={imgHeight}
         onClick={() => setOpenMenu(!openMenu)}
-        className={`hidden md:flex fixed z-50 object-cover transition-all duration-200 ease-out border-4 border-white ${
+        className={`hidden max-h-[500px] md:flex fixed z-50 object-cover transition-all duration-200 ease-out border-4 border-white ${
           borderStyle === "full"
             ? "rounded-full cursor-pointer aspect-square"
             : "rounded-t-full rounded-b-full pointer-events-none"

@@ -68,7 +68,7 @@ export default function ProfilePage() {
             <TabsTrigger
               value="earnings"
               className="
-        text-lg font-semibold rounded-l-md
+        text-lg font-semibold rounded-l-md py-2
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md cursor-pointer
@@ -80,7 +80,7 @@ export default function ProfilePage() {
             <TabsTrigger
               value="campaigns"
               className="
-        text-lg font-semibold curosr-pointer rounded-r-md
+        text-lg font-semibold cursor-pointer rounded-r-md py-2
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md
@@ -92,7 +92,7 @@ export default function ProfilePage() {
             <TabsTrigger
               value="instagram"
               className="
-        text-lg font-semibold curosor-pointer rounded-r-md
+        text-lg font-semibold cursor-pointer rounded-r-md py-2
         data-[state=active]:bg-blue-600 
         data-[state=active]:text-white 
         data-[state=active]:shadow-md

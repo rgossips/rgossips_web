@@ -103,7 +103,7 @@ export default function UserHeader({ userData }) {
             <button
               key={item.id}
               onClick={() => handleSelectBanner(item.url)}
-              className="relative aspect-square rounded-lg overflow-hidden border hover:border-blue-500 shrink-0"
+              className="relative aspect-square rounded-lg overflow-hidden border hover:border-blue-500 shrink-0 cursor-pointer"
             >
               <img src={item.url} alt="banner" className="object-cover" />
             </button>

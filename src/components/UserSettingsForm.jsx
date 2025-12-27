@@ -47,7 +47,7 @@ export default function UserSettingsForm({ userData }) {
           <Input {...form.register(key)} placeholder={label} />
         </div>
       ))}
-
+      {/* 
       <div className="flex flex-col gap-2">
         <Label>Change Password</Label>
         <Input
@@ -55,9 +55,9 @@ export default function UserSettingsForm({ userData }) {
           {...form.register("password")}
           placeholder="New Password"
         />
-      </div>
+      </div> */}
 
-      <Button className="col-span-full mt-4 cursor-pointer">
+      <Button className="col-span-full mt-4 cursor-pointer bg-blue-700">
         Save Changes
       </Button>
     </form>
