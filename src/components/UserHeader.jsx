@@ -7,26 +7,24 @@ import { db } from "@/lib/firebase";
 const PEXELS_BANNERS = [
   {
     id: 1,
-    url: "https://images.pexels.com/photos/1261728/pexels-photo-1261728.jpeg",
+    url: "./bg/green.png",
   },
   {
     id: 2,
-    url: "https://images.pexels.com/photos/210186/pexels-photo-210186.jpeg",
+    url: "./bg/blue.png",
   },
   {
     id: 3,
-    url: "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg",
+    url: "./bg/red.png",
   },
   {
     id: 4,
-    url: "https://images.pexels.com/photos/1699020/pexels-photo-1699020.jpeg",
+    url: "./bg/yellow.png",
   },
 ];
 
 export default function UserHeader({ userData }) {
-  const [banner, setBanner] = useState(
-    userData?.banner || "/banners/default-banner.jpg"
-  );
+  const [banner, setBanner] = useState(userData?.banner || "./bg/green.png");
 
   const { user } = useAuth();
   const [pendingBanner, setPendingBanner] = useState(null);
@@ -78,7 +76,7 @@ export default function UserHeader({ userData }) {
     <div className="bg-white shadow-md rounded-xl overflow-hidden">
       {/* Banner */}
       <div className="relative h-48 w-full">
-        <Image src={banner} alt="Banner" fill className="object-cover" />
+        <img src={banner} alt="Banner" className="object-cover" />
       </div>
 
       {/* Profile */}
@@ -87,7 +85,7 @@ export default function UserHeader({ userData }) {
           width={300}
           height={300}
           alt="user"
-          src={userData?.profilePic || "/default-profile.png"}
+          src={userData?.profilePic}
           className="w-40 h-40 rounded-full border-4 border-white shadow-lg z-20"
         />
 
@@ -100,25 +98,20 @@ export default function UserHeader({ userData }) {
       <div className="px-6 pb-6">
         <p className="text-sm font-medium mb-3">Choose a banner</p>
 
-        <div className="flex gap-3 overflow-x-auto">
+        <div className="grid grid-cols-4 gap-3 overflow-x-hidden">
           {PEXELS_BANNERS.map((item) => (
             <button
               key={item.id}
               onClick={() => handleSelectBanner(item.url)}
-              className="cursor-pointer relative h-20 w-36 rounded-lg overflow-hidden border hover:border-blue-500"
+              className="relative aspect-square rounded-lg overflow-hidden border hover:border-blue-500 shrink-0"
             >
-              <Image
-                src={item.url}
-                alt="banner"
-                fill
-                className="object-cover"
-              />
+              <img src={item.url} alt="banner" className="object-cover" />
             </button>
           ))}
         </div>
 
         {/* Upload Button */}
-        <label className="block mt-4">
+        {/* <label className="block mt-4">
           <div className="w-full text-center py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
             Upload New Banner
           </div>
@@ -128,7 +121,7 @@ export default function UserHeader({ userData }) {
             hidden
             onChange={handleBannerUpload}
           />
-        </label>
+        </label> */}
       </div>
 
       {/* Confirmation Dialog */}
@@ -143,10 +136,9 @@ export default function UserHeader({ userData }) {
 
             {pendingBanner && (
               <div className="relative h-32 w-full rounded-lg overflow-hidden mb-4">
-                <Image
+                <img
                   src={pendingBanner}
                   alt="preview"
-                  fill
                   className="object-cover"
                 />
               </div>
