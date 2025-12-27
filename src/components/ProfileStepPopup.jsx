@@ -13,10 +13,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import MultiSelectInput from "./MultiSelectInput";
 
 import {
   doc,
@@ -28,6 +24,11 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { IoIosClose } from "react-icons/io";
+import StepForm1 from "./stepForms/StepForm1";
+import StepForm2 from "./stepForms/StepForm2";
+import StepForm3 from "./stepForms/StepForm3";
+import StepForm4 from "./stepForms/StepForm4";
+import StepForm0 from "./stepForms/StepForm0";
 
 // ---------- ZOD Schemas for each step ----------
 const professionalSchema = z.object({
@@ -67,41 +68,6 @@ const additionalSchema = z.object({
   skills: z.string().optional(),
   pastCollaborations: z.string().optional(),
 });
-
-// ---------- Options ----------
-const PRIMARY_OPTIONS = [
-  "Fashion",
-  "Tech",
-  "Food",
-  "Travel",
-  "Gaming",
-  "Education",
-  "Beauty",
-  "Fitness",
-  "Comedy",
-];
-
-const LANGUAGES = ["English", "Hindi", "Tamil", "Telugu", "Kannada", "Marathi"];
-const YEARS = ["<1 year", "1-2 years", "3-5 years", "5+ years"];
-const SUB_RANGES = ["<1k", "1k-10k", "10k-50k", "50k-100k", "100k+"];
-const PLATFORMS = [
-  "Instagram",
-  "YouTube",
-  "TikTok",
-  "Facebook",
-  "Twitter/X",
-  "LinkedIn",
-];
-const COLLAB_TYPES = [
-  "Paid Partnership",
-  "Barter",
-  "Affiliate Marketing",
-  "UGC Content Creation",
-  "Ambassadorship",
-  "Event Coverage",
-];
-const BUDGETS = ["<5k", "5k-20k", "20k-50k", "50k+"];
-const AVAILABILITY = ["Available", "Partially Available", "Not Available"];
 
 // ---------- Component ----------
 export default function ProfileStepPopup() {
@@ -157,6 +123,27 @@ export default function ProfileStepPopup() {
       bio: "",
       skills: "",
       pastCollaborations: "",
+    },
+  });
+
+  // ---------- Step 0 Schema (Basic Info) ----------
+  const basicSchema = z.object({
+    email: z.string().email("Enter a valid email"),
+    dob: z.string().min(1, "Select your date of birth"),
+    gender: z.string().min(1, "Select a gender"),
+    city: z.string().min(2, "City is required"),
+    state: z.string().min(2, "State is required"),
+    country: z.string().min(2, "Country is required"),
+  });
+  const basicForm = useForm({
+    resolver: zodResolver(basicSchema),
+    defaultValues: {
+      email: user?.email || "",
+      dob: "",
+      gender: "",
+      city: "",
+      state: "",
+      country: "India",
     },
   });
 
@@ -323,6 +310,31 @@ export default function ProfileStepPopup() {
   }
 
   // Submission handlers that save to Firestore and move to next step
+  const onSubmitBasic = async () => {
+    const ok = await basicForm.trigger();
+    if (!ok) return;
+
+    const vals = basicForm.getValues();
+
+    try {
+      await saveStepData({
+        nextVerificationState: 1,
+        partialData: {
+          email: vals.email,
+          dob: vals.dob,
+          gender: vals.gender,
+          city: vals.city,
+          state: vals.state,
+          country: vals.country,
+        },
+      });
+
+      setStep(1);
+    } catch (err) {
+      alert("Failed to save basic info. Try again.");
+    }
+  };
+
   const onSubmitProfessional = async () => {
     // validate locally first
     const ok = await profForm.trigger();
@@ -467,7 +479,7 @@ export default function ProfileStepPopup() {
           <div className="px-4 pb-4 pt-2">
             {/* Progress Steps */}
             <div className="flex items-center justify-between my-6">
-              {[1, 2, 3, 4].map((s, i) => (
+              {[0, 1, 2, 3, 4].map((s, i) => (
                 <div key={s} className="flex-1 flex items-center">
                   {/* Step Circle */}
                   <div
@@ -479,7 +491,7 @@ export default function ProfileStepPopup() {
                         : "bg-gray-200 text-gray-500"
                     }`}
                   >
-                    {s}
+                    {s + 1}
                   </div>
 
                   {/* Connector Line */}
@@ -496,6 +508,7 @@ export default function ProfileStepPopup() {
 
             {/* Step Labels */}
             <div className="flex justify-between mb-4 text-sm text-center text-gray-600">
+              <div className="flex-1">Fundamental</div>
               <div className="flex-1">Professional</div>
               <div className="flex-1">Social</div>
               <div className="flex-1">Collaboration</div>
@@ -503,456 +516,62 @@ export default function ProfileStepPopup() {
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto">
+              {/* STEP 0 */}
+              {step === 0 && (
+                <StepForm0
+                  basicForm={basicForm}
+                  saving={saving}
+                  onSubmitBasic={onSubmitBasic}
+                />
+              )}
+
               {/* STEP 1 */}
               {step === 1 && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    onSubmitProfessional();
-                  }}
-                  className="space-y-4 overflow-y-auto"
-                >
-                  <div className="flex flex-col gap-2">
-                    <Label>Primary Content Categories</Label>
-                    <MultiSelectInput
-                      options={PRIMARY_OPTIONS}
-                      selected={profForm.watch("primaryCategories")}
-                      onChange={(vals) =>
-                        profForm.setValue("primaryCategories", vals)
-                      }
-                      placeholder="Type or select..."
-                    />
-                    {profForm.formState.errors.primaryCategories && (
-                      <p className="text-red-500 text-sm">
-                        {profForm.formState.errors.primaryCategories.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-4 flex flex-col gap-2">
-                    <Label>Secondary Content Categories</Label>
-                    <MultiSelectInput
-                      options={PRIMARY_OPTIONS}
-                      selected={profForm.watch("secondaryCategories")}
-                      onChange={(vals) =>
-                        profForm.setValue("secondaryCategories", vals)
-                      }
-                      placeholder="Type or select..."
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label>Content Languages</Label>
-                    <div className="flex gap-2 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <button
-                          key={lang}
-                          type="button"
-                          onClick={() =>
-                            toggleArrayField(profForm, "contentLanguages", lang)
-                          }
-                          className={`py-1 px-2 rounded-md border cursor-pointer ${
-                            profForm.watch("contentLanguages")?.includes(lang)
-                              ? "bg-slate-200"
-                              : ""
-                          }`}
-                        >
-                          {lang}
-                        </button>
-                      ))}
-                    </div>
-
-                    {profForm.formState.errors.contentLanguages && (
-                      <p className="text-red-500 text-sm">
-                        {profForm.formState.errors.contentLanguages.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="">
-                    <Label>Years of Experience</Label>
-                    <select
-                      {...profForm.register("yearsOfExperience")}
-                      className="w-full mt-2 p-2 rounded border"
-                    >
-                      <option value="">Select</option>
-                      {YEARS.map((y) => (
-                        <option key={y}>{y}</option>
-                      ))}
-                    </select>
-
-                    {profForm.formState.errors.yearsOfExperience && (
-                      <p className="text-red-500 text-sm">
-                        {profForm.formState.errors.yearsOfExperience.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      className="cursor-pointer"
-                      onClick={onSubmitProfessional}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save & Continue"}
-                    </Button>
-                  </div>
-                </form>
+                <StepForm1
+                  profForm={profForm}
+                  toggleArrayField={toggleArrayField}
+                  saving={saving}
+                  onSubmitProfessional={onSubmitProfessional}
+                />
               )}
 
               {/* STEP 2 */}
               {step === 2 && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    onSubmitSocial();
-                  }}
-                  className="space-y-6"
-                >
-                  {/* Existing socials list */}
-                  <div className="space-y-4">
-                    {fields.map(
-                      (item, idx) =>
-                        item.platform !== "Instagram" && (
-                          <div
-                            key={item.id}
-                            className="p-4 border rounded-lg bg-slate-50 space-y-3"
-                          >
-                            <div className="flex justify-between items-center">
-                              {item.platform !== "Instagram" && (
-                                <Label className="font-medium">
-                                  {item.platform}
-                                </Label>
-                              )}
-
-                              {item.platform !== "Instagram" && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  onClick={() => remove(idx)}
-                                  className="cursor-pointer"
-                                >
-                                  Remove
-                                </Button>
-                              )}
-                            </div>
-
-                            {item.platform !== "Instagram" && (
-                              <div className="space-y-1">
-                                <Label className="text-sm">Handle</Label>
-                                <Input
-                                  placeholder="@username"
-                                  {...socialForm.register(
-                                    `socials.${idx}.handle`
-                                  )}
-                                />
-                              </div>
-                            )}
-
-                            {item.platform !== "Instagram" && (
-                              <div className="space-y-1">
-                                <Label className="text-sm">
-                                  {item.platform} URL
-                                </Label>
-                                <Input
-                                  placeholder="https://..."
-                                  {...socialForm.register(`socials.${idx}.url`)}
-                                />
-                              </div>
-                            )}
-
-                            {item.platform === "YouTube" && (
-                              <div className="space-y-1">
-                                <Label className="text-sm">
-                                  Subscriber Range
-                                </Label>
-                                <select
-                                  {...socialForm.register(
-                                    `socials.${idx}.subsRange`
-                                  )}
-                                  className="w-full p-2 border rounded"
-                                >
-                                  <option value="">Select</option>
-                                  {SUB_RANGES.map((r) => (
-                                    <option key={r}>{r}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            )}
-                          </div>
-                        )
-                    )}
-                  </div>
-
-                  {fields.length < PLATFORMS.length && (
-                    <div className="space-y-2">
-                      <Label className="font-medium">
-                        Add Another Platform
-                      </Label>
-
-                      <div className="flex gap-2">
-                        <select
-                          value={platformToAdd}
-                          onChange={(e) => setPlatformToAdd(e.target.value)}
-                          className="p-2 border rounded w-full"
-                        >
-                          <option value="">Select a platform</option>
-
-                          {PLATFORMS.filter(
-                            (p) => !fields.some((f) => f.platform === p)
-                          ).map((p) => (
-                            <option key={p} value={p}>
-                              {p}
-                            </option>
-                          ))}
-                        </select>
-
-                        <Button
-                          type="button"
-                          disabled={!platformToAdd}
-                          className="cursor-pointer"
-                          onClick={() => {
-                            append({
-                              platform: platformToAdd,
-                              handle: "",
-                              url: "",
-                              subsRange: "",
-                            });
-                            setPlatformToAdd("");
-                          }}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-2 pt-4 border-t">
-                    <Label className="font-medium">Primary Platform</Label>
-                    <select
-                      {...socialForm.register("primaryPlatform")}
-                      className="w-full p-2 rounded border"
-                    >
-                      {fields.map((s) => (
-                        <option key={s.id} value={s.platform}>
-                          {s.platform}
-                        </option>
-                      ))}
-                    </select>
-
-                    {socialForm.formState.errors.primaryPlatform && (
-                      <p className="text-red-500 text-sm">
-                        {socialForm.formState.errors.primaryPlatform.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-between pt-4">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setStep(1)}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={onSubmitSocial}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save & Continue"}
-                    </Button>
-                  </div>
-                </form>
+                <StepForm2
+                  socialForm={socialForm}
+                  fields={fields}
+                  append={append}
+                  remove={remove}
+                  platformToAdd={platformToAdd}
+                  setPlatformToAdd={setPlatformToAdd}
+                  saving={saving}
+                  setStep={setStep}
+                  onSubmitSocial={onSubmitSocial}
+                />
               )}
 
               {/* STEP 3 */}
               {step === 3 && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    onSubmitCollab();
-                  }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <Label>Collaboration Types (multi-select)</Label>
-                    <div className="flex gap-2 flex-wrap mt-2">
-                      {COLLAB_TYPES.map((ct) => (
-                        <button
-                          key={ct}
-                          type="button"
-                          onClick={() =>
-                            toggleArrayField(
-                              collabForm,
-                              "collaborationTypes",
-                              ct
-                            )
-                          }
-                          className={`py-1 px-2 rounded-md border ${
-                            collabForm.watch("collaborationTypes")?.includes(ct)
-                              ? "bg-slate-300"
-                              : ""
-                          }`}
-                        >
-                          {ct}
-                        </button>
-                      ))}
-                    </div>
-
-                    {collabForm.formState.errors.collaborationTypes && (
-                      <p className="text-red-500 text-sm">
-                        {collabForm.formState.errors.collaborationTypes.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>Budget Range (optional)</Label>
-                    <select
-                      {...collabForm.register("budgetRange")}
-                      className="w-full mt-2 p-2 rounded border"
-                    >
-                      <option value="">Select</option>
-                      {BUDGETS.map((b) => (
-                        <option key={b}>{b}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label>Availability</Label>
-                    <select
-                      {...collabForm.register("availability")}
-                      className="w-full mt-2 p-2 rounded border"
-                    >
-                      <option value="">Select</option>
-                      {AVAILABILITY.map((a) => (
-                        <option key={a}>{a}</option>
-                      ))}
-                    </select>
-
-                    {collabForm.formState.errors.availability && (
-                      <p className="text-red-500 text-sm">
-                        {collabForm.formState.errors.availability.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>Portfolio URL (optional)</Label>
-                    <Input
-                      placeholder="https://"
-                      {...collabForm.register("portfolioUrl")}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Sample Links (up to 3)</Label>
-                    <div className="space-y-2 mt-2">
-                      {sampleFields.map((f, idx) => (
-                        <div key={f.id} className="flex gap-2">
-                          <Input
-                            placeholder="https://"
-                            {...collabForm.register(`sampleLinks.${idx}`)}
-                          />
-                          <Button
-                            variant="ghost"
-                            type="button"
-                            onClick={() => removeSample(idx)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-
-                      {sampleFields.length < 3 && (
-                        <Button type="button" onClick={() => appendSample("")}>
-                          Add Link
-                        </Button>
-                      )}
-
-                      {collabForm.formState.errors.sampleLinks && (
-                        <p className="text-red-500 text-sm">
-                          {collabForm.formState.errors.sampleLinks.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setStep(2)}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={onSubmitCollab}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save & Continue"}
-                    </Button>
-                  </div>
-                </form>
+                <StepForm3
+                  collabForm={collabForm}
+                  toggleArrayField={toggleArrayField}
+                  sampleFields={sampleFields}
+                  appendSample={appendSample}
+                  removeSample={removeSample}
+                  saving={saving}
+                  setStep={setStep}
+                  onSubmitCollab={onSubmitCollab}
+                />
               )}
 
               {/* STEP 4 */}
               {step === 4 && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    onSubmitAdditional();
-                  }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <Label>Bio</Label>
-                    <Textarea
-                      placeholder="Short bio"
-                      {...addForm.register("bio")}
-                    />
-                    <p className="text-sm text-slate-400">
-                      {addForm.watch("bio")?.length || 0}/500
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label>Skills (optional)</Label>
-                    <Input
-                      placeholder="Canon R5, Adobe Premiere…"
-                      {...addForm.register("skills")}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Past Collaborations</Label>
-                    <Textarea
-                      placeholder="List brands or notes"
-                      {...addForm.register("pastCollaborations")}
-                    />
-                  </div>
-
-                  <div className="flex justify-between">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setStep(3)}
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={onSubmitAdditional}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Finish & Save Profile"}
-                    </Button>
-                  </div>
-                </form>
+                <StepForm4
+                  addForm={addForm}
+                  saving={saving}
+                  setStep={setStep}
+                  onSubmitAdditional={onSubmitAdditional}
+                />
               )}
             </div>
           </div>

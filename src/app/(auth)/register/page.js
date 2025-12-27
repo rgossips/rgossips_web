@@ -47,20 +47,13 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 import { onAuthStateChanged, RecaptchaVerifier } from "firebase/auth";
-import ProfileStepPopup from "@/components/ProfileStepPopup";
 
 // ==========================
 // SCHEMA
 // ==========================
 const InfluencerSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
   phone: z.string().min(10),
-  dob: z.string().min(1, "Date of birth is required"),
-  gender: z.string().min(1, "Gender is required"),
-  city: z.string().min(2),
-  state: z.string().optional(),
-  country: z.string().min(2),
   instagram: z.string().min(2),
   profilePic: z.string().optional(),
 });
@@ -81,7 +74,7 @@ async function fetchInstagramDataMock(username) {
 }
 
 // ======================================
-// 🚀 REGISTER PAGE
+// REGISTER PAGE
 // ======================================
 export default function RegisterInfluencer() {
   const router = useRouter();
@@ -89,13 +82,7 @@ export default function RegisterInfluencer() {
     resolver: zodResolver(InfluencerSchema),
     defaultValues: {
       name: "",
-      email: "",
       phone: "",
-      dob: "",
-      gender: "",
-      city: "",
-      state: "",
-      country: "",
       instagram: "",
       profilePic: "",
     },
@@ -111,7 +98,7 @@ export default function RegisterInfluencer() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
-  const [phoneVerified, setPhoneVerified] = useState(true);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
 
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -192,33 +179,28 @@ export default function RegisterInfluencer() {
   };
 
   const onSubmit = async (data) => {
-    if (!phoneVerified) return alert("Verify phone");
-    if (!instaValidated) return alert("Validate Instagram");
+    if (!phoneVerified) return alert("Verify phone first");
+    if (!instaValidated) return alert("Validate Instagram first");
 
     try {
-      // 1. CREATE AUTH USER
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        data.email,
-        data.password
-      );
-      const uid = userCredential.user.uid;
+      const user = auth.currentUser;
+      if (!user)
+        return alert("Phone authentication missing. Please verify again.");
+      const uid = user.uid;
 
-      // 2. REMOVE PASSWORD FIELDS BEFORE STORING IN FIRESTORE
-      const { password, confirmPassword, ...safeData } = data;
-
-      // 3. SAVE PROFILE WITHOUT PASSWORD
       await setDoc(doc(db, "influencers", uid), {
         uid,
-        ...safeData,
-        profilePic: safeData.profilePic || instaInfo?.profilePic,
+        ...data,
+        profilePic: instaInfo?.profilePic || "",
+        loginMethod: "phone-otp",
+        stepCompleted: 0, // StepForm0 next
         role: "influencer",
         verificationState: 1,
         createdAt: serverTimestamp(),
       });
 
       setSuccessDialog(true);
-      router.push("/influencer");
+      router.push("/influencer?step=0"); // start next popup form
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -246,7 +228,7 @@ export default function RegisterInfluencer() {
           />
 
           {/* EMAIL */}
-          <FormField
+          {/* <FormField
             name="email"
             control={form.control}
             render={({ field }) => (
@@ -258,7 +240,7 @@ export default function RegisterInfluencer() {
                 <FormMessage />
               </FormItem>
             )}
-          />
+          /> */}
 
           {/* PHONE + OTP */}
           <div className="flex items-end gap-2">
@@ -290,7 +272,7 @@ export default function RegisterInfluencer() {
           </div>
 
           {/* GENDER + DOB */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <FormField
               name="gender"
               control={form.control}
@@ -324,7 +306,7 @@ export default function RegisterInfluencer() {
                 </FormItem>
               )}
             />
-          </div>
+          </div> */}
 
           {/* PASSWORD */}
           {/* <FormField
@@ -385,7 +367,7 @@ export default function RegisterInfluencer() {
           /> */}
 
           {/* CITY/STATE */}
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <FormField
               name="city"
               control={form.control}
@@ -412,10 +394,10 @@ export default function RegisterInfluencer() {
                 </FormItem>
               )}
             />
-          </div>
+          </div> */}
 
           {/* COUNTRY */}
-          <FormField
+          {/* <FormField
             name="country"
             control={form.control}
             render={({ field }) => (
@@ -427,7 +409,7 @@ export default function RegisterInfluencer() {
                 <FormMessage />
               </FormItem>
             )}
-          />
+          /> */}
 
           {/* INSTAGRAM */}
           <div className="flex items-end gap-2">
