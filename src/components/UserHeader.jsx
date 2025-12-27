@@ -5,27 +5,15 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const PEXELS_BANNERS = [
-  {
-    id: 1,
-    url: "./bg/green.png",
-  },
-  {
-    id: 2,
-    url: "./bg/blue.png",
-  },
-  {
-    id: 3,
-    url: "./bg/red.png",
-  },
-  {
-    id: 4,
-    url: "./bg/yellow.png",
-  },
+  { id: 1, url: "/bg/green.png" },
+  { id: 2, url: "/bg/blue.png" },
+  { id: 3, url: "/bg/red.png" },
+  { id: 4, url: "/bg/yellow.png" },
 ];
 
 export default function UserHeader({ userData }) {
   const [banner, setBanner] = useState(
-    userData?.banner ? userData.banner : "./bg/green.png"
+    userData?.banner ? userData.banner : "/bg/green.png"
   );
 
   const { user } = useAuth();
@@ -58,7 +46,11 @@ export default function UserHeader({ userData }) {
     try {
       // Update Firestore
       const userRef = doc(db, "influencers", user.uid);
-      await updateDoc(userRef, { banner: pendingBanner });
+      await updateDoc(userRef, {
+        banner: pendingBanner.startsWith("/")
+          ? pendingBanner
+          : "/" + pendingBanner,
+      });
 
       // Update local state
       setBanner(pendingBanner);
@@ -78,7 +70,7 @@ export default function UserHeader({ userData }) {
     <div className="bg-white shadow-md rounded-xl overflow-hidden">
       {/* Banner */}
       <div className="relative h-48 w-full">
-        <img src={banner} alt="Banner" className="object-cover" />
+        <img src={banner} alt="Banner" className="object-cover w-full h-full" />
       </div>
 
       {/* Profile */}
