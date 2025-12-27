@@ -1,9 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,17 +16,28 @@ const profileSchema = z.object({
   instagram: z.string().optional(),
   upi: z.string().optional(),
   bank: z.string().optional(),
-  password: z.string().optional(),
 });
 
 export default function UserSettingsForm({ userData }) {
   const form = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: userData?.name || "",
-      email: userData?.email || "",
-    },
+    defaultValues: {}, // initial
   });
+
+  // ⭐ Reset when userData loads
+  useEffect(() => {
+    if (userData) {
+      form.reset({
+        name: userData.name || "",
+        email: userData.email || "",
+        profession: userData.profession || "",
+        twitter: userData.twitter || "",
+        instagram: userData.instagram || "",
+        upi: userData.upi || "",
+        bank: userData.bank || "",
+      });
+    }
+  }, [userData, form]);
 
   return (
     <form
@@ -47,19 +58,8 @@ export default function UserSettingsForm({ userData }) {
           <Input {...form.register(key)} placeholder={label} />
         </div>
       ))}
-      {/* 
-      <div className="flex flex-col gap-2">
-        <Label>Change Password</Label>
-        <Input
-          type="password"
-          {...form.register("password")}
-          placeholder="New Password"
-        />
-      </div> */}
 
-      <Button className="col-span-full mt-4 cursor-pointer bg-blue-700">
-        Save Changes
-      </Button>
+      <Button className="col-span-full mt-4 bg-blue-700">Save Changes</Button>
     </form>
   );
 }
