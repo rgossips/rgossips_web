@@ -29,6 +29,7 @@ import StepForm2 from "./stepForms/StepForm2";
 import StepForm3 from "./stepForms/StepForm3";
 import StepForm4 from "./stepForms/StepForm4";
 import StepForm0 from "./stepForms/StepForm0";
+import ErrorModal from "./ErrorModal";
 
 // ---------- ZOD Schemas for each step ----------
 const professionalSchema = z.object({
@@ -79,6 +80,7 @@ export default function ProfileStepPopup() {
   const [confirmClose, setConfirmClose] = useState(false);
   const [loadingRemote, setLoadingRemote] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   // Form Hook Init
   const profForm = useForm({
@@ -331,7 +333,7 @@ export default function ProfileStepPopup() {
 
       setStep(1);
     } catch (err) {
-      alert("Failed to save basic info. Try again.");
+      setShowError(true);
     }
   };
 
@@ -355,7 +357,7 @@ export default function ProfileStepPopup() {
 
       setStep(2);
     } catch (err) {
-      alert("Failed to save professional step. Try again.");
+      setShowError(true);
     }
   };
 
@@ -375,7 +377,7 @@ export default function ProfileStepPopup() {
 
       setStep(3);
     } catch (err) {
-      alert("Failed to save social step. Try again.");
+      setShowError(true);
     }
   };
 
@@ -399,7 +401,7 @@ export default function ProfileStepPopup() {
       // Move to step 4 (Additional)
       setStep(4);
     } catch (err) {
-      alert("Failed to save collaboration step. Try again.");
+      setShowError(true);
     }
   };
 
@@ -428,7 +430,7 @@ export default function ProfileStepPopup() {
       collabForm.reset();
       addForm.reset();
     } catch (err) {
-      alert("Failed to finish profile. Try again.");
+      setShowError(true);
     }
   };
 
@@ -579,6 +581,12 @@ export default function ProfileStepPopup() {
           <DialogFooter />
         </DialogContent>
       </Dialog>
+
+      <ErrorModal
+        open={showError}
+        errorText={"Failed to save info. Please try again."}
+        onClose={() => setShowError(false)}
+      />
 
       {/* Confirm-close dialog */}
       {confirmClose && (

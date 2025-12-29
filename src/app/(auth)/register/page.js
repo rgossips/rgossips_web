@@ -47,6 +47,7 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 import { onAuthStateChanged, RecaptchaVerifier } from "firebase/auth";
+import ErrorModal from "@/components/ErrorModal";
 
 // ==========================
 // SCHEMA
@@ -105,6 +106,8 @@ export default function RegisterInfluencer() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorText, setErrorText] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -128,7 +131,11 @@ export default function RegisterInfluencer() {
 
   const sendPhoneOtp = async (rawPhone) => {
     let phone = rawPhone.trim();
-    if (!phone || phone.length < 10) return alert("Invalid phone number");
+    if (!phone || phone.length < 10) {
+      setErrorText("Invalid phone number");
+      setShowError(true);
+      return;
+    }
 
     try {
       setSendingOtp(true);
@@ -147,8 +154,9 @@ export default function RegisterInfluencer() {
       setConfirmationResult(result);
       setOtpDialogOpen(true);
     } catch (err) {
+      setErrorText("Something went wrong. Please try again later.");
+      setShowError(true);
       console.error(err);
-      alert(err.message);
     } finally {
       setSendingOtp(false);
     }
@@ -162,7 +170,8 @@ export default function RegisterInfluencer() {
       setPhoneVerified(true);
       setOtpDialogOpen(false);
     } catch {
-      alert("Invalid OTP");
+      setErrorText("Invalid OTP");
+      setShowError(true);
     } finally {
       setVerifyingOtp(false);
     }
@@ -170,8 +179,11 @@ export default function RegisterInfluencer() {
 
   const handleValidateInstagram = async () => {
     const username = form.getValues("instagram");
-    if (!username) return alert("Enter username");
-
+    if (!username) {
+      setErrorText("Please enter username");
+      setShowError(true);
+      return;
+    }
     const info = await fetchInstagramDataMock(username);
     setInstaInfo(info);
     setInstaValidated(true);
@@ -179,13 +191,24 @@ export default function RegisterInfluencer() {
   };
 
   const onSubmit = async (data) => {
-    if (!phoneVerified) return alert("Verify phone first");
-    if (!instaValidated) return alert("Validate Instagram first");
+    if (!phoneVerified) {
+      setErrorText("Please verify phone.");
+      setShowError(true);
+      return;
+    }
+    if (!instaValidated) {
+      setErrorText("Please validate your Instagram.");
+      setShowError(true);
+      return;
+    }
 
     try {
       const user = auth.currentUser;
-      if (!user)
-        return alert("Phone authentication missing. Please verify again.");
+      if (!user) {
+        setErrorText("Phone authentication missing. Please verify again.");
+        setShowError(true);
+        return;
+      }
       const uid = user.uid;
 
       await setDoc(doc(db, "influencers", uid), {
@@ -195,7 +218,7 @@ export default function RegisterInfluencer() {
         loginMethod: "phone-otp",
         stepCompleted: 0, // StepForm0 next
         role: "influencer",
-        verificationState: 1,
+        verificationState: 0,
         createdAt: serverTimestamp(),
       });
 
@@ -203,7 +226,8 @@ export default function RegisterInfluencer() {
       router.push("/influencer?step=0"); // start next popup form
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      setErrorText("Failed to save data. Please try again later");
+      setShowError(true);
     }
   };
 
@@ -506,6 +530,12 @@ export default function RegisterInfluencer() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      <ErrorModal
+        open={showError}
+        errorText={errorText}
+        onClose={() => setShowError(false)}
+      />
 
       {/* RECAPTCHA */}
       <div id="recaptcha-container"></div>

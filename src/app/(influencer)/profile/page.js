@@ -11,6 +11,7 @@ import UserHeader from "@/components/UserHeader";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
+import InstagramAnalytics from "@/components/InstagramAnalytics";
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState(null);
@@ -53,7 +54,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Bottom Tabs */}
-      <div className="max-w-[80vw] mx-auto mt-24 px-4">
+      <div className="max-w-[80vw] mx-auto mt-10 px-4">
         <Tabs defaultValue="earnings" className="w-full">
           <TabsList
             className="
@@ -61,7 +62,8 @@ export default function ProfilePage() {
       grid grid-cols-3 
       bg-gray-100 
       rounded-md
-      mb-10          
+      mb-10
+      pb-10          
       shadow-sm
     "
           >
@@ -111,6 +113,10 @@ export default function ProfilePage() {
 
           <TabsContent value="campaigns">
             <MyCampaignsTable />
+          </TabsContent>
+
+          <TabsContent value="instagram">
+            <InstagramAnalytics />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 
 export default function MyCampaignsTable() {
   const brandNames = [
@@ -35,21 +37,32 @@ export default function MyCampaignsTable() {
     Completed: "bg-green-100 text-green-700 border border-green-300",
   };
 
-  const allCampaigns = brandNames.map((brand, i) => ({
-    id: i + 1,
-    brand,
-    status: statuses[i % 3],
-    date: `2025-${String((i % 12) + 1).padStart(2, "0")}-${String(
-      (i % 28) + 1
-    ).padStart(2, "0")}`,
-    amount: `₹${(Math.floor(Math.random() * 15) + 5) * 1000}`, // 5k–20k
-  }));
-
+  // ⬇️ Firestore data state
+  const [campaigns, setCampaigns] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const totalPages = Math.ceil(campaigns.length / itemsPerPage);
 
-  const totalPages = Math.ceil(allCampaigns.length / itemsPerPage);
-  const campaigns = allCampaigns.slice(
+  // User + offer placeholders
+  const userId = "user1";
+  const offerId = "offer1";
+
+  // ------------------------------ 📥 FETCH FROM FIREBASE ------------------------------
+  const fetchCampaigns = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "applications"));
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setCampaigns(data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const currentItems = campaigns.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -57,7 +70,9 @@ export default function MyCampaignsTable() {
   return (
     <Card className="mt-4 shadow">
       <CardContent className="p-6 space-y-4">
-        <div className="text-xl font-semibold">My Campaigns</div>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">My Campaigns</h2>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
@@ -71,9 +86,9 @@ export default function MyCampaignsTable() {
             </thead>
 
             <tbody className="divide-y">
-              {campaigns.map((c) => (
-                <tr key={c.id} className="bg-white hover:bg-gray-50">
-                  <td className="p-3 font-semibold">{c.brand}</td>
+              {currentItems.map((c, i) => (
+                <tr key={i} className="bg-white hover:bg-gray-50">
+                  <td className="p-3 font-semibold">{c.brandId}</td>
 
                   <td className="p-3">
                     <span
@@ -86,14 +101,14 @@ export default function MyCampaignsTable() {
                   </td>
 
                   <td className="p-3">{c.date}</td>
-                  <td className="p-3">{c.amount}</td>
+                  <td className="p-3">₹{c.amount}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* PAGINATION */}
         <div className="flex justify-center gap-2 mt-4">
           <button
             disabled={currentPage === 1}
