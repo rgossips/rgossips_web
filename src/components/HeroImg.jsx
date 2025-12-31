@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function HeroImage({ userData }) {
   const [imgWidth, setImgWidth] = useState(400);
@@ -13,10 +15,6 @@ export default function HeroImage({ userData }) {
   const [imgLeft, setImgLeft] = useState("50%");
   const [imgTransform, setImgTransform] = useState("translateX(-50%)");
   const [borderStyle, setBorderStyle] = useState("partial");
-
-  useEffect(() => {
-    console.log("Profile Pic changed:", userData);
-  }, [userData]);
 
   useLayoutEffect(() => {
     const initialTop = window.innerHeight * 0.25;
@@ -84,6 +82,15 @@ export default function HeroImage({ userData }) {
     return () => window.removeEventListener("scroll", applyScroll);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <>
       <Image
@@ -117,10 +124,13 @@ export default function HeroImage({ userData }) {
               <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
                 <Link href={"/profile"}>View Profile</Link>
               </li>
-              <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
+              {/* <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
                 Settings
-              </li>
-              <li className="cursor-pointer hover:bg-gray-100 p-2 rounded text-red-600">
+              </li> */}
+              <li
+                onClick={handleLogout}
+                className="cursor-pointer hover:bg-gray-100 p-2 rounded text-red-600"
+              >
                 Logout
               </li>
             </ul>

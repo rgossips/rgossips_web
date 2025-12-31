@@ -65,7 +65,9 @@ export default function HomePage() {
 
   return (
     <main className="relative w-full bg-[#0D7753]">
-      <ProfileStepPopup />
+      {userData?.verificationState < 5 && (
+        <ProfileStepPopup userData={userData} />
+      )}
       <Hero user={userData} />
       <HeroImage userData={userData} />
 

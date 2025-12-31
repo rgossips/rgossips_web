@@ -13,7 +13,7 @@ const StepForm4 = ({ addForm, saving, setStep, onSubmitAdditional }) => {
       }}
       className="space-y-4"
     >
-      <div>
+      <div className="flex flex-col gap-2">
         <Label>Bio</Label>
         <Textarea placeholder="Short bio" {...addForm.register("bio")} />
         <p className="text-sm text-slate-400">
@@ -21,7 +21,7 @@ const StepForm4 = ({ addForm, saving, setStep, onSubmitAdditional }) => {
         </p>
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2">
         <Label>Skills (optional)</Label>
         <Input
           placeholder="Canon R5, Adobe Premiere…"
@@ -29,7 +29,7 @@ const StepForm4 = ({ addForm, saving, setStep, onSubmitAdditional }) => {
         />
       </div>
 
-      <div>
+      <div className="flex flex-col gap-2">
         <Label>Past Collaborations</Label>
         <Textarea
           placeholder="List brands or notes"

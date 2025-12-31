@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
+import BackButton from "@/components/BackButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,37 +23,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f8fafc] text-gray-800`}
       >
-        <main className="min-h-screen flex">
-          {/* LEFT SIDE VIDEO */}
-          <div className="hidden md:block w-2/3 relative overflow-hidden">
-            <video
-              className="absolute inset-0 w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-            >
-              <source
-                src="https://www.pexels.com/download/video/7677015/"
-                type="video/mp4"
-              />
-            </video>
-
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-black/40" />
-
-            {/* Text Overlay */}
-            <div className="absolute bottom-10 left-10 text-white z-20">
-              <h1 className="text-3xl font-bold">The Power of Influence</h1>
-              <p className="text-sm text-gray-200 mt-2 w-3/4">
-                Join our creator community and grow your audience with modern
-                digital tools.
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE AUTH FORMS */}
-          <div className="flex-1 flex justify-center items-center px-6">
+        <BackButton />
+        <main className="min-h-screen flex items-center justify-center w-full">
+          <div className="flex flex-col items-center justify-center w-full px-6 py-10">
             {children}
           </div>
         </main>

@@ -71,7 +71,7 @@ const additionalSchema = z.object({
 });
 
 // ---------- Component ----------
-export default function ProfileStepPopup() {
+export default function ProfileStepPopup({ userData }) {
   const { user } = useAuth();
 
   const [open, setOpen] = useState(true);
@@ -189,94 +189,54 @@ export default function ProfileStepPopup() {
 
   // Fetch remote influencer doc and populate forms + step
   useEffect(() => {
-    console.log(user);
-    if (!user?.uid) return;
+    if (!userData) return;
 
-    let mounted = true;
-    const fetchProfile = async () => {
-      setLoadingRemote(true);
-      try {
-        const ref = influencerDocRef();
-        const snap = await getDoc(ref);
-        if (!mounted) return;
+    // Set step from verificationState or start from 0
+    setStep(userData.verificationState ?? 0);
+    // setStep(4);
 
-        if (snap.exists()) {
-          const data = snap.data();
+    // Professional Data
+    profForm.reset({
+      primaryCategories: userData.primaryCategories || [],
+      secondaryCategories: userData.secondaryCategories || [],
+      contentLanguages: userData.contentLanguages || [],
+      yearsOfExperience: userData.yearsOfExperience || "",
+    });
 
-          // If verificationState > 4, close popup
-          const state = data.verificationState ?? 1;
+    // Socials
+    socialForm.reset({
+      socials: userData.socials || [
+        { platform: "Instagram", handle: "", url: "", subsRange: "" },
+      ],
+      primaryPlatform: userData.primaryPlatform || "Instagram",
+    });
 
-          if (state > 4) {
-            setOpen(false);
-            setLoadingRemote(false);
-            return;
-          }
+    // Collaboration Data
+    collabForm.reset({
+      collaborationTypes: userData.collaborationTypes || [],
+      budgetRange: userData.budgetRange || "",
+      availability: userData.availability || "",
+      portfolioUrl: userData.portfolioUrl || "",
+      sampleLinks: userData.sampleLinks?.length ? userData.sampleLinks : [""],
+    });
 
-          // set form defaults if any saved
-          if (
-            data.primaryCategories ||
-            data.contentLanguages ||
-            data.yearsOfExperience
-          ) {
-            profForm.reset({
-              primaryCategories: data.primaryCategories || [],
-              secondaryCategories: data.secondaryCategories || [],
-              contentLanguages: data.contentLanguages || [],
-              yearsOfExperience: data.yearsOfExperience || "",
-            });
-          }
+    // Additional Info
+    addForm.reset({
+      bio: userData.bio || "",
+      skills: userData.skills || "",
+      pastCollaborations: userData.pastCollaborations || "",
+    });
 
-          if (data.socials) {
-            socialForm.reset({
-              socials: data.socials,
-              primaryPlatform:
-                data.primaryPlatform ||
-                data.socials?.[0]?.platform ||
-                "Instagram",
-            });
-          }
-
-          if (data.collaborationTypes) {
-            collabForm.reset({
-              collaborationTypes: data.collaborationTypes || [],
-              budgetRange: data.budgetRange || "",
-              availability: data.availability || "",
-              portfolioUrl: data.portfolioUrl || "",
-              sampleLinks:
-                data.sampleLinks && data.sampleLinks.length
-                  ? data.sampleLinks
-                  : [""],
-            });
-          }
-
-          if (data.bio) {
-            addForm.reset({
-              bio: data.bio || "",
-              skills: data.skills || "",
-              pastCollaborations: data.pastCollaborations || "",
-            });
-          }
-
-          // verificationState maps to the UI step directly
-          setStep(state || 1);
-        } else {
-          // no doc yet — keep defaults and set step 1
-          setStep(1);
-        }
-      } catch (err) {
-        console.error("Error fetching influencer profile:", err);
-      } finally {
-        setLoadingRemote(false);
-      }
-    };
-
-    fetchProfile();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+    // Basic / Step 0
+    basicForm.reset({
+      email: userData.email || user?.email || "",
+      dob: userData.dob || "",
+      gender: userData.gender || "",
+      city: userData.city || "",
+      state: userData.state || "",
+      country: userData.country || "",
+    });
+  }, [userData]);
 
   // Save step helpers
   async function saveStepData({ nextVerificationState, partialData }) {
@@ -460,7 +420,7 @@ export default function ProfileStepPopup() {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen} className="">
-        <DialogContent className="absolute top-[50vh] h-[85vh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 [&>button]:hidden">
+        <DialogContent className="h-[85vh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 overflow-hidden [&>button]:hidden">
           {/* Close button top-right */}
           <div className="absolute right-4 top-4">
             <Button
@@ -497,7 +457,7 @@ export default function ProfileStepPopup() {
                   </div>
 
                   {/* Connector Line */}
-                  {i < 3 && (
+                  {i < 4 && (
                     <div
                       className={`flex-1 h-1 mx-2 ${
                         step > s ? "bg-green-500" : "bg-gray-200"
@@ -517,7 +477,7 @@ export default function ProfileStepPopup() {
               <div className="flex-1">Additional</div>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="h-[60vh] overflow-y-auto pr-2">
               {/* STEP 0 */}
               {step === 0 && (
                 <StepForm0

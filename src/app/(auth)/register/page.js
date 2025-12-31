@@ -1,35 +1,24 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  User,
+  Phone,
+  Instagram,
+  ArrowRight,
+  Smartphone,
+  CheckCircle2,
+  Loader2,
+  Building2,
+} from "lucide-react";
 
-// ShadCN
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// ShadCN Components
 import {
   Form,
   FormField,
@@ -38,507 +27,426 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
-// FIREBASE
+// Firebase
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import {
   signInWithPhoneNumber,
-  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  RecaptchaVerifier,
 } from "firebase/auth";
-import { onAuthStateChanged, RecaptchaVerifier } from "firebase/auth";
+
+import logo from "@/assets/logo.png";
 import ErrorModal from "@/components/ErrorModal";
 
-// ==========================
-// SCHEMA
-// ==========================
+// Schema
 const InfluencerSchema = z.object({
-  name: z.string().min(2),
-  phone: z.string().min(10),
-  instagram: z.string().min(2),
-  profilePic: z.string().optional(),
+  name: z.string().min(2, "Name is required"),
+  phone: z.string().min(10, "Enter a valid phone number"),
+  instagram: z.string().min(2, "Instagram handle is required"),
 });
 
-// ==========================
-// MOCK INSTAGRAM API
-// ==========================
+// Mock API
 async function fetchInstagramDataMock(username) {
   await new Promise((r) => setTimeout(r, 700));
   const u = username.replace("@", "");
-
   return {
     username: u,
     fullName: `${u} Creator`,
-    profilePic: `https://images.pexels.com/photos/35298999/pexels-photo-35298999.jpeg`,
+    profilePic: `https://avatar.iran.liara.run/public/boy?username=${u}`,
     followers: Math.floor(Math.random() * 50_000),
   };
 }
 
-// ======================================
-// REGISTER PAGE
-// ======================================
-export default function RegisterInfluencer() {
+export default function RegisterPage() {
   const router = useRouter();
-  const form = useForm({
-    resolver: zodResolver(InfluencerSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      instagram: "",
-      profilePic: "",
-    },
-  });
 
-  const [instaInfo, setInstaInfo] = useState(null);
-  const [instaValidated, setInstaValidated] = useState(false);
-
+  // States
+  const [loading, setLoading] = useState(false);
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [enteredOtp, setEnteredOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
-
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [instaInfo, setInstaInfo] = useState(null);
+  const [instaValidated, setInstaValidated] = useState(false);
+  const [validatingInsta, setValidatingInsta] = useState(false);
   const [successDialog, setSuccessDialog] = useState(false);
-
-  const [firebaseUser, setFirebaseUser] = useState(null);
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorText, setErrorText] = useState("");
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+  const form = useForm({
+    resolver: zodResolver(InfluencerSchema),
+    defaultValues: { name: "", phone: "", instagram: "" },
+  });
 
+  // OTP & Recaptcha Logic
   const initRecaptcha = async () => {
     if (typeof window === "undefined") return;
-
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
         "recaptcha-container",
-        { size: "invisible" }
+        {
+          size: "invisible",
+        }
       );
-      await window.recaptchaVerifier.render();
     }
   };
 
-  const sendPhoneOtp = async (rawPhone) => {
-    let phone = rawPhone.trim();
-    if (!phone || phone.length < 10) {
-      setErrorText("Invalid phone number");
-      setShowError(true);
-      return;
-    }
+  const onSendOtp = async () => {
+    const phone = form.getValues("phone");
+    if (phone.length < 10) return;
 
+    setLoading(true);
     try {
-      setSendingOtp(true);
       await initRecaptcha();
-
-      if (!phone.startsWith("+") && phone.length === 10) {
-        phone = "+91" + phone;
-      }
-
+      const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
       const result = await signInWithPhoneNumber(
         auth,
-        phone,
+        formattedPhone,
         window.recaptchaVerifier
       );
-
       setConfirmationResult(result);
       setOtpDialogOpen(true);
     } catch (err) {
-      setErrorText("Something went wrong. Please try again later.");
+      setErrorText("Failed to send OTP. Please check the number.");
       setShowError(true);
-      console.error(err);
     } finally {
-      setSendingOtp(false);
+      setLoading(false);
     }
   };
 
-  const verifyPhoneOtp = async () => {
+  const verifyOtp = async () => {
+    setLoading(true);
     try {
-      setVerifyingOtp(true);
       await confirmationResult.confirm(enteredOtp);
-
       setPhoneVerified(true);
       setOtpDialogOpen(false);
-    } catch {
-      setErrorText("Invalid OTP");
+    } catch (err) {
+      setErrorText("Invalid OTP code.");
       setShowError(true);
     } finally {
-      setVerifyingOtp(false);
+      setLoading(false);
     }
   };
 
   const handleValidateInstagram = async () => {
     const username = form.getValues("instagram");
-    if (!username) {
-      setErrorText("Please enter username");
-      setShowError(true);
-      return;
-    }
+    if (!username) return;
+    setValidatingInsta(true);
     const info = await fetchInstagramDataMock(username);
     setInstaInfo(info);
     setInstaValidated(true);
-    form.setValue("profilePic", info.profilePic);
+    setValidatingInsta(false);
   };
 
   const onSubmit = async (data) => {
     if (!phoneVerified) {
-      setErrorText("Please verify phone.");
+      setErrorText("Please verify phone first.");
       setShowError(true);
       return;
     }
     if (!instaValidated) {
-      setErrorText("Please validate your Instagram.");
+      setErrorText("Please validate Instagram first.");
       setShowError(true);
       return;
     }
 
+    setLoading(true);
     try {
       const user = auth.currentUser;
-      if (!user) {
-        setErrorText("Phone authentication missing. Please verify again.");
-        setShowError(true);
-        return;
-      }
-      const uid = user.uid;
-
-      await setDoc(doc(db, "influencers", uid), {
-        uid,
+      await setDoc(doc(db, "influencers", user.uid), {
+        uid: user.uid,
         ...data,
         profilePic: instaInfo?.profilePic || "",
-        loginMethod: "phone-otp",
-        stepCompleted: 0, // StepForm0 next
         role: "influencer",
-        verificationState: 0,
         createdAt: serverTimestamp(),
       });
-
       setSuccessDialog(true);
-      router.push("/influencer?step=0"); // start next popup form
     } catch (err) {
-      console.error(err);
-      setErrorText("Failed to save data. Please try again later");
+      setErrorText("Database error. Try again.");
       setShowError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="px-6 py-2 w-full h-screen overflow-auto flex flex-col justify-center">
-      <h1 className="text-3xl font-semibold mb-5">Create Influencer Account</h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-          {/* NAME */}
-          <FormField
-            name="name"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Your name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="flex flex-col items-center min-h-screen w-full bg-slate-50/30 py-10">
+      {/* Header */}
+      <div className="mb-8 flex flex-col items-center text-center">
+        <Image src={logo} alt="logo" height={30} width={200} className="mb-4" />
+        <p className="text-gray-500 text-lg font-medium">
+          Create your account to start collaborating
+        </p>
+      </div>
 
-          {/* EMAIL */}
-          {/* <FormField
-            name="email"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="creator@mail.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          /> */}
-
-          {/* PHONE + OTP */}
-          <div className="flex items-end gap-2">
-            <FormField
-              name="phone"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="9876543210" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="button"
-              className="cursor-pointer"
-              disabled={phoneVerified || sendingOtp}
-              onClick={() => sendPhoneOtp(form.getValues("phone"))}
-            >
-              {phoneVerified
-                ? "Verified"
-                : sendingOtp
-                ? "Sending..."
-                : "Verify"}
-            </Button>
+      <div className="w-full max-w-[480px] bg-white rounded-3xl shadow-xl shadow-slate-200/60 border-slate-200 border-2 overflow-hidden">
+        <Tabs defaultValue="influencer" className="w-full">
+          <div className="p-1 bg-[#F9FAFB] border-b-slate-200 border-b-2">
+            <TabsList className="grid w-full grid-cols-2 h-14 bg-transparent">
+              <TabsTrigger
+                value="brand"
+                className="rounded-2xl opacity-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Building2 className="w-4 h-4" /> Brand
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="influencer"
+                className="cursor-pointer rounded-2xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
+              >
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <User className="w-4 h-4" /> Influencer
+                </div>
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          {/* GENDER + DOB */}
-          {/* <div className="flex gap-2">
-            <FormField
-              name="gender"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Gender</FormLabel>
-                  <Select onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="dob"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Date of Birth</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div> */}
+          <div className="px-8 py-8">
+            <TabsContent value="influencer" className="mt-0">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-5"
+                >
+                  {/* Name */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-600">
+                          Full Name
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <Input
+                              placeholder="John Doe"
+                              className="pl-10 h-12 bg-slate-50/50 rounded-xl"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-          {/* PASSWORD */}
-          {/* <FormField
-            name="password"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-2 text-sm text-gray-600"
-                    >
-                      {showPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          /> */}
+                  {/* Phone + Verify */}
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-600">
+                          Mobile Number
+                        </FormLabel>
+                        <div className="flex gap-2">
+                          <FormControl className="flex-1">
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                              <Input
+                                placeholder="9876543210"
+                                className="pl-10 h-12 bg-slate-50/50 rounded-xl"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant={phoneVerified ? "secondary" : "outline"}
+                            className="h-12 cursor-pointer rounded-xl border-slate-200 px-6 font-semibold"
+                            disabled={phoneVerified || loading}
+                            onClick={onSendOtp}
+                          >
+                            {phoneVerified ? (
+                              "Verified"
+                            ) : loading ? (
+                              <Loader2 className="animate-spin w-4 h-4" />
+                            ) : (
+                              "Verify"
+                            )}
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-          {/* CONFIRM PASSWORD */}
-          {/* <FormField
-            name="confirmPassword"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm Password"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-2 top-2 text-sm text-gray-600"
-                    >
-                      {showConfirmPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          /> */}
+                  {/* Instagram + Validate */}
+                  <FormField
+                    control={form.control}
+                    name="instagram"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-600">
+                          Instagram Handle
+                        </FormLabel>
+                        <div className="flex gap-2">
+                          <FormControl className="flex-1">
+                            <div className="relative">
+                              <Instagram className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                              <Input
+                                placeholder="@username"
+                                className="pl-10 h-12 bg-slate-50/50 rounded-xl"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <Button
+                            type="button"
+                            variant={instaValidated ? "secondary" : "outline"}
+                            className="h-12 cursor-pointer rounded-xl border-slate-200 px-6 font-semibold"
+                            disabled={instaValidated || validatingInsta}
+                            onClick={handleValidateInstagram}
+                          >
+                            {instaValidated ? (
+                              "Checked"
+                            ) : validatingInsta ? (
+                              <Loader2 className="animate-spin w-4 h-4" />
+                            ) : (
+                              "Validate"
+                            )}
+                          </Button>
+                        </div>
+                        {instaValidated && instaInfo && (
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 mt-2 animte-in fade-in duration-500">
+                            <img
+                              src={instaInfo.profilePic}
+                              className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                              alt="profile"
+                            />
+                            <div>
+                              <p className="text-xs font-bold text-slate-800">
+                                @{instaInfo.username}
+                              </p>
+                              <p className="text-[10px] text-slate-500">
+                                {instaInfo.followers.toLocaleString()} followers
+                              </p>
+                            </div>
+                            <CheckCircle2 className="ml-auto w-4 h-4 text-green-500" />
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-          {/* CITY/STATE */}
-          {/* <div className="flex gap-2">
-            <FormField
-              name="city"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Chandigarh" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="state"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>State</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Punjab" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div> */}
-
-          {/* COUNTRY */}
-          {/* <FormField
-            name="country"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <Input placeholder="India" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          /> */}
-
-          {/* INSTAGRAM */}
-          <div className="flex items-end gap-2">
-            <FormField
-              name="instagram"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Instagram Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="@username" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              className="cursor-pointer"
-              type="button"
-              disabled={instaValidated}
-              onClick={handleValidateInstagram}
-            >
-              {instaValidated ? "Validated" : "Validate"}
-            </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full cursor-pointer h-14 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 rounded-2xl text-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-purple-200"
+                  >
+                    {loading ? "Processing..." : "Create Account"}{" "}
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
           </div>
+        </Tabs>
+      </div>
 
-          {instaValidated && instaInfo && (
-            <div className="flex items-center gap-2 mt-1">
-              <Image
-                src={instaInfo.profilePic}
-                width={40}
-                height={40}
-                className="rounded-full"
-                alt="profile"
-              />
-              <div>
-                <div>@{instaInfo.username}</div>
-                <div className="text-sm text-gray-600">
-                  {instaInfo.fullName}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Followers: {instaInfo.followers}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Button type="submit" className="cursor-pointer w-full py-3">
-            Register
-          </Button>
-        </form>
-      </Form>
-
-      <p className="text-sm text-gray-600 mt-4">
+      <p className="text-center mt-8 text-slate-500 text-sm">
         Already have an account?{" "}
-        <a href="/login" className="text-blue-600 hover:underline">
+        <Link
+          href="/login"
+          className="text-purple-600 font-bold hover:underline cursor-pointer"
+        >
           Login
-        </a>
+        </Link>
       </p>
 
-      {/* PHONE OTP DIALOG */}
+      {/* Verification Dialog */}
       <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enter Phone OTP</DialogTitle>
+        <DialogContent className="sm:max-w-[400px] rounded-3xl">
+          <DialogHeader className="items-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+              <Smartphone className="text-purple-600 w-6 h-6" />
+            </div>
+            <DialogTitle>Verify Phone Number</DialogTitle>
+            <p className="text-sm text-slate-500 text-center">
+              Enter the 6-digit code sent to your phone
+            </p>
           </DialogHeader>
-          <InputOTP value={enteredOtp} onChange={setEnteredOtp} maxLength={6}>
-            <InputOTPGroup>
-              {[...Array(6)].map((_, i) => (
-                <InputOTPSlot key={i} index={i} />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
+          <div className="flex justify-center py-4">
+            <InputOTP value={enteredOtp} onChange={setEnteredOtp} maxLength={6}>
+              <InputOTPGroup className="gap-2">
+                {[...Array(6)].map((_, i) => (
+                  <InputOTPSlot
+                    key={i}
+                    index={i}
+                    className="rounded-xl border-slate-200 w-12 h-12 text-lg"
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
           <DialogFooter>
-            <Button className="w-full cursor-pointer" onClick={verifyPhoneOtp}>
-              {verifyingOtp ? "Verifying..." : "Verify"}
+            <Button
+              className="w-full h-12 rounded-xl bg-purple-600"
+              onClick={verifyOtp}
+              disabled={loading}
+            >
+              {loading ? "Verifying..." : "Confirm Code"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* SUCCESS DIALOG */}
-      <Dialog open={successDialog} onOpenChange={setSuccessDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Registration Successful</DialogTitle>
-          </DialogHeader>
-          <p>Your influencer profile has been created.</p>
-          <Button
-            className="w-full mt-4 cursor-pointer"
-            onClick={() => setSuccessDialog(false)}
-          >
-            Continue
-          </Button>
+      {/* Final Success Modal */}
+      <Dialog
+        open={successDialog}
+        onOpenChange={(open) => {
+          if (!open) router.push("/influencer?step=0");
+        }}
+      >
+        <DialogContent className="sm:max-w-md text-center">
+          <div className="flex flex-col items-center py-6">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-12 h-12 text-green-600" />
+            </div>
+            <DialogTitle className="text-2xl">
+              Registration Complete!
+            </DialogTitle>
+            <p className="text-slate-500 mt-2">
+              Your profile has been created successfully. Let's finish your bio.
+            </p>
+            <Button
+              className="w-full mt-8 h-12 rounded-xl"
+              onClick={() => router.push("/influencer?step=0")}
+            >
+              Continue to Onboarding
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
+      <div id="recaptcha-container"></div>
       <ErrorModal
         open={showError}
         errorText={errorText}
         onClose={() => setShowError(false)}
       />
-
-      {/* RECAPTCHA */}
-      <div id="recaptcha-container"></div>
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function MultiSelectInput({
   // Filter options to show in dropdown
   const filteredOptions = options.filter(
     (opt) =>
-      !selected.includes(opt) &&
+      !selected?.includes(opt) &&
       opt.toLowerCase().includes(inputVal.toLowerCase())
   );
 
@@ -46,7 +46,7 @@ export default function MultiSelectInput({
         className="flex flex-wrap gap-2 border p-2 rounded cursor-text"
         onClick={() => setDropdownOpen(true)}
       >
-        {selected.map((s) => (
+        {selected?.map((s) => (
           <div
             key={s}
             className="flex items-center bg-blue-200 text-blue-800 px-2 py-1 rounded"

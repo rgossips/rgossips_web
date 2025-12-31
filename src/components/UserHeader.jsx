@@ -85,7 +85,7 @@ export default function UserHeader({ userData }) {
 
         <h2 className="text-2xl font-semibold mt-3">{userData?.name}</h2>
         <p className="text-gray-500 text-sm">Influencer • Creator</p>
-        <p className="text-pink-500 text-sm">@{userData?.instagram}</p>
+        <p className="text-pink-500 text-sm">{userData?.instagram}</p>
       </div>
 
       {/* Presets */}

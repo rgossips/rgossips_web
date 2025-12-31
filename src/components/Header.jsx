@@ -2,83 +2,74 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BsThreeDotsVertical } from "react-icons/bs";
+import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
-  const [selected, setSelected] = useState("Home");
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
 
-  const navItems = ["Home", "Services", "Influencer", "Portfolio", "Blog"];
-
-  const handleNavigation = (item) => {
-    setSelected(item);
-    setMenuOpen(false);
-
-    // Navigate using Next.js router
-    switch (item) {
-      case "Influencer":
-        router.push("/influencer");
-        break;
-      case "Home":
-        router.push("/");
-        break;
-      case "Services":
-        router.push("/services");
-        break;
-      case "Portfolio":
-        router.push("/portfolio");
-        break;
-      case "Blog":
-        router.push("/blog");
-        break;
-      default:
-        break;
-    }
-  };
+  // Navigation items based on your reference images
+  const navItems = [
+    { name: "Features", path: "/features" },
+    { name: "For Brands", path: "/brands" },
+    { name: "For Influencers", path: "/influencer" },
+    { name: "FAQ", path: "/faq" },
+  ];
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo */}
+    <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        {/* Logo Section */}
         <div
-          className="text-2xl font-bold tracking-tight cursor-pointer"
+          className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
           onClick={() => router.push("/")}
         >
-          <span className="text-blue-600">Recent</span>Gossips
+          <Image
+            src={logo}
+            alt="Recent Gossip"
+            width={160}
+            height={40}
+            className="h-9 w-auto object-contain"
+          />
         </div>
 
         {/* Desktop Menu */}
-        <nav className="hidden lg:flex items-center gap-6 text-gray-700 font-medium">
-          {navItems.map((item) => (
-            <button
-              key={item}
-              onClick={() => handleNavigation(item)}
-              className={`relative transition-all duration-200 pb-1 border-b-2 ${
-                selected === item
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent hover:border-gray-300 hover:text-gray-900"
-              } cursor-pointer`}
-            >
-              {item}
-            </button>
-          ))}
-          <BsThreeDotsVertical className="cursor-pointer text-gray-500 hover:text-gray-800 transition" />
+        <nav className="hidden lg:flex items-center gap-10">
+          <div className="flex items-center gap-8 text-slate-600 font-semibold text-[15px]">
+            {navItems.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => router.push(item.path)}
+                className="hover:text-blue-600 transition-colors cursor-pointer"
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
 
-          {/* Sign In Button */}
-          <button
-            onClick={() => router.push("/login")}
-            className="ml-4 px-4 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
-          >
-            Sign In
-          </button>
+          <div className="flex items-center gap-8 ml-6 border-l border-slate-200 pl-8">
+            <button
+              onClick={() => router.push("/login")}
+              className="text-slate-700 font-bold text-[15px] hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Login
+            </button>
+
+            <button
+              onClick={() => router.push("/register")}
+              className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
+            >
+              Sign Up
+            </button>
+          </div>
         </nav>
 
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden text-gray-700 focus:outline-none cursor-pointer"
+          className="lg:hidden p-2 text-slate-600 focus:outline-none cursor-pointer"
         >
           {menuOpen ? <HiX size={28} /> : <HiMenu size={28} />}
         </button>
@@ -86,29 +77,41 @@ const Header = () => {
 
       {/* Mobile Dropdown */}
       {menuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 shadow-sm">
-          <nav className="flex flex-col space-y-2 px-6 py-4 text-gray-700 font-medium">
+        <div className="lg:hidden bg-white border-t border-slate-50 absolute w-full shadow-xl">
+          <nav className="flex flex-col space-y-4 px-8 py-8 text-slate-700 font-semibold">
             {navItems.map((item) => (
               <button
-                key={item}
-                onClick={() => handleNavigation(item)}
-                className={`text-left w-full py-2 transition cursor-pointer ${
-                  selected === item
-                    ? "text-blue-600 font-semibold"
-                    : "hover:text-gray-900"
-                }`}
+                key={item.name}
+                onClick={() => {
+                  router.push(item.path);
+                  setMenuOpen(false);
+                }}
+                className="text-left w-full py-2 hover:text-blue-600 cursor-pointer"
               >
-                {item}
+                {item.name}
               </button>
             ))}
 
-            {/* Sign In Button for Mobile */}
-            <button
-              onClick={() => router.push("/login")}
-              className="mt-2 w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition cursor-pointer"
-            >
-              Sign In
-            </button>
+            <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
+              <button
+                onClick={() => {
+                  router.push("/login");
+                  setMenuOpen(false);
+                }}
+                className="w-full py-3 text-slate-800 font-bold text-center"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => {
+                  router.push("/register");
+                  setMenuOpen(false);
+                }}
+                className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg"
+              >
+                Sign Up
+              </button>
+            </div>
           </nav>
         </div>
       )}

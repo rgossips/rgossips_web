@@ -10,6 +10,10 @@ import {
 import BrandsCarousel from "@/components/BrandsCarousel";
 import InfluencerGrid from "@/components/InfluencersGrid";
 import FaqSection from "@/components/FAQ";
+import HomeHero from "@/components/HomeHero";
+import FeaturesSection from "@/components/FeatureSection";
+import ProductSuite from "@/components/ProductSuite";
+import CategoryGrid from "@/components/CategoryGrid";
 
 const features = [
   {
@@ -37,12 +41,14 @@ const features = [
 export default function Home() {
   return (
     <div className="flex flex-col items-center w-full">
-      <HomeCarousel />
+      <HomeHero />
+      {/* <HomeCarousel /> */}
       <BrandsCarousel />
 
-      <ShowcaseSection />
-      <FeaturedSection />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full pl-10 pr-20 my-10 gap-8">
+      {/* <ShowcaseSection />
+
+      <FeaturedSection /> */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full pl-10 pr-20 my-10 gap-8">
         {features.map((item, i) => (
           <div key={i} className="flex items-center gap-5 p-6 ">
             <div className="text-[100px]">{item.icon}</div>
@@ -54,9 +60,9 @@ export default function Home() {
             </div>
           </div>
         ))}
-      </div>
-      <div className="relative h-screen w-full flex flex-col items-start justify-center gap-10 text-white px-10 lg:px-20 overflow-hidden">
-        {/* Background Video */}
+      </div> */}
+      {/* <div className="relative h-screen w-full flex flex-col items-start justify-center gap-10 text-white px-10 lg:px-20 overflow-hidden">
+       
         <video
           autoPlay
           loop
@@ -70,7 +76,7 @@ export default function Home() {
           />
         </video>
 
-        {/* Content */}
+        
         <div className="relative z-10 text-3xl font-semibold">Featured</div>
 
         <div className="relative z-10 text-7xl font-semibold max-w-4xl">
@@ -80,9 +86,12 @@ export default function Home() {
         <div className="relative z-10 bg-black px-5 py-3 text-2xl cursor-pointer">
           Read More
         </div>
-      </div>
+      </div> */}
+      <ProductSuite />
+      <FeaturesSection />
+      <CategoryGrid />
 
-      <InfluencerGrid />
+      {/* <InfluencerGrid /> */}
       <FaqSection />
     </div>
   );

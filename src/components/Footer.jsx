@@ -1,66 +1,123 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import Image from "next/image";
 import {
-  FaFacebookF,
   FaTwitter,
-  FaDribbble,
   FaInstagram,
+  FaLinkedinIn,
+  FaYoutube,
 } from "react-icons/fa";
+import logo from "@/assets/logoIcon.png";
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    product: [
+      { name: "Features", href: "#" },
+      { name: "For Brands", href: "#" },
+      { name: "For Influencers", href: "#" },
+      { name: "Categories", href: "#" },
+      { name: "FAQ", href: "#" },
+    ],
+    legal: [
+      { name: "Privacy", href: "#" },
+      { name: "Terms", href: "#" },
+      { name: "Cookies", href: "#" },
+    ],
+  };
+
   return (
-    <footer className="bg-[#f8fafc] text-gray-600 px-6 sm:px-12 md:px-20 lg:px-24 py-16 z-50">
-      <div className="w-full flex flex-col md:flex-row gap-5 md:gap-0 items-center justify-between mb-10">
-        <div className="text-3xl font-bold text-black">Logo</div>
-        <div className="flex items-center gap-5 md:gap-3 font-semibold text-xl md:text-2xl text-black">
-          <div className="cursor-pointer">Our Blog</div>
-          <div className="cursor-pointer">My Projects</div>
-          <div className="cursor-pointer">Contact </div>
-        </div>
-      </div>
-
-      <div className="w-full flex flex-col lg:flex-row justify-between items-center md:items-start gap-10 border-t border-gray-300 pt-10">
-        {/* Logo + Address */}
-        <div className="flex-1">
-          <p className="text-gray-500 mb-1">Germany —</p>
-          <p className="text-gray-500">785 15h Street, Office 478</p>
-          <p className="text-gray-500">Berlin, De 81566</p>
-        </div>
-
-        {/* Contact */}
-        <div className="flex-1">
-          <p className="font-semibold text-2xl text-black mb-1">
-            +1840 841 25 69
-          </p>
-          <p className="text-gray-500 text-lg underline cursor-pointer hover:text-black">
-            info@email.com
-          </p>
-        </div>
-
-        {/* Subscribe */}
-        <div className="flex items-center justify-center flex-col text-lg text-gray-500">
-          <p>Get Fresh Updates.</p>
-          <p className="text-black font-medium">Just Subscribe</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row justify-between items-center mt-10 gap-6">
-        {/* Copyright */}
-        <p className="text-gray-500 text-sm">
-          AncoraThemes © 2025. All Rights Reserved.
-        </p>
-
-        {/* Social Icons */}
-        <div className="flex items-center gap-4">
-          {[FaFacebookF, FaTwitter, FaDribbble, FaInstagram].map((Icon, i) => (
-            <div
-              key={i}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow hover:bg-black hover:text-white transition-all duration-300 cursor-pointer"
-            >
-              <Icon size={18} />
+    <footer className="bg-[#0f172a] text-slate-400 py-16 px-6 md:px-12 lg:px-24 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+          {/* Brand Column */}
+          <div className="md:col-span-4 space-y-6">
+            <div className="flex items-center gap-2">
+              <Image src={logo} alt="Recent Gossip" width={40} />
+              <div className="text-white text-lg">Recent Gossip</div>
             </div>
-          ))}
+            <p className="text-slate-400 text-base leading-relaxed max-w-sm">
+              The all-in-one platform connecting brands with perfect
+              influencers. Launch campaigns, track performance, and drive real
+              results.
+            </p>
+            <div className="flex items-center gap-4">
+              {[
+                { Icon: FaTwitter, href: "#" },
+                { Icon: FaInstagram, href: "#" },
+                { Icon: FaLinkedinIn, href: "#" },
+                { Icon: FaYoutube, href: "#" },
+              ].map((social, i) => (
+                <Link
+                  key={i}
+                  href={social.href}
+                  className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 border border-slate-700/50"
+                >
+                  <social.Icon size={18} />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Links Column */}
+          <div className="md:col-span-3">
+            <h4 className="text-white font-bold text-lg mb-6 uppercase tracking-wider text-sm">
+              Product
+            </h4>
+            <ul className="space-y-4">
+              {footerLinks.product.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="hover:text-blue-400 transition-colors duration-200"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Newsletter Column */}
+          <div className="md:col-span-5 space-y-6">
+            <h4 className="text-white font-bold text-lg mb-6 uppercase tracking-wider text-sm">
+              Stay Updated
+            </h4>
+            <p className="text-slate-400">
+              Get the latest influencer marketing insights
+            </p>
+
+            <div className="relative group">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="w-full h-14 bg-slate-800/40 border border-slate-700 rounded-2xl px-6 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white"
+              />
+              <button className="w-full mt-4 h-14 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 hover:opacity-90 transition-all">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-slate-800 flex flex-col md:row-reverse md:flex-row justify-between items-center gap-6 text-sm">
+          <p>© {currentYear} Recent Gossip. All rights reserved.</p>
+
+          <div className="flex items-center gap-8">
+            {footerLinks.legal.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="hover:text-white transition-colors"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
