@@ -176,6 +176,7 @@ export default function RegisterPage() {
         ...data,
         profilePic: instaInfo?.profilePic || "",
         role: "influencer",
+        verificationState: 0,
         createdAt: serverTimestamp(),
       });
       setSuccessDialog(true);

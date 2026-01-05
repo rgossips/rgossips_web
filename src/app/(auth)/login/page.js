@@ -134,7 +134,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await confirmationResult.confirm(otp);
-      router.push("/dashboard");
+      router.push("/influencer");
     } catch (err) {
       setError("Invalid OTP code.");
     } finally {
@@ -348,7 +348,7 @@ export default function LoginPage() {
                   <Button
                     onClick={onVerifyOtp}
                     disabled={loading || otp.length < 6}
-                    className="w-full h-15 bg-gradient-to-r from-[#9810FA] to-[#FA1085] rounded-2xl text-lg font-bold shadow-lg transition-all active:scale-95"
+                    className="w-full h-15 cursor-pointer bg-gradient-to-r from-[#9810FA] to-[#FA1085] rounded-2xl text-lg font-bold shadow-lg transition-all active:scale-95"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin" />
@@ -358,7 +358,7 @@ export default function LoginPage() {
                   </Button>
                   <button
                     onClick={() => setOtpSent(false)}
-                    className="w-full text-center text-sm font-bold text-purple-600 hover:underline"
+                    className="w-full text-center text-sm font-bold text-purple-600 hover:underline cursor-pointer"
                   >
                     Change Phone Number
                   </button>
@@ -408,7 +408,7 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <Link
                 href="/register"
-                className="text-[#9810FA] font-bold hover:underline"
+                className="text-[#9810FA] font-bold hover:underline cursor-pointer"
               >
                 Sign up
               </Link>

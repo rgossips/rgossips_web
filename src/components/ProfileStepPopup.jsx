@@ -140,7 +140,9 @@ export default function ProfileStepPopup({ userData }) {
   const basicForm = useForm({
     resolver: zodResolver(basicSchema),
     defaultValues: {
-      email: user?.email || "",
+      email: userData?.email || user?.email || "", // Captures auth email if available
+      name: userData?.name || "", // Add this if you want them to confirm their name
+      phone: userData?.phone || "", // Important since they just verified this!
       dob: "",
       gender: "",
       city: "",
