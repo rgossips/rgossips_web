@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useState } from "react";
 import Image from "next/image";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext"; // Use the global hook
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -11,15 +13,16 @@ const PEXELS_BANNERS = [
   { id: 4, url: "/bg/yellow.png" },
 ];
 
-export default function UserHeader({ userData }) {
-  const [banner, setBanner] = useState(
-    userData?.banner ? userData.banner : "/bg/green.png"
-  );
+export default function UserHeader() {
+  // Pull profile, role, and the setter from global context
+  const { user, profile, setProfile, role } = useAuth();
 
-  const { user } = useAuth();
   const [pendingBanner, setPendingBanner] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState(null); // "select" | "upload"
+
+  // If still loading context, return null or a skeleton
+  if (!profile) return null;
 
   /* ---------- Banner Selection ---------- */
   const handleSelectBanner = (url) => {
@@ -28,39 +31,38 @@ export default function UserHeader({ userData }) {
     setIsDialogOpen(true);
   };
 
-  /* ---------- Upload ---------- */
-  const handleBannerUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    setPendingBanner(url);
-    setDialogType("upload");
-    setIsDialogOpen(true);
-  };
-
   /* ---------- Confirm ---------- */
   const confirmBannerChange = async () => {
     if (!pendingBanner || !user) return;
 
     try {
-      // Update Firestore
-      const userRef = doc(db, "influencers", user.uid);
+      const bannerPath = pendingBanner.startsWith("/")
+        ? pendingBanner
+        : "/" + pendingBanner;
+
+      // 1. Update Firestore (Determining collection based on global role)
+      const collectionName = role === "influencer" ? "influencers" : "brands";
+      const userRef = doc(db, collectionName, user.uid);
+
       await updateDoc(userRef, {
-        banner: pendingBanner.startsWith("/")
-          ? pendingBanner
-          : "/" + pendingBanner,
+        banner: bannerPath,
       });
 
-      // Update local state
-      setBanner(pendingBanner);
+      // 2. IMPORTANT: Update Global Context State
+      // This makes the banner change everywhere in the app instantly
+      setProfile((prev) => ({
+        ...prev,
+        banner: bannerPath,
+      }));
+
       setPendingBanner(null);
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to update banner URL:", err);
+      alert("Error updating banner. Please try again.");
     }
   };
-  /* ---------- Cancel ---------- */
+
   const cancelBannerChange = () => {
     setPendingBanner(null);
     setIsDialogOpen(false);
@@ -68,72 +70,66 @@ export default function UserHeader({ userData }) {
 
   return (
     <div className="bg-white shadow-md rounded-xl overflow-hidden">
-      {/* Banner */}
+      {/* Banner - Uses global profile state */}
       <div className="relative h-48 w-full">
-        <img src={banner} alt="Banner" className="object-cover w-full h-full" />
+        <img
+          src={profile?.banner || "/bg/green.png"}
+          alt="Banner"
+          className="object-cover w-full h-full"
+        />
       </div>
 
-      {/* Profile */}
+      {/* Profile Section */}
       <div className="flex flex-col items-center text-center p-6 -mt-20">
         <Image
-          width={300}
-          height={300}
+          width={160}
+          height={160}
           alt="user"
-          src={userData?.profilePic}
-          className="w-40 h-40 rounded-full border-4 border-white shadow-lg z-20"
+          src={profile?.profilePic || "/default-avatar.png"}
+          className="w-40 h-40 rounded-full border-4 border-white shadow-lg z-20 object-cover"
         />
 
-        <h2 className="text-2xl font-semibold mt-3">{userData?.name}</h2>
-        <p className="text-gray-500 text-sm">Influencer • Creator</p>
-        <p className="text-pink-500 text-sm">{userData?.instagram}</p>
+        <h2 className="text-2xl font-semibold mt-3">{profile?.name}</h2>
+        <p className="text-gray-500 text-sm capitalize">{role} • Creator</p>
+        <p className="text-pink-500 text-sm">{profile?.instagram}</p>
       </div>
 
-      {/* Presets */}
+      {/* Preset Selection */}
       <div className="px-6 pb-6">
-        <p className="text-sm font-medium mb-3">Choose a banner</p>
-
-        <div className="grid grid-cols-4 gap-3 overflow-x-hidden">
+        <p className="text-sm font-medium mb-3">Choose a banner preset</p>
+        <div className="grid grid-cols-4 gap-3">
           {PEXELS_BANNERS.map((item) => (
             <button
               key={item.id}
               onClick={() => handleSelectBanner(item.url)}
-              className="relative aspect-square rounded-lg overflow-hidden border hover:border-blue-500 shrink-0 cursor-pointer"
+              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                profile?.banner === item.url
+                  ? "border-blue-600 scale-95"
+                  : "border-transparent hover:border-blue-300"
+              }`}
             >
-              <img src={item.url} alt="banner" className="object-cover" />
+              <img
+                src={item.url}
+                alt="preset"
+                className="object-cover w-full h-full"
+              />
             </button>
           ))}
         </div>
-
-        {/* Upload Button */}
-        {/* <label className="block mt-4">
-          <div className="w-full text-center py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
-            Upload New Banner
-          </div>
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={handleBannerUpload}
-          />
-        </label> */}
       </div>
 
       {/* Confirmation Dialog */}
       {isDialogOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-[90%] max-w-sm text-center">
-            <h3 className="text-lg font-semibold mb-2">
-              {dialogType === "upload"
-                ? "Upload banner for your profile?"
-                : "Apply this banner?"}
-            </h3>
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-[90%] max-w-sm text-center shadow-2xl">
+            <h3 className="text-lg font-bold mb-2">Apply this banner?</h3>
 
             {pendingBanner && (
-              <div className="relative h-32 w-full rounded-lg overflow-hidden mb-4">
+              <div className="relative h-32 w-full rounded-xl overflow-hidden mb-6 border">
                 <img
                   src={pendingBanner}
                   alt="preview"
-                  className="object-cover"
+                  className="object-cover w-full h-full"
                 />
               </div>
             )}
@@ -141,13 +137,13 @@ export default function UserHeader({ userData }) {
             <div className="flex gap-3">
               <button
                 onClick={cancelBannerChange}
-                className="w-full py-2 rounded-lg border cursor-pointer"
+                className="w-full py-3 rounded-xl border font-medium hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmBannerChange}
-                className="w-full py-2 cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
               >
                 Confirm
               </button>

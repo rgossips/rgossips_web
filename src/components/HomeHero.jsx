@@ -6,8 +6,13 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, ArrowRight, Building2, Users, TrendingUp } from "lucide-react";
+import { useGlobal } from "@/context/GlobalContext";
+import { useRouter } from "next/navigation";
 
 const HomeHero = () => {
+  const { setType } = useGlobal();
+  const router = useRouter();
+
   return (
     <section className="relative w-full min-h-[90vh] flex items-center justify-center py-20 overflow-hidden bg-[#fcfdff]">
       {/* Background Decorative Blobs */}
@@ -35,13 +40,23 @@ const HomeHero = () => {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            <Button className="cursor-pointer h-14 px-8 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold shadow-lg shadow-blue-200 group">
+            <Button
+              onClick={() => {
+                setType("brands");
+                router.push("/login");
+              }}
+              className="cursor-pointer h-14 px-8 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold shadow-lg shadow-blue-200 group"
+            >
               <Building2 className="mr-2 h-5 w-5" />
               I&apos;m a Brand
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
 
             <Button
+              onClick={() => {
+                setType("influencers");
+                router.push("/login");
+              }}
               variant="outline"
               className="cursor-pointer h-14 px-8 border-slate-200 text-slate-600 rounded-2xl text-lg font-bold hover:bg-slate-50 group"
             >

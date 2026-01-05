@@ -13,16 +13,15 @@ import SuccessModal from "./SuccessModal";
 import ErrorModal from "./ErrorModal";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/AuthContext"; // Import global auth hook
 
 const profileSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   instagram: z.string().optional(),
   twitter: z.string().optional(),
   upi: z.string().optional(),
   bank: z.string().optional(),
-
-  // NEW FIELDS
   primaryCategories: z
     .array(z.string())
     .min(1, "Select at least 1 primary category"),
@@ -31,7 +30,14 @@ const profileSchema = z.object({
   yearsOfExperience: z.string().optional(),
 });
 
-export default function UserSettingsForm({ userData }) {
+export default function UserSettingsForm() {
+  // 1. Pull everything from global Context
+  const { profile, setProfile, user, role, loading: authLoading } = useAuth();
+
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const PRIMARY_OPTIONS = [
     "Fashion",
     "Tech",
@@ -43,7 +49,6 @@ export default function UserSettingsForm({ userData }) {
     "Fitness",
     "Comedy",
   ];
-
   const LANGUAGES = [
     "English",
     "Hindi",
@@ -56,32 +61,37 @@ export default function UserSettingsForm({ userData }) {
 
   const form = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: {},
+    defaultValues: {
+      name: "",
+      email: "",
+      instagram: "",
+      twitter: "",
+      upi: "",
+      bank: "",
+      primaryCategories: [],
+      secondaryCategories: [],
+      contentLanguages: [],
+      yearsOfExperience: "",
+    },
   });
 
-  const [successModalOpen, setSuccessModalOpen] = useState(false);
-  const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // Load user data
+  // 2. Load user data from Global Profile once available
   useEffect(() => {
-    console.log("user", userData);
-    if (userData) {
+    if (profile) {
       form.reset({
-        name: userData.name || "",
-        email: userData.email || "",
-        instagram: userData.instagram || "",
-        twitter: userData.twitter || "",
-        upi: userData.upi || "",
-        bank: userData.bank || "",
-
-        primaryCategories: userData.primaryCategories || [],
-        secondaryCategories: userData.secondaryCategories || [],
-        contentLanguages: userData.contentLanguages || [],
-        yearsOfExperience: userData.yearsOfExperience || "",
+        name: profile.name || "",
+        email: profile.email || "",
+        instagram: profile.instagram || "",
+        twitter: profile.twitter || "",
+        upi: profile.upi || "",
+        bank: profile.bank || "",
+        primaryCategories: profile.primaryCategories || [],
+        secondaryCategories: profile.secondaryCategories || [],
+        contentLanguages: profile.contentLanguages || [],
+        yearsOfExperience: profile.yearsOfExperience || "",
       });
     }
-  }, [userData, form]);
+  }, [profile, form]);
 
   const toggleArrayField = (field, value) => {
     const current = form.getValues(field) || [];
@@ -89,35 +99,45 @@ export default function UserSettingsForm({ userData }) {
       field,
       current.includes(value)
         ? current.filter((v) => v !== value)
-        : [...current, value]
+        : [...current, value],
+      { shouldValidate: true }
     );
   };
 
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      // Validate form values
-      const values = form.getValues();
+  // 3. Updated Save Logic
+  const onSave = async (values) => {
+    if (!user) return;
+    setIsSaving(true);
 
-      // Update Firestore user document (users collection)
-      const userRef = doc(db, "users", userData.uid); // userData.uid is your document ID
+    try {
+      // Determine collection based on role (influencers or brands)
+      const collectionName = role === "influencer" ? "influencers" : "brands";
+      const userRef = doc(db, collectionName, user.uid);
+
+      // Update Firestore
       await updateDoc(userRef, values);
 
-      setLoading(false);
-      setSuccessModalOpen(true); // show success pop-up
+      // 4. Update Global Context State instantly
+      setProfile((prev) => ({
+        ...prev,
+        ...values,
+      }));
+
+      setSuccessModalOpen(true);
     } catch (error) {
-      console.error("Error updating user profile:", error);
-      setLoading(false);
-      setErrorModalOpen(true); // show error pop-up
+      console.error("Error updating profile:", error);
+      setErrorModalOpen(true);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  if (authLoading)
+    return <div className="p-10 text-center">Loading Settings...</div>;
+
   return (
     <>
-      <form
-        onSubmit={form.handleSubmit((data) => console.log("Final Save:", data))}
-        className="grid gap-6"
-      >
+      <form onSubmit={form.handleSubmit(onSave)} className="grid gap-6">
         {/* BASIC FIELDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <InputField form={form} name="name" label="Name" />
@@ -137,9 +157,18 @@ export default function UserSettingsForm({ userData }) {
             <MultiSelectInput
               options={PRIMARY_OPTIONS}
               selected={form.watch("primaryCategories")}
-              onChange={(vals) => form.setValue("primaryCategories", vals)}
+              onChange={(vals) =>
+                form.setValue("primaryCategories", vals, {
+                  shouldValidate: true,
+                })
+              }
               placeholder="Select categories..."
             />
+            {form.formState.errors.primaryCategories && (
+              <p className="text-red-500 text-xs">
+                {form.formState.errors.primaryCategories.message}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -160,43 +189,55 @@ export default function UserSettingsForm({ userData }) {
                   type="button"
                   key={lang}
                   onClick={() => toggleArrayField("contentLanguages", lang)}
-                  className={`px-3 py-1 rounded-md border ${
+                  className={`px-3 py-1 rounded-md border text-sm transition-colors ${
                     form.watch("contentLanguages")?.includes(lang)
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-gray-100 border-gray-200 hover:bg-gray-200"
                   }`}
                 >
                   {lang}
                 </button>
               ))}
             </div>
+            {form.formState.errors.contentLanguages && (
+              <p className="text-red-500 text-xs">
+                {form.formState.errors.contentLanguages.message}
+              </p>
+            )}
           </div>
 
           <div>
             <Label>Years of Experience</Label>
             <select
               {...form.register("yearsOfExperience")}
-              className="w-full mt-2 p-2 rounded border bg-white"
+              className="w-full mt-2 p-2 rounded-lg border bg-white focus:ring-2 focus:ring-blue-100 outline-none"
             >
               <option value="">Select Experience</option>
               {YEARS.map((y) => (
-                <option key={y}>{y}</option>
+                <option key={y} value={y}>
+                  {y}
+                </option>
               ))}
             </select>
           </div>
         </div>
 
         <Button
-          disabled={loading}
-          onClick={handleSave}
-          className="bg-blue-700 hover:bg-blue-800 cursor-pointer mt-3"
+          disabled={isSaving}
+          type="submit"
+          className="bg-blue-700 cursor-pointer hover:bg-blue-800 text-white font-bold h-12 rounded-xl transition-all active:scale-[0.98]"
         >
-          {loading && (
-            <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          {isSaving ? (
+            <>
+              <span className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Saving Changes...
+            </>
+          ) : (
+            "Save All Changes"
           )}
-          {loading ? "Saving..." : "Save Changes"}
         </Button>
       </form>
+
       <SuccessModal
         open={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
@@ -214,8 +255,17 @@ export default function UserSettingsForm({ userData }) {
 function InputField({ form, name, label }) {
   return (
     <div className="flex flex-col gap-2">
-      <Label>{label}</Label>
-      <Input {...form.register(name)} placeholder={label} />
+      <Label className="text-slate-700 font-medium">{label}</Label>
+      <Input
+        {...form.register(name)}
+        placeholder={label}
+        className="rounded-lg bg-slate-50 border-slate-200 focus:bg-white transition-all"
+      />
+      {form.formState.errors[name] && (
+        <p className="text-red-500 text-xs">
+          {form.formState.errors[name].message}
+        </p>
+      )}
     </div>
   );
 }

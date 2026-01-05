@@ -73,7 +73,7 @@ const additionalSchema = z.object({
 // ---------- Component ----------
 export default function ProfileStepPopup({ userData }) {
   const { user } = useAuth();
-
+  console.log("userdata", userData);
   const [open, setOpen] = useState(true);
   const [step, setStep] = useState(1);
   const [platformToAdd, setPlatformToAdd] = useState("");

@@ -1,3 +1,5 @@
+"use client";
+
 import HomeCarousel from "@/components/Carousel";
 import FeaturedSection from "@/components/FeaturedSection";
 import ShowcaseSection from "@/components/ShowCaseSection";
@@ -14,6 +16,9 @@ import HomeHero from "@/components/HomeHero";
 import FeaturesSection from "@/components/FeatureSection";
 import ProductSuite from "@/components/ProductSuite";
 import CategoryGrid from "@/components/CategoryGrid";
+import CTASection from "@/components/CTASection";
+import { useGlobal } from "@/context/GlobalContext";
+import { useEffect } from "react";
 
 const features = [
   {
@@ -39,6 +44,33 @@ const features = [
 ];
 
 export default function Home() {
+  const { scrollTo, setScrollTo } = useGlobal();
+
+  useEffect(() => {
+    // 1. Check if scrollTo exists
+    if (scrollTo) {
+      // 2. Normalize string to match IDs (e.g., "Features" -> "features")
+      const targetId = scrollTo.toLowerCase().replace(/\s+/g, "-");
+      const element = document.getElementById(targetId);
+
+      if (element) {
+        // 3. Calculate position with header offset (approx 80px)
+        const headerOffset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
+
+      // 4. Reset state so clicking the same link twice works
+      setScrollTo(null);
+    }
+  }, [scrollTo, setScrollTo]);
+
   return (
     <div className="flex flex-col items-center w-full">
       <HomeHero />
@@ -93,6 +125,7 @@ export default function Home() {
 
       {/* <InfluencerGrid /> */}
       <FaqSection />
+      <CTASection />
     </div>
   );
 }

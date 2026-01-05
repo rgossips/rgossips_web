@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,34 +14,40 @@ import {
   LineChart,
   Award,
 } from "lucide-react";
+import { useGlobal } from "@/context/GlobalContext";
 
 const FeaturesSection = () => {
+  const { type, setType } = useGlobal();
   const [activeTab, setActiveTab] = useState("brands");
+
+  useEffect(() => {
+    setActiveTab(type);
+  }, [type]);
 
   const brandFeatures = [
     {
       title: "Reach Your Target Audience",
       desc: "Connect with influencers whose followers match your ideal customer profile perfectly.",
       icon: <Target className="w-5 h-5" />,
-      color: "bg-purple-500",
+      color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
       title: "Measure Real ROI",
       desc: "Track every dollar spent with comprehensive analytics and performance metrics.",
       icon: <BarChart3 className="w-5 h-5" />,
-      color: "bg-blue-500",
+      color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
       title: "Scale Your Campaigns",
       desc: "Manage multiple influencers and campaigns simultaneously from one central dashboard.",
       icon: <Layers className="w-5 h-5" />,
-      color: "bg-indigo-500",
+      color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
       title: "Fast Execution",
       desc: "Launch campaigns in minutes with our streamlined workflow and automated processes.",
       icon: <Zap className="w-5 h-5" />,
-      color: "bg-violet-500",
+      color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
   ];
 
@@ -50,49 +56,58 @@ const FeaturesSection = () => {
       title: "Get Paid What You Deserve",
       desc: "Transparent pricing and secure payments. Set your rates and get paid on time, every time.",
       icon: <DollarSign className="w-5 h-5" />,
-      color: "bg-pink-500",
+      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
     {
       title: "Work With Top Brands",
       desc: "Access exclusive brand partnerships that align with your content and values.",
       icon: <Briefcase className="w-5 h-5" />,
-      color: "bg-purple-500",
+      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
     {
       title: "Grow Your Influence",
       desc: "Gain insights into your performance and discover opportunities to expand your reach.",
       icon: <LineChart className="w-5 h-5" />,
-      color: "bg-magenta-500",
+      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
     {
       title: "Build Your Portfolio",
       desc: "Showcase your best work and build credibility with verified campaign results.",
       icon: <Award className="w-5 h-5" />,
-      color: "bg-rose-500",
+      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
   ];
 
   return (
-    <section className="w-full py-24 bg-white overflow-hidden">
+    <section
+      className="w-full py-24 bg-white overflow-hidden"
+      id="brands-influencers-section"
+    >
       <div className="max-w-7xl mx-auto px-6">
         {/* Toggle Switch */}
         <div className="flex justify-center mb-20">
           <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex items-center shadow-sm">
             <button
-              onClick={() => setActiveTab("brands")}
+              onClick={() => {
+                setActiveTab("brands");
+                setType("brands");
+              }}
               className={`px-8 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 activeTab === "brands"
-                  ? "bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#155DFC] to-[#9810FA] text-white shadow-md"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >
               For Brands
             </button>
             <button
-              onClick={() => setActiveTab("influencers")}
+              onClick={() => {
+                setType("influencers");
+                setActiveTab("influencers");
+              }}
               className={`px-8 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 activeTab === "influencers"
-                  ? "bg-gradient-to-r from-[#9810FA] to-[#FA1085] text-white shadow-md"
+                  ? "bg-linear-to-r from-[#9810FA] to-[#FA1085] text-white shadow-md"
                   : "text-slate-500 hover:text-slate-900"
               }`}
             >

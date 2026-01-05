@@ -5,17 +5,23 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
 import logo from "@/assets/logo.png";
+import { useGlobal } from "@/context/GlobalContext";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const { setScrollTo, setType } = useGlobal();
 
   // Navigation items based on your reference images
   const navItems = [
-    { name: "Features", path: "/features" },
-    { name: "For Brands", path: "/brands" },
-    { name: "For Influencers", path: "/influencer" },
-    { name: "FAQ", path: "/faq" },
+    { name: "Features", id: "features" },
+    { name: "For Brands", id: "brands-influencers-section", type: "brands" },
+    {
+      name: "For Influencers",
+      id: "brands-influencers-section",
+      type: "influencers",
+    },
+    { name: "FAQ", id: "faq" },
   ];
 
   return (
@@ -41,7 +47,15 @@ const Header = () => {
             {navItems.map((item) => (
               <button
                 key={item.name}
-                onClick={() => router.push(item.path)}
+                onClick={() => {
+                  setScrollTo(item.id);
+
+                  if (item.name == "For Brands") {
+                    setType("brands");
+                  } else if (item.name == "For Influencers") {
+                    setType("influencers");
+                  }
+                }}
                 className="hover:text-blue-600 transition-colors cursor-pointer"
               >
                 {item.name}
@@ -83,8 +97,13 @@ const Header = () => {
               <button
                 key={item.name}
                 onClick={() => {
-                  router.push(item.path);
-                  setMenuOpen(false);
+                  setScrollTo(item.id);
+
+                  if (item.name == "For Brands") {
+                    setType("brands");
+                  } else if (item.name == "For Influencers") {
+                    setType("influencers");
+                  }
                 }}
                 className="text-left w-full py-2 hover:text-blue-600 cursor-pointer"
               >

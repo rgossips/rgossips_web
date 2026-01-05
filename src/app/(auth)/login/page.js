@@ -1,13 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Lock, Phone, ArrowRight, Eye, Smartphone } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Phone,
+  ArrowRight,
+  Eye,
+  Smartphone,
+  Loader2,
+} from "lucide-react";
 
 import {
   Form,
@@ -25,8 +33,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { auth } from "@/lib/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import logo from "@/assets/logo.png";
+import { useGlobal } from "@/context/GlobalContext";
 
-// Validation Schemas
 const BrandSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -38,11 +46,14 @@ const InfluencerSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
+  const { type, setType } = useGlobal();
+
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("brands");
 
   const brandForm = useForm({
     resolver: zodResolver(BrandSchema),
@@ -54,17 +65,40 @@ export default function LoginPage() {
     defaultValues: { phone: "" },
   });
 
-  // --- OTP Logic ---
+  useEffect(() => {
+    if (type === "brands" || type === "influencers") {
+      setActiveTab(type);
+    }
+  }, [type]);
+
   const initRecaptcha = () => {
     if (typeof window === "undefined") return;
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-        }
-      );
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+          }
+        );
+      }
+    } catch (err) {
+      console.error("Recaptcha error:", err);
+    }
+  };
+
+  const onBrandSubmit = async (values) => {
+    setLoading(true);
+    setError("");
+    try {
+      // Implement your Email/Password login logic here
+      console.log("Brand Login:", values);
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Invalid email or password.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,69 +118,98 @@ export default function LoginPage() {
       setConfirmationResult(result);
       setOtpSent(true);
     } catch (err) {
-      setError(err.message || "Failed to send OTP");
+      setError("Failed to send OTP. Please check the number.");
+      // Reset reCAPTCHA so user can retry
+      if (window.recaptchaVerifier)
+        window.recaptchaVerifier
+          .render()
+          .then((id) => window.grecaptcha.reset(id));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onVerifyOtp = async () => {
+    if (otp.length !== 6) return setError("Please enter a 6-digit OTP.");
+    setLoading(true);
+    try {
+      await confirmationResult.confirm(otp);
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Invalid OTP code.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen w-full">
-      {/* Header */}
-      <div className="mb-8 flex flex-col items-center text-center">
-        <div className="flex items-center gap-5 mb-2">
-          <Image
-            src={logo}
-            alt="logo"
-            height={30}
-            width={300}
-            className="rounded-xl"
-          />
-        </div>
-        <p className="text-gray-500 text-lg">Welcome back! Login to continue</p>
+    <div className="flex flex-col items-center justify-center min-h-screen w-full bg-[#FDFDFF] py-10 px-4">
+      <div className="mb-10 text-center">
+        <Image
+          src={logo}
+          alt="logo"
+          height={45}
+          width={240}
+          className="mx-auto mb-3"
+        />
+        <p className="text-slate-500 font-medium">
+          Welcome back! Login to continue
+        </p>
       </div>
 
-      <div className="w-full max-w-[450px] bg-white rounded-2xl shadow-xl shadow-slate-200/60 border-slate-200 border-2">
-        <Tabs defaultValue="brand" className="w-full">
-          <div className="p-1 bg-[#F9FAFB] border-b-slate-200 border-b-2 rounded-t-2xl mb-6">
-            <TabsList className="grid w-full grid-cols-2 h-14 border-slate-300 bg-white">
+      <div className="w-full max-w-[480px] bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            setActiveTab(val);
+            setType(val);
+          }}
+          className="w-full"
+        >
+          <div className="p-2 border-b border-slate-50">
+            <TabsList className="grid w-full grid-cols-2 h-[60px] bg-transparent">
               <TabsTrigger
-                value="brand"
-                className="cursor-pointer rounded-2xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white transition-all duration-300"
+                value="brands"
+                className="rounded-2xl flex gap-2 text-sm cursor-pointer font-bold transition-all data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#155DFC] data-[state=active]:to-[#9810FA] text-slate-400"
               >
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Smartphone className="w-4 h-4" /> Brand
-                </div>
+                <Smartphone className="w-4 h-4" /> Brand
               </TabsTrigger>
               <TabsTrigger
-                value="influencer"
-                className=" cursor-pointer rounded-2xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
+                value="influencers"
+                className="rounded-2xl cursor-pointer flex gap-2 text-sm font-bold transition-all data-[state=active]:text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#9810FA] data-[state=active]:to-[#FA1085] text-slate-400 shadow-sm"
               >
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  Influencer
-                </div>
+                <Smartphone className="w-4 h-4" /> Influencer
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="px-6 pb-8">
-            {/* BRAND CONTENT */}
-            <TabsContent value="brand">
+
+          <div className="p-8 md:p-10">
+            {error && (
+              <p className="text-red-500 text-sm mb-4 text-center font-medium bg-red-50 py-2 rounded-lg border border-red-100">
+                {error}
+              </p>
+            )}
+
+            <TabsContent value="brands" className="mt-0 outline-none">
               <Form {...brandForm}>
-                <form className="space-y-5">
+                <form
+                  onSubmit={brandForm.handleSubmit(onBrandSubmit)}
+                  className="space-y-6"
+                >
                   <FormField
                     control={brandForm.control}
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-600 font-medium">
+                        <FormLabel className="text-slate-700 font-semibold ml-1">
                           Email Address
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                             <Input
                               placeholder="you@company.com"
-                              className="pl-10 h-12 bg-slate-50/50 border-slate-200 rounded-xl"
+                              className="pl-12 h-14 bg-slate-50 border-slate-100 rounded-2xl focus:ring-purple-100"
                               {...field}
                             />
                           </div>
@@ -160,70 +223,82 @@ export default function LoginPage() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-600 font-medium">
+                        <FormLabel className="text-slate-700 font-semibold ml-1">
                           Password
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                             <Input
                               type="password"
-                              placeholder="Enter your password"
-                              className="pl-10 h-12 bg-slate-50/50 border-slate-200 rounded-xl"
+                              placeholder="••••••••"
+                              className="pl-12 h-14 bg-slate-50 border-slate-100 rounded-2xl"
                               {...field}
                             />
-                            <Eye className="absolute right-3 top-3 h-5 w-5 text-slate-400 cursor-pointer" />
+                            <Eye className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 cursor-pointer" />
                           </div>
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                      <Checkbox id="remember" />
+                      <Checkbox
+                        id="remember"
+                        className="rounded-md border-slate-200"
+                      />
                       <label
                         htmlFor="remember"
-                        className="text-sm text-slate-500"
+                        className="text-sm text-slate-500 font-medium cursor-pointer"
                       >
                         Remember me
                       </label>
                     </div>
                     <Link
                       href="#"
-                      className="text-sm text-blue-600 font-medium"
+                      className="text-sm text-purple-600 font-bold hover:text-purple-700"
                     >
                       Forgot?
                     </Link>
                   </div>
-                  <Button className="cursor-pointer w-full h-14 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 rounded-2xl text-lg font-semibold flex items-center justify-center gap-2">
-                    Login <ArrowRight className="w-5 h-5" />
+                  <Button
+                    disabled={loading}
+                    className="w-full h-15 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-90 rounded-2xl text-lg font-bold shadow-xl shadow-blue-100 transition-all active:scale-95"
+                  >
+                    {loading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <>
+                        Login <ArrowRight className="ml-2 w-5 h-5" />
+                      </>
+                    )}
                   </Button>
                 </form>
               </Form>
             </TabsContent>
 
-            {/* INFLUENCER CONTENT */}
-            <TabsContent value="influencer">
+            <TabsContent value="influencers" className="mt-0 outline-none">
               {!otpSent ? (
                 <Form {...influencerForm}>
                   <form
                     onSubmit={influencerForm.handleSubmit(onInfluencerSubmit)}
-                    className="space-y-5"
+                    className="space-y-6"
                   >
                     <FormField
                       control={influencerForm.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-slate-600 font-medium">
+                          <FormLabel className="text-slate-700 font-semibold ml-1">
                             Mobile Number
                           </FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Phone className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                               <Input
-                                placeholder="+1 (555) 000-0000"
-                                className="pl-10 h-12 bg-slate-50/50 border-slate-200 rounded-xl"
+                                placeholder="+91 98765 43210"
+                                className="pl-12 h-14 bg-slate-50 border-slate-100 rounded-2xl text-lg"
                                 {...field}
                               />
                             </div>
@@ -232,54 +307,80 @@ export default function LoginPage() {
                         </FormItem>
                       )}
                     />
-                    <div className="bg-purple-50 p-4 rounded-xl flex items-center gap-3 text-purple-700 text-sm">
-                      <Smartphone className="w-5 h-5" />
+                    <div className="bg-[#FAF5FF] p-4 rounded-2xl flex items-center gap-3 text-[#9810FA] text-sm font-medium border border-purple-50">
+                      <Smartphone className="w-5 h-5 shrink-0" />
                       We'll send you an OTP to verify your mobile number
                     </div>
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="cursor-pointer w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 rounded-2xl text-lg font-semibold"
+                      className="w-full cursor-pointer h-15 bg-gradient-to-r from-[#9810FA] to-[#FA1085] hover:opacity-90 rounded-2xl text-lg font-bold shadow-xl shadow-purple-100 transition-all active:scale-95"
                     >
-                      {loading ? "Sending..." : "Login"} →
+                      {loading ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <>
+                          Send OTP <ArrowRight className="ml-2 w-5 h-5" />
+                        </>
+                      )}
                     </Button>
                   </form>
                 </Form>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h3 className="text-lg font-bold text-slate-800">
+                      Verify OTP
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Sent to your mobile number
+                    </p>
+                  </div>
                   <Input
-                    placeholder="6-digit OTP"
-                    className="h-12 bg-slate-50/50 rounded-xl text-center text-xl tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                    className="h-16 bg-slate-50 border-slate-100 rounded-2xl text-center text-2xl tracking-[0.5em] font-bold focus:ring-purple-100"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/[^0-9]/g, ""))
+                    }
                   />
                   <Button
-                    onClick={() => {}}
-                    className="w-full cursor-pointer h-14 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl"
+                    onClick={onVerifyOtp}
+                    disabled={loading || otp.length < 6}
+                    className="w-full h-15 bg-gradient-to-r from-[#9810FA] to-[#FA1085] rounded-2xl text-lg font-bold shadow-lg transition-all active:scale-95"
                   >
-                    Verify OTP
+                    {loading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Verify & Continue"
+                    )}
                   </Button>
+                  <button
+                    onClick={() => setOtpSent(false)}
+                    className="w-full text-center text-sm font-bold text-purple-600 hover:underline"
+                  >
+                    Change Phone Number
+                  </button>
                 </div>
               )}
             </TabsContent>
 
-            {/* Social Divider */}
-            <div className="relative my-8">
+            <div className="relative my-10">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-slate-200"></span>
+                <span className="w-full border-t border-slate-100"></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-slate-400">
+                <span className="bg-white px-4 text-slate-400 font-bold tracking-widest">
                   or continue with
                 </span>
               </div>
             </div>
 
-            {/* Social Buttons */}
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
-                className="h-12 rounded-xl cursor-pointer border-slate-200 flex items-center gap-2"
+                className="h-14 rounded-2xl border-slate-100 hover:bg-slate-50 font-bold text-slate-600 gap-2 cursor-pointer transition-colors"
               >
                 <Image
                   src="https://www.svgrepo.com/show/475656/google-color.svg"
@@ -291,7 +392,7 @@ export default function LoginPage() {
               </Button>
               <Button
                 variant="outline"
-                className="h-12 rounded-xl cursor-pointer border-slate-200 flex items-center gap-2"
+                className="h-14 rounded-2xl border-slate-100 hover:bg-slate-50 font-bold text-slate-600 gap-2 cursor-pointer transition-colors"
               >
                 <Image
                   src="https://www.svgrepo.com/show/475647/facebook-color.svg"
@@ -303,11 +404,11 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <p className="text-center mt-8 text-slate-500 text-sm">
+            <p className="text-center mt-10 text-slate-500 font-medium">
               Don't have an account?{" "}
               <Link
                 href="/register"
-                className="text-purple-600 font-bold hover:underline"
+                className="text-[#9810FA] font-bold hover:underline"
               >
                 Sign up
               </Link>

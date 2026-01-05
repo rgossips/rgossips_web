@@ -55,7 +55,7 @@ const faqs = [
 
 export default function FaqSection() {
   return (
-    <section className="w-full bg-slate-50/30 py-24 px-4 md:px-8">
+    <section className="w-full bg-slate-50/30 py-24 px-4 md:px-8" id="faq">
       {/* Badge & Heading */}
       <div className="max-w-5xl mx-auto text-center mb-16">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-purple-50 border border-purple-100 shadow-sm">

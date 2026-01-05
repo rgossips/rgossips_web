@@ -15,61 +15,26 @@ import StayCarousel from "@/components/StayCarousel";
 import TopExperiencesCarousel from "@/components/TopExperienceCarousel";
 import TopPicksCarousel from "@/components/TopPicksCarousel";
 import { useAuth } from "@/context/AuthContext";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { useEffect, useState } from "react";
-import { set } from "zod";
 
 export default function HomePage() {
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  // Pull pre-fetched data and global loading state from Context
+  const { profile, loading } = useAuth();
 
-  useEffect(() => {
-    console.log(user);
-    if (!user?.uid) return;
-
-    const influencerDocRef = () => {
-      if (!user?.uid) return null;
-      return doc(db, "influencers", user.uid);
-    };
-
-    let mounted = true;
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const ref = influencerDocRef();
-        const snap = await getDoc(ref);
-        if (!mounted) return;
-
-        if (snap.exists()) {
-          const data = snap.data();
-
-          setUserData({ id: snap.id, ...data });
-          console.log("Fetched influencer data:", data);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error("Failed to fetch influencer data:", err);
-      }
-    };
-
-    fetchProfile();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
-
+  // Handle Initial Global Load
+  if (loading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-[#0D7753]">
+        <div className="animate-pulse text-white font-bold">Loading...</div>
+      </div>
+    );
+  }
   return (
     <main className="relative w-full bg-[#0D7753]">
-      {userData?.verificationState < 5 && (
-        <ProfileStepPopup userData={userData} />
+      {profile && profile?.verificationState < 5 && (
+        <ProfileStepPopup userData={profile} />
       )}
-      <Hero user={userData} />
-      <HeroImage userData={userData} />
+      <Hero user={profile} />
+      <HeroImage userData={profile} />
 
       <div className="relative z-20 bg-white p-8">
         <SelectionMenu />
