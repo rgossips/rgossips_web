@@ -404,7 +404,7 @@ export default function RegisterPage() {
           </div>
           <DialogFooter>
             <Button
-              className="w-full h-12 rounded-xl bg-purple-600"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 cursor-pointer"
               onClick={verifyOtp}
               disabled={loading}
             >
@@ -433,8 +433,8 @@ export default function RegisterPage() {
               Your profile has been created successfully. Let's finish your bio.
             </p>
             <Button
-              className="w-full mt-8 h-12 rounded-xl"
-              onClick={() => router.push("/influencer?step=0")}
+              className="w-full mt-8 h-12 rounded-xl cursor-pointer"
+              onClick={() => router.push("/influencer")}
             >
               Continue to Onboarding
             </Button>

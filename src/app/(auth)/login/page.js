@@ -94,7 +94,7 @@ export default function LoginPage() {
     try {
       // Implement your Email/Password login logic here
       console.log("Brand Login:", values);
-      router.push("/dashboard");
+      router.push("/brands");
     } catch (err) {
       setError("Invalid email or password.");
     } finally {
@@ -264,7 +264,7 @@ export default function LoginPage() {
                   </div>
                   <Button
                     disabled={loading}
-                    className="w-full h-15 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-90 rounded-2xl text-lg font-bold shadow-xl shadow-blue-100 transition-all active:scale-95"
+                    className="w-full cursor-pointer h-15 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-90 rounded-2xl text-lg font-bold shadow-xl shadow-blue-100 transition-all active:scale-95"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin" />
