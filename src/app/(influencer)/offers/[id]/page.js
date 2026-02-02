@@ -99,7 +99,7 @@ export default function TourPage() {
 
   return (
     <div className="w-full">
-      <Header />
+      {/* <Header /> */}
 
       {/* HEADER SECTION */}
       <div className="relative h-[380px] w-full">
