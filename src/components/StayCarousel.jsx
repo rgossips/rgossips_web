@@ -6,7 +6,7 @@ import { FaChevronLeft, FaChevronRight, FaInstagram } from "react-icons/fa";
 import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 import SectionTitle from "./SectionTitle";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const fetchStays = async () => {
