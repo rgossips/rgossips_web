@@ -108,9 +108,11 @@ export default function CarouselTopPicks() {
                     {/* Deliverables Summary Badge */}
                     <div className="bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 text-[10px] text-center">
                       <span className="block font-bold text-gray-700">
-                        {item.deliverables?.reels || 0}
+                        {item.applications?.length || 0}
                       </span>
-                      <span className="text-gray-400 uppercase">Reels</span>
+                      <span className="text-gray-400 uppercase">
+                        Applications
+                      </span>
                     </div>
                   </div>
                 </motion.div>
