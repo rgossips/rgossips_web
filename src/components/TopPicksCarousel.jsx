@@ -18,8 +18,8 @@ import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function CarouselTopPicks() {
-  const [api, setApi] = useState<any>(null);
-  const [offers, setOffers] = useState<any[]>([]);
+  const [api, setApi] = useState(null);
+  const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -28,17 +28,17 @@ export default function CarouselTopPicks() {
       setLoading(true);
       try {
         // Fetching from 'offers' collection where isActive is true
-        // Note: If you haven't added 'isActive: true' in your Form, 
+        // Note: If you haven't added 'isActive: true' in your Form,
         // remove this where clause or add it to the Form's handleSubmit.
         const offersRef = collection(db, "offers");
         const q = query(offersRef, orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
-        
+
         const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        
+
         setOffers(data);
       } catch (error) {
         console.error("Error fetching offers:", error);
@@ -80,7 +80,9 @@ export default function CarouselTopPicks() {
                   <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-gray-100">
                     {/* Using the imageUrl field from your Form */}
                     <Image
-                      src={item.imageUrl || "https://via.placeholder.com/400x300"}
+                      src={
+                        item.imageUrl || "https://via.placeholder.com/400x300"
+                      }
                       alt={item.metadata?.title || "Offer"}
                       fill
                       className="object-cover"
@@ -98,16 +100,17 @@ export default function CarouselTopPicks() {
                         {item.metadata?.title}
                       </h3>
                       <p className="text-sm text-gray-500 font-medium">
-                        {item.brand?.name} • {item.metadata?.location?.split(',')[0]}
+                        {item.brand?.name} •{" "}
+                        {item.metadata?.location?.split(",")[0]}
                       </p>
                     </div>
-                    
+
                     {/* Deliverables Summary Badge */}
                     <div className="bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 text-[10px] text-center">
-                        <span className="block font-bold text-gray-700">
-                            {item.deliverables?.reels || 0}
-                        </span>
-                        <span className="text-gray-400 uppercase">Reels</span>
+                      <span className="block font-bold text-gray-700">
+                        {item.deliverables?.reels || 0}
+                      </span>
+                      <span className="text-gray-400 uppercase">Reels</span>
                     </div>
                   </div>
                 </motion.div>
