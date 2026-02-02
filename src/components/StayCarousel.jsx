@@ -85,7 +85,7 @@ export default function StayCarousel() {
               <CarouselItem
                 key={stay.id}
                 className="pl-3 basis-11/12 sm:basis-1/2 md:basis-1/3 cursor-pointer"
-                onClick={() => router.push(`/hotel/${stay.id}`)}
+                onClick={() => router.push(`/offers/${stay.id}`)}
               >
                 <div className="rounded-2xl bg-white shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
                   {/* Image Container */}
