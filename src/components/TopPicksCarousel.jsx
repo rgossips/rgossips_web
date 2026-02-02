@@ -11,186 +11,104 @@ import {
 import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { motion } from "framer-motion";
-
-import spa from "@/assets/spa.jpg";
-import hotel from "@/assets/hotel.jpg";
-import food from "@/assets/foodEating.jpg";
 import { useRouter } from "next/navigation";
 
-import { where } from "firebase/firestore";
+// Firebase imports
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-import { collection, getDocs, addDoc, query, limit } from "firebase/firestore";
-
-const initialOffers = [
-  {
-    title: "Summer Hotel Picks",
-    tag: "For Macro Influencers",
-    imageUrl:
-      "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg",
-    category: "hotels",
-    brand: {
-      id: "brand_hotel",
-      name: "Grand Hotel",
-      logoUrl:
-        "https://images.pexels.com/photos/9367103/pexels-photo-9367103.jpeg",
-    },
-    applications: [],
-    isActive: true,
-  },
-  {
-    title: "Luxury Spa Deals",
-    tag: "Relaxation Essentials",
-    imageUrl:
-      "https://images.pexels.com/photos/4004119/pexels-photo-4004119.jpeg",
-    category: "service",
-    brand: {
-      id: "brand_spa",
-      name: "Heaven Spa",
-      logoUrl:
-        "https://images.pexels.com/photos/8385212/pexels-photo-8385212.jpeg",
-    },
-    applications: [],
-    isActive: true,
-  },
-  {
-    title: "Foodie Spots",
-    tag: "Tasty Experiences",
-    imageUrl:
-      "https://images.pexels.com/photos/5881729/pexels-photo-5881729.jpeg",
-    category: "restaurant",
-    brand: {
-      id: "brand_food",
-      name: "Foodies Hub",
-      logoUrl:
-        "https://images.pexels.com/photos/29230056/pexels-photo-29230056.jpeg",
-    },
-    applications: [],
-    isActive: true,
-  },
-];
-
-const seedOffersIfEmpty = async () => {
-  const offersRef = collection(db, "offers");
-
-  const snapshot = await getDocs(query(offersRef, limit(1)));
-
-  // Already seeded → skip
-  if (!snapshot.empty) return;
-
-  for (const offer of initialOffers) {
-    await addDoc(offersRef, {
-      ...offer,
-      createdAt: new Date(),
-    });
-  }
-
-  console.log("✅ Offers seeded");
-};
-
-const fetchOffers = async () => {
-  const snapshot = await getDocs(
-    query(collection(db, "offers"), where("isActive", "==", true))
-  );
-
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-};
-
-const topPicks = [
-  {
-    image: hotel,
-    title: "Summer Hotel Picks",
-    tag: "For Macro Influencers",
-  },
-  {
-    image: spa,
-    title: "Luxury Spa Deals",
-    tag: "Relaxation Essentials",
-  },
-  {
-    image: food,
-    title: "Foodie Spots",
-    tag: "Tasty Experiences",
-  },
-  {
-    image: hotel,
-    title: "Summer Hotel Picks",
-    tag: "For Macro Influencers",
-  },
-  {
-    image: spa,
-    title: "Luxury Spa Deals",
-    tag: "Relaxation Essentials",
-  },
-  {
-    image: food,
-    title: "Foodie Spots",
-    tag: "Tasty Experiences",
-  },
-];
-
 export default function CarouselTopPicks() {
-  const [api, setApi] = useState(null);
-  const [offers, setOffers] = useState([]);
+  const [api, setApi] = useState<any>(null);
+  const [offers, setOffers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Auto-scroll
   useEffect(() => {
-    if (!api) return;
-    const interval = setInterval(() => api.scrollNext(), 3000);
-    return () => clearInterval(interval);
-  }, [api]);
-
-  // Seed + Fetch
-  useEffect(() => {
-    const init = async () => {
-      await seedOffersIfEmpty();
-      const data = await fetchOffers();
-      setOffers(data);
+    const getOffers = async () => {
+      setLoading(true);
+      try {
+        // Fetching from 'offers' collection where isActive is true
+        // Note: If you haven't added 'isActive: true' in your Form, 
+        // remove this where clause or add it to the Form's handleSubmit.
+        const offersRef = collection(db, "offers");
+        const q = query(offersRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        
+        setOffers(data);
+      } catch (error) {
+        console.error("Error fetching offers:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    init();
+
+    getOffers();
   }, []);
+
+  if (loading || offers.length === 0) return null;
 
   return (
     <section className="w-full px-4 relative">
       <SectionTitle text="TOP PICKS" />
 
       <div className="relative py-8">
-        {/* LEFT */}
         <button
           onClick={() => api?.scrollPrev()}
-          className="absolute left-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md"
+          className="absolute left-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-all"
         >
           <FaChevronLeft size={18} />
         </button>
 
         <Carousel opts={{ align: "start", loop: true }} setApi={setApi}>
-          <CarouselContent className="flex gap-3">
-            {[...offers, ...offers].map((item, idx) => (
+          <CarouselContent className="flex gap-1">
+            {offers.map((item) => (
               <CarouselItem
-                key={idx}
-                className="basis-4/5 sm:basis-1/2 lg:basis-1/3 pl-2 flex justify-center"
+                key={item.id}
+                className="basis-[85%] sm:basis-1/2 lg:basis-1/3 pl-2 flex justify-center"
               >
                 <motion.div
-                  whileHover={{ scale: 1.03 }}
-                  onClick={() => router.push(`/hotel/${item.id}`)}
-                  className="rounded-3xl bg-white shadow mb-5 p-4 w-full max-w-[30rem] cursor-pointer"
+                  whileHover={{ y: -5 }}
+                  // Navigating to the dynamic ID from Firestore
+                  onClick={() => router.push(`/offers/${item.id}`)}
+                  className="rounded-3xl bg-white shadow-sm border border-gray-100 mb-5 p-4 w-full cursor-pointer"
                 >
-                  <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden">
+                  <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-gray-100">
+                    {/* Using the imageUrl field from your Form */}
                     <Image
-                      src={item.imageUrl}
-                      alt={item.title}
+                      src={item.imageUrl || "https://via.placeholder.com/400x300"}
+                      alt={item.metadata?.title || "Offer"}
                       fill
                       className="object-cover"
                     />
+                    {/* Category Tag instead of generic tag */}
+                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight text-blue-600 shadow-sm">
+                      {item.category}
+                    </div>
                   </div>
 
-                  <div className="mt-3">
-                    <h3 className="text-lg font-semibold">{item.title}</h3>
-                    <p className="text-sm text-gray-500">{item.tag}</p>
+                  <div className="mt-4 flex justify-between items-start gap-2">
+                    <div className="flex-1">
+                      {/* Accessing title from metadata as defined in your Form */}
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-tight">
+                        {item.metadata?.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 font-medium">
+                        {item.brand?.name} • {item.metadata?.location?.split(',')[0]}
+                      </p>
+                    </div>
+                    
+                    {/* Deliverables Summary Badge */}
+                    <div className="bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 text-[10px] text-center">
+                        <span className="block font-bold text-gray-700">
+                            {item.deliverables?.reels || 0}
+                        </span>
+                        <span className="text-gray-400 uppercase">Reels</span>
+                    </div>
                   </div>
                 </motion.div>
               </CarouselItem>
@@ -198,10 +116,9 @@ export default function CarouselTopPicks() {
           </CarouselContent>
         </Carousel>
 
-        {/* RIGHT */}
         <button
           onClick={() => api?.scrollNext()}
-          className="absolute right-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md"
+          className="absolute right-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-all"
         >
           <FaChevronRight size={18} />
         </button>
