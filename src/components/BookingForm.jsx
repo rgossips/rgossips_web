@@ -4,8 +4,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+// Removed direct Firestore imports here as the parent handles them
 
 import {
   Form,
@@ -50,13 +49,13 @@ const formSchema = z.object({
   niche: z.string().min(1, "Please select a niche"),
   contentType: z.string().min(1, "Please select content type"),
   why: z.string().min(10, "Please tell us a bit more about your plan"),
-  // Validation: Refine ensures the form cannot be submitted if false
   terms: z.literal(true, {
     errorMap: () => ({ message: "You must accept the terms to continue" }),
   }),
 });
 
-export default function InfluencerCollabForm() {
+// 1. Receive offer and onApply as props
+export default function InfluencerCollabForm({ offer, onApply }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -76,20 +75,12 @@ export default function InfluencerCollabForm() {
   async function onSubmit(values) {
     setIsSubmitting(true);
     try {
-      // 1. Destructure terms out so it is NOT saved in the database
+      // 2. Destructure terms
       const { terms, ...dataToSave } = values;
 
-      const applicationData = {
-        ...dataToSave,
-        brandId: "brand_123",
-        offerId: "offer_456",
-        userId: "user_789",
-        status: "pending",
-        createdAt: serverTimestamp(),
-      };
-
-      // 2. Save cleaned data to Firebase
-      await addDoc(collection(db, "applications"), applicationData);
+      // 3. Call the onApply function passed from TourPage
+      // This will handle the Firestore logic (adding to applications + updating offer)
+      await onApply(dataToSave);
 
       setShowSuccessModal(true);
       form.reset();
@@ -103,75 +94,34 @@ export default function InfluencerCollabForm() {
 
   return (
     <>
-      <Card className="w-full lg:max-w-2xl mx-auto mb-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-slate-100 rounded-[2rem] overflow-hidden">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-50 py-8">
-          <CardTitle className="text-2xl font-bold text-center text-slate-800">
-            Confirm your Interest
+      <Card className="w-full shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-slate-100 rounded-[2rem] overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-50 py-6">
+          <CardTitle className="text-xl font-bold text-center text-slate-800">
+            Apply for This Campaign
           </CardTitle>
-          <p className="text-center text-slate-500 text-sm mt-1">
-            Fill in the details to apply for this collaboration
+          <p className="text-center text-slate-500 text-xs mt-1">
+            Campaign:{" "}
+            <span className="font-semibold text-purple-600">
+              {offer?.metadata?.title}
+            </span>
           </p>
         </CardHeader>
 
-        <CardContent className="p-8">
+        <CardContent className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Name & Email Group */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold text-slate-700">
-                        Your Name
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="John Doe"
-                          className="rounded-xl h-12 bg-slate-50 border-slate-100 focus:ring-purple-100"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-semibold text-slate-700">
-                        Email Address
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="example@gmail.com"
-                          className="rounded-xl h-12 bg-slate-50 border-slate-100 focus:ring-purple-100"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Instagram URL */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="instagram"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold text-slate-700">
-                      Instagram Profile URL
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Name
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="https://instagram.com/yourhandle"
-                        className="rounded-xl h-12 bg-slate-50 border-slate-100 focus:ring-purple-100"
+                        placeholder="John Doe"
+                        className="rounded-xl bg-slate-50"
                         {...field}
                       />
                     </FormControl>
@@ -180,26 +130,65 @@ export default function InfluencerCollabForm() {
                 )}
               />
 
-              {/* Niche & Content Type */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Email
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="example@gmail.com"
+                        className="rounded-xl bg-slate-50"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="instagram"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Instagram URL
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://instagram.com/..."
+                        className="rounded-xl bg-slate-50"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="niche"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold text-slate-700">
-                        Your Niche
+                      <FormLabel className="text-sm font-semibold text-slate-700">
+                        Niche
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-slate-100">
-                            <SelectValue placeholder="Select niche" />
+                          <SelectTrigger className="rounded-xl bg-slate-50">
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent>
                           <SelectItem value="travel">Travel</SelectItem>
                           <SelectItem value="lifestyle">Lifestyle</SelectItem>
                           <SelectItem value="food">Food</SelectItem>
@@ -216,22 +205,22 @@ export default function InfluencerCollabForm() {
                   name="contentType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold text-slate-700">
-                        Content Type
+                      <FormLabel className="text-sm font-semibold text-slate-700">
+                        Type
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-slate-100">
-                            <SelectValue placeholder="Select type" />
+                          <SelectTrigger className="rounded-xl bg-slate-50">
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent>
                           <SelectItem value="reels">Reels</SelectItem>
                           <SelectItem value="posts">Posts</SelectItem>
-                          <SelectItem value="vlog">YouTube Vlog</SelectItem>
+                          <SelectItem value="vlog">Vlog</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -240,19 +229,18 @@ export default function InfluencerCollabForm() {
                 />
               </div>
 
-              {/* Why Us */}
               <FormField
                 control={form.control}
                 name="why"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-semibold text-slate-700">
-                      Why should we choose you?
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Your Plan
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Explain your unique value and content plan..."
-                        className="min-h-[120px] rounded-xl bg-slate-50 border-slate-100 focus:ring-purple-100 resize-none"
+                        placeholder="Tell us your content ideas..."
+                        className="rounded-xl bg-slate-50 resize-none h-24"
                         {...field}
                       />
                     </FormControl>
@@ -261,45 +249,25 @@ export default function InfluencerCollabForm() {
                 )}
               />
 
-              {/* Terms Checkbox - Corrected Logic */}
               <FormField
                 control={form.control}
                 name="terms"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-start gap-3 bg-slate-50/80 p-4 rounded-xl border border-dashed border-slate-200">
+                    <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={field.onChange}
-                          className="mt-1 data-[state=checked]:bg-[#9810FA] data-[state=checked]:border-[#9810FA]"
                         />
                       </FormControl>
-                      <div className="text-sm leading-tight text-slate-600">
+                      <div className="text-[12px] leading-tight text-slate-600">
                         I agree to the{" "}
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="underline cursor-help font-bold text-slate-800">
-                                terms & rules
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="p-3 bg-slate-900 text-white rounded-lg">
-                              <p className="flex gap-2 items-center mb-1">
-                                <Info className="w-3 h-3" /> Valid Govt ID
-                                required
-                              </p>
-                              <p className="flex gap-2 items-center">
-                                <Info className="w-3 h-3" /> Post content within
-                                7 days
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>{" "}
-                        of this collaboration.
+                        <span className="font-bold underline">terms</span> and
+                        will post content within 7 days.
                       </div>
                     </div>
-                    <FormMessage className="ml-1" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -307,13 +275,10 @@ export default function InfluencerCollabForm() {
               <Button
                 disabled={isSubmitting}
                 type="submit"
-                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#9810FA] to-[#FA1085] rounded-xl shadow-lg shadow-purple-100 hover:opacity-90 transition-all active:scale-[0.98]"
+                className="w-full h-12 text-md font-bold bg-gradient-to-r from-[#9810FA] to-[#FA1085] rounded-xl hover:opacity-90 transition-all"
               >
                 {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
+                  <Loader2 className="animate-spin" />
                 ) : (
                   "Submit Application"
                 )}
@@ -325,27 +290,25 @@ export default function InfluencerCollabForm() {
 
       {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] p-10">
-          <DialogHeader className="flex flex-col items-center justify-center space-y-4">
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-12 h-12 text-green-500" />
+        <DialogContent className="sm:max-w-md rounded-[2rem]">
+          <div className="flex flex-col items-center p-6 space-y-4">
+            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-center">
-              Application Sent!
+            <DialogTitle className="text-xl font-bold">
+              Applied Successfully!
             </DialogTitle>
-            <DialogDescription className="text-center text-slate-600 text-base">
-              Your application has been received. Our team will review your
-              profile and notify you via email shortly.
+            <DialogDescription className="text-center">
+              The brand has been notified. You can track your status in your
+              dashboard.
             </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center mt-4">
             <Button
-              className="w-full h-12 bg-slate-900 rounded-xl font-bold"
+              className="w-full rounded-xl"
               onClick={() => setShowSuccessModal(false)}
             >
-              Back to Dashboard
+              Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>
