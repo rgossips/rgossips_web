@@ -8,6 +8,8 @@ import SectionTitle from "./SectionTitle";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const fetchStays = async () => {
   try {
