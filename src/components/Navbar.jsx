@@ -52,7 +52,7 @@ const Navbar = () => {
   return (
     <div>
       {/* DESKTOP NAV */}
-      <nav className="hidden fixed top-4 left-0 w-full lg:flex justify-center z-40 px-4">
+      <nav className="hidden fixed top-4 left-0 w-full lg:flex justify-center z-60 px-4">
         <div className="relative flex items-center gap-2 px-3 py-2 bg-white/60 backdrop-blur-lg dark:bg-white/20 rounded-full border border-white/70 dark:border-white/20 shadow-sm overflow-x-auto no-scrollbar">
           {/* CENTER NAV ITEMS */}
           {navItems.map((btn) => (

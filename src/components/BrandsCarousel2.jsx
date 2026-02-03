@@ -20,11 +20,22 @@ export default function BrandsCarousel() {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const snap = await getDocs(collection(db, "brands"));
+        // 1. Create a query with multiple filters
+        const brandsRef = collection(db, "brands");
+        const q = query(
+          brandsRef,
+          where("isActive", "==", true),
+          where("manualVerified", "==", 2),
+        );
+
+        // 2. Execute the filtered query
+        const snap = await getDocs(q);
+
         const list = snap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+
         setBrands(list);
       } catch (err) {
         console.error("Failed to fetch brands:", err);
@@ -77,7 +88,7 @@ export default function BrandsCarousel() {
                       src={b.image}
                       alt={b.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
                   </div>
                   <p className="text-sm mt-3 text-center">{b.name}</p>
