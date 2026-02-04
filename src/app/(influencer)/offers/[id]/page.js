@@ -135,16 +135,16 @@ export default function TourPage() {
           <section ref={infoRef} id="info">
             {/* Pass the metadata and description to TourInfo */}
             <TourInfo
-              description={offer.description}
-              metadata={offer.metadata}
-              category={offer.category}
-              brand={offer.brand}
+              metadata={offer.metadata || {}}
+              deliverables={offer.deliverables || {}}
+              eligibility={offer.eligibility || {}}
+              brand={offer.brand || {}}
             />
           </section>
 
           <section ref={galleryRef} id="gallery">
-            {/* If you have a gallery array, pass it here */}
-            <GalleryCarousel images={offer.galleryUrls || [offer.imageUrl]} />
+            {/* Pass gallery images from offer */}
+            <GalleryCarousel images={offer.gallery || [offer.imageUrl]} />
           </section>
 
           <section ref={mapRef} id="map">

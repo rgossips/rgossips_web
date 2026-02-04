@@ -6,53 +6,65 @@ import { FaInstagram, FaCameraRetro, FaVideo, FaFileAlt } from "react-icons/fa";
 import { cn } from "@/lib/utils"; // shadcn/ui utility for classNames
 import { Card } from "@/components/ui/card"; // shadcn/ui Card component
 
-export default function TourInfo() {
+export default function TourInfo({
+  metadata = {},
+  deliverables = {},
+  eligibility = {},
+  brand = {},
+}) {
   const [serviceOpen, setServiceOpen] = useState(false);
 
-  const deliverables = [
+  const deliverablesList = [
     {
       icon: <FaCameraRetro className="text-orange-700" />,
       label: "Instagram Stories",
-      count: 5,
+      count: deliverables.stories || 0,
     },
     {
       icon: <FaFileAlt className="text-orange-700" />,
       label: "Instagram Posts",
-      count: 1,
+      count: deliverables.posts || 0,
     },
     {
       icon: <FaVideo className="text-orange-700" />,
       label: "Instagram Reels",
-      count: 1,
+      count: deliverables.reels || 0,
     },
   ];
 
-  const eligibility = [
+  const eligibilityList = [
     {
       icon: <FaInstagram />,
       label: "Followers",
-      value: "10K – 50K",
+      value: eligibility.minFollowers || "N/A",
       color: "bg-blue-100 text-blue-700",
     },
     {
       icon: <FaInstagram />,
       label: "Platform",
-      value: "Instagram",
+      value: eligibility.platform || "N/A",
       color: "bg-purple-100 text-purple-700",
     },
     {
       icon: <FaFileAlt />,
       label: "Type",
-      value: "Barter",
+      value: metadata.tag || "N/A",
       color: "bg-green-100 text-green-700",
     },
     {
       icon: <FaFileAlt />,
       label: "Content",
-      value: "Manual",
+      value: eligibility.contentType || "Manual",
       color: "bg-yellow-100 text-yellow-700",
     },
   ];
+
+  const durationBadge =
+    metadata.nights && metadata.days
+      ? `${metadata.nights}N/${metadata.days}D`
+      : metadata.nights
+        ? `${metadata.nights}N`
+        : "N/A";
 
   return (
     <div className="w-full space-y-8">
@@ -67,7 +79,7 @@ export default function TourInfo() {
             Collab Benefits
           </h2>{" "}
           <div className="px-3 py-1 text-xs bg-purple-700/50 text-white rounded-full">
-            1N/2D{" "}
+            {durationBadge}{" "}
           </div>{" "}
         </div>
         <div className="mt-5 space-y-2">
@@ -81,7 +93,7 @@ export default function TourInfo() {
               size={18}
               className={cn(
                 "transition-transform",
-                serviceOpen && "rotate-180"
+                serviceOpen && "rotate-180",
               )}
             />
           </div>
@@ -104,7 +116,7 @@ export default function TourInfo() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold mb-4">Deliverables</h2>
         <div className="space-y-3">
-          {deliverables.map((item) => (
+          {deliverablesList.map((item) => (
             <div key={item.label} className="flex justify-between items-center">
               <span className="flex items-center gap-2">
                 <div className="bg-orange-100 p-3 text-2xl rounded-full">
@@ -123,7 +135,7 @@ export default function TourInfo() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Eligibility</h2>
         <div className="grid grid-cols-2 gap-4">
-          {eligibility.map((item) => (
+          {eligibilityList.map((item) => (
             <Card
               key={item.label}
               className="flex flex-row items-center gap-3 p-4"
@@ -131,7 +143,7 @@ export default function TourInfo() {
               <div
                 className={cn(
                   item.color,
-                  "p-3 text-3xl rounded-full flex items-center justify-center"
+                  "p-3 text-3xl rounded-full flex items-center justify-center",
                 )}
               >
                 {item.icon}
@@ -160,8 +172,10 @@ export default function TourInfo() {
             <div>
               <p className="font-medium">Timings</p>
               <p className="text-sm">
-                <span className="font-semibold">Check-In:</span> 12:00 PM —
-                <span className="font-semibold ml-2">Check-Out:</span> 11:00 AM
+                <span className="font-semibold">Check-In:</span>{" "}
+                {metadata.checkInTime || "12:00 PM"} —
+                <span className="font-semibold ml-2">Check-Out:</span>{" "}
+                {metadata.checkOutTime || "11:00 AM"}
               </p>
             </div>
           </div>
@@ -172,7 +186,7 @@ export default function TourInfo() {
               className="bg-green-100 text-green-700 p-1 rounded-full"
               size={22}
             />
-            <p>Jim Corbett National Park, Uttarakhand, India</p>
+            <p>{metadata.location || "Location not available"}</p>
           </div>
         </div>
       </div>
