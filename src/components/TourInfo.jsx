@@ -77,46 +77,54 @@ export default function TourInfo({
       <CategorySpecificFields category={category} specifics={specifics} />
       {/* ------------------------------------ */}
       {/*           COLLAB BENEFITS            */}
-      {/* ------------------------------------ */}{" "}
-      <div className="w-full rounded-2xl p-6 shadow-sm bg-gradient-to-r from-purple-400 via-purple-200 to-purple-50 select-none">
-        {" "}
-        <div className="flex items-center justify-between">
+      {/* ------------------------------------ */}
+      {(metadata.tag || specifics.services || specifics.guestCount) && (
+        <div className="w-full rounded-2xl p-6 shadow-sm bg-gradient-to-r from-purple-400 via-purple-200 to-purple-50 select-none">
           {" "}
-          <h2 className="text-xl font-semibold text-white">
-            Collab Benefits
-          </h2>{" "}
-          <div className="px-3 py-1 text-xs bg-purple-700/50 text-white rounded-full">
-            {durationBadge}{" "}
-          </div>{" "}
-        </div>
-        <div className="mt-5 space-y-2">
-          {/* Accordion for Service */}
-          <div
-            className="flex justify-between items-center cursor-pointer p-3 bg-white rounded-xl"
-            onClick={() => setServiceOpen(!serviceOpen)}
-          >
-            <p className="text-sm font-medium text-black">Any Service</p>
-            <ChevronDown
-              size={18}
-              className={cn(
-                "transition-transform",
-                serviceOpen && "rotate-180",
-              )}
-            />
+          <div className="flex items-center justify-between">
+            {" "}
+            <h2 className="text-xl font-semibold text-white">
+              Collab Benefits
+            </h2>{" "}
+            {(metadata.nights || metadata.days) && (
+              <div className="px-3 py-1 text-xs bg-purple-700/50 text-white rounded-full">
+                {durationBadge}{" "}
+              </div>
+            )}{" "}
           </div>
-          {serviceOpen && (
-            <p className="text-sm text-black bg-white p-3 rounded-xl border border-gray-200 mt-1">
-              The hotel will provide all services free of cost.
-            </p>
-          )}
+          <div className="mt-5 space-y-2">
+            {/* Accordion for Service */}
+            {specifics.services && (
+              <div
+                className="flex justify-between items-center cursor-pointer p-3 bg-white rounded-xl"
+                onClick={() => setServiceOpen(!serviceOpen)}
+              >
+                <p className="text-sm font-medium text-black">Services</p>
+                <ChevronDown
+                  size={18}
+                  className={cn(
+                    "transition-transform",
+                    serviceOpen && "rotate-180",
+                  )}
+                />
+              </div>
+            )}
+            {serviceOpen && specifics.services && (
+              <p className="text-sm text-black bg-white p-3 rounded-xl border border-gray-200 mt-1">
+                {specifics.services}
+              </p>
+            )}
 
-          {/* Guest Allowed */}
-          <div className="p-3 bg-white rounded-xl border border-gray-200 text-black">
-            <p className="text-sm font-medium">Guest Allowed</p>
-            <p className="font-medium mt-1">1 – 5 Guests</p>
+            {/* Guest Allowed */}
+            {specifics.guestCount && (
+              <div className="p-3 bg-white rounded-xl border border-gray-200 text-black">
+                <p className="text-sm font-medium">Guest Allowed</p>
+                <p className="font-medium mt-1">{specifics.guestCount}</p>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
       {/* ------------------------------------ */}
       {/*              DELIVERABLES             */}
       {/* ------------------------------------ */}
