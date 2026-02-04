@@ -82,7 +82,7 @@ export default function TourInfo({
       {/* ------------------------------------ */}
       {/*           COLLAB BENEFITS (dynamic)  */}
       {/* ------------------------------------ */}
-      {(metadata.tag || specifics.services || specifics.guestCount) && (
+      {category == "hotels" && (
         <div className="w-full rounded-2xl p-6 shadow-sm bg-gradient-to-r from-purple-400 via-purple-200 to-purple-50 select-none">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">

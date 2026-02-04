@@ -126,11 +126,11 @@ export default function TourPage() {
       <div className="px-6 lg:px-20 mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 my-10">
         {/* LEFT SIDE CONTENT */}
         <div className="col-span-2 space-y-10">
-          <TourTabs
+          {/* <TourTabs
             onInfo={() => scrollTo(infoRef)}
             onGallery={() => scrollTo(galleryRef)}
             onMap={() => scrollTo(mapRef)}
-          />
+          /> */}
 
           <section ref={infoRef} id="info">
             {/* Pass the metadata and description to TourInfo */}
