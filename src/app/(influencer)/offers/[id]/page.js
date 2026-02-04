@@ -149,9 +149,11 @@ export default function TourPage() {
             <GalleryCarousel images={offer.gallery || [offer.imageUrl]} />
           </section>
 
-          <section ref={mapRef} id="map">
-            <TourMap location={offer.metadata?.location} />
-          </section>
+          {offer.category === "hotels" && offer.metadata?.location && (
+            <section ref={mapRef} id="map">
+              <TourMap location={offer.metadata?.location} />
+            </section>
+          )}
 
           <section>
             <StepsToApply />

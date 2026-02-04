@@ -2,8 +2,13 @@
 
 import { Clock, Users, Wind, Utensils, Cpu, Shirt } from "lucide-react";
 
-const CategorySpecificFields = ({ category = "", specifics = {} }) => {
-  if (!specifics || Object.keys(specifics).length === 0) {
+const CategorySpecificFields = ({
+  category = "",
+  specifics = {},
+  metadata = {},
+}) => {
+  const data = { ...(metadata || {}), ...(specifics || {}) };
+  if (!data || Object.keys(data).length === 0) {
     return null;
   }
 
@@ -15,32 +20,32 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
 
           {/* Nights & Days */}
           <div className="grid grid-cols-2 gap-4">
-            {specifics.nights && (
+            {data.nights && (
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <p className="text-xs text-gray-600 font-medium">
                   Number of Nights
                 </p>
                 <p className="text-2xl font-bold text-blue-700 mt-1">
-                  {specifics.nights}
+                  {data.nights}
                 </p>
               </div>
             )}
-            {specifics.days && (
+            {data.days && (
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                 <p className="text-xs text-gray-600 font-medium">
                   Number of Days
                 </p>
                 <p className="text-2xl font-bold text-blue-700 mt-1">
-                  {specifics.days}
+                  {data.days}
                 </p>
               </div>
             )}
           </div>
 
           {/* Check-in/out Times */}
-          {(specifics.checkInTime || specifics.checkOutTime) && (
+          {(data.checkInTime || data.checkOutTime) && (
             <div className="grid grid-cols-2 gap-4">
-              {specifics.checkInTime && (
+              {data.checkInTime && (
                 <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
                   <Clock className="text-amber-600" size={20} />
                   <div>
@@ -48,12 +53,12 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
                       Check-In
                     </p>
                     <p className="font-semibold text-gray-800">
-                      {specifics.checkInTime}
+                      {data.checkInTime}
                     </p>
                   </div>
                 </div>
               )}
-              {specifics.checkOutTime && (
+              {data.checkOutTime && (
                 <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
                   <Clock className="text-amber-600" size={20} />
                   <div>
@@ -61,7 +66,7 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
                       Check-Out
                     </p>
                     <p className="font-semibold text-gray-800">
-                      {specifics.checkOutTime}
+                      {data.checkOutTime}
                     </p>
                   </div>
                 </div>
@@ -70,28 +75,26 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
           )}
 
           {/* Guest Count */}
-          {specifics.guestCount && (
+          {data.guestCount && (
             <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-100">
               <Users className="text-green-600" size={20} />
               <div>
                 <p className="text-xs text-gray-600 font-medium">
                   Guest Capacity
                 </p>
-                <p className="font-semibold text-gray-800">
-                  {specifics.guestCount}
-                </p>
+                <p className="font-semibold text-gray-800">{data.guestCount}</p>
               </div>
             </div>
           )}
 
           {/* Services */}
-          {specifics.services && (
+          {data.services && (
             <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
               <p className="text-xs text-gray-600 font-medium mb-2">
                 Amenities & Services
               </p>
               <p className="text-sm text-gray-700 leading-relaxed">
-                {specifics.services}
+                {data.services}
               </p>
             </div>
           )}
@@ -102,9 +105,9 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Menu Items</h3>
-          {specifics.foodItems && specifics.foodItems.length > 0 ? (
+          {data.foodItems && data.foodItems.length > 0 ? (
             <div className="space-y-3">
-              {specifics.foodItems.map((item, index) => (
+              {data.foodItems.map((item, index) => (
                 <div
                   key={index}
                   className="p-4 bg-orange-50 rounded-lg border border-orange-100"
@@ -152,9 +155,9 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Product Details</h3>
-          {specifics.techItems && specifics.techItems.length > 0 ? (
+          {data.techItems && data.techItems.length > 0 ? (
             <div className="space-y-3">
-              {specifics.techItems.map((item, index) => (
+              {data.techItems.map((item, index) => (
                 <div
                   key={index}
                   className="p-4 bg-indigo-50 rounded-lg border border-indigo-100"
@@ -189,9 +192,9 @@ const CategorySpecificFields = ({ category = "", specifics = {} }) => {
       return (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Product Collection</h3>
-          {specifics.fashionItems && specifics.fashionItems.length > 0 ? (
+          {data.fashionItems && data.fashionItems.length > 0 ? (
             <div className="space-y-3">
-              {specifics.fashionItems.map((item, index) => (
+              {data.fashionItems.map((item, index) => (
                 <div
                   key={index}
                   className="p-4 bg-pink-50 rounded-lg border border-pink-100"

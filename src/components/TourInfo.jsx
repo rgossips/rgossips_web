@@ -74,26 +74,27 @@ export default function TourInfo({
       {/* ------------------------------------ */}
       {/*      CATEGORY SPECIFIC FIELDS        */}
       {/* ------------------------------------ */}
-      <CategorySpecificFields category={category} specifics={specifics} />
+      <CategorySpecificFields
+        category={category}
+        specifics={specifics}
+        metadata={metadata}
+      />
       {/* ------------------------------------ */}
-      {/*           COLLAB BENEFITS            */}
+      {/*           COLLAB BENEFITS (dynamic)  */}
       {/* ------------------------------------ */}
       {(metadata.tag || specifics.services || specifics.guestCount) && (
         <div className="w-full rounded-2xl p-6 shadow-sm bg-gradient-to-r from-purple-400 via-purple-200 to-purple-50 select-none">
-          {" "}
           <div className="flex items-center justify-between">
-            {" "}
             <h2 className="text-xl font-semibold text-white">
               Collab Benefits
-            </h2>{" "}
+            </h2>
             {(metadata.nights || metadata.days) && (
               <div className="px-3 py-1 text-xs bg-purple-700/50 text-white rounded-full">
-                {durationBadge}{" "}
+                {durationBadge}
               </div>
-            )}{" "}
+            )}
           </div>
           <div className="mt-5 space-y-2">
-            {/* Accordion for Service */}
             {specifics.services && (
               <div
                 className="flex justify-between items-center cursor-pointer p-3 bg-white rounded-xl"
@@ -115,7 +116,6 @@ export default function TourInfo({
               </p>
             )}
 
-            {/* Guest Allowed */}
             {specifics.guestCount && (
               <div className="p-3 bg-white rounded-xl border border-gray-200 text-black">
                 <p className="text-sm font-medium">Guest Allowed</p>
