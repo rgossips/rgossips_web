@@ -139,6 +139,8 @@ export default function TourPage() {
               deliverables={offer.deliverables || {}}
               eligibility={offer.eligibility || {}}
               brand={offer.brand || {}}
+              category={offer.category || ""}
+              specifics={offer.specifics || {}}
             />
           </section>
 

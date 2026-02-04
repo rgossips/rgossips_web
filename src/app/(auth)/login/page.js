@@ -80,7 +80,7 @@ export default function LoginPage() {
           "recaptcha-container",
           {
             size: "invisible",
-          }
+          },
         );
       }
     } catch (err) {
@@ -113,7 +113,7 @@ export default function LoginPage() {
       const result = await signInWithPhoneNumber(
         auth,
         formattedPhone,
-        window.recaptchaVerifier
+        window.recaptchaVerifier,
       );
       setConfirmationResult(result);
       setOtpSent(true);

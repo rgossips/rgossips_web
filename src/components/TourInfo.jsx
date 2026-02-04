@@ -5,12 +5,15 @@ import { ChevronDown, Calendar, MapPin } from "lucide-react";
 import { FaInstagram, FaCameraRetro, FaVideo, FaFileAlt } from "react-icons/fa"; // React icons for deliverables
 import { cn } from "@/lib/utils"; // shadcn/ui utility for classNames
 import { Card } from "@/components/ui/card"; // shadcn/ui Card component
+import CategorySpecificFields from "@/components/CategorySpecificFields";
 
 export default function TourInfo({
   metadata = {},
   deliverables = {},
   eligibility = {},
   brand = {},
+  category = "",
+  specifics = {},
 }) {
   const [serviceOpen, setServiceOpen] = useState(false);
 
@@ -68,6 +71,10 @@ export default function TourInfo({
 
   return (
     <div className="w-full space-y-8">
+      {/* ------------------------------------ */}
+      {/*      CATEGORY SPECIFIC FIELDS        */}
+      {/* ------------------------------------ */}
+      <CategorySpecificFields category={category} specifics={specifics} />
       {/* ------------------------------------ */}
       {/*           COLLAB BENEFITS            */}
       {/* ------------------------------------ */}{" "}
