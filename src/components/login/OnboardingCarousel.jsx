@@ -50,13 +50,7 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
   return (
     <div className="relative flex flex-col items-center justify-between h-full w-full bg-white overflow-hidden">
       {/* 1. The Exact Gradient from Image */}
-      <div
-        className="absolute top-0 left-0 w-full h-[60%] pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(180deg, #8B5CF6 0%, rgba(139, 92, 246, 0.4) 40%, rgba(255, 255, 255, 0) 100%)",
-        }}
-      />
+      <div className="absolute top-0 left-0 w-full h-[60%] pointer-events-none bg-linear-to-b from-[#FA288A] to-[#FFFFFF]" />
 
       {/* 2. Top Content (Image/Cards) */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full pt-20">
@@ -102,7 +96,7 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                current === i ? "w-8 bg-[#7C3AED]" : "w-4 bg-[#E2E8F0]"
+                current === i ? "w-8 bg-[#FA288A]" : "w-4 bg-[#E2E8F0]"
               }`}
             />
           ))}
@@ -114,14 +108,14 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
             <>
               <Button
                 onClick={nextSlide}
-                className="w-full cursor-pointer bg-[#7C3AED] hover:bg-[#6D28D9] h-[58px] text-lg font-semibold rounded-[20px] shadow-lg shadow-purple-100 transition-all active:scale-[0.98]"
+                className="w-full cursor-pointer btn-purple h-[58px] text-lg font-semibold rounded-[20px] shadow-lg shadow-purple-100 transition-all active:scale-[0.98]"
               >
                 Next
               </Button>
               <Button
                 variant="outline"
                 onClick={skipToLast}
-                className="w-full cursor-pointer border-[#C4B5FD] text-[#7C3AED] hover:bg-purple-50 h-[58px] text-lg font-semibold rounded-[20px] border-[1.5px]"
+                className="w-full cursor-pointer border-[#FA288A] text-[#FA288A] hover:bg-purple-50 h-[58px] text-lg font-semibold rounded-[20px] border-[1.5px]"
               >
                 Skip
               </Button>
@@ -136,14 +130,14 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
               <div className="md:hidden flex flex-col gap-3">
                 <Button
                   onClick={onLoginClick}
-                  className="w-full bg-[#7C3AED] h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
+                  className="w-full btn-purple h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
                 >
                   Sign In
                 </Button>
                 <Button
                   onClick={onSignUpClick}
                   variant="outline"
-                  className="w-full border-[#C4B5FD] h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#7C3AED]"
+                  className="w-full border-[#FA288A] h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#FA288A]"
                 >
                   Sign Up
                 </Button>

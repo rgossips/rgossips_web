@@ -122,23 +122,35 @@
 @layer components {
   .auth-drawer-card {
     background-color: #ffffff !important;
-    border-top: 1.26px solid #a787ff !important; /* Top border from spec */
-    box-shadow: 0 0 0 1px #6938ef !important; /* Spread shadow from spec */
+    /* Spec shows 1px border with a gradient. In CSS, we use border-image or a pseudo-element */
+
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
     position: relative;
     z-index: 50;
   }
 
-  /* The actual Purple Button */
+  /* The Button theme from the spec uses a Linear Gradient */
   .btn-purple {
-    background-color: #6347f9 !important;
+    background: linear-gradient(135deg, #9810fa 0%, #e60076 100%) !important;
     color: white !important;
+    border: none !important;
     transition: all 0.2s ease;
   }
 
   .btn-purple:hover {
-    background-color: #5236e6 !important;
-    box-shadow: 0 10px 15px -3px rgba(99, 71, 249, 0.3);
+    filter: brightness(1.1);
+    box-shadow: 0 10px 20px -5px rgba(152, 16, 250, 0.4);
+  }
+
+  /* Optional: If the border radius isn't working with border-image, 
+     use this background-clip hack for rounded gradient borders */
+  .auth-drawer-card-rounded {
+    background:
+      linear-gradient(white, white) padding-box,
+      linear-gradient(to right, #9810fa, #e60076) border-box;
+    border: 1.26px solid transparent;
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
   }
 }

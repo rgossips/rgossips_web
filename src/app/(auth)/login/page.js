@@ -13,6 +13,7 @@ import Notifications from "@/components/login/Notifications";
 import SuccessScreen from "@/components/login/SuccessScreen";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
+import bgImg from "@/assets/login/DiscoverCampaignsCard.png";
 import Image from "next/image";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -46,98 +47,72 @@ const Login = () => {
   };
   const nextStep = () => setStep((s) => s + 1);
 
-  // Initialize RecAPTCHA with safety checks
+  // Initialize RecAPTCHA on mount
   useEffect(() => {
-    const initRecaptcha = () => {
-      try {
-        const container = document.getElementById("recaptcha-container");
-        // Don't create verifier on init - create it on demand when needed
-        if (container) {
-          console.log("RecAPTCHA container found and ready");
-        }
-      } catch (err) {
-        console.error("Recaptcha setup error:", err);
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
       }
     };
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(initRecaptcha, 100);
-    return () => clearTimeout(timer);
   }, []);
 
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
     try {
-      // Validate phone number
       if (!phoneNumber || phoneNumber.length < 10) {
         setError("Please enter a valid 10-digit phone number");
         setLoading(false);
         return;
       }
 
-      const formattedPhone = "+91" + phoneNumber.replace(/\D/g, "").slice(-10);
+      const last10 = phoneNumber.replace(/\D/g, "").slice(-10);
+      const formattedPhone = "+91" + last10;
       setPhone(formattedPhone);
 
-      // If signing up, check if a user with this phone already exists in Firestore
+      // --- USER EXISTENCE CHECK ---
       if (flow === "signup") {
         try {
-          const last10 = formattedPhone.slice(-10);
+          // Check various formats to ensure user doesn't duplicate
+          const variants = [formattedPhone, last10];
 
-          // Check for phone stored with or without +91
-          const infQ1 = query(
+          const infQ = query(
             collection(db, "influencers"),
-            where("phone", "==", formattedPhone),
+            where("phone", "in", variants),
           );
-          const infQ2 = query(
-            collection(db, "influencers"),
-            where("phone", "==", last10),
-          );
-
-          const brandQ1 = query(
+          const brandQ = query(
             collection(db, "brands"),
-            where("phone", "==", formattedPhone),
-          );
-          const brandQ2 = query(
-            collection(db, "brands"),
-            where("phone", "==", last10),
+            where("phone", "in", variants),
           );
 
-          const [infSnap1, infSnap2, brandSnap1, brandSnap2] =
-            await Promise.all([
-              getDocs(infQ1),
-              getDocs(infQ2),
-              getDocs(brandQ1),
-              getDocs(brandQ2),
-            ]);
+          const [infSnap, brandSnap] = await Promise.all([
+            getDocs(infQ),
+            getDocs(brandQ),
+          ]);
 
-          if (
-            !infSnap1.empty ||
-            !infSnap2.empty ||
-            !brandSnap1.empty ||
-            !brandSnap2.empty
-          ) {
+          if (!infSnap.empty || !brandSnap.empty) {
             setError("User already exists. Please sign in instead.");
             setUserExists(true);
             setLoading(false);
             return;
           }
         } catch (qErr) {
-          console.error("User existence check failed:", qErr);
-          // continue with signup attempt if check fails
+          console.error("Firestore Check Error:", qErr);
         }
       }
 
-      // Clear old verifier if it exists to avoid conflicts
+      // --- FIREBASE AUTH LOGIC ---
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier = null;
+        window.recaptchaVerifier.clear();
       }
 
-      // Create new verifier
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
         "recaptcha-container",
-        { size: "invisible" },
+        {
+          size: "invisible",
+        },
       );
 
       const result = await signInWithPhoneNumber(
@@ -150,23 +125,7 @@ const Login = () => {
       nextStep();
     } catch (err) {
       console.error("Phone sign-in error:", err);
-
-      // Clear verifier on error
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier = null;
-      }
-
-      // Provide specific error messages
-      if (err.code === "auth/invalid-phone-number") {
-        setError("Please enter a valid phone number");
-      } else if (err.code === "auth/too-many-requests") {
-        setError("Too many attempts. Please try again later.");
-      } else if (err.message?.includes("app credentials")) {
-        setError("Unable to connect to server. Please try again later.");
-        console.error("Firebase config issue:");
-      } else {
-        setError(err.message || "Failed to send OTP. Please try again.");
-      }
+      setError(err.message || "Failed to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -208,14 +167,25 @@ const Login = () => {
         className={`absolute inset-0 z-20 flex flex-col justify-end md:relative md:inset-auto md:w-[40%] md:h-full md:justify-center ${flow === "onboarding" ? "hidden md:flex" : "flex"}`}
       >
         {flow !== "onboarding" && (
-          <div
-            className="absolute inset-0 bg-[#0F0F1A]/90 md:hidden"
-            style={{
-              background:
-                "radial-gradient(circle at top, rgba(99, 71, 249, 0.15) 0%, rgba(15, 15, 26, 0.98) 100%)",
-            }}
-            onClick={() => setFlow("onboarding")}
-          />
+          <div className="absolute inset-0 md:hidden bg-[#0F0F1A]">
+            {/* 2. The Background Image (DiscoverCampaignsCard) */}
+            {/* Adjusted to sit in the center/top area without covering the whole bg */}
+            <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[280px] h-[300px] opacity-80">
+              <Image
+                src={bgImg}
+                alt="Campaign Cards"
+                width={280}
+                height={300}
+                className="object-contain"
+              />
+            </div>
+
+            {/* 3. The Pink Haze Gradient Overlay (#FF92CA) */}
+            <div
+              className="absolute inset-0 bg-[#ff92ca] opacity-70"
+              onClick={() => setFlow("onboarding")}
+            />
+          </div>
         )}
 
         <div className="auth-drawer-card relative z-10 w-full px-8 pt-10 pb-12 md:bg-white md:border-none md:shadow-none md:rounded-none md:h-full md:flex md:items-center overflow-y-auto animate-in slide-in-from-bottom md:slide-in-from-right duration-500">
@@ -264,12 +234,7 @@ const Login = () => {
                     setPhone={setPhone}
                     mode="signin"
                     userExists={userExists}
-                    onSwitchToSignIn={() => {
-                      setFlow("signin");
-                      setStep(1);
-                      setError("");
-                      setUserExists(false);
-                    }}
+                    onSwitchToSignIn={goToSignIn}
                   />
                 )}
                 {step === 2 && (
@@ -297,12 +262,7 @@ const Login = () => {
                     setPhone={setPhone}
                     mode="signup"
                     userExists={userExists}
-                    onSwitchToSignIn={() => {
-                      setFlow("signin");
-                      setStep(1);
-                      setError("");
-                      setUserExists(false);
-                    }}
+                    onSwitchToSignIn={goToSignIn}
                   />
                 )}
                 {step === 3 && (
@@ -328,8 +288,7 @@ const Login = () => {
         </div>
       </div>
 
-      {/* IMPORTANT: Keep this div always in the DOM for reCAPTCHA */}
-      <div id="recaptcha-container" style={{ display: "none" }}></div>
+      <div id="recaptcha-container"></div>
     </div>
   );
 };

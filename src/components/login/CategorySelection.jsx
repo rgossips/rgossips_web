@@ -40,19 +40,28 @@ const CategorySelection = ({ onNext }) => {
 
       {/* Pill Layout */}
       <div className="flex flex-wrap justify-center gap-3 px-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => toggle(cat)}
-            className={`px-6 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-200 ${
-              selected.includes(cat)
-                ? "border-[#6347F9] bg-[#F3EFFF] text-[#6347F9] shadow-sm"
-                : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {categories.map((cat) => {
+          const isSelected = selected.includes(cat);
+          return (
+            <button
+              key={cat}
+              onClick={() => toggle(cat)}
+              className={`px-6 py-2.5 rounded-full border-2 text-sm font-medium transition-all duration-300 transform active:scale-95 ${
+                isSelected
+                  ? "border-transparent text-white shadow-md shadow-purple-200"
+                  : "border-slate-100 bg-white text-slate-500 hover:border-slate-200"
+              }`}
+              style={{
+                // Applying the linear gradient from the spec (#9810FA to #E60076)
+                background: isSelected
+                  ? "linear-gradient(135deg, #9810FA 0%, #E60076 100%)"
+                  : "white",
+              }}
+            >
+              {cat}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-4 pt-4">
@@ -62,7 +71,11 @@ const CategorySelection = ({ onNext }) => {
         <Button
           disabled={selected.length < 1}
           onClick={onNext}
-          className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+          className={`w-full h-[54px] rounded-2xl text-base font-semibold transition-all duration-300 ${
+            selected.length < 1
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+              : "btn-purple text-white shadow-lg shadow-purple-200"
+          }`}
         >
           Continue
         </Button>
