@@ -10,34 +10,53 @@ const SignInPhone = ({
   error = "",
   phone = "",
   setPhone = () => {},
+  mode = "signin", // 'signin' or 'signup'
+  minLen = 10,
+  maxLen = 15,
+  userExists = false,
+  onSwitchToSignIn = () => {},
 }) => {
   const [localPhone, setLocalPhone] = useState(phone);
 
   const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+    const value = e.target.value.replace(/\D/g, "").slice(0, maxLen);
     setLocalPhone(value);
     setPhone(value);
   };
 
   const handleSubmit = () => {
-    if (localPhone.length < 10) {
-      return;
-    }
+    if (localPhone.length < minLen || localPhone.length > maxLen) return;
     onNext(localPhone);
   };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">Sign In</h2>
+        <h2 className="text-2xl font-bold text-slate-900">
+          {mode === "signup" ? "Create Account" : "Sign In"}
+        </h2>
         <p className="text-sm text-slate-500">
-          Enter your mobile number to continue
+          {mode === "signup"
+            ? "Enter your mobile number to create an account"
+            : "Enter your mobile number to continue"}
         </p>
       </div>
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
           {error}
+        </div>
+      )}
+
+      {userExists && (
+        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-between">
+          <span>User already exists.</span>
+          <button
+            onClick={onSwitchToSignIn}
+            className="text-sm font-semibold text-[#6347F9] hover:underline ml-4"
+          >
+            Sign In
+          </button>
         </div>
       )}
 
@@ -54,17 +73,23 @@ const SignInPhone = ({
             onChange={handlePhoneChange}
             className="h-14 pl-16 rounded-2xl border-slate-200 bg-white text-base focus-visible:ring-2 focus-visible:ring-[#6347F9] focus-visible:ring-offset-0 transition-all"
             placeholder="Enter phone number"
-            maxLength="10"
+            maxLength={maxLen}
             disabled={loading}
           />
         </div>
 
         <Button
           onClick={handleSubmit}
-          disabled={loading || localPhone.length < 10}
+          disabled={
+            loading || localPhone.length < minLen || localPhone.length > maxLen
+          }
           className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
-          {loading ? "Sending OTP..." : "Send OTP"}
+          {loading
+            ? "Sending OTP..."
+            : mode === "signup"
+              ? "Create Account"
+              : "Send OTP"}
         </Button>
       </div>
     </div>

@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
 import Image from "next/image";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 const Login = () => {
   const router = useRouter();
@@ -29,16 +30,19 @@ const Login = () => {
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [error, setError] = useState("");
   const [phone, setPhone] = useState("");
+  const [userExists, setUserExists] = useState(false);
 
   const goToSignIn = () => {
     setFlow("signin");
     setStep(1);
     setError("");
+    setUserExists(false);
   };
   const goToSignUp = () => {
     setFlow("signup");
     setStep(1);
     setError("");
+    setUserExists(false);
   };
   const nextStep = () => setStep((s) => s + 1);
 
@@ -75,6 +79,55 @@ const Login = () => {
       const formattedPhone = "+91" + phoneNumber.replace(/\D/g, "").slice(-10);
       setPhone(formattedPhone);
 
+      // If signing up, check if a user with this phone already exists in Firestore
+      if (flow === "signup") {
+        try {
+          const last10 = formattedPhone.slice(-10);
+
+          // Check for phone stored with or without +91
+          const infQ1 = query(
+            collection(db, "influencers"),
+            where("phone", "==", formattedPhone),
+          );
+          const infQ2 = query(
+            collection(db, "influencers"),
+            where("phone", "==", last10),
+          );
+
+          const brandQ1 = query(
+            collection(db, "brands"),
+            where("phone", "==", formattedPhone),
+          );
+          const brandQ2 = query(
+            collection(db, "brands"),
+            where("phone", "==", last10),
+          );
+
+          const [infSnap1, infSnap2, brandSnap1, brandSnap2] =
+            await Promise.all([
+              getDocs(infQ1),
+              getDocs(infQ2),
+              getDocs(brandQ1),
+              getDocs(brandQ2),
+            ]);
+
+          if (
+            !infSnap1.empty ||
+            !infSnap2.empty ||
+            !brandSnap1.empty ||
+            !brandSnap2.empty
+          ) {
+            setError("User already exists. Please sign in instead.");
+            setUserExists(true);
+            setLoading(false);
+            return;
+          }
+        } catch (qErr) {
+          console.error("User existence check failed:", qErr);
+          // continue with signup attempt if check fails
+        }
+      }
+
       // Clear old verifier if it exists to avoid conflicts
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier = null;
@@ -109,11 +162,8 @@ const Login = () => {
       } else if (err.code === "auth/too-many-requests") {
         setError("Too many attempts. Please try again later.");
       } else if (err.message?.includes("app credentials")) {
-        setError("Firebase configuration error. Please contact support.");
-        console.error(
-          "Firebase config issue:",
-          process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        );
+        setError("Unable to connect to server. Please try again later.");
+        console.error("Firebase config issue:");
       } else {
         setError(err.message || "Failed to send OTP. Please try again.");
       }
@@ -212,6 +262,14 @@ const Login = () => {
                     error={error}
                     phone={phone}
                     setPhone={setPhone}
+                    mode="signin"
+                    userExists={userExists}
+                    onSwitchToSignIn={() => {
+                      setFlow("signin");
+                      setStep(1);
+                      setError("");
+                      setUserExists(false);
+                    }}
                   />
                 )}
                 {step === 2 && (
@@ -237,6 +295,14 @@ const Login = () => {
                     error={error}
                     phone={phone}
                     setPhone={setPhone}
+                    mode="signup"
+                    userExists={userExists}
+                    onSwitchToSignIn={() => {
+                      setFlow("signin");
+                      setStep(1);
+                      setError("");
+                      setUserExists(false);
+                    }}
                   />
                 )}
                 {step === 3 && (
