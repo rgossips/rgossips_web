@@ -118,3 +118,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .auth-drawer-card {
+    background-color: #ffffff !important;
+    border-top: 1.26px solid #a787ff !important; /* Top border from spec */
+    box-shadow: 0 0 0 1px #6938ef !important; /* Spread shadow from spec */
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+    position: relative;
+    z-index: 50;
+  }
+
+  /* The actual Purple Button */
+  .btn-purple {
+    background-color: #6347f9 !important;
+    color: white !important;
+    transition: all 0.2s ease;
+  }
+
+  .btn-purple:hover {
+    background-color: #5236e6 !important;
+    box-shadow: 0 10px 15px -3px rgba(99, 71, 249, 0.3);
+  }
+}

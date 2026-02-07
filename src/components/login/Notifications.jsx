@@ -1,0 +1,53 @@
+"use client";
+
+import React from "react";
+import { Button } from "@/components/ui/button";
+import Bell from "@/assets/login/BellIllustration.png";
+import Image from "next/image";
+
+const Notifications = ({ onNext }) => {
+  return (
+    <div className="flex flex-col items-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Visual Header Section */}
+      <div className="relative w-full flex justify-center pt-4">
+        {/* Glow effect behind the image */}
+        <div className="absolute inset-0 bg-[#6347F9] opacity-5 blur-3xl rounded-full scale-75" />
+
+        <Image
+          src={Bell}
+          alt="Notifications Illustration"
+          className="relative z-10 w-full max-w-[600px] h-auto object-contain"
+          priority
+        />
+      </div>
+
+      {/* Text Content */}
+      <div className="text-center space-y-2 px-4">
+        <h2 className="text-2xl font-bold text-slate-900 leading-tight">
+          Never Miss a Collab
+        </h2>
+        <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto">
+          Get instant updates on new campaigns, messages & payments
+        </p>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="w-full space-y-3 pt-2">
+        <Button
+          onClick={onNext}
+          className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+        >
+          Enable Notifications
+        </Button>
+        <button
+          onClick={onNext}
+          className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          Not Now
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Notifications;
