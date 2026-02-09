@@ -160,7 +160,7 @@ const Login = () => {
       await confirmationResult.confirm(otpCode);
 
       if (flow === "signin") {
-        router.push("/");
+        router.push("/influencer");
       } else {
         nextStep();
       }
