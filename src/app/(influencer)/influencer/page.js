@@ -1,19 +1,25 @@
 "use client";
 export const dynamic = "force-dynamic";
 
+import BottomNav from "@/components/BottomNav";
 import BrandsCarousel from "@/components/BrandsCarousel2";
+import CounterBanner from "@/components/CounterBanner";
 import CreatorsCarousel from "@/components/CreatorsCarousel";
 import CreatorsCarouselWithLink from "@/components/CreatorsCarouselWithLink";
 import CreatorStories from "@/components/CreatorStories";
 import ExploreStates from "@/components/ExploreStates";
 import FoodMoodGrid from "@/components/FoodMood";
 import HeroImage from "@/components/HeroImg";
+import HotelRecommendations from "@/components/HotelRecommendation";
 import Hero from "@/components/InfluencerHero";
+import JourneyCarousel from "@/components/JourneyCarousel";
 import ProfileStepPopup from "@/components/ProfileStepPopup";
 import SelectionMenu from "@/components/SelectionMenu";
 import StayCarousel from "@/components/StayCarousel";
 import TopExperiencesCarousel from "@/components/TopExperienceCarousel";
 import TopPicksCarousel from "@/components/TopPicksCarousel";
+import TopRatedInfluencers from "@/components/TopRatedInfluencer";
+import TopServices from "@/components/TopServices";
 import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
@@ -30,24 +36,30 @@ export default function HomePage() {
   }
   return (
     <main className="relative w-full bg-[#0D7753]">
-      {profile && profile?.verificationState < 5 && (
+      {/* {profile && profile?.verificationState < 5 && (
         <ProfileStepPopup userData={profile} />
       )}
       <Hero user={profile} />
-      <HeroImage userData={profile} />
+      <HeroImage userData={profile} /> */}
 
       <div className="relative z-20 bg-white p-8">
-        <SelectionMenu />
+        {/* <SelectionMenu /> */}
         <div className="flex flex-col gap-16 items-center">
+          <JourneyCarousel />
+          <BrandsCarousel />
+          <HotelRecommendations />
+          <TopRatedInfluencers />
+          <CounterBanner />
+          <TopServices />
           <TopPicksCarousel />
-          <TopExperiencesCarousel />
-          <ExploreStates />
+          {/* <TopExperiencesCarousel />
+          <ExploreStates /> */}
           <StayCarousel />
           <CreatorStories />
-          <BrandsCarousel />
-          <FoodMoodGrid />
-          <CreatorsCarousel />
+          {/* <FoodMoodGrid /> */}
+          {/* <CreatorsCarousel /> */}
           <CreatorsCarouselWithLink />
+          <BottomNav />
         </div>
       </div>
     </main>

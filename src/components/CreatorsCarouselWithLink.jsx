@@ -93,7 +93,7 @@ export default function CreatorsCarouselWithLink() {
 
   return (
     <section className="w-full px-3 py-6">
-      <SectionTitle text="CREATORS USING OUR LINK IN BIO" />
+      <SectionTitle text="OUR TOP CREATORS" />
 
       {/* Wrapper with arrows */}
       <div className="relative w-full mt-8">

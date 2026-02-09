@@ -9,16 +9,14 @@ import {
 } from "@/components/ui/carousel";
 
 import SectionTitle from "./SectionTitle";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 // Firebase imports
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function CarouselTopPicks() {
-  const [api, setApi] = useState(null);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -27,9 +25,6 @@ export default function CarouselTopPicks() {
     const getOffers = async () => {
       setLoading(true);
       try {
-        // Fetching from 'offers' collection where isActive is true
-        // Note: If you haven't added 'isActive: true' in your Form,
-        // remove this where clause or add it to the Form's handleSubmit.
         const offersRef = collection(db, "offers");
         const q = query(offersRef, orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
@@ -53,32 +48,37 @@ export default function CarouselTopPicks() {
   if (loading || offers.length === 0) return null;
 
   return (
-    <section className="w-full px-4 relative">
-      <SectionTitle text="TOP PICKS" />
+    <section className="w-full relative py-6">
+      {/* Container for title to match horizontal padding */}
+      <div className="px-6 mb-4">
+        <div className="flex justify-between items-center">
+          <SectionTitle text="JOURNEY TOGETHER" />
+        </div>
+      </div>
 
-      <div className="relative py-8">
-        <button
-          onClick={() => api?.scrollPrev()}
-          className="absolute left-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-all"
+      <div className="relative">
+        <Carousel
+          opts={{
+            align: "start",
+            containScroll: "trimSnaps", // Ensures it doesn't scroll past the last item
+          }}
+          className="w-full"
         >
-          <FaChevronLeft size={18} />
-        </button>
-
-        <Carousel opts={{ align: "start", loop: true }} setApi={setApi}>
-          <CarouselContent className="flex gap-1">
+          <CarouselContent className="-ml-4">
             {offers.map((item) => (
               <CarouselItem
                 key={item.id}
-                className="basis-[85%] sm:basis-1/2 lg:basis-1/3 pl-2 flex justify-center"
+                // basis-4/5 gives that "peek" effect (80% width)
+                // basis-full on tiny screens, basis-1/3 on desktop
+                className="pl-4 basis-[82%] sm:basis-1/2 lg:basis-1/3"
               >
                 <motion.div
-                  whileHover={{ y: -5 }}
-                  // Navigating to the dynamic ID from Firestore
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => router.push(`/offers/${item.id}`)}
-                  className="rounded-3xl bg-white shadow-sm border border-gray-100 mb-5 p-4 w-full cursor-pointer"
+                  className="rounded-[32px] bg-white overflow-hidden shadow-sm border border-slate-100 flex flex-col h-full cursor-pointer"
                 >
-                  <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-gray-100">
-                    {/* Using the imageUrl field from your Form */}
+                  {/* Image Container */}
+                  <div className="relative w-full h-48 overflow-hidden">
                     <Image
                       src={
                         item.imageUrl || "https://via.placeholder.com/400x300"
@@ -87,32 +87,32 @@ export default function CarouselTopPicks() {
                       fill
                       className="object-cover"
                     />
-                    {/* Category Tag instead of generic tag */}
-                    <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight text-blue-600 shadow-sm">
-                      {item.category}
+                    {/* Category Badge */}
+                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-[#D61F69] shadow-sm">
+                      {item.category || "Lifestyle"}
                     </div>
                   </div>
 
-                  <div className="mt-4 flex justify-between items-start gap-2">
-                    <div className="flex-1">
-                      {/* Accessing title from metadata as defined in your Form */}
-                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-tight">
-                        {item.metadata?.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 font-medium">
-                        {item.brand?.name} •{" "}
-                        {item.metadata?.location?.split(",")[0]}
-                      </p>
-                    </div>
+                  {/* Content Container */}
+                  <div className="p-5 flex flex-col gap-1">
+                    <h3 className="text-base font-black text-slate-900 line-clamp-1 leading-tight uppercase">
+                      {item.metadata?.title}
+                    </h3>
 
-                    {/* Deliverables Summary Badge */}
-                    <div className="bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 text-[10px] text-center">
-                      <span className="block font-bold text-gray-700">
-                        {item.applications?.length || 0}
-                      </span>
-                      <span className="text-gray-400 uppercase">
-                        Applications
-                      </span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <p className="text-xs text-slate-500 font-bold">
+                          {item.brand?.name || "Brand Name"}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-medium">
+                          {item.metadata?.location?.split(",")[0]}
+                        </p>
+                      </div>
+
+                      {/* CTA Button Style as seen in image */}
+                      <div className="bg-[#D61F69] text-white text-[10px] font-bold px-4 py-2 rounded-full">
+                        APPLY
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -120,13 +120,6 @@ export default function CarouselTopPicks() {
             ))}
           </CarouselContent>
         </Carousel>
-
-        <button
-          onClick={() => api?.scrollNext()}
-          className="absolute right-0 z-20 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-all"
-        >
-          <FaChevronRight size={18} />
-        </button>
       </div>
     </section>
   );

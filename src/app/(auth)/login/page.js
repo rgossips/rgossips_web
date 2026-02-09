@@ -100,33 +100,33 @@ const Login = () => {
 
       setPhone(formattedWithPrefix); // Store for Firebase Auth
 
-      if (flow === "signup") {
-        // 3. SEARCH VARIANTS: This must match exactly how data is stored
-        // Based on your DB screenshot, 'last10' (9041891005) is the winner.
-        const searchVariants = [last10, formattedWithPrefix];
+      //   if (flow === "signup") {
+      //     // 3. SEARCH VARIANTS: This must match exactly how data is stored
+      //     // Based on your DB screenshot, 'last10' (9041891005) is the winner.
+      //     const searchVariants = [last10, formattedWithPrefix];
 
-        const [infSnap, brandSnap] = await Promise.all([
-          getDocs(
-            query(
-              collection(db, "influencers"),
-              where("phone", "in", searchVariants),
-            ),
-          ),
-          getDocs(
-            query(
-              collection(db, "brands"),
-              where("phone", "in", searchVariants),
-            ),
-          ),
-        ]);
+      //     const [infSnap, brandSnap] = await Promise.all([
+      //       getDocs(
+      //         query(
+      //           collection(db, "influencers"),
+      //           where("phone", "in", searchVariants),
+      //         ),
+      //       ),
+      //       getDocs(
+      //         query(
+      //           collection(db, "brands"),
+      //           where("phone", "in", searchVariants),
+      //         ),
+      //       ),
+      //     ]);
 
-        if (!infSnap.empty || !brandSnap.empty) {
-          setError("Account exists. Please sign in.");
-          setUserExists(true);
-          setLoading(false);
-          return; // BLOCK OTP
-        }
-      }
+      //     if (!infSnap.empty || !brandSnap.empty) {
+      //       setError("Account exists. Please sign in.");
+      //       setUserExists(true);
+      //       setLoading(false);
+      //       return; // BLOCK OTP
+      //     }
+      //   }
 
       // --- FIREBASE AUTH ---
       if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
