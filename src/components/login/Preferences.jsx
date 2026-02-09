@@ -100,7 +100,7 @@ const Preferences = ({ onNext }) => {
       </div>
 
       <Button
-        onClick={onNext}
+        onClick={() => onNext({ services: selectedServices, rateRange })}
         disabled={selectedServices.length === 0 || !rateRange}
         className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
       >

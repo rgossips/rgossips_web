@@ -70,7 +70,7 @@ const CategorySelection = ({ onNext }) => {
         </p>
         <Button
           disabled={selected.length < 1}
-          onClick={onNext}
+          onClick={() => onNext(selected)}
           className={`w-full h-[54px] rounded-2xl text-base font-semibold transition-all duration-300 ${
             selected.length < 1
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"

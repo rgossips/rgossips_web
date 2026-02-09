@@ -6,10 +6,16 @@ import { User, Briefcase, CheckCircle2 } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
 
 const RoleSelection = ({ onNext }) => {
-  const { type, setType } = useGlobal(); // Using your global context to store role
+  const { type, setType } = useGlobal();
+  const [selectedRole, setSelectedRole] = useState(type);
 
   const handleSelect = (role) => {
+    setSelectedRole(role);
     setType(role);
+  };
+
+  const handleContinue = () => {
+    onNext(selectedRole);
   };
 
   return (
@@ -25,7 +31,7 @@ const RoleSelection = ({ onNext }) => {
         {/* Role: Influencer */}
         <button
           onClick={() => handleSelect("influencer")}
-          className="relative flex items-center p-5 rounded-2xl text-left transition-all duration-300 group"
+          className="relative cursor-pointer flex items-center p-5 rounded-2xl text-left transition-all duration-300 group"
           style={{
             background:
               type === "influencer"
@@ -72,7 +78,7 @@ const RoleSelection = ({ onNext }) => {
         {/* Role: Brand */}
         <button
           onClick={() => handleSelect("brand")}
-          className="relative flex items-center p-5 rounded-2xl text-left transition-all duration-300 group"
+          className="relative cursor-pointer flex items-center p-5 rounded-2xl text-left transition-all duration-300 group"
           style={{
             background:
               type === "brand"
@@ -116,9 +122,9 @@ const RoleSelection = ({ onNext }) => {
       </div>
 
       <Button
-        onClick={onNext}
-        disabled={!type}
-        className="w-full btn-purple h-14 rounded-2xl text-lg font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
+        onClick={handleContinue}
+        disabled={!selectedRole}
+        className="w-full cursor-pointer btn-purple h-14 rounded-2xl text-lg font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
       >
         Continue
       </Button>

@@ -12,7 +12,7 @@ const SignInPhone = ({
   setPhone = () => {},
   mode = "signin", // 'signin' or 'signup'
   minLen = 10,
-  maxLen = 15,
+  maxLen = 10,
   userExists = false,
   onSwitchToSignIn = () => {},
 }) => {
@@ -44,7 +44,7 @@ const SignInPhone = ({
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-          {error}
+          Some error has occurred. Please try again later.
         </div>
       )}
 
@@ -83,7 +83,7 @@ const SignInPhone = ({
           disabled={
             loading || localPhone.length < minLen || localPhone.length > maxLen
           }
-          className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+          className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
           {loading
             ? "Sending OTP..."

@@ -34,13 +34,13 @@ const Notifications = ({ onNext }) => {
       {/* Action Buttons */}
       <div className="w-full space-y-3 pt-2">
         <Button
-          onClick={onNext}
+          onClick={() => onNext(true)}
           className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
           Enable Notifications
         </Button>
         <button
-          onClick={onNext}
+          onClick={() => onNext(false)}
           className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
         >
           Not Now

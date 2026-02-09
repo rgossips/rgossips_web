@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Tick from "@/assets/login/SuccessIllustration.png";
 
-const SuccessScreen = ({ onNext }) => (
+const SuccessScreen = ({ onNext, loading = false }) => (
   <div className="flex flex-col items-center justify-center text-center space-y-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
     {/* Animated Illustration Container */}
     <div className="relative">
@@ -47,9 +47,10 @@ const SuccessScreen = ({ onNext }) => (
     <div className="w-full pt-4">
       <Button
         onClick={onNext}
+        disabled={loading}
         className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
       >
-        Verify Phone Number
+        {loading ? "Creating Account..." : "Start Using Platform"}
       </Button>
     </div>
   </div>

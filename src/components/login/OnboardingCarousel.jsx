@@ -127,17 +127,17 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
               className="w-full space-y-3"
             >
               {/* Note: md:hidden ensures these only show on mobile per your requirement */}
-              <div className="md:hidden flex flex-col gap-3">
+              <div className="flex flex-col gap-3">
                 <Button
                   onClick={onLoginClick}
-                  className="w-full btn-purple h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
+                  className="w-full cursor-pointer btn-purple h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
                 >
                   Sign In
                 </Button>
                 <Button
                   onClick={onSignUpClick}
                   variant="outline"
-                  className="w-full border-[#FA288A] h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#FA288A]"
+                  className="w-full cursor-pointer border-[#FA288A] h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#FA288A]"
                 >
                   Sign Up
                 </Button>
