@@ -16,9 +16,6 @@ export default function ProtectedRoute({ children }) {
       if (!user && !publicPaths.includes(pathname)) {
         // User not logged in and trying to access private page
         router.push("/login");
-      } else if (user && (pathname === "/login" || pathname === "/register")) {
-        // User IS logged in and trying to access login/register
-        router.push("/influencer"); // or dashboard
       }
     }
   }, [user, loading, pathname, router]);

@@ -99,33 +99,51 @@ const Login = () => {
       // --- 1. USER EXISTENCE CHECK (ONLY FOR SIGNUP) ---
       if (flow === "signup") {
         try {
-          // Check both the full formatted string and the raw 10 digits
-          const variants = [formattedPhone, last10];
+          const last10 = phoneNumber.replace(/\D/g, "").slice(-10);
+          const formattedPhone = "+91" + last10;
 
+          // Extended list of phone format variants to search
+          const variants = [
+            formattedPhone, // +919876543210
+            `+91 ${last10}`, // +91 9876543210
+            `+91-${last10}`, // +91-9876543210
+            last10, // 9876543210
+            `0${last10}`, // 09876543210
+            phoneNumber, // whatever user entered
+          ].filter(Boolean);
+
+          console.log("Checking for phone variants:", variants);
+
+          // Check influencers collection
           const infQ = query(
             collection(db, "influencers"),
             where("phone", "in", variants),
           );
+          const infSnap = await getDocs(infQ);
+          console.log("Influencers match:", !infSnap.empty);
+
+          // Check brands collection
           const brandQ = query(
             collection(db, "brands"),
             where("phone", "in", variants),
           );
-
-          const [infSnap, brandSnap] = await Promise.all([
-            getDocs(infQ),
-            getDocs(brandQ),
-          ]);
+          const brandSnap = await getDocs(brandQ);
+          console.log("Brands match:", !brandSnap.empty);
 
           if (!infSnap.empty || !brandSnap.empty) {
-            // STOP HERE: Set state to trigger the "Account exists" popup/UI
-            setError("An account with this number already exists.");
+            console.log("User already exists - blocking signup");
+            setError(
+              "An account with this number already exists. Please sign in instead.",
+            );
             setUserExists(true);
             setLoading(false);
-            return; // Exit function so no OTP is sent
+            return;
           }
+
+          console.log("No existing user found - proceeding with signup");
         } catch (qErr) {
           console.error("Firestore Check Error:", qErr);
-          // Optional: handle database check failure
+          // Don't block signup if query fails - let auth attempt
         }
       }
 
@@ -251,10 +269,13 @@ const Login = () => {
         signupData.role === "brand" ? "brands" : "influencers";
       const userDocRef = doc(db, collectionName, user.uid);
 
+      // Normalize phone number to standard format: +91XXXXXXXXXX
+      const normalizedPhone = "+91" + phone.replace(/\D/g, "").slice(-10);
+
       // Prepare data to save
       const dataToSave = {
         uid: user.uid,
-        phone: phone,
+        phone: normalizedPhone,
         role: signupData.role,
         name: signupData.name,
         username: signupData.username,
@@ -275,7 +296,10 @@ const Login = () => {
       };
 
       // Save to Firestore
+      console.log("Saving user to collection:", collectionName);
+      console.log("User data:", dataToSave);
       await setDoc(userDocRef, dataToSave, { merge: true });
+      console.log("User saved successfully");
 
       // Redirect to home
       router.push("/");
