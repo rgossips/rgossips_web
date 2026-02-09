@@ -83,75 +83,53 @@ const Login = () => {
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
-    setUserExists(false); // Reset state at start of attempt
+    setUserExists(false);
 
     try {
-      if (!phoneNumber || phoneNumber.length < 10) {
-        setError("Please enter a valid 10-digit phone number");
+      // 1. Clean the input: keep only digits
+      const rawDigits = phoneNumber.replace(/\D/g, "");
+      if (rawDigits.length < 10) {
+        setError("Please enter a valid phone number");
         setLoading(false);
         return;
       }
 
-      const last10 = phoneNumber.replace(/\D/g, "").slice(-10);
-      const formattedPhone = "+91" + last10;
-      setPhone(formattedPhone);
+      // 2. Get the last 10 digits (Standardizes: 0904..., +91904..., 904...)
+      const last10 = rawDigits.slice(-10);
+      const formattedWithPrefix = "+91" + last10;
 
-      // --- 1. USER EXISTENCE CHECK (ONLY FOR SIGNUP) ---
+      setPhone(formattedWithPrefix); // Store for Firebase Auth
+
       if (flow === "signup") {
-        try {
-          const last10 = phoneNumber.replace(/\D/g, "").slice(-10);
-          const formattedPhone = "+91" + last10;
+        // 3. SEARCH VARIANTS: This must match exactly how data is stored
+        // Based on your DB screenshot, 'last10' (9041891005) is the winner.
+        const searchVariants = [last10, formattedWithPrefix];
 
-          // Extended list of phone format variants to search
-          const variants = [
-            formattedPhone, // +919876543210
-            `+91 ${last10}`, // +91 9876543210
-            `+91-${last10}`, // +91-9876543210
-            last10, // 9876543210
-            `0${last10}`, // 09876543210
-            phoneNumber, // whatever user entered
-          ].filter(Boolean);
+        const [infSnap, brandSnap] = await Promise.all([
+          getDocs(
+            query(
+              collection(db, "influencers"),
+              where("phone", "in", searchVariants),
+            ),
+          ),
+          getDocs(
+            query(
+              collection(db, "brands"),
+              where("phone", "in", searchVariants),
+            ),
+          ),
+        ]);
 
-          console.log("Checking for phone variants:", variants);
-
-          // Check influencers collection
-          const infQ = query(
-            collection(db, "influencers"),
-            where("phone", "in", variants),
-          );
-          const infSnap = await getDocs(infQ);
-          console.log("Influencers match:", !infSnap.empty);
-
-          // Check brands collection
-          const brandQ = query(
-            collection(db, "brands"),
-            where("phone", "in", variants),
-          );
-          const brandSnap = await getDocs(brandQ);
-          console.log("Brands match:", !brandSnap.empty);
-
-          if (!infSnap.empty || !brandSnap.empty) {
-            console.log("User already exists - blocking signup");
-            setError(
-              "An account with this number already exists. Please sign in instead.",
-            );
-            setUserExists(true);
-            setLoading(false);
-            return;
-          }
-
-          console.log("No existing user found - proceeding with signup");
-        } catch (qErr) {
-          console.error("Firestore Check Error:", qErr);
-          // Don't block signup if query fails - let auth attempt
+        if (!infSnap.empty || !brandSnap.empty) {
+          setError("Account exists. Please sign in.");
+          setUserExists(true);
+          setLoading(false);
+          return; // BLOCK OTP
         }
       }
 
-      // --- 2. FIREBASE AUTH LOGIC (ONLY RUNS IF USER DOESN'T EXIST) ---
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-      }
-
+      // --- FIREBASE AUTH ---
+      if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
         "recaptcha-container",
@@ -160,16 +138,15 @@ const Login = () => {
 
       const result = await signInWithPhoneNumber(
         auth,
-        formattedPhone,
+        formattedWithPrefix,
         window.recaptchaVerifier,
       );
-
       setConfirmationResult(result);
       setOtpSent(true);
-      nextStep(); // Move to OTP verification step
+      nextStep();
     } catch (err) {
-      console.error("Phone sign-in error:", err);
-      setError(err.message || "Failed to send OTP.");
+      console.error(err);
+      setError("Verification failed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -259,58 +236,39 @@ const Login = () => {
 
   const handleSuccessAndSaveToDb = async () => {
     setLoading(true);
-    setError("");
     try {
       const user = auth.currentUser;
-      if (!user) throw new Error("User not authenticated.");
+      if (!user) throw new Error("No User Found");
 
-      // Determine collection based on role
-      const collectionName =
-        signupData.role === "brand" ? "brands" : "influencers";
-      const userDocRef = doc(db, collectionName, user.uid);
+      // Use the 10-digit version for consistency with your existing DB
+      const storagePhone = phone.replace(/\D/g, "").slice(-10);
 
-      // Normalize phone number to standard format: +91XXXXXXXXXX
-      const normalizedPhone = "+91" + phone.replace(/\D/g, "").slice(-10);
-
-      // Prepare data to save
       const dataToSave = {
         uid: user.uid,
-        phone: normalizedPhone,
-        role: signupData.role,
+        phone: storagePhone, // Use standardized format
         name: signupData.name,
         username: signupData.username,
-        niche: signupData.niche,
-        location: signupData.location,
-        socialLinks: {
-          instagram: signupData.instagram,
-          youtube: signupData.youtube,
-        },
-        categories: signupData.categories,
-        collaborationPreferences: {
-          services: signupData.services,
-          rateRange: signupData.rateRange,
-        },
-        notificationsEnabled: signupData.notificationsEnabled,
-        createdAt: serverTimestamp(),
-        verificationState: 0, // 0 = incomplete, 1 = verified
+        verificationState: 1, // Start as 1 (Basic)
+        updatedAt: serverTimestamp(),
+        // ... rest of data
       };
 
-      // Save to Firestore
-      console.log("Saving user to collection:", collectionName);
-      console.log("User data:", dataToSave);
-      await setDoc(userDocRef, dataToSave, { merge: true });
-      console.log("User saved successfully");
-
-      // Redirect to home
-      router.push("/");
+      await setDoc(
+        doc(
+          db,
+          signupData.role === "brand" ? "brands" : "influencers",
+          user.uid,
+        ),
+        dataToSave,
+        { merge: true },
+      );
+      router.push("/influencer");
     } catch (err) {
-      console.error("Error saving user data:", err);
-      setError("Failed to complete signup. Please try again.");
+      setError("Final save failed.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
       {/* 1. BACKGROUND LAYER: Always full screen */}
