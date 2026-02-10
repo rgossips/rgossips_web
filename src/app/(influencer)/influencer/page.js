@@ -15,11 +15,13 @@ import Hero from "@/components/InfluencerHero";
 import JourneyCarousel from "@/components/JourneyCarousel";
 import ProfileStepPopup from "@/components/ProfileStepPopup";
 import SelectionMenu from "@/components/SelectionMenu";
+import StackedDeals from "@/components/StackedDeals";
 import StayCarousel from "@/components/StayCarousel";
 import TopExperiencesCarousel from "@/components/TopExperienceCarousel";
 import TopPicksCarousel from "@/components/TopPicksCarousel";
 import TopRatedInfluencers from "@/components/TopRatedInfluencer";
 import TopServices from "@/components/TopServices";
+import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
@@ -42,9 +44,11 @@ export default function HomePage() {
       <Hero user={profile} />
       <HeroImage userData={profile} /> */}
 
-      <div className="relative z-20 bg-white p-8">
+      <div className="relative z-20 bg-white p-2">
         {/* <SelectionMenu /> */}
         <div className="flex flex-col gap-16 items-center">
+          <UserDoc />
+          <StackedDeals />
           <JourneyCarousel />
           <BrandsCarousel />
           <HotelRecommendations />
@@ -59,7 +63,6 @@ export default function HomePage() {
           {/* <FoodMoodGrid /> */}
           {/* <CreatorsCarousel /> */}
           <CreatorsCarouselWithLink />
-          <BottomNav />
         </div>
       </div>
     </main>
