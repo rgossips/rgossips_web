@@ -185,7 +185,7 @@ export default function ChatModule() {
 
                 {/* Footer Input UI */}
                 <footer className="p-4 lg:p-6 bg-white border-t">
-                  <div className="max-w-4xl mx-auto space-y-3">
+                  <div className="max-w-4xl lg:max-w-[100%] mx-auto space-y-3">
                     {/* Main Input Box */}
                     <div className="flex items-end gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 shadow-inner">
                       {/* Plus/Expand Action */}

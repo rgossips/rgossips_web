@@ -10,27 +10,25 @@ import {
 } from "@/components/ui/carousel";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "firebase/firestore";
 
 export default function BrandsCarousel() {
   const [brands, setBrands] = useState([]);
   const [api, setApi] = useState(null);
 
-  // Fetch brands
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        // 1. Create a query with multiple filters
         const brandsRef = collection(db, "brands");
+        // Added limit(4) as requested
         const q = query(
           brandsRef,
           where("isActive", "==", true),
           where("manualVerified", "==", 2),
+          limit(4),
         );
 
-        // 2. Execute the filtered query
         const snap = await getDocs(q);
-
         const list = snap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -45,9 +43,9 @@ export default function BrandsCarousel() {
     fetchBrands();
   }, []);
 
-  // Auto slide
+  // Auto slide only active if there are enough items to slide
   useEffect(() => {
-    if (!api) return;
+    if (!api || brands.length <= 1) return;
 
     const interval = setInterval(() => {
       api.scrollNext();
@@ -59,24 +57,28 @@ export default function BrandsCarousel() {
   if (!brands.length) return null;
 
   return (
-    <section className="w-full px-3 py-6">
+    <section className="w-full px-6 py-10 lg:py-16">
       <SectionTitle text="BRANDS YOU'LL LOVE" />
 
-      <div className="relative w-full">
-        {/* Left */}
+      <div className="relative w-full max-w-7xl mx-auto mt-8">
+        {/* Navigation Buttons - Hidden on Laptop (since it's a grid) */}
         <button
           onClick={() => api?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
+          className="lg:hidden absolute -left-2 top-1/2 -translate-y-1/2 z-20 bg-white shadow-xl p-3 rounded-full text-slate-800"
         >
-          <FaChevronLeft size={18} />
+          <FaChevronLeft size={16} />
         </button>
 
         <Carousel
-          opts={{ align: "start", loop: true }}
+          opts={{
+            align: "start",
+            loop: true,
+            // watchDrag: true
+          }}
           setApi={setApi}
           className="w-full"
         >
-          <CarouselContent className="-ml-3">
+          <CarouselContent className="-ml-4 lg:ml-0 lg:grid lg:grid-cols-4 lg:gap-6">
             {brands.map((b) => (
               <CarouselItem
                 key={b.id}
@@ -91,6 +93,7 @@ export default function BrandsCarousel() {
                       className="object-contain"
                     />
                   </div>
+
                   <p className="text-sm mt-3 text-center">{b.name}</p>
                 </div>
               </CarouselItem>
@@ -98,12 +101,11 @@ export default function BrandsCarousel() {
           </CarouselContent>
         </Carousel>
 
-        {/* Right */}
         <button
           onClick={() => api?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white shadow-md p-2 rounded-full"
+          className="lg:hidden absolute -right-2 top-1/2 -translate-y-1/2 z-20 bg-white shadow-xl p-3 rounded-full text-slate-800"
         >
-          <FaChevronRight size={18} />
+          <FaChevronRight size={16} />
         </button>
       </div>
     </section>

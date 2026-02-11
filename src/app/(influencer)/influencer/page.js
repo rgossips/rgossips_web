@@ -46,7 +46,7 @@ export default function HomePage() {
 
       <div className="relative z-20 bg-white p-2">
         {/* <SelectionMenu /> */}
-        <div className="flex flex-col gap-16 items-center">
+        <div className="flex flex-col gap-8 items-center">
           <UserDoc />
           <StackedDeals />
           <JourneyCarousel />

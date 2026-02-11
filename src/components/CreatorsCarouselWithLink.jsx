@@ -74,18 +74,20 @@ export default function CreatorsCarouselWithLink() {
     },
   ];
 
-  // Auto slide
+  // Auto slide (mobile/tablet only)
   useEffect(() => {
     if (!api) return;
+    if (window.innerWidth >= 1024) return; // skip on laptop
     const interval = setInterval(() => {
       api.scrollNext();
     }, 3000);
     return () => clearInterval(interval);
   }, [api]);
 
-  // Sync dots
+  // Sync dots (mobile/tablet only)
   useEffect(() => {
     if (!api) return;
+    if (window.innerWidth >= 1024) return;
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
     });
@@ -93,47 +95,55 @@ export default function CreatorsCarouselWithLink() {
 
   return (
     <section className="w-full px-3 py-6">
-      <SectionTitle text="OUR TOP CREATORS" />
-
-      {/* Wrapper with arrows */}
-      <div className="relative w-full mt-8">
+      <SectionTitle text="OUR TOP CREATOR" />
+      {/* Desktop: 4 cards in a row, no scroll/arrows/dots */}
+      <div className="hidden lg:flex justify-center gap-8 mt-8">
+        {creators.slice(0, 4).map((creator, i) => (
+          <div key={i} className="flex-1 max-w-xs">
+            <CreatorCard {...creator} />
+          </div>
+        ))}
+      </div>
+      {/* Mobile/Tablet: Carousel with arrows/dots */}
+      <div className="w-full mt-8 lg:hidden flex justify-center items-center gap-2 relative">
         <button
           onClick={() => api?.scrollPrev()}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-white shadow-md p-2 rounded-full z-20 hover:scale-105"
+          className="bg-white shadow-md p-2 rounded-full z-20 hover:scale-105"
+          style={{ position: "relative" }}
         >
           <FaChevronLeft size={18} />
         </button>
-
-        <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          setApi={setApi}
-          className="w-full"
-        >
-          <CarouselContent className="gap-4 px-1">
-            {creators.map((creator, index) => (
-              <CarouselItem
-                key={index}
-                className="basis-[88%] sm:basis-[48%] md:basis-[32%] lg:basis-[24%]"
-              >
-                <CreatorCard {...creator} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-
+        <div className="flex-1 flex justify-center">
+          <Carousel
+            opts={{
+              align: "center",
+              loop: true,
+            }}
+            setApi={setApi}
+            className="w-full max-w-xs"
+          >
+            <CarouselContent className="gap-4 px-1">
+              {creators.map((creator, index) => (
+                <CarouselItem
+                  key={index}
+                  className="basis-full flex justify-center"
+                >
+                  <CreatorCard {...creator} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
         <button
           onClick={() => api?.scrollNext()}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-white shadow-md p-2 rounded-full z-20 hover:scale-105"
+          className="bg-white shadow-md p-2 rounded-full z-20 hover:scale-105"
+          style={{ position: "relative" }}
         >
           <FaChevronRight size={18} />
         </button>
       </div>
-
-      {/* Dots */}
-      <div className="flex justify-center mt-4 gap-2">
+      {/* Dots (mobile/tablet only) */}
+      <div className="flex justify-center mt-4 gap-2 lg:hidden">
         {creators.map((_, i) => (
           <div
             key={i}

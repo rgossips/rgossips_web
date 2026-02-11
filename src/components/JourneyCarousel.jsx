@@ -62,7 +62,7 @@ const JourneyCarousel = () => {
       </div>
 
       {/* Scrollable Container */}
-      <div className="flex overflow-x-auto gap-4 px-6 pb-6 scrollbar-hide snap-x snap-mandatory">
+      <div className="flex lg:grid lg:grid-cols-4 overflow-x-auto gap-4 px-6 pb-6 scrollbar-hide snap-x snap-mandatory">
         {journeyData.map((item) => (
           <div
             key={item.id}

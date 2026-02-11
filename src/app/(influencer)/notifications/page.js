@@ -55,7 +55,7 @@ export default function NotificationsPage() {
       </header>
 
       {/* Notification List */}
-      <main className="max-w-2xl mx-auto mt-4 px-4 space-y-3">
+      <main className="max-w-2xl lg:max-w-[80%] mx-auto mt-4 px-4 space-y-3">
         {NOTIFICATIONS.map((item, index) => (
           <motion.div
             key={item.id}

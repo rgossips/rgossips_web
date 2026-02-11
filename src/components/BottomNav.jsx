@@ -12,12 +12,12 @@ const BottomNav = () => {
   const navItems = [
     { label: "Home", icon: Home, path: "/" },
     { label: "Discover", icon: Search, path: "/discover" },
-    { label: "My Campaigns", icon: Briefcase, path: "/my-campaigns" },
+    { label: "Campaigns", icon: Briefcase, path: "/campaigns" },
     { label: "Profile", icon: User, path: "/profile" },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+    <div className="fixed lg:hidden bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto relative">
         {navItems.map((item) => {
           // Check if current path matches to apply active styles

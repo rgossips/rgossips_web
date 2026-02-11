@@ -33,7 +33,7 @@ const hotelData = [
 
 const HotelRecommendations = () => {
   return (
-    <section className="w-full py-6 bg-white">
+    <section className="w-full py-6 px-3 lg:px-8 bg-white">
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-slate-800 tracking-tight">
@@ -43,11 +43,11 @@ const HotelRecommendations = () => {
       </div>
 
       {/* Vertical List */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4">
         {hotelData.map((hotel) => (
           <div
             key={hotel.id}
-            className="flex items-center gap-4 bg-white p-2 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50"
+            className="flex items-center gap-4 lg:shadow-lg lg:border-2 bg-white p-2 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50"
           >
             {/* Left: Square/Rounded Image */}
             <div className="relative w-28 h-28 flex-shrink-0">

@@ -123,7 +123,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
   };
 
   return (
-    <div className="relative w-full h-[650px] flex items-start justify-center pt-10 perspective-[1200px] overflow-hidden">
+    <div className="relative w-full h-[550px] lg:h-[600px] flex items-start justify-center perspective-[1200px] overflow-hidden">
       <AnimatePresence initial={false}>
         {stack.map((card, index) => {
           const isTop = index === stack.length - 1;
@@ -137,7 +137,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
               disableDrag={!isTop}
             >
               <motion.div
-                className="bg-white rounded-[45px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden w-[350px] aspect-[4/5] will-change-transform"
+                className="bg-white rounded-[45px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform"
                 animate={{
                   y: positionFromTop * 35, // More bottom visibility
                   scale: 1 - positionFromTop * 0.07,
@@ -150,7 +150,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
-                <div className="relative h-[60%] w-full">
+                <div className="relative h-[60%] lg:h-[80%] w-full">
                   <img
                     src={card.img}
                     className="w-full h-full object-cover"
@@ -164,17 +164,15 @@ export default function StackedDeals({ sensitivity = 120 }) {
                   </div>
                 </div>
 
-                <div className="p-8 flex flex-col justify-between h-[40%]">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-extrabold text-slate-800 leading-tight w-1/2">
+                <div className="px-4 py-4 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between h-[40%] lg:h-[80px] gap-3 lg:gap-0">
+                  <div className="flex flex-row items-center justify-between w-full gap-2 lg:flex-row lg:gap-6">
+                    <h3 className="text-base font-extrabold text-slate-800 leading-tight lg:text-xl lg:w-auto">
                       Deal Of The Day
                     </h3>
-
                     {/* Only this component updates every second */}
                     <RollingTimer />
                   </div>
-
-                  <button className="w-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-5 rounded-full font-black text-sm uppercase shadow-xl shadow-pink-200 mt-4 tracking-widest active:scale-95 transition-transform">
+                  <button className="w-full lg:w-auto bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 lg:py-2 lg:px-6 rounded-full lg:rounded-2xl font-black text-xs lg:text-sm uppercase shadow-xl shadow-pink-200 tracking-widest active:scale-95 transition-transform lg:max-h-12 lg:mt-0">
                     Apply Now
                   </button>
                 </div>

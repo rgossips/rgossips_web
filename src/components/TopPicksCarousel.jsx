@@ -48,7 +48,7 @@ export default function CarouselTopPicks() {
   if (loading || offers.length === 0) return null;
 
   return (
-    <section className="w-full relative py-6">
+    <section className="w-full relative py-6 px-3 lg:px-8">
       {/* Container for title to match horizontal padding */}
       <div className="px-6 mb-4">
         <div className="flex justify-between items-center">

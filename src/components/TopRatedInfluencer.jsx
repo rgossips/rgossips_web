@@ -39,7 +39,7 @@ const TopRatedInfluencers = () => {
       </div>
 
       {/* Horizontal Scroll Area */}
-      <div className="flex overflow-x-auto gap-4 py-2 px-6 pb-4 scrollbar-hide snap-x snap-mandatory">
+      <div className="flex lg:grid grid-cols-5 overflow-x-auto gap-4 py-2 px-6 pb-4 scrollbar-hide snap-x snap-mandatory">
         {influencerData.map((person) => (
           <div
             key={person.id}

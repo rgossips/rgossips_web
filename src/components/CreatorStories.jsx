@@ -107,7 +107,7 @@ export default function CreatorStories() {
   }, [api]);
 
   return (
-    <section className="w-full px-3 py-6">
+    <section className="w-full px-3 py-6 lg:px-8">
       {/* Heading */}
       <SectionTitle text={"TOP CREATOR STORIES"} />
 
