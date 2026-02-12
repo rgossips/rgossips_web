@@ -1,70 +1,115 @@
 "use client";
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
-import React from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/context/AuthContext";
-
-import UserSettingsForm from "@/components/UserSettingsForm";
-import MyEarningsAndAnalytics from "@/components/MyEarningsAndAnalytics";
-import MyCampaignsTable from "@/components/MyCampaignsTable";
-import UserHeader from "@/components/UserHeader";
-import InstagramAnalytics from "@/components/InstagramAnalytics";
+import { Home, Search, Briefcase, User as UserIcon } from "lucide-react";
+import AddReelFlow from "@/components/AddReelFlow";
+import DashboardView from "@/components/DashboardView";
+import MyInformationDetail from "@/components/MyInformationDetail";
+import AnalyticsPage from "@/components/AnalyticsPage";
+import DetailedCampaignAnalytics from "@/components/CampaignAnalytics";
+import { vi } from "zod/v4/locales";
+import EditProfilePage from "@/components/EditProfilePage";
+import NotificationSettings from "@/components/NotificationSettings";
+import PrivacySecurityPage from "@/components/PrivacySettings";
+import ChangePassword from "@/components/ChangePassword";
+import TrustedDevices from "@/components/TrustedDevices";
+import DeactivateAccount from "@/components/DeactiveAccount";
+import HelpSupport from "@/components/HelpAndSupport";
 
 export default function ProfilePage() {
-  // Pull profile (userData) directly from context
-  const { profile, loading } = useAuth();
-
-  if (loading) return <div>Loading Profile...</div>;
-  if (!profile) return <div>No profile found.</div>;
+  const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 pb-24 pt-[150px]">
-      <div className="max-w-[80vw] mx-auto px-4 grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 -mt-16">
-        {/* Pass the global profile data to components */}
-        <UserHeader userData={profile} />
-
-        <Card className="shadow-md">
-          <CardContent className="p-6">
-            <UserSettingsForm userData={profile} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="max-w-[80vw] mx-auto mt-10 px-4">
-        <Tabs defaultValue="earnings" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 bg-gray-100 rounded-md mb-10 pb-10 shadow-sm">
-            <TabsTrigger
-              value="earnings"
-              className="text-lg font-semibold cursor-pointer data-[state=active]:bg-blue-700 data-[state=active]:text-white"
-            >
-              Earnings & Analytics
-            </TabsTrigger>
-            <TabsTrigger
-              value="campaigns"
-              className="text-lg font-semibold cursor-pointer data-[state=active]:bg-blue-700 data-[state=active]:text-white"
-            >
-              My Campaigns
-            </TabsTrigger>
-            <TabsTrigger
-              value="instagram"
-              className="text-lg font-semibold cursor-pointer data-[state=active]:bg-blue-700 data-[state=active]:text-white"
-            >
-              Instagram Analytics
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="earnings">
-            <MyEarningsAndAnalytics />
-          </TabsContent>
-          <TabsContent value="campaigns">
-            <MyCampaignsTable />
-          </TabsContent>
-          <TabsContent value="instagram">
-            <InstagramAnalytics />
-          </TabsContent>
-        </Tabs>
-      </div>
+    <div className="bg-[#F3F4F9] min-h-screen font-sans text-slate-900 antialiased overflow-x-hidden">
+      <AnimatePresence mode="wait">
+        {view === "dashboard" && (
+          <DashboardView
+            key="dash"
+            onOpenEdit={() => {
+              setView("edit-profile");
+            }}
+            onNotificationClick={() => {
+              setView("notifications");
+            }}
+            onPrivacyClick={() => {
+              setView("privacy");
+            }}
+            onOpenAnalytics={() => setView("analytics")}
+            onOpenInfo={() => setView("my-info")}
+            onhelpSupportClick={() => setView("help&support")}
+          />
+        )}
+        {view === "my-info" && (
+          <MyInformationDetail
+            key="info"
+            onBack={() => setView("dashboard")}
+            onAddReel={() => setView("add-reel")}
+          />
+        )}
+        {view === "add-reel" && (
+          <AddReelFlow key="reel" onBack={() => setView("my-info")} />
+        )}
+        {view === "analytics" && (
+          <AnalyticsPage
+            key="analytics"
+            onCampaignAnalytics={() => {
+              setView("campaign");
+            }}
+            onBack={() => setView("dashboard")}
+          />
+        )}
+        {view === "campaign" && (
+          <DetailedCampaignAnalytics
+            key="campaign"
+            onBack={() => setView("analytics")}
+          />
+        )}
+        {view === "edit-profile" && (
+          <EditProfilePage
+            key="edit-profile"
+            onBack={() => setView("dashboard")}
+          />
+        )}
+        {view === "notifications" && (
+          <NotificationSettings
+            key="notifications"
+            onBack={() => setView("dashboard")}
+          />
+        )}
+        {view === "privacy" && (
+          <PrivacySecurityPage
+            key="privacy"
+            onBack={() => setView("dashboard")}
+            onTrustedDevices={() => setView("trusted-devices")}
+            onDeactiveAccount={() => setView("deactivate-account")}
+            onPasswordChange={() => {
+              setView("password-change");
+            }}
+          />
+        )}
+        {view === "password-change" && (
+          <ChangePassword
+            key="password-change"
+            onBack={() => setView("privacy")}
+          />
+        )}
+        {view === "trusted-devices" && (
+          <TrustedDevices
+            key="trusted-devices"
+            onBack={() => setView("privacy")}
+          />
+        )}
+        {view === "deactivate-account" && (
+          <DeactivateAccount
+            key="deactivate-account"
+            onBack={() => setView("privacy")}
+          />
+        )}
+        {view === "help&support" && (
+          <HelpSupport key="help-support" onBack={() => setView("dashboard")} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
