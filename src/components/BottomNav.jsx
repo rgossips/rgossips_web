@@ -10,7 +10,7 @@ const BottomNav = () => {
 
   // Navigation configuration matching your screenshot
   const navItems = [
-    { label: "Home", icon: Home, path: "/" },
+    { label: "Home", icon: Home, path: "/influencer" },
     { label: "Discover", icon: Search, path: "/discover" },
     { label: "Campaigns", icon: Briefcase, path: "/campaigns" },
     { label: "Profile", icon: User, path: "/profile" },
