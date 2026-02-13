@@ -119,10 +119,20 @@ export const FilterContent = () => {
   );
 };
 
-// --- 2. The Modal Wrapper (Mobile Only) ---
+// --- 2. The Modal Wrapper (Mobile & Desktop) ---
 const FilterModal = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden">
+    <>
+      {/* Dark Overlay - Show on both mobile and desktop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"
+      />
+
+      {/* Modal - Slide from right on mobile, centered on desktop */}
       <motion.div
         initial={{ x: "100%", opacity: 1 }}
         animate={{
@@ -131,10 +141,10 @@ const FilterModal = ({ onClose }) => {
           transition: { type: "spring", stiffness: 300, damping: 30 },
         }}
         exit={{ x: "100%", opacity: 0 }}
-        className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl overflow-y-auto scrollbar-hide flex flex-col"
+        className="fixed inset-0 z-60 right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl overflow-y-auto scrollbar-hide flex flex-col lg:inset-auto lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-2xl lg:max-h-[90vh] lg:rounded-[40px]"
       >
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between p-6 sticky top-0 bg-white z-10 border-b border-slate-50">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 sticky top-0 bg-white z-10 border-b border-slate-50 lg:rounded-t-[40px]">
           <button
             onClick={onClose}
             className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076] hover:bg-[#ffd6eb] transition-colors"
@@ -152,8 +162,8 @@ const FilterModal = ({ onClose }) => {
           <FilterContent />
         </div>
 
-        {/* Mobile Footer Buttons */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-100 p-6 flex gap-4">
+        {/* Footer Buttons */}
+        <div className="sticky bottom-0 bg-white border-t border-slate-100 p-6 flex gap-4 lg:rounded-b-[40px]">
           <Button
             variant="ghost"
             className="flex-1 h-14 rounded-2xl font-bold text-slate-800 bg-slate-50 hover:bg-slate-100"
@@ -169,7 +179,7 @@ const FilterModal = ({ onClose }) => {
           </Button>
         </div>
       </motion.div>
-    </div>
+    </>
   );
 };
 

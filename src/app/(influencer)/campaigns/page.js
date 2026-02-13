@@ -122,7 +122,7 @@ export default function CampaignsPage() {
 
       {/* --- MAIN CONTENT AREA --- */}
       {/* FIX: Added 'flex-1' and 'overflow-y-auto' so this scrolls while sidebar stays fixed */}
-      <div className="flex-1 p-6 lg:p-10 overflow-y-auto">
+      <div className="flex-1 p-6 lg:p-10 lg:pt-24 overflow-y-auto">
         <AnimatePresence>
           {isSearchOpen && (
             <SearchOverlay
@@ -171,7 +171,7 @@ export default function CampaignsPage() {
                   onClick={() => setIsFiltersOpen(true)}
                   size="icon"
                   variant="ghost"
-                  className="bg-white rounded-xl shadow-sm text-slate-400 hover:text-[#E60076]"
+                  className="bg-white rounded-xl cursor-pointer shadow-sm text-slate-400 hover:text-[#E60076] border border-slate-100"
                 >
                   <SlidersHorizontal size={20} />
                 </Button>

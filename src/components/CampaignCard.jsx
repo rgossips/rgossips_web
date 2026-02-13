@@ -14,11 +14,13 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export function CampaignCard({ campaign }) {
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   const isActive = campaign.status === "Active";
+  const router = useRouter();
 
   // Status Badge Colors
   const statusStyles = {
@@ -119,20 +121,29 @@ export function CampaignCard({ campaign }) {
       {/* Conditional Action Button */}
       <div className="flex gap-3">
         {isActive && (
-          <Button className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100">
+          <Button
+            onClick={() => router.push("/offers/" + campaign.id)}
+            className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
+          >
             Apply Now <ChevronRight size={16} className="ml-1" />
           </Button>
         )}
 
         {isApplied && (
-          <Button className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100">
+          <Button
+            onClick={() => router.push("/offers/" + campaign.id)}
+            className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
+          >
             <Eye size={16} className="mr-2" /> View Status{" "}
             <ChevronRight size={16} className="ml-1" />
           </Button>
         )}
 
         {isCompleted && (
-          <Button className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100">
+          <Button
+            onClick={() => router.push("/offers/" + campaign.id)}
+            className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
+          >
             <BarChart3 size={16} className="mr-2" /> Full Analytics{" "}
             <ChevronRight size={16} className="ml-1" />
           </Button>
