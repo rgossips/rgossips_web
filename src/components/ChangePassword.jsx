@@ -21,12 +21,12 @@ const ChangePassword = ({ onBack }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-10 font-sans lg:pt-24 lg:px-40">
       {/* Header */}
-      <div className="sticky top-0 bg-white z-20 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
         <button
           onClick={onBack}
-          className="p-2 bg-pink-100 text-pink-500 rounded-full"
+          className="p-2 bg-pink-100 cursor-pointer text-pink-500 rounded-full"
         >
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
@@ -103,11 +103,11 @@ const ChangePassword = ({ onBack }) => {
         <div className="flex gap-3 pt-4">
           <button
             onClick={onBack}
-            className="flex-1 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-black text-gray-500"
+            className="flex-1 py-4 cursor-pointer bg-white border border-gray-100 rounded-2xl text-sm font-black text-gray-500"
           >
             Cancel
           </button>
-          <button className="flex-1 py-4 bg-emerald-500 rounded-2xl text-sm font-black text-white shadow-lg shadow-emerald-100">
+          <button className="flex-1 py-4 cursor-pointer bg-emerald-500 rounded-2xl text-sm font-black text-white shadow-lg shadow-emerald-100">
             Save Changes
           </button>
         </div>

@@ -58,14 +58,14 @@ export default function AddReelFlow({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-start pt-10 pb-10 font-sans">
-      <div className="w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden min-h-[800px] relative flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-start pt-10 pb-10 font-sans lg:pt-24">
+      <div className="w-full max-w-md lg:max-w-xl bg-white rounded-xl shadow-2xl overflow-hidden min-h-[800px] relative flex flex-col">
         {/* --- Header Section --- */}
         <div className="pt-8 px-6 pb-2 bg-white z-10">
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={step === 1 ? onBack : () => setStep(step - 1)}
-              className="w-10 h-10 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center hover:bg-pink-100 transition-colors"
+              className="w-10 h-10 cursor-pointer rounded-full bg-pink-50 text-pink-500 flex items-center justify-center hover:bg-pink-100 transition-colors"
             >
               <ArrowLeft size={20} />
             </button>
@@ -133,7 +133,7 @@ export default function AddReelFlow({ onBack }) {
                   <div className="flex bg-pink-50/50 p-1.5 rounded-xl">
                     <button
                       onClick={() => setUploadMethod("url")}
-                      className={`flex-1 py-3 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
+                      className={`flex-1 cursor-pointer py-3 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
                         uploadMethod === "url"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-400"
@@ -143,7 +143,7 @@ export default function AddReelFlow({ onBack }) {
                     </button>
                     <button
                       onClick={() => setUploadMethod("file")}
-                      className={`flex-1 py-3 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
+                      className={`flex-1 cursor-pointer py-3 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all ${
                         uploadMethod === "file"
                           ? "bg-white text-gray-900 shadow-sm"
                           : "text-gray-400"
@@ -164,7 +164,7 @@ export default function AddReelFlow({ onBack }) {
                       <input
                         type="text"
                         placeholder="https://instagram.com/reel/..."
-                        className="w-full bg-gray-50 border border-gray-100 text-gray-900 text-sm rounded-2xl focus:ring-pink-500 focus:border-pink-500 block p-4 pl-12 font-medium outline-none"
+                        className="w-full bg-gray-50 border border-gray-100 text-gray-900 text-sm rounded-xl focus:ring-pink-500 focus:border-pink-500 block p-4 pl-12 font-medium outline-none"
                         value={formData.url}
                         onChange={(e) =>
                           setFormData({ ...formData, url: e.target.value })
@@ -195,7 +195,7 @@ export default function AddReelFlow({ onBack }) {
                     <p className="text-xs text-gray-400 mb-4">
                       MP4, MOV up to 100MB
                     </p>
-                    <button className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg shadow-pink-200">
+                    <button className="px-6 cursor-pointer py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg shadow-pink-200">
                       Browse Files
                     </button>
                   </div>
@@ -283,7 +283,7 @@ export default function AddReelFlow({ onBack }) {
                           onClick={() =>
                             setFormData({ ...formData, category: cat.name })
                           }
-                          className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                          className={`flex cursor-pointer items-center gap-2 p-3 rounded-xl border transition-all ${
                             formData.category === cat.name
                               ? "border-pink-500 bg-pink-50"
                               : "border-gray-100 bg-white"
@@ -407,7 +407,7 @@ export default function AddReelFlow({ onBack }) {
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="flex-1 p-4 border border-pink-100 rounded-2xl bg-pink-50/30">
+                    <div className="flex-1 p-4 border border-pink-100 rounded-xl bg-pink-50/30">
                       <div className="flex items-center gap-2 mb-2 text-pink-500">
                         <Instagram size={16} />{" "}
                         <span className="text-[10px] font-bold uppercase">
@@ -418,7 +418,7 @@ export default function AddReelFlow({ onBack }) {
                         {formData.platform}
                       </p>
                     </div>
-                    <div className="flex-1 p-4 border border-pink-100 rounded-2xl bg-pink-50/30">
+                    <div className="flex-1 p-4 border border-pink-100 rounded-xl bg-pink-50/30">
                       <div className="flex items-center gap-2 mb-2 text-pink-500">
                         <Sparkles size={16} />{" "}
                         <span className="text-[10px] font-bold uppercase">
@@ -431,7 +431,7 @@ export default function AddReelFlow({ onBack }) {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex gap-4 items-start">
+                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 flex gap-4 items-start">
                     <div className="bg-orange-100 p-2 rounded-full text-orange-500">
                       <Check size={16} />
                     </div>
@@ -457,7 +457,7 @@ export default function AddReelFlow({ onBack }) {
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="px-6 py-4 bg-white border border-gray-100 text-gray-500 font-bold rounded-2xl text-sm hover:bg-gray-50 transition-colors"
+                className="px-6 py-4 bg-white cursor-pointer border border-gray-100 text-gray-500 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors"
               >
                 ← Back
               </button>
@@ -466,14 +466,14 @@ export default function AddReelFlow({ onBack }) {
             {step < 3 ? (
               <button
                 onClick={handleNext}
-                className="flex-1 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-2xl shadow-xl shadow-pink-200 hover:shadow-pink-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="flex-1 py-4 cursor-pointer bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-xl shadow-pink-200 hover:shadow-pink-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 Continue to {step === 1 ? "Details" : "Preview"} →
               </button>
             ) : (
               <button
                 onClick={handlePublish}
-                className="flex-1 py-4 bg-[#10b981] text-white font-bold rounded-2xl shadow-xl shadow-emerald-200 hover:bg-[#059669] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                className="flex-1 py-4 bg-[#10b981] cursor-pointer text-white font-bold rounded-xl shadow-xl shadow-emerald-200 hover:bg-[#059669] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Check size={18} strokeWidth={3} /> Publish Reel
               </button>
@@ -515,7 +515,7 @@ const Label = ({ text, required }) => (
 const PlatformButton = ({ name, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`py-3 px-4 rounded-xl text-xs font-bold transition-all ${
+    className={`py-3 px-4 cursor-pointer rounded-xl text-xs font-bold transition-all ${
       active
         ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md shadow-pink-200"
         : "bg-white border border-gray-100 text-gray-500 hover:bg-gray-50"

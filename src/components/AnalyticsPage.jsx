@@ -95,13 +95,13 @@ const AnalyticsPage = ({ onBack, onCampaignAnalytics }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-      {/* Header */}
-      <div className="sticky top-0 bg-white z-20 px-4 py-4 flex items-center justify-between border-b border-gray-100">
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans lg:pb-12 lg:pt-24">
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 bg-white z-20 px-4 py-4 flex items-center justify-between border-b border-gray-100">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-2.5 bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors"
+            className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors"
           >
             <ArrowLeft size={20} />
           </button>
@@ -109,7 +109,180 @@ const AnalyticsPage = ({ onBack, onCampaignAnalytics }) => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      {/* Desktop Header */}
+      <div className="hidden lg:flex sticky top-0 z-20 px-40 py-4 items-center justify-between border-b border-gray-100">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">
+              Analytics & Performance
+            </h1>
+            <p className="text-xs text-gray-400 font-bold">
+              Track your growth and engagement metrics
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid grid-cols-12 gap-8 max-w-7xl mx-auto px-8 py-8">
+        {/* Time Range and Metrics */}
+        <div className="col-span-12 space-y-6">
+          {/* Time Range Dropdown */}
+          <div className="flex justify-end">
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold shadow-sm"
+              >
+                {timeRange} <ChevronDown size={14} className="text-gray-400" />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 z-30 overflow-hidden animate-in fade-in zoom-in duration-200">
+                  {[
+                    "Last 7 Days",
+                    "Last 30 Days",
+                    "Last 90 Days",
+                    "Last Year",
+                  ].map((range) => (
+                    <button
+                      key={range}
+                      className={`w-full text-left px-4 py-3 text-[11px] font-bold ${timeRange === range ? "bg-pink-500 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+                      onClick={() => {
+                        setTimeRange(range);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Metrics Grid - 4 columns for desktop */}
+          <div className="grid grid-cols-4 gap-4">
+            <MetricCard
+              icon={<Eye size={20} />}
+              color="bg-blue-500"
+              label="Total Views"
+              value="1.2M"
+              trend="+12%"
+            />
+            <MetricCard
+              icon={<Heart size={20} />}
+              color="bg-pink-500"
+              label="Engagement"
+              value="8.5%"
+              trend="+2.3%"
+            />
+            <MetricCard
+              icon={<Users size={20} />}
+              color="bg-purple-500"
+              label="Followers"
+              value="125K"
+              trend="+5.2K"
+            />
+            <MetricCard
+              icon={<DollarSign size={20} />}
+              color="bg-green-500"
+              label="Revenue"
+              value="$12.4K"
+              trend="+23%"
+            />
+          </div>
+        </div>
+
+        {/* Left Column: Chart and Campaign */}
+        <div className="col-span-7 space-y-6">
+          {/* Chart.js Container */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-6 px-1">
+              <h3 className="font-black text-gray-900 text-sm">
+                Monthly Earnings
+              </h3>
+              <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-lg">
+                ↗ +23%
+              </span>
+            </div>
+            <div className="h-48 w-full">
+              <Line data={chartData} options={chartOptions} />
+            </div>
+          </div>
+
+          {/* Campaign Analytics */}
+          <button
+            onClick={onCampaignAnalytics}
+            className="w-full cursor-pointer bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-all hover:border-gray-200"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-red-50 text-red-500 rounded-2xl">
+                <BarChart3 size={20} />
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-black text-gray-900">
+                  Campaign Analytics
+                </h4>
+                <p className="text-[10px] text-gray-400 font-bold">
+                  View detailed brand reports
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-300" />
+          </button>
+        </div>
+
+        {/* Right Column: Demographics */}
+        <div className="col-span-5">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6 sticky top-24">
+            <h3 className="font-black text-gray-900 text-sm">
+              Audience Demographics
+            </h3>
+
+            <div className="space-y-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
+                Gender Distribution
+              </p>
+              <ProgressBar label="Female" percentage={58} color="bg-pink-500" />
+              <ProgressBar label="Male" percentage={35} color="bg-blue-500" />
+              <ProgressBar label="Other" percentage={7} color="bg-purple-500" />
+            </div>
+
+            <div className="pt-4 space-y-4">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
+                Age Distribution
+              </p>
+              <div className="space-y-3">
+                <ProgressBar
+                  label="18-24"
+                  percentage={42}
+                  color="bg-indigo-500"
+                />
+                <ProgressBar
+                  label="25-34"
+                  percentage={38}
+                  color="bg-indigo-400"
+                />
+                <ProgressBar
+                  label="35-44"
+                  percentage={15}
+                  color="bg-indigo-300"
+                />
+                <ProgressBar label="45+" percentage={5} color="bg-indigo-200" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="block lg:hidden p-4 space-y-6">
         {/* Trending Section */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">

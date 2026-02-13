@@ -37,7 +37,7 @@ const BottomNav = () => {
               <item.icon
                 size={22}
                 strokeWidth={isActive ? 2.5 : 2}
-                className={`transition-all duration-300 ${
+                className={`transition-all duration-300 pt-1 ${
                   isActive
                     ? "text-[#F6339A] scale-110"
                     : "text-[#64748B] group-active:scale-90"

@@ -16,12 +16,12 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-10 font-sans lg:px-40 lg:pt-24">
       {/* Header */}
-      <div className="sticky top-0 bg-white z-20 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
         <button
           onClick={onBack}
-          className="p-2 bg-pink-100 text-pink-500 rounded-full"
+          className="p-2 bg-pink-100 cursor-pointer text-pink-500 rounded-full"
         >
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
@@ -82,7 +82,7 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
               <button
                 key={reason}
                 onClick={() => setSelectedReason(reason)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-pink-200 ${
+                className={`w-full flex items-center cursor-pointer justify-between p-4 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-pink-200 ${
                   selectedReason === reason
                     ? "border-pink-500 bg-pink-50"
                     : "border-gray-200 bg-white"
@@ -140,7 +140,7 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
           </p>
           <button
             onClick={onNavigateToPrivacy}
-            className="text-[11px] font-black text-blue-600 flex items-center gap-1 hover:underline"
+            className="text-[11px] cursor-pointer font-black text-blue-600 flex items-center gap-1 hover:underline"
             type="button"
           >
             Go to Privacy Settings <ChevronRight size={14} />
@@ -151,7 +151,7 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
         <div className="flex gap-3 pt-4">
           <button
             onClick={onBack}
-            className="flex-1 py-4 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500"
+            className="flex-1 py-4 cursor-pointer bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500"
             type="button"
           >
             Cancel
@@ -160,7 +160,7 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
             disabled={!selectedReason || !hasAcknowledged}
             className={`flex-1 py-4 rounded-xl text-sm font-black text-white shadow-lg transition-all ${
               selectedReason && hasAcknowledged
-                ? "bg-rose-500 shadow-rose-100"
+                ? "bg-rose-500 shadow-rose-100 crusor-pointer"
                 : "bg-gray-200 shadow-none cursor-not-allowed"
             }`}
             type="button"

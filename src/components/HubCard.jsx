@@ -11,7 +11,7 @@ export const HubCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`${bgColor} p-5 rounded-[2.2rem] border border-white shadow-sm flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all`}
+    className={`${bgColor} p-5 rounded-xl border border-white shadow-sm flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all`}
   >
     <div
       className={`w-12 h-12 bg-gradient-to-br ${iconGradient} rounded-2xl flex items-center justify-center text-white shadow-md`}

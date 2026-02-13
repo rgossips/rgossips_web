@@ -5,19 +5,97 @@ const TrustedDevices = ({ onBack }) => {
   const [isLogoutAllOpen, setIsLogoutAllOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white pb-10 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-10 font-sans lg:pt-24 lg:px-40">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 px-6 py-4 lg:px-8 flex items-center gap-4 border-b border-gray-100">
         <button
           onClick={onBack}
-          className="p-2 bg-pink-50 text-pink-500 rounded-full"
+          className="p-2 bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform"
         >
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
-        <h1 className="text-lg font-black tracking-tight">Trusted Devices</h1>
+        <div>
+          <h1 className="text-lg lg:text-2xl font-black tracking-tight">
+            Trusted Devices
+          </h1>
+          <p className="hidden lg:block text-xs text-gray-400 font-bold">
+            Manage devices logged into your account
+          </p>
+        </div>
       </div>
 
-      <div className="p-5 space-y-6">
+      {/* Desktop Layout */}
+      <div className="hidden lg:grid grid-cols-7 gap-8 max-w-7xl mx-auto px-8 py-8">
+        {/* Left Column - Info and List */}
+        <div className="col-span-7 space-y-6">
+          {/* Top Info Box */}
+          <div className="bg-[#EBF3FF] p-6 rounded-2xl flex gap-4">
+            <div className="mt-1 text-blue-500 flex-shrink-0">
+              <Smartphone size={20} />
+            </div>
+            <p className="text-[12px] font-bold text-gray-600 leading-relaxed">
+              These are the devices currently logged into your account. Remove
+              any devices you don't recognize.
+            </p>
+          </div>
+
+          {/* Device List Header */}
+          <div className="flex justify-between items-end px-1">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                2 Active
+              </span>
+              <h3 className="text-sm font-black text-gray-900">Devices</h3>
+            </div>
+            <button
+              onClick={() => setIsLogoutAllOpen(true)}
+              className="text-[11px] font-black text-rose-500 hover:underline"
+            >
+              Logout from all
+            </button>
+          </div>
+
+          {/* Devices - Grid Layout */}
+          <div className="space-y-4">
+            <DeviceCard
+              icon={<Smartphone size={22} />}
+              name="iPhone 14 Pro"
+              location="New York, USA"
+              status="Active now"
+              isCurrent={true}
+              color="bg-emerald-500"
+            />
+            <DeviceCard
+              icon={<Tablet size={22} />}
+              name="iPad Air"
+              location="Los Angeles, USA"
+              status="3 days ago"
+              color="bg-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Security Tip */}
+        <div className="col-span-5">
+          <div className="bg-[#FFF9E6] p-6 rounded-2xl flex gap-4 border border-yellow-100 sticky top-24">
+            <div className="mt-1 text-amber-500 flex-shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-[13px] font-black text-amber-700">
+                Security Tip
+              </h4>
+              <p className="text-[12px] font-bold text-amber-600/80 leading-relaxed">
+                If you see a device you don't recognize, remove it immediately
+                and change your password.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="block lg:hidden p-5 space-y-6">
         {/* Top Info Box */}
         <div className="bg-[#EBF3FF] p-5 rounded-[1.5rem] flex gap-4">
           <div className="mt-1 text-blue-500">

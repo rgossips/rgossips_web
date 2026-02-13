@@ -19,21 +19,27 @@ const NotificationSettings = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-900">
+    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
       {/* Header */}
-      <div className="sticky top-0 bg-white z-20 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
         <button
           onClick={onBack}
-          className="p-2 bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform"
+          className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform"
         >
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
-        <h1 className="text-lg font-black tracking-tight">
-          Notification Settings
-        </h1>
+        <div>
+          <h1 className="text-lg lg:text-2xl font-black tracking-tight">
+            Notification Settings
+          </h1>
+          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">
+            Manage your notification preferences and communication settings
+          </p>
+        </div>
       </div>
 
-      <div className="p-5 space-y-8">
+      {/* Desktop Layout - 2 Column Grid */}
+      <div className="hidden lg:grid grid-cols-2 gap-x-8 gap-y-2 max-w-6xl mx-auto px-8 py-8">
         {/* Campaign Notifications Section */}
         <section className="space-y-3">
           <div className="flex items-center gap-3 px-1">
@@ -45,7 +51,7 @@ const NotificationSettings = ({ onBack }) => {
             </h3>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 space-y-6 shadow-md">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
             <ToggleRow
               title="Campaign Updates"
               description="New campaigns matching your profile"
@@ -78,7 +84,7 @@ const NotificationSettings = ({ onBack }) => {
             </h3>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 space-y-6 shadow-md">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
             <ToggleRow
               title="New Messages"
               description="Messages from brands"
@@ -105,7 +111,7 @@ const NotificationSettings = ({ onBack }) => {
             </h3>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-md">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-md">
             <ToggleRow
               title="Payment Alerts"
               description="Payment received notifications"
@@ -126,7 +132,7 @@ const NotificationSettings = ({ onBack }) => {
             </h3>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-6 space-y-6 shadow-md">
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
             <ToggleRow
               title="Marketing Emails"
               description="Product updates and tips"
@@ -142,6 +148,124 @@ const NotificationSettings = ({ onBack }) => {
           </div>
         </section>
       </div>
+
+      {/* Mobile Layout */}
+      <div className="block lg:hidden p-5 space-y-8">
+        {/* Campaign Notifications Section */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="p-2 bg-pink-500 text-white rounded-xl">
+              <TrendingUp size={18} />
+            </div>
+            <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+              Campaign Notifications
+            </h3>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
+            <ToggleRow
+              title="Campaign Updates"
+              description="New campaigns matching your profile"
+              isEnabled={settings.campaignUpdates}
+              onToggle={() => toggleSetting("campaignUpdates")}
+            />
+            <ToggleRow
+              title="Application Status"
+              description="Updates on your applications"
+              isEnabled={settings.applicationStatus}
+              onToggle={() => toggleSetting("applicationStatus")}
+            />
+            <ToggleRow
+              title="Deadline Reminders"
+              description="Content submission deadlines"
+              isEnabled={settings.deadlineReminders}
+              onToggle={() => toggleSetting("deadlineReminders")}
+            />
+          </div>
+        </section>
+
+        {/* Communication Section */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="p-2 bg-blue-500 text-white rounded-xl">
+              <MessageSquare size={18} />
+            </div>
+            <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+              Communication
+            </h3>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
+            <ToggleRow
+              title="New Messages"
+              description="Messages from brands"
+              isEnabled={settings.newMessages}
+              onToggle={() => toggleSetting("newMessages")}
+            />
+            <ToggleRow
+              title="New Matches"
+              description="AI-powered campaign matches"
+              isEnabled={settings.newMatches}
+              onToggle={() => toggleSetting("newMatches")}
+            />
+          </div>
+        </section>
+
+        {/* Financial Section */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="p-2 bg-emerald-500 text-white rounded-xl">
+              <Bell size={18} />
+            </div>
+            <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+              Financial
+            </h3>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-md">
+            <ToggleRow
+              title="Payment Alerts"
+              description="Payment received notifications"
+              isEnabled={settings.paymentAlerts}
+              onToggle={() => toggleSetting("paymentAlerts")}
+            />
+          </div>
+        </section>
+
+        {/* Marketing Section */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-3 px-1">
+            <div className="p-2 bg-violet-500 text-white rounded-xl">
+              <Mail size={18} />
+            </div>
+            <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
+              Marketing
+            </h3>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
+            <ToggleRow
+              title="Marketing Emails"
+              description="Product updates and tips"
+              isEnabled={settings.marketingEmails}
+              onToggle={() => toggleSetting("marketingEmails")}
+            />
+            <ToggleRow
+              title="Weekly Report"
+              description="Performance summary"
+              isEnabled={settings.weeklyReport}
+              onToggle={() => toggleSetting("weeklyReport")}
+            />
+          </div>
+        </section>
+      </div>
+
+      {/* Global Save Button - Desktop Floating / Mobile Fixed */}
+      <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 p-4 z-40 lg:bg-transparent lg:border-none lg:relative lg:flex lg:justify-end lg:px-6 lg:pb-10">
+        <button className="w-full cursor-pointer lg:w-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white px-10 py-4 rounded-xl font-black text-sm shadow-xl shadow-pink-200 active:scale-95 transition-all">
+          Save Changes
+        </button>
+      </div>
     </div>
   );
 };
@@ -155,7 +279,7 @@ const ToggleRow = ({ title, description, isEnabled, onToggle }) => (
     </div>
     <button
       onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 outline-none border-2 ${
+      className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 outline-none border-2 ${
         isEnabled
           ? "bg-pink-500 border-pink-500"
           : "bg-gray-100 border-gray-200"

@@ -1,14 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-
-import { Home, Search, Briefcase, User as UserIcon } from "lucide-react";
 import AddReelFlow from "@/components/AddReelFlow";
 import DashboardView from "@/components/DashboardView";
 import MyInformationDetail from "@/components/MyInformationDetail";
 import AnalyticsPage from "@/components/AnalyticsPage";
 import DetailedCampaignAnalytics from "@/components/CampaignAnalytics";
-import { vi } from "zod/v4/locales";
 import EditProfilePage from "@/components/EditProfilePage";
 import NotificationSettings from "@/components/NotificationSettings";
 import PrivacySecurityPage from "@/components/PrivacySettings";
@@ -19,6 +16,10 @@ import HelpSupport from "@/components/HelpAndSupport";
 
 export default function ProfilePage() {
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [view]);
 
   return (
     <div className="bg-[#F3F4F9] min-h-screen font-sans text-slate-900 antialiased overflow-x-hidden">

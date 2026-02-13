@@ -24,28 +24,23 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
     "Food",
   ];
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle platform change
   const handlePlatformChange = (platform) => {
     setFormData((prev) => ({ ...prev, platform }));
   };
 
-  // Handle category change
   const handleCategoryChange = (e) => {
     setFormData((prev) => ({ ...prev, category: e.target.value }));
   };
 
-  // Handle date change
   const handleDateChange = (e) => {
     setFormData((prev) => ({ ...prev, date: e.target.value }));
   };
 
-  // Handle thumbnail upload
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -58,252 +53,275 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4">
-      <div className="bg-white w-full max-w-md h-[90vh] sm:h-auto sm:max-h-[95vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-y-auto no-scrollbar shadow-2xl relative animate-in slide-in-from-bottom duration-300">
-        {/* Header - Fixed/Sticky */}
-        <div className="sticky top-0 bg-white z-10 p-5 flex justify-between items-center border-b border-gray-50">
+    <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/60 backdrop-blur-sm lg:p-6">
+      <div className="bg-white w-full max-w-md lg:max-w-6xl h-[92vh] lg:h-[85vh] rounded-t-[2.5rem] lg:rounded-[3rem] shadow-2xl relative animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
+        {/* Header - Fixed */}
+        <div className="shrink-0 p-5 lg:px-10 lg:py-6 flex justify-between items-center border-b border-gray-50">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onClose}
+              className="p-2.5 bg-pink-50 text-pink-500 rounded-2xl active:scale-90 transition-transform"
+            >
+              <ArrowLeft size={18} strokeWidth={3} />
+            </button>
+            <h3 className="font-black text-gray-900 lg:text-xl tracking-tight">
+              Edit Reel
+            </h3>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 text-xs font-black text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+            <button
+              className="px-8 py-2.5 bg-[#0AA573] text-white text-xs font-black rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-100"
+              onClick={() => onSave(formData)}
+            >
+              Save Changes
+            </button>
+          </div>
+
           <button
-            onClick={onClose}
-            className="p-2 bg-pink-50 text-pink-500 rounded-full"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <h3 className="font-black text-gray-900">Edit Reel</h3>
-          <button
-            className="px-5 py-1.5 bg-green-500 text-white text-xs font-bold rounded-full"
+            className="lg:hidden px-5 py-2 bg-[#0AA573] text-white text-[11px] font-black rounded-full shadow-lg shadow-green-100"
             onClick={() => onSave(formData)}
           >
             Save
           </button>
         </div>
 
-        <div className="p-6 space-y-8 pb-32">
-          {/* Thumbnail Section */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-gray-800 uppercase px-1">
-              Thumbnail
-            </label>
-            <div className="relative aspect-[9/13] w-full max-w-[240px] mx-auto rounded-3xl overflow-hidden shadow-xl border-4 border-white">
-              <img
-                src={formData.thumbnail}
-                className="w-full h-full object-cover"
-                alt="Thumb"
-              />
-              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full">
-                {formData.category}
-              </div>
-              <label className="absolute top-4 right-4 bg-pink-500 text-white p-2 rounded-full shadow-lg cursor-pointer">
-                <Upload size={14} />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleThumbnailChange}
-                />
+        {/* Main Content Area - Scrollable on Right Only for Laptop */}
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden no-scrollbar">
+          <div className="flex flex-col lg:flex-row h-full">
+            {/* Left Sidebar: Thumbnail - Sticky on Laptop */}
+            <div className="w-full lg:w-[380px] p-6 lg:p-10 lg:border-r lg:border-gray-50 bg-gray-50/30 flex flex-col shrink-0">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                Reel Preview
               </label>
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                <p className="text-[10px] text-white/90 text-center font-medium">
-                  Click the upload icon to change thumbnail
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Content */}
-          <div className="space-y-6">
-            <h4 className="text-xs font-black text-gray-900 border-l-4 border-pink-500 pl-3">
-              Basic Information
-            </h4>
-
-            <div className="space-y-4">
-              {/* Title */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-semibold focus:ring-2 focus:ring-pink-500 outline-none"
+              <div className="relative aspect-[9/16] w-full max-w-[280px] mx-auto lg:max-w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-[6px] border-white group">
+                <img
+                  src={formData.thumbnail}
+                  className="w-full h-full object-cover"
+                  alt="Thumb"
                 />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  name="description"
-                  value={formData.description || ""}
-                  onChange={handleChange}
-                  placeholder="Describe your reel..."
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-semibold focus:ring-2 focus:ring-pink-500 outline-none resize-none"
-                />
-              </div>
-
-              {/* Video Code */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700">
-                  Video Code
-                </label>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-500 font-bold">
-                  <Hash size={14} className="text-gray-400" /> {formData.code}
+                <div className="absolute top-4 left-4 bg-black/40 backdrop-blur-md text-white text-[10px] font-black px-4 py-1.5 rounded-full border border-white/20">
+                  {formData.category}
                 </div>
-              </div>
-            </div>
-
-            <h4 className="text-xs font-black text-gray-900 border-l-4 border-pink-500 pl-3 pt-4">
-              Category & Platform
-            </h4>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center bg-white border border-gray-200 p-4 rounded-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-50 text-orange-500 rounded-xl">
-                    <Activity size={16} />
+                <label className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <div className="bg-white text-pink-500 p-4 rounded-full shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                    <Upload size={24} strokeWidth={3} />
                   </div>
-                  <div>
-                    <p className="text-[9px] text-gray-400 font-black uppercase">
-                      Selected Category
-                    </p>
-                    <select
-                      className="text-xs font-black text-gray-900 bg-transparent outline-none"
-                      value={formData.category}
-                      onChange={handleCategoryChange}
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat} className="text-gray-900">
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <ChevronDown size={18} className="text-gray-400" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {["Instagram", "TikTok", "YouTube", "Facebook"].map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => handlePlatformChange(p)}
-                    className={`py-3 text-[11px] font-black rounded-xl transition-all ${formData.platform === p ? "bg-pink-500 text-white shadow-lg shadow-pink-100" : "bg-gray-50 text-gray-400 border border-gray-100"}`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <h4 className="text-xs font-black text-gray-900 border-l-4 border-pink-500 pl-3 pt-4">
-              Performance Metrics
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center gap-3">
-                <Eye size={16} className="text-gray-400" />
-                <div>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">
-                    Views
-                  </p>
-                  <p className="text-xs font-black text-gray-900">
-                    {formData.views}
-                  </p>
-                </div>
-              </div>
-              <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center gap-3">
-                <Activity size={16} className="text-gray-400" />
-                <div>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">
-                    Engagement
-                  </p>
-                  <p className="text-xs font-black text-gray-900">
-                    {formData.engagement}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <h4 className="text-xs font-black text-gray-900 border-l-4 border-pink-500 pl-3 pt-4">
-              Additional Details
-            </h4>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700">
-                  Video URL
-                </label>
-                <div className="flex gap-2">
                   <input
-                    type="text"
-                    name="url"
-                    value={formData.url || ""}
-                    onChange={handleChange}
-                    placeholder="https://instagram.com/reel/..."
-                    className="flex-1 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs text-gray-400 truncate outline-none"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleThumbnailChange}
                   />
-                  <button
-                    className="p-4 bg-pink-500 text-white rounded-2xl"
-                    tabIndex={-1}
-                  >
-                    <Link size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-gray-700">
-                  Upload Date
                 </label>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-bold text-gray-600">
-                  <Calendar size={14} className="text-gray-400" />
-                  <input
-                    type="date"
-                    name="date"
-                    value={
-                      formData.date
-                        ? new Date(formData.date).toISOString().slice(0, 10)
-                        : ""
-                    }
-                    onChange={handleDateChange}
-                    className="bg-transparent outline-none text-xs font-bold text-gray-600"
-                  />
-                </div>
               </div>
-            </div>
-
-            {/* Danger Zone */}
-            <div className="mt-10 p-5 bg-red-50 rounded-[2rem] border border-red-100">
-              <h4 className="text-red-600 text-[11px] font-black uppercase mb-1">
-                Danger Zone
-              </h4>
-              <p className="text-[10px] text-red-400 mb-4 font-medium leading-relaxed">
-                Once you delete this reel, it will be permanently removed from
-                your portfolio.
+              <p className="mt-4 text-center text-[10px] font-bold text-gray-400">
+                Resolution: 1080 x 1920 (Recommended)
               </p>
-              <button
-                onClick={onDeleteTrigger}
-                className="w-full py-3 bg-white border border-red-200 text-red-500 rounded-xl text-xs font-black flex items-center justify-center gap-2"
-              >
-                <Trash2 size={16} /> Delete Reel
-              </button>
+            </div>
+
+            {/* Right Side: Form - Independently Scrollable */}
+            <div className="flex-1 lg:overflow-y-auto p-6 lg:p-12 no-scrollbar">
+              <div className="max-w-3xl space-y-10">
+                {/* Basic Info */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
+                    <h4 className="text-sm font-black text-gray-900 tracking-tight">
+                      Basic Information
+                    </h4>
+                  </div>
+
+                  <div className="grid gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Reel Title
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        className="w-full p-4 bg-gray-50 border border-transparent focus:border-pink-500 focus:bg-white rounded-2xl text-[13px] font-bold transition-all outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Description
+                      </label>
+                      <textarea
+                        rows={4}
+                        name="description"
+                        value={formData.description || ""}
+                        onChange={handleChange}
+                        className="w-full p-4 bg-gray-50 border border-transparent focus:border-pink-500 focus:bg-white rounded-2xl text-[13px] font-bold transition-all outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Platform & Category */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+                    <h4 className="text-sm font-black text-gray-900 tracking-tight">
+                      Classification
+                    </h4>
+                  </div>
+
+                  <div className="grid lg:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Content Category
+                      </label>
+                      <div className="relative">
+                        <select
+                          className="w-full p-4 bg-gray-50 border border-transparent focus:border-blue-500 focus:bg-white rounded-2xl text-[13px] font-black appearance-none outline-none"
+                          value={formData.category}
+                          onChange={handleCategoryChange}
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          size={16}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 lg:col-span-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Platform Distribution
+                      </label>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {["Instagram", "TikTok", "YouTube", "Facebook"].map(
+                          (p) => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => handlePlatformChange(p)}
+                              className={`py-3.5 text-[11px] font-black rounded-2xl transition-all border ${formData.platform === p ? "bg-gray-900 text-white border-gray-900 shadow-xl" : "bg-white text-gray-400 border-gray-100 hover:border-gray-300"}`}
+                            >
+                              {p}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metrics & Meta */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+                    <h4 className="text-sm font-black text-gray-900 tracking-tight">
+                      Analytics & Meta
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
+                    <MetricBox
+                      icon={<Eye size={16} />}
+                      label="Views"
+                      value={formData.views}
+                    />
+                    <MetricBox
+                      icon={<Activity size={16} />}
+                      label="Engagement"
+                      value={formData.engagement}
+                    />
+                    <MetricBox
+                      icon={<Hash size={16} />}
+                      label="Internal Code"
+                      value={formData.code}
+                    />
+                  </div>
+
+                  <div className="grid lg:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Video URL
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={formData.url || ""}
+                          className="flex-1 p-4 bg-gray-50 rounded-2xl text-[11px] font-bold text-blue-500 underline outline-none"
+                          readOnly
+                        />
+                        <div className="p-4 bg-gray-100 text-gray-400 rounded-2xl">
+                          <Link size={18} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-gray-500 uppercase ml-1">
+                        Publish Date
+                      </label>
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
+                        <Calendar size={18} className="text-gray-400" />
+                        <input
+                          type="date"
+                          value={
+                            formData.date
+                              ? new Date(formData.date)
+                                  .toISOString()
+                                  .slice(0, 10)
+                              : ""
+                          }
+                          onChange={handleDateChange}
+                          className="bg-transparent outline-none text-[13px] font-black text-gray-800 w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="p-8 bg-red-50 rounded-[2.5rem] border border-red-100 flex flex-col lg:flex-row items-center justify-between gap-6 mt-12 mb-10">
+                  <div>
+                    <h4 className="text-red-600 text-xs font-black uppercase mb-1">
+                      Delete this reel?
+                    </h4>
+                    <p className="text-[11px] text-red-400 font-bold max-w-sm">
+                      This action cannot be undone. All engagement metrics for
+                      this specific video will be removed.
+                    </p>
+                  </div>
+                  <button
+                    onClick={onDeleteTrigger}
+                    className="w-full lg:w-auto px-8 py-3.5 bg-white text-red-500 border border-red-200 rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                  >
+                    <Trash2 size={16} /> Delete Reel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Actions */}
-        <div className="absolute bottom-0 inset-x-0 p-5 bg-white/80 backdrop-blur-md border-t border-gray-100 flex gap-3">
+        {/* Mobile Fixed Bottom Actions */}
+        <div className="lg:hidden shrink-0 p-5 bg-white border-t border-gray-100 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-4 bg-white border border-gray-200 text-gray-900 rounded-2xl text-xs font-black"
+            className="flex-1 py-4 text-xs font-black text-gray-500 bg-gray-50 rounded-2xl"
           >
             Cancel
           </button>
           <button
             onClick={() => onSave(formData)}
-            className="flex-2 px-10 py-4 bg-green-500 text-white rounded-2xl text-xs font-black shadow-lg shadow-green-100"
+            className="flex-[2] py-4 bg-[#0AA573] text-white rounded-2xl text-xs font-black shadow-lg shadow-green-100"
           >
             Save Changes
           </button>
@@ -312,5 +330,15 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
     </div>
   );
 };
+
+const MetricBox = ({ icon, label, value }) => (
+  <div className="p-4 bg-white border border-gray-100 rounded-2xl flex items-center gap-3">
+    <div className="text-gray-400">{icon}</div>
+    <div>
+      <p className="text-[9px] text-gray-400 font-black uppercase">{label}</p>
+      <p className="text-xs font-black text-gray-900">{value}</p>
+    </div>
+  </div>
+);
 
 export default EditReelModal;

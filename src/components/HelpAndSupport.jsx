@@ -11,12 +11,12 @@ import {
 
 const HelpSupport = ({ onBack }) => {
   return (
-    <div className="min-h-screen bg-gray-50 pb-12 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-12 font-sans lg:px-40 lg:pt-24">
       {/* Header - Matching previous screens */}
-      <div className="sticky top-0 bg-white z-20 px-6 py-5 flex items-center gap-4 border-b border-gray-50">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 px-6 py-5 flex items-center gap-4 border-b border-gray-50">
         <button
           onClick={onBack}
-          className="p-2.5 bg-pink-50 text-pink-500 rounded-2xl active:scale-90 transition-transform"
+          className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-xl active:scale-90 transition-transform"
         >
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
@@ -35,7 +35,7 @@ const HelpSupport = ({ onBack }) => {
           <input
             type="text"
             placeholder="Search for help..."
-            className="w-full bg-white border border-gray-100 rounded-[1.5rem] py-5 pl-14 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-pink-50 transition-all placeholder:text-gray-300 shadow-sm"
+            className="w-full bg-white border border-gray-100 rounded-xl py-5 pl-14 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-pink-50 transition-all placeholder:text-gray-300 shadow-sm"
           />
         </div>
 
@@ -44,7 +44,7 @@ const HelpSupport = ({ onBack }) => {
           <h3 className="text-[11px] font-black text-gray-400 ml-2 uppercase tracking-[0.15em]">
             Contact Us
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3 grid grid-cols-1 lg:grid-cols-3 lg:gap-4">
             <ContactCard
               icon={<MessageCircle size={22} />}
               title="Live Chat"
@@ -86,9 +86,9 @@ const HelpSupport = ({ onBack }) => {
         </section>
 
         {/* Help Center CTA - High Contrast */}
-        <div className="bg-linear-to-b from-[#FEF3C7] to-[#f7f5c9] p-6 rounded-[2.5rem] border border-gray-50 space-y-5 shadow-sm">
+        <div className="bg-linear-to-b from-[#FEF3C7] to-[#f7f5c9] p-6 rounded-xl border border-gray-50 space-y-5 shadow-sm">
           <div className="flex items-center gap-5">
-            <div className="w-14 h-14 flex items-center justify-center bg-linear-to-b from-[#B68C4A] to-[#9A7238] text-white rounded-2xl aspect-square shadow-lg shadow-amber-100">
+            <div className="w-14 h-14 flex items-center justify-center bg-linear-to-b from-[#B68C4A] to-[#9A7238] text-white rounded-xl aspect-square shadow-lg shadow-amber-100">
               <HelpCircle size={28} />
             </div>
             <div className="space-y-1">
@@ -113,9 +113,9 @@ const HelpSupport = ({ onBack }) => {
 };
 
 const ContactCard = ({ icon, title, subtitle, iconBg }) => (
-  <div className="flex items-center gap-5 p-5 bg-white border border-gray-50 rounded-[2rem] shadow-sm active:scale-[0.98] transition-all cursor-pointer group">
+  <div className="flex items-center gap-5 p-5 bg-white border border-gray-50 rounded-xl shadow-sm active:scale-[0.98] transition-all cursor-pointer group">
     <div
-      className={`w-12 h-12 flex items-center justify-center rounded-2xl text-white ${iconBg} shadow-lg shadow-gray-100`}
+      className={`w-12 h-12 flex items-center justify-center rounded-xl text-white ${iconBg} shadow-lg shadow-gray-100`}
     >
       {icon}
     </div>
@@ -138,14 +138,14 @@ const FAQGroup = ({ icon, title, children }) => (
         {title}
       </h4>
     </div>
-    <div className="bg-white border border-gray-50 rounded-[2rem] overflow-hidden shadow-sm">
+    <div className="bg-white border border-gray-50 rounded-xl overflow-hidden shadow-sm">
       {children}
     </div>
   </div>
 );
 
 const FAQItem = ({ label }) => (
-  <button className="w-full flex items-center justify-between p-5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group">
+  <button className="w-full cursor-pointer flex items-center justify-between p-5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group">
     <span className="text-base font-bold text-gray-700 group-hover:text-gray-900">
       {label}
     </span>
