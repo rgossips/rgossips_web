@@ -23,6 +23,20 @@ const influencerData = [
     rating: 4.9,
     image: "https://i.pravatar.cc/150?u=allison",
   },
+  {
+    id: 4,
+    name: "Wade Warren",
+    role: "Beautician",
+    rating: 4.9,
+    image: "https://i.pravatar.cc/150?u=wade",
+  },
+  {
+    id: 5,
+    name: "Juan Hamill",
+    role: "Nail Artist",
+    rating: 4.9,
+    image: "https://i.pravatar.cc/150?u=juan",
+  },
 ];
 
 const TopRatedInfluencers = () => {
@@ -33,7 +47,7 @@ const TopRatedInfluencers = () => {
         <h2 className="text-lg font-bold text-slate-700">
           Top Rated Influencer
         </h2>
-        <button className="text-sm font-semibold text-slate-500 hover:text-pink-500 transition-colors">
+        <button className="text-sm font-bold text-slate-500 hover:opacity-80 transition-opacity cursor-pointer hover:underline">
           Explore more
         </button>
       </div>

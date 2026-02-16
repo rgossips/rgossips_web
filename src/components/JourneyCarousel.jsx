@@ -56,7 +56,7 @@ const JourneyCarousel = () => {
         <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
           Journey Together
         </h2>
-        <button className="text-sm font-bold text-slate-800 hover:opacity-80 transition-all">
+        <button className="text-sm font-bold text-slate-500 hover:opacity-80 transition-all cursor-pointer hover:underline">
           See all
         </button>
       </div>

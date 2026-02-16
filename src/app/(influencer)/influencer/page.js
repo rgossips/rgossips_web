@@ -1,6 +1,8 @@
 "use client";
 export const dynamic = "force-dynamic";
 
+import React from "react";
+import { TrendingUp, Star, Box } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import BrandsCarousel from "@/components/BrandsCarousel2";
 import CounterBanner from "@/components/CounterBanner";
@@ -24,6 +26,14 @@ import TopServices from "@/components/TopServices";
 import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
 
+const CATEGORIES = [
+  { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
+  { id: 2, label: "For You", icon: <Star size={20} />, active: false },
+  { id: 3, label: "Products", icon: <Box size={20} />, active: false },
+  { id: 4, label: "Trending", icon: <TrendingUp size={20} />, active: false },
+  { id: 5, label: "Trending", icon: <TrendingUp size={20} />, active: false },
+];
+
 export default function HomePage() {
   // Pull pre-fetched data and global loading state from Context
   const { profile, loading } = useAuth();
@@ -37,7 +47,7 @@ export default function HomePage() {
     );
   }
   return (
-    <main className="relative w-full bg-[#0D7753]">
+    <main className="relative w-full">
       {/* {profile && profile?.verificationState < 5 && (
         <ProfileStepPopup userData={profile} />
       )}
@@ -46,23 +56,75 @@ export default function HomePage() {
 
       <div className="relative z-20 bg-white p-2">
         {/* <SelectionMenu /> */}
-        <div className="flex flex-col gap-8 items-center">
-          <UserDoc />
-          <StackedDeals />
-          <JourneyCarousel />
-          <BrandsCarousel />
-          <HotelRecommendations />
-          <TopRatedInfluencers />
-          <CounterBanner />
-          <TopServices />
-          <TopPicksCarousel />
-          {/* <TopExperiencesCarousel />
-          <ExploreStates /> */}
-          <StayCarousel />
-          <CreatorStories />
-          {/* <FoodMoodGrid /> */}
-          {/* <CreatorsCarousel /> */}
-          <CreatorsCarouselWithLink />
+        <div className="flex flex-col gap-8 items-center lg:items-start">
+          {/* Full Width Header */}
+          <div className="w-full lg:max-w-[1480px] mx-auto">
+            <UserDoc />
+          </div>
+
+          {/* Desktop Two-Column Layout */}
+          <div className="hidden lg:flex gap-8 w-full pl-10 lg:max-w-[1480px] mx-auto">
+            {/* Left Sidebar: Categories Vertical */}
+            <div className="w-64 flex-shrink-0 pt-10">
+              <div className="sticky top-32 space-y-3">
+                {CATEGORIES.map((cat, idx) => (
+                  <button
+                    key={idx}
+                    className={`w-full flex items-center gap-4 px-4 cursor-pointer py-4 rounded-[24px] transition-all duration-300 shadow-sm ${
+                      cat.active
+                        ? "bg-white border-l-4 border-pink-500"
+                        : "bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    <div
+                      className={`p-2.5 rounded-2xl ${
+                        cat.active
+                          ? "bg-pink-50 text-pink-500"
+                          : "bg-slate-50 text-slate-400"
+                      }`}
+                    >
+                      {React.cloneElement(cat.icon, { size: 20 })}
+                    </div>
+                    <span
+                      className={`text-sm font-bold ${
+                        cat.active ? "text-slate-900" : "text-slate-400"
+                      }`}
+                    >
+                      {cat.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: StackedDeals */}
+            <div className="flex-1">
+              <StackedDeals />
+            </div>
+          </div>
+
+          {/* Mobile Layout: Stacked */}
+          <div className="lg:hidden w-full lg:max-w-[1480px] mx-auto">
+            <StackedDeals />
+          </div>
+
+          {/* Rest of content */}
+          <div className="w-full lg:max-w-[1480px] mx-auto space-y-8">
+            <JourneyCarousel />
+            <BrandsCarousel />
+            <HotelRecommendations />
+            <TopRatedInfluencers />
+            <CounterBanner />
+            <TopServices />
+            <TopPicksCarousel />
+            {/* <TopExperiencesCarousel />
+            <ExploreStates /> */}
+            <StayCarousel />
+            <CreatorStories />
+            {/* <FoodMoodGrid /> */}
+            {/* <CreatorsCarousel /> */}
+            <CreatorsCarouselWithLink />
+          </div>
         </div>
       </div>
     </main>

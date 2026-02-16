@@ -15,8 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "RecentGossips",
-  description: "Modern Next.js website built with Tailwind CSS.",
+  title:
+    "Recent Gossips: Global Influencer Marketing & Brand Collaboration Platform",
+  description:
+    "Rgossips is a performance-driven influencer marketing platform where brands connect with verified influencers for paid and barter campaigns. Find creators by niche, location, and engagement in minutes.",
 };
 
 export default function RootLayout({ children }) {

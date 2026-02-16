@@ -1,5 +1,6 @@
 import React from "react";
 import { Star } from "lucide-react";
+import Image from "next/image";
 
 const hotelData = [
   {
@@ -39,7 +40,9 @@ const HotelRecommendations = () => {
         <h2 className="text-xl font-bold text-slate-800 tracking-tight">
           Hotels Recommendation For You
         </h2>
-        <button className="text-sm font-bold text-slate-500">See all</button>
+        <button className="text-sm font-bold text-slate-500 hover:opacity-80 cursor-pointer hover:underline">
+          See all
+        </button>
       </div>
 
       {/* Vertical List */}
@@ -50,8 +53,10 @@ const HotelRecommendations = () => {
             className="flex items-center gap-4 lg:shadow-lg lg:border-2 bg-white p-2 rounded-[24px] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-50"
           >
             {/* Left: Square/Rounded Image */}
-            <div className="relative w-28 h-28 flex-shrink-0">
-              <img
+            <div className="relative w-28 h-28 shrink-0">
+              <Image
+                width={200}
+                height={200}
                 src={hotel.image}
                 alt={hotel.name}
                 className="w-full h-full object-cover rounded-[20px]"

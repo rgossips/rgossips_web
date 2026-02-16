@@ -1,18 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import {
   motion,
   AnimatePresence,
   useMotionValue,
   useTransform,
 } from "framer-motion";
+import Image from "next/image";
 
-// --- 1. Separated Timer Component ---
-// This prevents the whole card from re-rendering every second
+// --- RollingTimer (Unchanged) ---
 const RollingTimer = memo(() => {
   const [secondsLeft, setSecondsLeft] = useState(23654);
-
   useEffect(() => {
     const interval = setInterval(
       () => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)),
@@ -51,10 +50,9 @@ const RollingTimer = memo(() => {
     </div>
   );
 });
-
 RollingTimer.displayName = "RollingTimer";
 
-// --- 2. CardRotate Component ---
+// --- Updated CardRotate Component ---
 function CardRotate({
   children,
   onSendToBack,
@@ -80,8 +78,17 @@ function CardRotate({
 
   return (
     <motion.div
-      className="absolute w-full flex justify-center"
-      style={{ x, y, rotateX, rotateY, zIndex: disableDrag ? 0 : 50 }}
+      className="absolute flex justify-center cursor-grab active:cursor-grabbing"
+      // Crucial: ensure this wrapper matches the card dimensions
+      style={{
+        x,
+        y,
+        rotateX,
+        rotateY,
+        zIndex: disableDrag ? 0 : 50,
+        width: "100%",
+        height: "100%",
+      }}
       drag={!disableDrag}
       dragConstraints={{ top: 0, right: 0, bottom: 0, left: 0 }}
       dragElastic={0.6}
@@ -92,12 +99,12 @@ function CardRotate({
   );
 }
 
-// --- 3. Main Component ---
+// --- Main Component ---
 export default function StackedDeals({ sensitivity = 120 }) {
   const [stack, setStack] = useState([
     {
       id: 1,
-      img: "https://images.unsplash.com/photo-1544333346-64e4fe1fdeb5?q=80&w=800",
+      img: "https://images.pexels.com/photos/27127418/pexels-photo-27127418.jpeg",
     },
     {
       id: 2,
@@ -105,7 +112,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
     },
     {
       id: 3,
-      img: "https://images.unsplash.com/photo-1506929199175-609ec3ee9943?q=80&w=800",
+      img: "https://images.pexels.com/photos/22922098/pexels-photo-22922098.jpeg",
     },
     {
       id: 4,
@@ -113,21 +120,46 @@ export default function StackedDeals({ sensitivity = 120 }) {
     },
   ]);
 
-  const sendToBack = (id) => {
+  const sendToBack = useCallback((id) => {
     setStack((prev) => {
       const newStack = [...prev];
       const index = newStack.findIndex((card) => card.id === id);
+      if (index === -1) return prev;
       const [card] = newStack.splice(index, 1);
       return [card, ...newStack];
     });
-  };
+  }, []);
+
+  // --- AUTO SCROLL LOGIC ---
+  useEffect(() => {
+    const autoScroll = setInterval(() => {
+      // Always move the top card (last item in our array) to the back
+      const topCard = stack[stack.length - 1];
+      if (topCard) sendToBack(topCard.id);
+    }, 5000); // Swaps every 5 seconds
+
+    return () => clearInterval(autoScroll);
+  }, [stack, sendToBack]);
 
   return (
-    <div className="relative w-full h-[550px] lg:h-[600px] flex items-start justify-center perspective-[1200px] overflow-hidden">
+    <div className="relative w-full h-[350px] lg:h-[500px] flex items-start justify-center perspective-[1200px] lg:overflow-hidden mb-20 lg:mb-0">
       <AnimatePresence initial={false}>
         {stack.map((card, index) => {
           const isTop = index === stack.length - 1;
           const positionFromTop = stack.length - index - 1;
+
+          const xOffset =
+            typeof window !== "undefined" && window.innerWidth >= 1024
+              ? positionFromTop * 40
+              : 0;
+          const yOffset =
+            typeof window !== "undefined" && window.innerWidth >= 1024
+              ? positionFromTop * 10
+              : positionFromTop * 35;
+          const rotation =
+            typeof window !== "undefined" && window.innerWidth >= 1024
+              ? positionFromTop * 5
+              : 0;
 
           return (
             <CardRotate
@@ -137,42 +169,40 @@ export default function StackedDeals({ sensitivity = 120 }) {
               disableDrag={!isTop}
             >
               <motion.div
-                className="bg-white rounded-[45px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform"
+                // pointer-events-none on the inner div ensures the drag surface gets the hits
+                className="bg-white rounded-[45px] shadow-lg border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none"
                 animate={{
-                  y: positionFromTop * 35, // More bottom visibility
-                  scale: 1 - positionFromTop * 0.07,
-                  // We apply the blur filter ONLY to the background cards
-                  // and keep the top card perfectly sharp
+                  x: xOffset,
+                  y: yOffset,
+                  rotate: rotation,
+                  scale: 1 - positionFromTop * 0.05,
+                  zIndex: index,
                   filter:
                     positionFromTop > 0
                       ? `blur(${positionFromTop * 1}px)`
                       : "blur(0px)",
                 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
-                <div className="relative h-[60%] lg:h-[80%] w-full">
-                  <img
+                <div className="relative h-[60%] lg:h-[75%] w-full pointer-events-none">
+                  <Image
+                    fill
                     src={card.img}
-                    className="w-full h-full object-cover"
+                    className="object-cover"
                     alt="deal"
-                    loading={index === stack.length - 1 ? "eager" : "lazy"}
+                    draggable={false}
                   />
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                    <div className="w-6 h-2 rounded-full bg-pink-500 shadow-lg" />
-                    <div className="w-2 h-2 rounded-full bg-white/60" />
-                    <div className="w-2 h-2 rounded-full bg-white/60" />
-                  </div>
                 </div>
 
-                <div className="px-4 py-4 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between h-[40%] lg:h-[80px] gap-3 lg:gap-0">
-                  <div className="flex flex-row items-center justify-between w-full gap-2 lg:flex-row lg:gap-6">
-                    <h3 className="text-base font-extrabold text-slate-800 leading-tight lg:text-xl lg:w-auto">
+                <div className="px-4 py-4 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between h-[40%] lg:h-[25%] gap-3">
+                  <div className="flex flex-row items-center justify-between w-full">
+                    <h3 className="text-base font-extrabold text-slate-800 leading-tight lg:text-xl">
                       Deal Of The Day
                     </h3>
-                    {/* Only this component updates every second */}
                     <RollingTimer />
                   </div>
-                  <button className="w-full lg:w-auto bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 lg:py-2 lg:px-6 rounded-full lg:rounded-2xl font-black text-xs lg:text-sm uppercase shadow-xl shadow-pink-200 tracking-widest active:scale-95 transition-transform lg:max-h-12 lg:mt-0">
+                  {/* pointer-events-auto allows the button to be clickable while the rest of the card is draggable */}
+                  <button className="relative z-10 w-full cursor-pointer lg:w-auto bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 lg:py-2 lg:px-6 rounded-xl font-black text-xs uppercase shadow-xl active:scale-95 transition-transform pointer-events-auto">
                     Apply Now
                   </button>
                 </div>

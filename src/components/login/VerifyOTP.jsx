@@ -63,7 +63,7 @@ const VerifyOTP = ({
         <Button
           onClick={handleSubmit}
           disabled={loading || otp.length < 6}
-          className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+          className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
           {loading ? "Verifying..." : "Verify & Continue"}
         </Button>
@@ -84,7 +84,7 @@ const VerifyOTP = ({
             </p>
           ) : (
             <button
-              className="text-sm text-[#6347F9] font-bold hover:underline"
+              className="text-sm cursor-pointer text-[#6347F9] font-bold hover:underline"
               onClick={() => setTimer(30)}
             >
               Resend OTP
