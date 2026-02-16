@@ -15,10 +15,39 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title:
-    "Recent Gossips: Global Influencer Marketing & Brand Collaboration Platform",
+  title: "Recent Gossips | Global Influencer Marketing & Brand Collaboration",
   description:
     "Rgossips is a performance-driven influencer marketing platform where brands connect with verified influencers for paid and barter campaigns. Find creators by niche, location, and engagement in minutes.",
+  keywords: [
+    "Influencer Marketing",
+    "Brand Collaborations",
+    "Social Media Marketing",
+    "Barter Campaigns",
+  ],
+  authors: [{ name: "Recent Gossips" }],
+  // Icon Setup
+  icons: {
+    icon: "/icon.svg", // Path to your public/icon.svg
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  // Social Media / OpenGraph Setup
+  openGraph: {
+    title: "Recent Gossips",
+    description:
+      "Connect with verified influencers for paid and barter campaigns.",
+    url: "https://rgossips.com", // Replace with your actual domain
+    siteName: "Recent Gossips",
+    images: [
+      {
+        url: "/og-image.jpg", // Create a social sharing image in your public folder
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {
