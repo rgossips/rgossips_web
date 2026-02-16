@@ -4,6 +4,8 @@ import React from "react";
 import { Home, Compass, Briefcase, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import logo from "@/assets/logo2.png";
+import Image from "next/image";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -20,8 +22,11 @@ export const DesktopNavbar = () => {
   const pathname = usePathname();
 
   return (
-    <nav className="hidden lg:flex fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center justify-center shadow-sm">
+    <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
       {/* Navigation Links - Center */}
+      <div>
+        <Image src={logo} alt="logo" height={200} width={200} />
+      </div>
       <div className="flex items-center gap-2">
         {DESKTOP_NAV_ITEMS.map((item) => {
           const isActive =

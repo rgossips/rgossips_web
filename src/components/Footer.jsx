@@ -9,7 +9,7 @@ import {
   FaLinkedinIn,
   FaYoutube,
 } from "react-icons/fa";
-import logo from "@/assets/logoIcon.png";
+import logo from "@/assets/logo2.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -36,8 +36,8 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="md:col-span-4 space-y-6">
             <div className="flex items-center gap-2">
-              <Image src={logo} alt="Recent Gossip" width={40} />
-              <div className="text-white text-lg">Recent Gossip</div>
+              <Image src={logo} alt="Recent Gossip" width={250} />
+              {/* <div className="text-white text-lg">Recent Gossip</div> */}
             </div>
             <p className="text-slate-400 text-base leading-relaxed max-w-sm">
               The all-in-one platform connecting brands with perfect

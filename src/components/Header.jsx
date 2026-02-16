@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo2.png";
 import { useGlobal } from "@/context/GlobalContext";
 
 const Header = () => {
