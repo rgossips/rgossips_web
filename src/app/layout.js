@@ -40,7 +40,7 @@ export const metadata = {
     siteName: "Recent Gossips",
     images: [
       {
-        url: "/og-image.jpg", // Create a social sharing image in your public folder
+        url: "/icon.svg", // Create a social sharing image in your public folder
         width: 1200,
         height: 630,
       },
