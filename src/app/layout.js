@@ -31,6 +31,8 @@ export const metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
+
+  metadataBase: new URL("https://rgossips.com"),
   // Social Media / OpenGraph Setup
   openGraph: {
     title: "Recent Gossips",
