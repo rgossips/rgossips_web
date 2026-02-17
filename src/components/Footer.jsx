@@ -46,12 +46,16 @@ const Footer = () => {
             </p>
             <div className="flex items-center gap-4">
               {[
-                { Icon: FaInstagram, href: "#" },
+                {
+                  Icon: FaInstagram,
+                  href: "https://www.instagram.com/rgossips_/",
+                },
                 { Icon: FaYoutube, href: "#" },
                 { Icon: FaLinkedinIn, href: "#" },
               ].map((social, i) => (
                 <Link
                   key={i}
+                  target="blank"
                   href={social.href}
                   className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 border border-slate-700/50"
                 >
