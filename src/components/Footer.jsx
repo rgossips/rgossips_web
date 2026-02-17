@@ -46,10 +46,9 @@ const Footer = () => {
             </p>
             <div className="flex items-center gap-4">
               {[
-                { Icon: FaTwitter, href: "#" },
                 { Icon: FaInstagram, href: "#" },
-                { Icon: FaLinkedinIn, href: "#" },
                 { Icon: FaYoutube, href: "#" },
+                { Icon: FaLinkedinIn, href: "#" },
               ].map((social, i) => (
                 <Link
                   key={i}
