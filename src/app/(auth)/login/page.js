@@ -11,37 +11,26 @@ import CategorySelection from "@/components/login/CategorySelection";
 import Preferences from "@/components/login/Preferences";
 import Notifications from "@/components/login/Notifications";
 import SuccessScreen from "@/components/login/SuccessScreen";
-import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
-import bgImg from "@/assets/login/DiscoverCampaignsCard.png";
-import Image from "next/image";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  setDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { createClient } from "@/utils/supabase/client";
 
 const Login = () => {
   const router = useRouter();
-  const { type, setType } = useGlobal();
+  const supabase = createClient();
+  const { setType } = useGlobal(); // If you use this to set global user type
+
+  // --- UI & FLOW STATE ---
   const [flow, setFlow] = useState("onboarding");
   const [step, setStep] = useState(1);
-
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [error, setError] = useState("");
+
+  // --- AUTH STATE ---
   const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [userExists, setUserExists] = useState(false);
 
-  // Signup form data accumulator
+  // --- SIGNUP DATA ACCUMULATOR ---
   const [signupData, setSignupData] = useState({
     role: null, // "influencer" or "brand"
     name: "",
@@ -56,97 +45,52 @@ const Login = () => {
     notificationsEnabled: false,
   });
 
+  // --- NAVIGATION HELPERS ---
   const goToSignIn = () => {
     setFlow("signin");
     setStep(1);
     setError("");
     setUserExists(false);
   };
+
   const goToSignUp = () => {
     setFlow("signup");
     setStep(1);
     setError("");
     setUserExists(false);
   };
+
   const nextStep = () => setStep((s) => s + 1);
 
-  // Initialize RecAPTCHA on mount
-  useEffect(() => {
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-    };
-  }, []);
+  // --- AUTH LOGIC (SUPABASE) ---
 
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
-    setUserExists(false);
-
     try {
-      // 1. Clean the input: keep only digits
       const rawDigits = phoneNumber.replace(/\D/g, "");
       if (rawDigits.length < 10) {
         setError("Please enter a valid phone number");
         setLoading(false);
         return;
       }
+      // Ensure E.164 format (e.g., +919041891005)
+      const formattedPhone = rawDigits.startsWith("91")
+        ? `+${rawDigits}`
+        : `+91${rawDigits}`;
+      setPhone(formattedPhone);
 
-      // 2. Get the last 10 digits (Standardizes: 0904..., +91904..., 904...)
-      const last10 = rawDigits.slice(-10);
-      const formattedWithPrefix = "+91" + last10;
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        phone: formattedPhone,
+      });
 
-      setPhone(formattedWithPrefix); // Store for Firebase Auth
+      if (authError) throw authError;
 
-      //   if (flow === "signup") {
-      //     // 3. SEARCH VARIANTS: This must match exactly how data is stored
-      //     // Based on your DB screenshot, 'last10' (9041891005) is the winner.
-      //     const searchVariants = [last10, formattedWithPrefix];
-
-      //     const [infSnap, brandSnap] = await Promise.all([
-      //       getDocs(
-      //         query(
-      //           collection(db, "influencers"),
-      //           where("phone", "in", searchVariants),
-      //         ),
-      //       ),
-      //       getDocs(
-      //         query(
-      //           collection(db, "brands"),
-      //           where("phone", "in", searchVariants),
-      //         ),
-      //       ),
-      //     ]);
-
-      //     if (!infSnap.empty || !brandSnap.empty) {
-      //       setError("Account exists. Please sign in.");
-      //       setUserExists(true);
-      //       setLoading(false);
-      //       return; // BLOCK OTP
-      //     }
-      //   }
-
-      // --- FIREBASE AUTH ---
-      if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        { size: "invisible" },
-      );
-
-      const result = await signInWithPhoneNumber(
-        auth,
-        formattedWithPrefix,
-        window.recaptchaVerifier,
-      );
-      setConfirmationResult(result);
       setOtpSent(true);
       nextStep();
     } catch (err) {
       console.error(err);
-      setError("Verification failed. Try again.");
+      setError(err.message || "Failed to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -156,130 +100,112 @@ const Login = () => {
     setLoading(true);
     setError("");
     try {
-      if (!confirmationResult) throw new Error("Session expired.");
-      await confirmationResult.confirm(otpCode);
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: phone,
+        token: otpCode,
+        type: "sms",
+      });
+
+      if (verifyError) throw verifyError;
 
       if (flow === "signin") {
-        router.push("/influencer");
+        // Check if profile exists in your custom tables
+        const { data: profile } = await supabase
+          .from("influencers")
+          .select("id")
+          .eq("id", data.user.id)
+          .single();
+
+        const { data: brandProfile } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile || brandProfile) {
+          router.push("/influencer");
+        } else {
+          // Auth works but no profile -> Force them to finish signup
+          setFlow("signup");
+          setStep(4);
+        }
       } else {
         nextStep();
       }
     } catch (err) {
-      setError("Invalid OTP code.");
+      setError("Invalid or expired OTP.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ===== SIGNUP STEP HANDLERS =====
+  // --- STEP HANDLERS ---
 
-  const handleRoleSelection = async (selectedRole) => {
-    try {
-      setSignupData((prev) => ({ ...prev, role: selectedRole }));
-      nextStep();
-    } catch (err) {
-      setError("Failed to save role selection.");
-    }
+  const handleRoleSelection = (selectedRole) => {
+    setSignupData((prev) => ({ ...prev, role: selectedRole }));
+    nextStep();
   };
 
-  const handleProfileDetails = async (profileData) => {
-    setLoading(true);
-    setError("");
-    try {
-      setSignupData((prev) => ({ ...prev, ...profileData }));
-      nextStep();
-    } catch (err) {
-      setError("Failed to save profile details.");
-    } finally {
-      setLoading(false);
-    }
+  const handleProfileDetails = (profileData) => {
+    setSignupData((prev) => ({ ...prev, ...profileData }));
+    nextStep();
   };
 
-  const handleCategorySelection = async (selectedCategories) => {
-    setLoading(true);
-    setError("");
-    try {
-      setSignupData((prev) => ({ ...prev, categories: selectedCategories }));
-      nextStep();
-    } catch (err) {
-      setError("Failed to save categories.");
-    } finally {
-      setLoading(false);
-    }
+  const handleCategorySelection = (selectedCategories) => {
+    setSignupData((prev) => ({ ...prev, categories: selectedCategories }));
+    nextStep();
   };
 
-  const handlePreferences = async (preferencesData) => {
-    setLoading(true);
-    setError("");
-    try {
-      setSignupData((prev) => ({ ...prev, ...preferencesData }));
-      nextStep();
-    } catch (err) {
-      setError("Failed to save preferences.");
-    } finally {
-      setLoading(false);
-    }
+  const handlePreferences = (preferencesData) => {
+    setSignupData((prev) => ({ ...prev, ...preferencesData }));
+    nextStep();
   };
 
-  const handleNotifications = async (notificationsEnabled) => {
-    setLoading(true);
-    setError("");
-    try {
-      setSignupData((prev) => ({ ...prev, notificationsEnabled }));
-      nextStep();
-    } catch (err) {
-      setError("Failed to save notification preference.");
-    } finally {
-      setLoading(false);
-    }
+  const handleNotifications = (enabled) => {
+    setSignupData((prev) => ({ ...prev, notificationsEnabled: enabled }));
+    nextStep();
   };
 
   const handleSuccessAndSaveToDb = async () => {
     setLoading(true);
     try {
-      const user = auth.currentUser;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("No User Found");
 
-      // Use the 10-digit version for consistency with your existing DB
       const storagePhone = phone.replace(/\D/g, "").slice(-10);
+      const table = signupData.role === "brand" ? "brands" : "influencers";
 
-      const dataToSave = {
-        uid: user.uid,
-        phone: storagePhone, // Use standardized format
+      const { error: dbError } = await supabase.from(table).upsert({
+        id: user.id,
+        phone: storagePhone,
         name: signupData.name,
         username: signupData.username,
-        verificationState: 1, // Start as 1 (Basic)
-        updatedAt: serverTimestamp(),
-        // ... rest of data
-      };
+        niche: signupData.niche,
+        categories: signupData.categories,
+        verification_state: 1,
+        updated_at: new Date().toISOString(),
+      });
 
-      await setDoc(
-        doc(
-          db,
-          signupData.role === "brand" ? "brands" : "influencers",
-          user.uid,
-        ),
-        dataToSave,
-        { merge: true },
-      );
+      if (dbError) throw dbError;
+
       router.push("/influencer");
     } catch (err) {
-      setError("Final save failed.");
+      setError("Final save failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
-      {/* 1. BACKGROUND LAYER: Always full screen */}
+      {/* 1. BACKGROUND LAYER */}
       <div className="absolute inset-0 z-0">
-        {/* Onboarding Carousel acts as the base background */}
         <OnboardingCarousel
           onLoginClick={goToSignIn}
           onSignUpClick={goToSignUp}
         />
-
-        {/* Pink Haze Overlay: Appears when not on onboarding flow */}
         {flow !== "onboarding" && (
           <div
             className="absolute inset-0 bg-[#ff92ca] opacity-70 z-10 cursor-pointer animate-in fade-in duration-500"
@@ -288,16 +214,12 @@ const Login = () => {
         )}
       </div>
 
-      {/* 2. AUTH CONTAINER: Centered "Drawer" Card */}
+      {/* 2. AUTH CONTAINER */}
       {flow !== "onboarding" && (
         <div className="relative z-20 w-full max-w-[500px] h-full md:h-auto md:max-h-[90vh] flex flex-col justify-end md:justify-center px-0 md:px-6">
-          {/* The Card Component */}
           <div className="auth-drawer-card bg-white w-full px-8 pt-6 pb-12 rounded-t-[40px] md:rounded-[40px] shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-500">
-            {/* Drawer Handle (Mobile Visual) */}
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-8" />
-
-            <div className="w-full max-w-md mx-auto">
-              {/* --- SIGN IN FLOW --- */}
+            <div className="w-full max-md mx-auto">
               {flow === "signin" && (
                 <>
                   {step === 1 && (
@@ -308,8 +230,6 @@ const Login = () => {
                       phone={phone}
                       setPhone={setPhone}
                       mode="signin"
-                      userExists={userExists}
-                      onSwitchToSignIn={goToSignIn}
                     />
                   )}
                   {step === 2 && (
@@ -325,7 +245,6 @@ const Login = () => {
                 </>
               )}
 
-              {/* --- SIGN UP FLOW --- */}
               {flow === "signup" && (
                 <div className="space-y-6">
                   {step === 1 && <RoleSelection onNext={handleRoleSelection} />}
@@ -337,8 +256,6 @@ const Login = () => {
                       phone={phone}
                       setPhone={setPhone}
                       mode="signup"
-                      userExists={userExists}
-                      onSwitchToSignIn={goToSignIn}
                     />
                   )}
                   {step === 3 && (
@@ -371,8 +288,6 @@ const Login = () => {
           </div>
         </div>
       )}
-
-      <div id="recaptcha-container"></div>
     </div>
   );
 };

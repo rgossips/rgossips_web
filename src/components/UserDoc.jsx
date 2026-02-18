@@ -89,7 +89,7 @@ const UserDoc = () => {
         </div>
 
         {/* Category Selection - Hidden on Desktop (will be in sidebar) */}
-        <div className="lg:hidden flex gap-4 overflow-x-auto pb-2 no-scrollbar items-center justify-center">
+        <div className="lg:hidden flex gap-4 scrollbar-hide overflow-x-auto pb-2 no-scrollbar items-center justify-center">
           {categories.map((cat, idx) => (
             <button
               key={idx}

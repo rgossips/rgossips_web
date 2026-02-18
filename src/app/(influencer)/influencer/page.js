@@ -25,6 +25,7 @@ import TopRatedInfluencers from "@/components/TopRatedInfluencer";
 import TopServices from "@/components/TopServices";
 import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
+import DealsLaptop from "@/components/DealsLaptop";
 
 const CATEGORIES = [
   { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
@@ -66,7 +67,7 @@ export default function HomePage() {
           <div className="hidden lg:flex gap-8 w-full pl-10 lg:max-w-[1480px] mx-auto">
             {/* Left Sidebar: Categories Vertical */}
             <div className="w-64 flex-shrink-0 pt-10">
-              <div className="sticky top-32 space-y-3">
+              <div className="mt-20 space-y-3">
                 {CATEGORIES.map((cat, idx) => (
                   <button
                     key={idx}
@@ -99,7 +100,8 @@ export default function HomePage() {
 
             {/* Right: StackedDeals */}
             <div className="flex-1">
-              <StackedDeals />
+              {/* <StackedDeals /> */}
+              <DealsLaptop />
             </div>
           </div>
 

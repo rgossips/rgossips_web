@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,9 +76,36 @@ const platformFeatures = [
 ];
 
 const ProductSuite = () => {
+  const scrollRef = useRef(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    const scrollInterval = setInterval(() => {
+      // 1. Skip if desktop or paused
+      if (window.innerWidth >= 1024 || isPaused) return;
+
+      const maxScrollLeft =
+        scrollContainer.scrollWidth - scrollContainer.clientWidth;
+
+      // 2. Check if we've reached the end (with a 5px buffer for safety)
+      if (scrollContainer.scrollLeft >= maxScrollLeft - 5) {
+        // Reset to start instantly (auto behavior) so scrolling resumes immediately
+        scrollContainer.scrollTo({ left: 0, behavior: "auto" });
+      } else {
+        // 3. Regular incremental scroll
+        // Increase 'left' value to make it move faster
+        scrollContainer.scrollBy({ left: 1, behavior: "auto" });
+      }
+    }, 25); // Lower interval for smoother motion
+
+    return () => clearInterval(scrollInterval);
+  }, [isPaused]);
   return (
     <section className="w-full py-24 bg-white" id="features">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="lg:max-w-7xl mx-auto px-6">
         {/* Header Section */}
         <div className="text-center mb-20 space-y-4">
           <Badge className="bg-blue-50 text-blue-600 border-blue-100 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
@@ -99,17 +126,24 @@ const ProductSuite = () => {
         </div>
 
         {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div
+          ref={scrollRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setTimeout(() => setIsPaused(false), 2000)}
+          className="flex lg:grid lg:grid-cols-3 gap-8 overflow-x-auto lg:overflow-visible scrollbar-hide pb-8 -mx-6 px-6 lg:mx-0 lg:px-0"
+        >
           {platformFeatures.map((feature, idx) => (
             <motion.div
               key={idx}
               whileHover={{ y: -5 }}
-              className="group bg-slate-50/50 border border-slate-100 rounded-[2.5rem] overflow-hidden flex flex-col hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300"
+              // added 'min-w-[85vw]' and 'md:min-w-[400px]' for mobile/tablet scaling
+              className="group bg-slate-50/50 border border-slate-100 rounded-[2.5rem] overflow-hidden flex flex-col hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 min-w-[85vw] md:min-w-[400px] lg:min-w-0"
             >
               {/* Visual Placeholder (Top) */}
               <div className="h-48 bg-gradient-to-br from-slate-100 to-white border-b border-slate-100 flex items-center justify-center overflow-hidden">
                 <div className="w-2/3 h-2/3 rounded-2xl bg-white shadow-inner border border-slate-50 relative flex items-center justify-center">
-                  {/* Interior visual decorations */}
                   <div className="absolute top-4 left-4 w-8 h-1 bg-slate-100 rounded-full" />
                   <div className="absolute top-8 left-4 w-12 h-1 bg-slate-100 rounded-full" />
                   <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
@@ -143,7 +177,7 @@ const ProductSuite = () => {
                 {/* Learn More Button */}
                 <Button
                   variant="ghost"
-                  className="cursor-pointer w-full mt-6 h-12 bg-linear-to-r from-[#155DFC] to-[#9810FA] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/10"
+                  className="cursor-pointer w-full hover:text-slate-300 mt-6 h-12 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/10"
                 >
                   Learn More
                   <ArrowRight size={16} />
