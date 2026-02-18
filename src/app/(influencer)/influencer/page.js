@@ -39,6 +39,57 @@ export default function HomePage() {
   // Pull pre-fetched data and global loading state from Context
   const { profile, loading } = useAuth();
 
+  //   const [homeData, setHomeData] = useState({
+  //   activeOffers: [],
+  //   topBrands: [],
+  //   topInfluencers: [],
+  //   travelOffers: [],
+  // });
+
+  // useEffect(() => {
+  //   const fetchAllData = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser();
+
+  //     const [
+  //       activeOffersRes,
+  //       topBrandsRes,
+  //       topInfluencersRes,
+  //       travelOffersRes
+  //     ] = await Promise.all([
+  //       // 1. Top 10 Active Offers
+  //       supabase.from('offers').select('*').eq('status', 'active').limit(10),
+
+  //       // 2. Top 10 Brands (verification_state = 2)
+  //       // Assuming brands are in a 'profiles' table with a 'type' or 'role' column
+  //       supabase.from('profiles').select('*').eq('verification_state', 2).eq('role', 'brand').limit(10),
+
+  //       // 3. Top 10 Influencers (verification_state = 2, not current user)
+  //       supabase.from('profiles')
+  //         .select('*')
+  //         .eq('verification_state', 2)
+  //         .eq('role', 'influencer')
+  //         .neq('id', user?.id)
+  //         .limit(10),
+
+  //       // 4. Top 10 Travel Offers (target_categories contains travel)
+  //       // Uses the 'cs' (contains) filter for array columns
+  //       supabase.from('offers')
+  //         .select('*')
+  //         .contains('target_categories', ['travel'])
+  //         .limit(10)
+  //     ]);
+
+  //     setHomeData({
+  //       activeOffers: activeOffersRes.data || [],
+  //       topBrands: topBrandsRes.data || [],
+  //       topInfluencers: topInfluencersRes.data || [],
+  //       travelOffers: travelOffersRes.data || [],
+  //     });
+  //   };
+
+  //   fetchAllData();
+  // }, []);
+
   // Handle Initial Global Load
   if (loading) {
     return (

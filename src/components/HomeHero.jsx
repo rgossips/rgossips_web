@@ -114,7 +114,7 @@ const HomeHero = () => {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="absolute -left-10 top-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
+              className="absolute -left-5 lg:-left-10 top-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
             >
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
                 <TrendingUp size={20} />
@@ -131,7 +131,7 @@ const HomeHero = () => {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-              className="absolute -right-6 bottom-24 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
+              className="absolute -right-3 lg:-right-6 bottom-24 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
             >
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                 <Users size={20} />
