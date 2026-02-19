@@ -1,4 +1,5 @@
 import { CheckCircle2, Star, Users } from "lucide-react";
+import Image from "next/image";
 
 const BrandCard = ({ brand }) => {
   return (
@@ -10,11 +11,15 @@ const BrandCard = ({ brand }) => {
       <div className="flex flex-col items-center text-center">
         {/* Logo */}
         <div className="w-20 h-20 rounded-2xl bg-[#F8F9FD] overflow-hidden flex items-center justify-center p-4 mb-4 group-hover:scale-105 transition-transform">
-          <img
-            src={brand.logo}
-            alt={brand.name}
-            className="w-full h-full object-contain mix-blend-multiply"
-          />
+          {brand.logo && (
+            <Image
+              width={200}
+              height={200}
+              src={brand.logo}
+              alt={brand.name}
+              className="w-full h-full object-contain mix-blend-multiply"
+            />
+          )}
         </div>
 
         {/* Title */}

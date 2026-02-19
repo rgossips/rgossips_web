@@ -51,14 +51,29 @@ export const FilterContent = ({
         <div className="flex flex-wrap gap-3">
           {[
             "All",
-            "Fashion",
-            "Tech",
-            "Beauty",
-            "Fitness",
-            "Food",
-            "Travel",
-            "Gaming",
-            "Lifestyle",
+            "Perfume",
+            "Wellness",
+            "Skincare",
+            "Health",
+            "Hotel",
+            "Cafe",
+            "Tea",
+            "Clothing",
+            "Diffuser Oil",
+            "Phone Accessories",
+            "Hair Care",
+            "Bag",
+            "Resort",
+            "Salon",
+            "Skylounge",
+            "Accessories",
+            "Haircare",
+            "Perfumes",
+            "Adventure Park",
+            "Airbnb",
+            "Milk",
+            "Appliances",
+            "Jewellery",
           ].map((cat) => {
             const catData = FILTER_CATEGORIES.find((c) => c.label === cat);
             const isActive = activeCategory === cat;
@@ -310,17 +325,47 @@ export default FilterModal;
 
 // Data Constants
 const FILTER_CATEGORIES = [
-  { label: "Fashion", icon: <Shirt size={14} className="text-[#00BA88]" /> },
-  { label: "Tech", icon: <Monitor size={14} /> },
-  { label: "Beauty", icon: <Star size={14} className="text-[#E60076]" /> },
-  { label: "Fitness", icon: <Dumbbell size={14} className="text-amber-500" /> },
-  { label: "Food", icon: <Utensils size={14} className="text-orange-500" /> },
-  { label: "Travel", icon: <Plane size={14} className="text-blue-500" /> },
-  { label: "Gaming", icon: <Gamepad2 size={14} /> },
+  { label: "Perfume", icon: <Shirt size={14} className="text-purple-500" /> },
+  { label: "Wellness", icon: <Monitor size={14} className="text-green-500" /> },
+  { label: "Skincare", icon: <Star size={14} className="text-pink-500" /> },
+  { label: "Health", icon: <Dumbbell size={14} className="text-amber-500" /> },
+  { label: "Hotel", icon: <Plane size={14} className="text-blue-500" /> },
+  { label: "Cafe", icon: <Utensils size={14} className="text-orange-500" /> },
+  { label: "Tea", icon: <Utensils size={14} className="text-amber-600" /> },
+  { label: "Clothing", icon: <Shirt size={14} className="text-blue-600" /> },
   {
-    label: "Lifestyle",
-    icon: <Camera size={14} className="text-yellow-500" />,
+    label: "Diffuser Oil",
+    icon: <Monitor size={14} className="text-indigo-500" />,
   },
+  {
+    label: "Phone Accessories",
+    icon: <Smartphone size={14} className="text-slate-600" />,
+  },
+  { label: "Hair Care", icon: <Camera size={14} className="text-rose-500" /> },
+  { label: "Bag", icon: <Star size={14} className="text-yellow-600" /> },
+  { label: "Resort", icon: <Plane size={14} className="text-cyan-500" /> },
+  { label: "Salon", icon: <Star size={14} className="text-fuchsia-500" /> },
+  {
+    label: "Skylounge",
+    icon: <Monitor size={14} className="text-slate-500" />,
+  },
+  {
+    label: "Accessories",
+    icon: <Star size={14} className="text-emerald-500" />,
+  },
+  { label: "Haircare", icon: <Camera size={14} className="text-pink-600" /> },
+  { label: "Perfumes", icon: <Shirt size={14} className="text-violet-500" /> },
+  {
+    label: "Adventure Park",
+    icon: <Gamepad2 size={14} className="text-red-500" />,
+  },
+  { label: "Airbnb", icon: <Plane size={14} className="text-red-400" /> },
+  { label: "Milk", icon: <Utensils size={14} className="text-blue-200" /> },
+  {
+    label: "Appliances",
+    icon: <Monitor size={14} className="text-gray-600" />,
+  },
+  { label: "Jewellery", icon: <Star size={14} className="text-yellow-400" /> },
 ];
 
 const PLATFORMS = [
