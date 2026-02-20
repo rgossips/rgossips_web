@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
-import { FaChevronLeft, FaChevronRight, FaInstagram } from "react-icons/fa";
+import { FaInstagram } from "react-icons/fa";
 import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 import { useRouter } from "next/navigation";
 
@@ -11,7 +13,6 @@ const DUMMY_STAYS = [
     location: "Maldives, Indian Ocean",
     imageUrl:
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800",
-    priceType: "Full Collab",
     brand: { instagramFollowers: "120K" },
   },
   {
@@ -20,7 +21,6 @@ const DUMMY_STAYS = [
     location: "Downtown Tokyo, Japan",
     imageUrl:
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800",
-    priceType: "Gifting",
     brand: { instagramFollowers: "45K" },
   },
   {
@@ -29,7 +29,6 @@ const DUMMY_STAYS = [
     location: "Zermatt, Switzerland",
     imageUrl:
       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800",
-    priceType: "Paid Stay",
     brand: { instagramFollowers: "88K" },
   },
   {
@@ -38,7 +37,6 @@ const DUMMY_STAYS = [
     location: "Marrakech, Morocco",
     imageUrl:
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800",
-    priceType: "Full Collab",
     brand: { instagramFollowers: "250K" },
   },
 ];
@@ -46,23 +44,9 @@ const DUMMY_STAYS = [
 const DealsLaptop = () => {
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
-  const [stays, setStays] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      setTimeout(() => {
-        setStays(DUMMY_STAYS);
-        setLoading(false);
-      }, 600);
-    };
-    init();
-  }, []);
-
-  // Sync current state with carousel
   useEffect(() => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
@@ -71,104 +55,131 @@ const DealsLaptop = () => {
     });
   }, [api]);
 
-  // AUTO SCROLL LOGIC
   useEffect(() => {
     if (!api || isHovered) return;
-
     const interval = setInterval(() => {
       api.scrollNext();
     }, 4000);
-
     return () => clearInterval(interval);
   }, [api, isHovered]);
 
   return (
-    <section className="w-full max-w-[1150px] px-4 py-12 flex flex-col items-center overflow-hidden">
+    <section className="w-full max-w-[1400px] px-4 py-16 flex flex-col items-center overflow-hidden">
       <div
-        className="w-full flex justify-center mt-10"
+        className="w-full flex justify-center"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="relative w-full max-w-[1480px]">
+        <div className="relative w-full overflow-visible">
           <Carousel
             opts={{ align: "center", loop: true }}
             setApi={setApi}
             className="w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {stays.map((stay, i) => (
-                <CarouselItem
-                  key={stay.id}
-                  className="pl-2 md:pl-4 basis-[92%] sm:basis-2/3 lg:basis-[60%]"
-                >
-                  <div
-                    onClick={() => router.push(`/offers/${stay.id}`)}
-                    className={`relative w-full rounded-[40px] bg-white border border-slate-100 overflow-hidden transition-all duration-500 cursor-pointer shadow-lg
-                      ${current === i ? "scale-100 opacity-100 shadow-2xl" : "scale-95 opacity-60 grayscale-[40%]"}
-                    `}
-                  >
-                    {/* Image Container */}
-                    <div className="relative w-full h-[280px] md:h-[380px] overflow-hidden">
-                      <Image
-                        src={stay.imageUrl || "/placeholder-hotel.jpg"}
-                        alt={stay.displayTitle}
-                        fill
-                        className="object-cover transition-transform duration-[2000ms] hover:scale-110"
-                      />
-                      {/* Glassmorphism Badge */}
-                      <div className="absolute top-6 left-6 bg-white/20 backdrop-blur-md border border-white/30 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
-                        Day Luxury
-                      </div>
-                    </div>
+            {/* Using a negative margin on CarouselContent to "squish" the items together for overlap */}
+            <CarouselContent className="-ml-4 md:-ml-8 overflow-visible">
+              {DUMMY_STAYS.map((stay, i) => {
+                const isActive = current === i;
+                const isEdgeCase =
+                  (current === 0 && i === DUMMY_STAYS.length - 1) ||
+                  (current === DUMMY_STAYS.length - 1 && i === 0);
 
-                    {/* Card Content */}
-                    <div className="p-8">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-2xl line-clamp-1 text-ellipsis font-black text-slate-800 uppercase tracking-tighter">
-                            {stay.displayTitle}
-                          </h3>
-                          <p className="text-slate-500 text-sm font-semibold mt-1">
-                            {stay.location}
-                          </p>
+                return (
+                  <CarouselItem
+                    key={stay.id}
+                    // Adjusted basis and used padding/negative margin for overlapping
+                    className="basis-[85%] md:basis-[65%] lg:basis-[65%] transition-all duration-500 overflow-visible"
+                    style={{
+                      // Crucial: Active card must have higher z-index than siblings
+                      zIndex: isActive ? 50 : 10,
+                      marginRight:
+                        i === DUMMY_STAYS.length - 1 ? "-250px" : "0",
+                    }}
+                  >
+                    <div
+                      onClick={() => router.push(`/offers/${stay.id}`)}
+                      className={`relative w-full rounded-[40px] bg-white border cursor-pointer transition-all duration-700 ease-in-out
+                        ${isActive ? "shadow-2xl opacity-100" : "shadow-md opacity-40"}
+                      `}
+                      style={{
+                        // Scale down non-active cards to create the "shorter" look seen in the image
+                        transform: isActive ? "scale(1)" : "scale(0.85)",
+                        // Shift side cards slightly closer to the center card for overlap
+                        marginLeft: isActive
+                          ? "0"
+                          : i < current
+                            ? "15%"
+                            : "-15%",
+                        marginRight: isActive
+                          ? "0"
+                          : i > current
+                            ? "15%"
+                            : "-15%",
+                      }}
+                    >
+                      {/* Image Container */}
+                      <div className="relative w-full h-[400px] overflow-hidden rounded-2xl">
+                        <Image
+                          src={stay.imageUrl}
+                          alt={stay.displayTitle}
+                          fill
+                          className="object-cover"
+                        />
+
+                        <div className="absolute top-6 left-6 bg-white/20 backdrop-blur-md border border-white/30 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
+                          Deal Of The Day
+                        </div>
+
+                        <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-md border border-white/50 px-4 py-2 rounded-full text-xs font-black text-slate-800 shadow-xl">
+                          06:31: <span className="text-[#E60076]">12</span>
+                        </div>
+                        <div className="absolute bottom-6 left-8">
+                          {/* Reference image "Apply Now" style */}
+                          <button className="bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white cursor-pointer text-xs uppercase tracking-[0.2em] font-black px-8 py-4 rounded-2xl shadow-lg hover:brightness-110 transition-all">
+                            Apply Now
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center border-t border-slate-50 pt-6 mt-2">
-                        <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-2xl font-bold text-slate-700">
-                          <FaInstagram className="text-[#F6339A]" size={20} />
-                          <span className="text-sm tracking-tight">
-                            {stay.brand?.instagramFollowers} Followers
+                      {/* Card Bottom Content */}
+                      {/* <div className="p-6 md:p-8">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg md:text-2xl font-black text-slate-800 uppercase tracking-tight">
+                              {stay.displayTitle}
+                            </h3>
+                            <p className="text-slate-500 text-sm mt-1">
+                              {stay.location}
+                            </p>
+                          </div>
+
+                         
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-6 text-slate-400 text-sm">
+                          <FaInstagram className="text-[#F6339A]" size={16} />
+                          <span className="font-bold text-slate-600">
+                            {stay.brand.instagramFollowers} Followers
                           </span>
                         </div>
-                        <span
-                          onClick={() => {
-                            router.push(`/offers/${stay?.id}`);
-                          }}
-                          className="bg-gradient-to-r cursor-pointer from-[#8E2DE2] to-[#F6339A] text-white text-[10px] uppercase tracking-[0.2em] font-black px-7 py-3 rounded-full shadow-lg shadow-pink-200"
-                        >
-                          Apply Now
-                        </span>
-                      </div>
+                      </div> */}
                     </div>
-                  </div>
-                </CarouselItem>
-              ))}
+                  </CarouselItem>
+                );
+              })}
             </CarouselContent>
           </Carousel>
         </div>
       </div>
 
-      {/* Progress Line Dot Indicator */}
-      <div className="flex justify-center mt-10 gap-3">
-        {stays.map((_, i) => (
+      {/* Pagination Dots */}
+      <div className="flex justify-center mt-12 gap-3">
+        {DUMMY_STAYS.map((_, i) => (
           <button
             key={i}
             onClick={() => api?.scrollTo(i)}
-            className={`h-1.5 rounded-full transition-all duration-700 ${
-              current === i
-                ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-12"
-                : "bg-slate-200 w-3 hover:bg-slate-300"
+            className={`h-2 rounded-full transition-all duration-500 ${
+              current === i ? "bg-[#F6339A] w-12" : "bg-slate-200 w-2"
             }`}
           />
         ))}

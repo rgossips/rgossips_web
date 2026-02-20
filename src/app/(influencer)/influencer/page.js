@@ -118,7 +118,7 @@ export default function HomePage() {
           <div className="hidden lg:flex gap-8 w-full pl-10 lg:max-w-[1480px] mx-auto">
             {/* Left Sidebar: Categories Vertical */}
             <div className="w-64 flex-shrink-0 pt-10">
-              <div className="mt-20 space-y-3">
+              <div className="mt-8 space-y-3">
                 {CATEGORIES.map((cat, idx) => (
                   <button
                     key={idx}

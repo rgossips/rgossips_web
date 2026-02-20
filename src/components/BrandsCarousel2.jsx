@@ -195,7 +195,7 @@ export default function BrandsCarousel() {
                       src={b.logo}
                       alt={b.name}
                       fill
-                      className="object-cover"
+                      className="object-contain p-4 group-hover:scale-105 transition-transform"
                     />
                   </div>
                   <p className="text-sm font-bold mt-3 text-center text-slate-700">
