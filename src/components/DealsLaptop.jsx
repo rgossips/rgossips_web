@@ -59,7 +59,7 @@ const DealsLaptop = () => {
     if (!api || isHovered) return;
     const interval = setInterval(() => {
       api.scrollNext();
-    }, 4000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [api, isHovered]);
 
@@ -118,7 +118,7 @@ const DealsLaptop = () => {
                       }}
                     >
                       {/* Image Container */}
-                      <div className="relative w-full h-[400px] overflow-hidden rounded-2xl">
+                      <div className="relative w-full h-[400px] overflow-hidden rounded-[40px]">
                         <Image
                           src={stay.imageUrl}
                           alt={stay.displayTitle}
