@@ -7,78 +7,58 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import Image from "next/image";
-import tiger from "@/assets/brands/tigerAnalytics.png";
-import nik from "@/assets/brands/nikBakers.jpg";
-import taj from "@/assets/brands/taj.jpg";
 import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const stories = [
   {
-    video: "https://www.pexels.com/download/video/8243345/",
-    creator: "@kishushroff",
-    creatorImg:
-      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress",
-    brandImg: taj,
+    name: "sahilanandofficial",
+    image:
+      "https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL",
+    link: "/creatorReels/sahil.mp4",
   },
   {
-    video: "https://www.pexels.com/download/video/3699618/",
-    creator: "@aassthaa_",
-    creatorImg:
-      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress",
-    brandImg: nik,
+    name: "nonaberrry",
+    image:
+      "https://lh3.googleusercontent.com/d/17FV8146Zu6KAYNxfTEj-SGxj40nlyo_5",
+    link: "/creatorReels/nonaberry.mp4",
   },
   {
-    video:
-      "https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4",
-    creator: "@official_ryan_09",
-    creatorImg:
-      "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress",
-    brandImg: tiger,
+    name: "aditirajputofficial",
+    image:
+      "https://lh3.googleusercontent.com/d/18IKmd6vgmGBOz9T5KVBAm8Oozl5iQyyo",
+    link: "/creatorReels/aditi.mp4",
   },
   {
-    video: "https://www.pexels.com/download/video/8243345/",
-    creator: "@kishushroff",
-    creatorImg:
-      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress",
-    brandImg: taj,
+    name: "alifestyledition",
+    image:
+      "https://lh3.googleusercontent.com/d/1cCyYWXM-rJ8SV3s6EX3xYxvXCOYKmYNu",
+    link: "/creatorReels/ali.mp4",
   },
   {
-    video: "https://www.pexels.com/download/video/3699618/",
-    creator: "@aassthaa_",
-    creatorImg:
-      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress",
-    brandImg: nik,
+    name: "theyayawar",
+    image:
+      "https://lh3.googleusercontent.com/d/1Gw5GOW8qUE0kXI6gj0ak23tN7oVIFtV7",
+
+    link: "/creatorReels/yaya.mp4",
   },
   {
-    video:
-      "https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4",
-    creator: "@official_ryan_09",
-    creatorImg:
-      "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress",
-    brandImg: tiger,
+    name: "karishmatalwar93",
+    image:
+      "https://lh3.googleusercontent.com/d/10tTiJ3qm15UAS8KUDr5Hs7EFdGPo7pvG",
+    link: "/creatorReels/karishma.mp4",
   },
   {
-    video: "https://www.pexels.com/download/video/8243345/",
-    creator: "@kishushroff",
-    creatorImg:
-      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress",
-    brandImg: taj,
+    name: "vees_corner57",
+    image:
+      "https://lh3.googleusercontent.com/d/1m2g3DGzTjlWrXoxibPvFsqq2wc5xy8Ni",
+    link: "/creatorReels/veers.mp4",
   },
   {
-    video: "https://www.pexels.com/download/video/3699618/",
-    creator: "@aassthaa_",
-    creatorImg:
-      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress",
-    brandImg: nik,
-  },
-  {
-    video:
-      "https://videos.pexels.com/video-files/3209828/3209828-hd_1280_720_25fps.mp4",
-    creator: "@official_ryan_09",
-    creatorImg:
-      "https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress",
-    brandImg: tiger,
+    name: "nawab__adnan",
+    image:
+      "https://lh3.googleusercontent.com/d/19CMc1g0nMAFE61V_aeYk9G6gGT2A9mMX",
+    link: "/creatorReels/nawab.mp4",
   },
 ];
 
@@ -105,6 +85,12 @@ export default function CreatorStories() {
       setCurrent(api.selectedScrollSnap());
     });
   }, [api]);
+
+  const getEmbedLink = (url) => {
+    const baseUrl = url.split("?")[0]; // remove queries
+    const normalizedUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+    return `${normalizedUrl}embed`;
+  };
 
   return (
     <section className="w-full px-3 py-6 lg:px-8">
@@ -139,20 +125,54 @@ export default function CreatorStories() {
               >
                 <div className="rounded-2xl overflow-hidden shadow-md relative aspect-[9/16] bg-black">
                   {/* video */}
-                  <video
-                    src={item.video}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative rounded-2xl overflow-hidden aspect-[9/16] bg-zinc-900 border border-white/10">
+                    {/* 2. THE IFRAME (Scaled and moved to hide the header/footer) */}
+                    {/* <div className="absolute inset-0 w-full h-[120%] max-h-[415px] lg:max-h-[500px] -top-[10%]">
+                      <iframe
+                        src={`${item.link.split("?")[0]}embed/captioned/`}
+                        className="w-full h-full border-0"
+                        scrolling="no"
+                        allowTransparency="true"
+                      ></iframe>
+                    </div> */}
+                    <video
+                      key={item.link} // Forces re-render to trigger autoplay on slide
+                      autoPlay
+                      loop
+                      muted
+                      playsInline // Required for iOS/Mobile autoplay
+                      preload="auto"
+                      className="w-full h-full object-cover"
+                    >
+                      <source src={item.link} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
 
+                    {/* 3. CLICK SHIELD (Prevents clicking into the IG app, allows swiping) */}
+                    <div
+                      className="absolute inset-0 z-10 bg-transparent cursor-pointer"
+                      onClick={() => window.open(item.link, "_blank")}
+                    />
+
+                    {/* 4. CLEAN OVERLAY (Your own custom UI) */}
+                    {/* <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border border-white/50 overflow-hidden">
+                        <img
+                          src={item.image}
+                          alt=""
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                      <span className="text-white text-xs font-semibold shadow-black drop-shadow-md">
+                        @{item.name}
+                      </span>
+                    </div> */}
+                  </div>
                   {/* creator & brand */}
                   <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
                       <Image
-                        src={item.creatorImg}
+                        src={item.image}
                         alt="creator"
                         width={100}
                         height={100}
@@ -160,9 +180,9 @@ export default function CreatorStories() {
                       />
                     </div>
 
-                    <span className="text-white font-semibold text-md">X</span>
+                    {/* <span className="text-white font-semibold text-md">X</span> */}
 
-                    <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
+                    {/* <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
                       <Image
                         src={item.brandImg}
                         alt="brand"
@@ -170,12 +190,12 @@ export default function CreatorStories() {
                         height={100}
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* creator username */}
                   <div className="absolute bottom-2 right-4 text-white text-sm opacity-90">
-                    {item.creator}
+                    {item.name}
                   </div>
                 </div>
               </CarouselItem>
@@ -198,7 +218,7 @@ export default function CreatorStories() {
           <div
             key={i}
             className={`h-2 w-2 rounded-full transition-all ${
-              current === i ? "bg-purple-600 w-4" : "bg-gray-300"
+              current === i ? "btn-purple w-4" : "bg-gray-300"
             }`}
           />
         ))}

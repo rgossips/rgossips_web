@@ -9,6 +9,7 @@ import {
 import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CreatorCard from "./CreatorCard";
+import { getInstagramReel, getLatestReelIds } from "@/lib/instagram";
 
 export default function CreatorsCarouselWithLink() {
   const [api, setApi] = useState(null);
@@ -160,6 +161,18 @@ export default function CreatorsCarouselWithLink() {
     };
   }, [api, onSelect]);
 
+  // useEffect(() => {
+  //   const fetchTestData = async () => {
+  //     try {
+  //       const data = await getLatestReelIds(); // Wait for the data
+  //       console.log("Instagram Data Successfully Fetched:", data);
+  //     } catch (error) {
+  //       console.error("Failed to fetch test data:", error);
+  //     }
+  //   };
+
+  //   fetchTestData();
+  // }, []);
   return (
     <section className="w-full px-4 py-12">
       <SectionTitle text="OUR TOP CREATORS" />
