@@ -10,17 +10,19 @@ import {
   FaYoutube,
 } from "react-icons/fa";
 import logo from "@/assets/logo2.png";
+import { useRouter } from "next/navigation";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const router = useRouter();
 
   const footerLinks = {
     product: [
-      { name: "Features", href: "#" },
-      { name: "For Brands", href: "#" },
-      { name: "For Influencers", href: "#" },
+      { name: "Features", href: "/" }, // Set to root as requested
+      { name: "For Brands", href: "/brands" }, // Set to /brands
+      { name: "For Influencers", href: "/influencer" }, // Set to /influencers
       { name: "Categories", href: "#" },
-      { name: "FAQ", href: "#" },
+      { name: "FAQ", href: "/" }, // Set to root as requested
     ],
     legal: [
       { name: "Privacy", href: "#" },
@@ -37,7 +39,6 @@ const Footer = () => {
           <div className="md:col-span-4 space-y-6">
             <div className="flex items-center gap-2">
               <Image src={logo} alt="Recent Gossip" width={250} />
-              {/* <div className="text-white text-lg">Recent Gossip</div> */}
             </div>
             <p className="text-slate-400 text-base leading-relaxed max-w-sm">
               The all-in-one platform connecting brands with perfect
@@ -55,7 +56,7 @@ const Footer = () => {
               ].map((social, i) => (
                 <Link
                   key={i}
-                  target="blank"
+                  target="_blank" // Fixed to "_blank"
                   href={social.href}
                   className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 border border-slate-700/50"
                 >
@@ -67,18 +68,29 @@ const Footer = () => {
 
           {/* Links Column */}
           <div className="md:col-span-3">
-            <h4 className="text-white font-bold text-lg mb-6 uppercase tracking-wider text-sm">
+            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">
               Product
             </h4>
             <ul className="space-y-4">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
-                  <Link
-                    href={link.href}
-                    className="hover:text-blue-400 transition-colors duration-200"
+                  <div
+                    onClick={() => {
+                      if (
+                        link.href == "/influencer" ||
+                        link.href == "/brands"
+                      ) {
+                        //check login
+
+                        router.push(link.href);
+                      } else {
+                        router.push(link.href);
+                      }
+                    }}
+                    className="hover:text-blue-400 transition-colors duration-200 cursor-pointer"
                   >
                     {link.name}
-                  </Link>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -86,20 +98,20 @@ const Footer = () => {
 
           {/* Newsletter Column */}
           <div className="md:col-span-5 space-y-6">
-            <h4 className="text-white font-bold text-lg mb-6 uppercase tracking-wider text-sm">
+            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">
               Stay Updated
             </h4>
             <p className="text-slate-400">
               Get the latest influencer marketing insights
             </p>
 
-            <div className="relative group">
+            <div className="flex flex-col gap-3">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="w-full h-14 bg-slate-800/40 border border-slate-700 rounded-2xl px-6 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white"
+                className="bg-slate-800/40 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white"
               />
-              <button className="w-full mt-4 h-14 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 hover:opacity-90 transition-all">
+              <button className="h-12 px-8 cursor-pointer bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-xl font-bold shadow-lg hover:opacity-90 transition-all">
                 Subscribe
               </button>
             </div>
@@ -107,7 +119,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col md:row-reverse md:flex-row justify-between items-center gap-6 text-sm">
+        <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
           <p>© {currentYear} Recent Gossip. All rights reserved.</p>
 
           <div className="flex items-center gap-8">

@@ -8,10 +8,12 @@ import {
   useTransform,
 } from "framer-motion";
 import Image from "next/image";
+import { FaChevronDown } from "react-icons/fa";
 
 // --- RollingTimer (Unchanged) ---
 const RollingTimer = memo(() => {
   const [secondsLeft, setSecondsLeft] = useState(23654);
+
   useEffect(() => {
     const interval = setInterval(
       () => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)),
@@ -119,6 +121,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
       img: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800",
     },
   ]);
+  const [isCompact, setIsCompact] = useState(false);
 
   const sendToBack = useCallback((id) => {
     setStack((prev) => {
@@ -155,7 +158,9 @@ export default function StackedDeals({ sensitivity = 120 }) {
           const yOffset =
             typeof window !== "undefined" && window.innerWidth >= 1024
               ? positionFromTop * 10
-              : positionFromTop * 35;
+              : isCompact
+                ? positionFromTop * 5 // Minimal spread
+                : positionFromTop * 35; // Full spread
           const rotation =
             typeof window !== "undefined" && window.innerWidth >= 1024
               ? positionFromTop * 5
@@ -170,7 +175,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
             >
               <motion.div
                 // pointer-events-none on the inner div ensures the drag surface gets the hits
-                className="bg-white rounded-[45px] shadow-lg border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none"
+                className={`bg-white ${isCompact ? " rounded-t-[45px]" : " rounded-[45px]"} shadow-lg border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none`}
                 animate={{
                   x: xOffset,
                   y: yOffset,
@@ -210,6 +215,21 @@ export default function StackedDeals({ sensitivity = 120 }) {
             </CardRotate>
           );
         })}
+
+        <motion.div
+          className="w-[350px] z-50 lg:hidden mt-4"
+          animate={{ y: isCompact ? 335 : 400 }} // Fine-tune position when collapsed
+        >
+          <button
+            onClick={() => setIsCompact(!isCompact)}
+            className="btn-purple w-full py-3 rounded-b-2xl flex items-center justify-center gap-2 text-white font-bold"
+          >
+            {isCompact ? "Show Full Stack" : "Compact View"}
+            <motion.span animate={{ rotate: isCompact ? 0 : 180 }}>
+              <FaChevronDown size={14} />
+            </motion.span>
+          </button>
+        </motion.div>
       </AnimatePresence>
     </div>
   );

@@ -30,7 +30,7 @@ import DealsLaptop from "@/components/DealsLaptop";
 const CATEGORIES = [
   { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
   { id: 2, label: "For You", icon: <Star size={20} />, active: false },
-  { id: 3, label: "Products", icon: <Box size={20} />, active: false },
+  { id: 3, label: "Brands", icon: <Box size={20} />, active: false },
   { id: 4, label: "Trending", icon: <TrendingUp size={20} />, active: false },
   { id: 5, label: "Trending", icon: <TrendingUp size={20} />, active: false },
 ];
