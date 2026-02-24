@@ -12,6 +12,7 @@ import Preferences from "@/components/login/Preferences";
 import Notifications from "@/components/login/Notifications";
 import SuccessScreen from "@/components/login/SuccessScreen";
 import { createClient } from "@/utils/supabase/client";
+import { IoMdClose } from "react-icons/io";
 
 const Login = () => {
   const router = useRouter();
@@ -198,6 +199,14 @@ const Login = () => {
     }
   };
 
+  const closeAuth = () => {
+    setFlow("onboarding");
+    setStep(1);
+    setError("");
+    setPhone("");
+    setOtp("");
+  };
+
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
       {/* 1. BACKGROUND LAYER */}
@@ -218,7 +227,20 @@ const Login = () => {
       {flow !== "onboarding" && (
         <div className="relative z-20 w-full max-w-[500px] h-full md:h-auto md:max-h-[90vh] flex flex-col justify-end md:justify-center px-0 md:px-6">
           <div className="auth-drawer-card bg-white w-full px-8 pt-6 pb-12 rounded-t-[40px] md:rounded-[40px] shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-500">
-            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-8" />
+            {/* <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-8" /> */}
+            <div className="flex flex-col items-center">
+              {/* Mobile Handle */}
+              <div className="w-12 h-1 bg-slate-200 rounded-full mb-4 md:hidden" />
+
+              {/* Actual Close Button */}
+              <button
+                onClick={closeAuth}
+                className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 z-30 cursor-pointer"
+                aria-label="Close"
+              >
+                <IoMdClose size={24} />
+              </button>
+            </div>
             <div className="w-full max-md mx-auto">
               {flow === "signin" && (
                 <>
