@@ -28,9 +28,9 @@ const HomeHero = () => {
           </Badge>
 
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
-            Connect Brands with <br />
+            Where Brands Meet <br />
             <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">
-              Perfect Influencers
+              Brand-Ready Creators
             </span>
           </h1>
 
