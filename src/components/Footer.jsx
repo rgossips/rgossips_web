@@ -8,9 +8,11 @@ import {
   FaInstagram,
   FaLinkedinIn,
   FaYoutube,
+  FaWhatsapp,
 } from "react-icons/fa";
 import logo from "@/assets/logo2.png";
 import { useRouter } from "next/navigation";
+import { Icon } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -53,6 +55,10 @@ const Footer = () => {
                 },
                 { Icon: FaYoutube, href: "#" },
                 { Icon: FaLinkedinIn, href: "#" },
+                {
+                  Icon: FaWhatsapp,
+                  href: "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
+                },
               ].map((social, i) => (
                 <Link
                   key={i}

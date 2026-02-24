@@ -19,6 +19,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import CTASection from "@/components/CTASection";
 import { useGlobal } from "@/context/GlobalContext";
 import { useEffect } from "react";
+import BrandForms from "@/components/BrandForms";
 
 const features = [
   {
@@ -122,6 +123,7 @@ export default function Home() {
       <ProductSuite />
       <FeaturesSection />
       <CategoryGrid />
+      <BrandForms />
 
       {/* <InfluencerGrid /> */}
       <FaqSection />

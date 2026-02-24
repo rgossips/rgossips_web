@@ -49,7 +49,9 @@ export default function ProfilePage() {
           />
         )}
         {view === "add-reel" && (
-          <AddReelFlow key="reel" onBack={() => setView("my-info")} />
+          <div className="min-h-screen bg-gray-50 flex justify-center items-start h-full pb-10 font-sans lg:pt-24">
+            <AddReelFlow key="reel" onBack={() => setView("my-info")} />
+          </div>
         )}
         {view === "analytics" && (
           <AnalyticsPage
