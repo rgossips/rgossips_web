@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
-export function CampaignCard({ campaign }) {
+export function CampaignCard({ campaign, onApply }) {
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   const isActive = campaign.status === "Active";
@@ -122,7 +122,13 @@ export function CampaignCard({ campaign }) {
       <div className="flex gap-3">
         {isActive && (
           <Button
-            onClick={() => router.push("/offers/" + campaign.id)}
+            onClick={() => {
+              if (onApply) {
+                onApply();
+              } else {
+                router.push("/offers/" + campaign.id);
+              }
+            }}
             className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
           >
             Apply Now <ChevronRight size={16} className="ml-1" />
