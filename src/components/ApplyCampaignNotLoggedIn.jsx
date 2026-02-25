@@ -13,10 +13,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { createClient } from "@supabase/supabase-js";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function CreatorOnboardingForm({ onClose }) {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const totalSteps = 4;
 
   const [formData, setFormData] = useState({
@@ -81,53 +83,50 @@ export default function CreatorOnboardingForm({ onClose }) {
     }));
   };
 
-  // Initialize Supabase (Use environment variables)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
-  );
-
-  const submitApplication = async (formData) => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
-      // 1. Insert into Influencers Table
-      const { data: influencer, error: influencerError } = await supabase
-        .from("influencers")
-        .insert([
-          {
-            full_name: formData.fullName,
-            phone: formData.phone,
-            username: formData.instaHandle, // Using handle as username
-            instagram_handle: formData.instaHandle,
-            location: `${formData.city}, ${formData.state}`,
-            niche: formData.primaryNiche,
-            categories: formData.secondaryNiche, // Array from your multi-select
-            // Mapping custom metadata to JSON or text fields as needed
-            rate_range: formData.followerTier,
-          },
-        ])
-        .select()
-        .single();
+      const docRef = await addDoc(collection(db, "applications2"), {
+        ...formData,
+        status: "pending",
+        appliedAt: serverTimestamp(),
+      });
 
-      if (influencerError) throw influencerError;
+      console.log("Document written with ID: ", docRef.id);
+      nextStep(); // Move to the success step
+    } catch (e) {
+      console.error("Error adding document: ", e);
+      alert("Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      // 2. Insert into Applications Table
-      const { data: application, error: appError } = await supabase
-        .from("applications")
-        .insert([
-          {
-            influencer_id: influencer.id, // Links to the newly created influencer
-            status: "pending",
-            pitch: `Content Styles: ${formData.contentStyle.join(", ")}. Face Video: ${formData.revealsFace}`,
-            // offer_id: 'your-json-offer-id-here'
-          },
-        ]);
-
-      if (appError) throw appError;
-
-      return { success: true };
-    } catch (error) {
-      console.error("Submission Error:", error.message);
-      return { success: false, error: error.message };
+  const isStepValid = () => {
+    switch (step) {
+      case 1:
+        return (
+          formData.fullName.trim() !== "" &&
+          formData.phone.length === 10 &&
+          formData.state !== "" &&
+          formData.city !== "" &&
+          formData.gender !== ""
+        );
+      case 2:
+        return (
+          formData.primaryNiche !== "" &&
+          formData.secondaryNiche.length > 0 &&
+          formData.contentStyle.length > 0 &&
+          formData.revealsFace !== null
+        );
+      case 3:
+        return (
+          formData.instaLink.includes("instagram.com") &&
+          formData.followerTier !== "" &&
+          formData.language !== ""
+        );
+      default:
+        return true;
     }
   };
 
@@ -164,7 +163,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
                     label="Full Name"
-                    placeholder="Hassan Ali"
+                    placeholder="Full Name"
                     value={formData.fullName}
                     onChange={(e) =>
                       handleInputChange("fullName", e.target.value)
@@ -172,8 +171,10 @@ export default function CreatorOnboardingForm({ onClose }) {
                   />
                   <InputField
                     label="Phone"
+                    type="tel"
                     placeholder="6399..."
                     value={formData.phone}
+                    maxLength={10}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                   />
                 </div>
@@ -181,19 +182,19 @@ export default function CreatorOnboardingForm({ onClose }) {
                   <InputField
                     label="State"
                     icon={<MapPin size={16} />}
-                    placeholder="UP"
+                    placeholder="State"
                     value={formData.state}
                     onChange={(e) => handleInputChange("state", e.target.value)}
                   />
                   <InputField
                     label="City"
-                    placeholder="Bareilly"
+                    placeholder="City"
                     value={formData.city}
                     onChange={(e) => handleInputChange("city", e.target.value)}
                   />
                   <SelectBox
                     label="Gender"
-                    options={["Male", "Female"]}
+                    options={["Male", "Female", "Other"]}
                     value={formData.gender}
                     onChange={(e) =>
                       handleInputChange("gender", e.target.value)
@@ -310,14 +311,14 @@ export default function CreatorOnboardingForm({ onClose }) {
 
             {step === 4 && (
               <div className="text-center py-10">
-                <div className="w-20 h-20 bg-pink-50 text-[#E60076] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-green-50 text-green-800 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 size={40} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800">
-                  Ready to Submit
+                  Form Submitted Successfully!
                 </h3>
                 <p className="text-slate-500 mt-2">
-                  Your application will be saved to our Master Data.
+                  Your application is saved to our Master Data.
                 </p>
               </div>
             )}
@@ -335,11 +336,29 @@ export default function CreatorOnboardingForm({ onClose }) {
             </Button>
           )}
           <Button
-            onClick={step === totalSteps ? onClose : nextStep}
-            className="flex-[2] h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] cursor-pointer shadow-lg shadow-pink-100"
+            // Disable button while firebase is working
+            disabled={isSubmitting || !isStepValid()}
+            onClick={() => {
+              if (step === 3) {
+                handleSubmit(); // Call Firebase on the last input step
+              } else if (step === totalSteps) {
+                onClose(); // Close modal on the success screen
+              } else {
+                nextStep(); // Move through steps 1 and 2
+              }
+            }}
+            className="flex-[2] h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] cursor-pointer shadow-lg shadow-pink-100 disabled:opacity-50"
           >
-            {step === totalSteps ? "Finish Application" : "Next Step"}{" "}
-            <ArrowRight size={18} className="ml-2" />
+            {isSubmitting
+              ? "Submitting..."
+              : step === 3
+                ? "Submit Application"
+                : step === totalSteps
+                  ? "Finish"
+                  : "Next Step"}
+            {!isSubmitting && step < totalSteps && (
+              <ArrowRight size={18} className="ml-2" />
+            )}
           </Button>
         </div>
       </motion.div>
