@@ -21,6 +21,7 @@ const Header = () => {
       id: "brands-influencers-section",
       type: "influencers",
     },
+    { name: "Campaigns", link: "/offers" },
     { name: "FAQ", id: "faq" },
   ];
 
@@ -49,7 +50,10 @@ const Header = () => {
                 key={item.name}
                 onClick={() => {
                   setScrollTo(item.id);
-
+                  if (item?.link) {
+                    router.push(item.link);
+                    return;
+                  }
                   if (item.name == "For Brands") {
                     setType("brands");
                   } else if (item.name == "For Influencers") {

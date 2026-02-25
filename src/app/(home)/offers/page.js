@@ -33,20 +33,22 @@ export default function CampaignsPage() {
           {/* Left Content */}
           <div className="space-y-8">
             <Badge className="bg-blue-50 text-blue-600 border-blue-100 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 w-fit">
-              <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-              Trusted by 10,000+ brands & influencers
+              <span className="flex items-center gap-1.5">
+                🚀 Now live: AI-powered Influencer Matching — Try it free →
+              </span>
             </Badge>
 
             <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
-              Where Brands Meet <br />
+              Where Global Brands Meet <br />
               <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">
-                Brand-Ready Creators
+                The Right Creators.
               </span>
             </h1>
 
             <p className="text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-medium">
-              The all-in-one platform that simplifies influencer marketing.
-              Launch campaigns, track performance, and drive real results.
+              RGossips is the all-in-one influencer campaign platform that
+              connects brands with verified creators globally — no agencies, no
+              spreadsheets, no guesswork.
             </p>
 
             {/* <div className="flex flex-wrap gap-4">

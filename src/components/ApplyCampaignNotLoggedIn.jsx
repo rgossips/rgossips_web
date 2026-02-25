@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { createClient } from "@supabase/supabase-js";
+
 export default function CreatorOnboardingForm({ onClose }) {
   const [step, setStep] = useState(1);
   const totalSteps = 4;
@@ -77,6 +79,56 @@ export default function CreatorOnboardingForm({ onClose }) {
         ? prev[field].filter((item) => item !== value)
         : [...prev[field], value],
     }));
+  };
+
+  // Initialize Supabase (Use environment variables)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+  );
+
+  const submitApplication = async (formData) => {
+    try {
+      // 1. Insert into Influencers Table
+      const { data: influencer, error: influencerError } = await supabase
+        .from("influencers")
+        .insert([
+          {
+            full_name: formData.fullName,
+            phone: formData.phone,
+            username: formData.instaHandle, // Using handle as username
+            instagram_handle: formData.instaHandle,
+            location: `${formData.city}, ${formData.state}`,
+            niche: formData.primaryNiche,
+            categories: formData.secondaryNiche, // Array from your multi-select
+            // Mapping custom metadata to JSON or text fields as needed
+            rate_range: formData.followerTier,
+          },
+        ])
+        .select()
+        .single();
+
+      if (influencerError) throw influencerError;
+
+      // 2. Insert into Applications Table
+      const { data: application, error: appError } = await supabase
+        .from("applications")
+        .insert([
+          {
+            influencer_id: influencer.id, // Links to the newly created influencer
+            status: "pending",
+            pitch: `Content Styles: ${formData.contentStyle.join(", ")}. Face Video: ${formData.revealsFace}`,
+            // offer_id: 'your-json-offer-id-here'
+          },
+        ]);
+
+      if (appError) throw appError;
+
+      return { success: true };
+    } catch (error) {
+      console.error("Submission Error:", error.message);
+      return { success: false, error: error.message };
+    }
   };
 
   return (
