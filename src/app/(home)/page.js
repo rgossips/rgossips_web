@@ -20,6 +20,11 @@ import CTASection from "@/components/CTASection";
 import { useGlobal } from "@/context/GlobalContext";
 import { useEffect } from "react";
 import BrandForms from "@/components/BrandForms";
+import Hero2 from "@/components/Hero2";
+import ProductPreview from "@/components/ProductPreview";
+import PainPoints from "@/components/PainPoints";
+import FeatureHub from "@/components/FeatureHub";
+import ImpactStats from "@/components/ImpactStats";
 
 const features = [
   {
@@ -126,6 +131,11 @@ export default function Home() {
       <BrandForms />
 
       {/* <InfluencerGrid /> */}
+      <Hero2 />
+      <ProductPreview />
+      <PainPoints />
+      <FeatureHub />
+      <ImpactStats />
       <FaqSection />
       <CTASection />
     </div>
