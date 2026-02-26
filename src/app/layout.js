@@ -3,6 +3,7 @@ import "./globals.css";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,6 +59,19 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f8fafc] text-gray-800`}
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-FRL0M0KYC8"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-FRL0M0KYC8');
+          `}
+        </Script>
+
         <GlobalProvider>
           <AuthProvider>
             <ProtectedRoute>{children}</ProtectedRoute>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, ArrowRight, Building2, Users, TrendingUp } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
 import { useRouter } from "next/navigation";
-import { FaRocket } from "react-icons/fa";
+import one from "@/assets/home1.png";
 
 const HomeHero = () => {
   const { setType } = useGlobal();
@@ -106,15 +106,19 @@ const HomeHero = () => {
         </div>
 
         {/* Right Content - Interactive Visual */}
-        <div className="relative flex justify-center lg:justify-end">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="relative w-full max-w-[500px] aspect-square rounded-[3rem] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] shadow-2xl overflow-visible border border-white"
-          >
+        <div className="relative flex justify-center">
+          <motion.div className="relative w-full max-w-[500px] aspect-square rounded-[3rem] overflow-visible">
             {/* Main Content*/}
-            <div className="absolute inset-4 rounded-[2.5rem] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] backdrop-blur-sm border border-white/50 flex items-center justify-center"></div>
+            {/* <div className="absolute inset-4 rounded-[3rem] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] backdrop-blur-sm border border-white/50 flex items-center justify-center">
+              
+            </div> */}
+            <Image
+              src={one}
+              alt="Hero"
+              fill
+              className="object-cover"
+              priority
+            />
 
             {/* Floating Stat Card 1 */}
             <motion.div

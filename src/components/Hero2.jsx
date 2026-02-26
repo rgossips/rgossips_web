@@ -62,7 +62,7 @@ const BrandSlider = () => {
 
 const Hero2 = () => {
   return (
-    <section className="bg-white pt-16 md:pt-24 overflow-hidden border-b border-slate-50">
+    <section className="bg-white pt-16 md:pt-24 overflow-hidden max-w-full px-10 lg:px-0 border-b border-slate-50">
       <div className="container mx-auto px-4 text-center">
         {/* Announcement Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer mb-8">

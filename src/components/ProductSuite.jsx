@@ -5,10 +5,18 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import one from "@/assets/home2.png";
+import two from "@/assets/home3.png";
+import three from "@/assets/home4.png";
+import four from "@/assets/home5.png";
+import five from "@/assets/home6.png";
+import six from "@/assets/home7.png";
+import Image from "next/image";
 
 const platformFeatures = [
   {
     title: "Influencer Discovery",
+    img: one,
     description:
       "Find the perfect influencers for your brand with our AI-powered search and advanced filtering system.",
     points: [
@@ -20,6 +28,7 @@ const platformFeatures = [
   },
   {
     title: "Campaign Management",
+    img: two,
     description:
       "Launch, manage, and optimize your influencer campaigns from a single, intuitive dashboard.",
     points: [
@@ -31,6 +40,7 @@ const platformFeatures = [
   },
   {
     title: "Performance Analytics",
+    img: three,
     description:
       "Track ROI, engagement, and campaign performance with comprehensive real-time analytics.",
     points: [
@@ -42,6 +52,7 @@ const platformFeatures = [
   },
   {
     title: "Content Collaboration",
+    img: four,
     description:
       "Streamline creation with built-in collaboration tools and approval workflows.",
     points: [
@@ -53,6 +64,7 @@ const platformFeatures = [
   },
   {
     title: "Payment Processing",
+    img: five,
     description:
       "Secure and automated payment system with support for multiple currencies.",
     points: [
@@ -64,6 +76,7 @@ const platformFeatures = [
   },
   {
     title: "Relationship Management",
+    img: six,
     description:
       "Build and maintain long-term relationships with your influencer network.",
     points: [
@@ -179,9 +192,14 @@ const ProductSuite = () => {
                 whileHover={{ y: -5 }}
                 className="group bg-white border border-slate-100 rounded-[3rem] shadow-sm flex flex-col snap-center min-w-[85vw] md:min-w-[400px] lg:min-w-0"
               >
-                {/* Visual Placeholder (Grey Top) */}
-                <div className="h-64 bg-slate-50/80 rounded-t-[3rem] flex items-center justify-center p-8">
-                  <div className="w-full h-full rounded-2xl bg-white/50 border border-white shadow-sm" />
+                <div className="h-64 rounded-t-[3rem] flex items-center justify-center">
+                  <Image
+                    src={feature.img}
+                    alt={feature.title}
+                    width={300}
+                    height={200}
+                    className="object-cover h-full w-full rounded-t-[3rem]"
+                  />
                 </div>
 
                 {/* Content */}
