@@ -25,6 +25,12 @@ import ProductPreview from "@/components/ProductPreview";
 import PainPoints from "@/components/PainPoints";
 import FeatureHub from "@/components/FeatureHub";
 import ImpactStats from "@/components/ImpactStats";
+import HowItWorks from "@/components/HowItWorks";
+import TestimonialCarousel from "@/components/TestiMonialCarousel2";
+import ToolGrid from "@/components/ToolGrid";
+import Pricing from "@/components/Pricing";
+import ComparisonTable from "@/components/ComparisonTable";
+import MovementSection from "@/components/Movement";
 
 const features = [
   {
@@ -136,6 +142,12 @@ export default function Home() {
       <PainPoints />
       <FeatureHub />
       <ImpactStats />
+      <HowItWorks />
+      <TestimonialCarousel />
+      <ToolGrid />
+      <Pricing />
+      <ComparisonTable />
+      <MovementSection />
       <FaqSection />
       <CTASection />
     </div>

@@ -10,6 +10,9 @@ import {
   Languages,
   CheckCircle2,
   ChevronDown,
+  AtSign,
+  TrendingUp,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,90 +22,42 @@ import { db } from "@/lib/firebase";
 export default function CreatorOnboardingForm({ onClose }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const totalSteps = 4;
+  const [isCustomLanguage, setIsCustomLanguage] = useState(false);
+  const totalSteps = 5; // Increased to accommodate the final agreement/address step
 
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
     gender: "",
+    ageGroup: "", // NEW
     instaLink: "",
+    instaUsername: "", // NEW
     primaryNiche: "",
-    secondaryNiche: [], // Now an array for multi-select
+    secondaryNiche: [],
     contentStyle: [],
     revealsFace: null,
     language: "",
     state: "",
     city: "",
+    pincode: "", // NEW
+    residentialAddress: "", // NEW
     followerTier: "",
+    exactFollowers: "", // NEW
+    avgViews: "", // NEW
+    agreesToTerms: false, // NEW
   });
 
-  const categories = [
-    "Fashion",
-    "Technology",
-    "Fitness",
-    "Beauty",
-    "Food",
-    "Travel",
-    "Music",
-    "Gaming",
-    "Lifestyle",
-    "Education",
+  const ageGroups = ["Under 18", "18-24", "25-34", "35-44", "45+"];
+  const avgViewsOptions = [
+    "1k - 10k",
+    "10k - 25k",
+    "25k - 50k",
+    "50k - 100k",
+    "100k+",
   ];
-  const contentStyles = [
-    "Talking Head",
-    "Aesthetic",
-    "Cinematic",
-    "Voiceover",
-    "Review",
-    "Meme",
-    "Random",
-  ];
-  const languages = ["Hindi", "English", "Hinglish", "Regional"];
-  const followerOptions = [
-    { label: "Under 1k", value: "baby" },
-    { label: "1k - 10k", value: "nano" },
-    { label: "10k - 100k", value: "micro" },
-    { label: "100k - 1M", value: "macro" },
-    { label: "1M+", value: "celebrity" },
-  ];
-
-  const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
-  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
-
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const toggleMultiSelect = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter((item) => item !== value)
-        : [...prev[field], value],
-    }));
-  };
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      const docRef = await addDoc(collection(db, "applications2"), {
-        ...formData,
-        status: "pending",
-        appliedAt: serverTimestamp(),
-      });
-
-      console.log("Document written with ID: ", docRef.id);
-      nextStep(); // Move to the success step
-    } catch (e) {
-      console.error("Error adding document: ", e);
-      alert("Submission failed. Please try again.", e);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const states = [
+    // States
     "Andhra Pradesh",
     "Arunachal Pradesh",
     "Assam",
@@ -131,33 +86,170 @@ export default function CreatorOnboardingForm({ onClose }) {
     "Uttarakhand",
     "Uttar Pradesh",
     "West Bengal",
+
+    // Union Territories
+    "Andaman and Nicobar Islands",
+    "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi (NCT)",
+    "Jammu and Kashmir",
+    "Ladakh",
+    "Lakshadweep",
+    "Puducherry",
   ];
+
+  const categories = [
+    "Fashion",
+    "Travel",
+    "Lifestyle",
+    "Health and Wellness",
+    "Beauty",
+    "Skincare",
+    "Haircare",
+    "Parenting",
+    "Make up Artist",
+    "Hair dressers",
+    "Content Creator",
+    "Educational",
+    "Finance",
+    "Actor",
+    "Model",
+    "Tech",
+    "Fitness",
+    "Comedian",
+    "Culinary",
+    "Dermat",
+    "Eco - Activists",
+    "OTT",
+    "Artist",
+    "Gamers",
+    "Musician",
+    "Doctor",
+    "Nutritionist",
+    "Writer/Poet",
+    "Photography",
+    "Sports",
+    "Stylist",
+    "Food Bloggers",
+    "Couple Vloggers",
+    "Hairstyle",
+    "Entertainment",
+    "Dancer",
+    "LGBTQ",
+    "Body Positivity",
+    "Entrepreneur",
+    "UGC",
+  ];
+  const contentStyles = [
+    "Talking Head",
+    "Aesthetic",
+    "Cinematic",
+    "Voiceover",
+    "Review",
+    "Meme",
+    "Random",
+  ];
+  const languagesList = [
+    "Assamese",
+    "Bengali",
+    "Bhojpuri",
+    "English",
+    "French",
+    "Gujarati",
+    "Haryanvi",
+    "Hindi",
+    "Hinglish",
+    "Kannada",
+    "Konkani",
+    "Maithili",
+    "Malayalam",
+    "Manipuri",
+    "Marathi",
+    "Nepali",
+    "Odia",
+    "Punjabi",
+    "Rajasthani",
+    "Tamil",
+    "Tulu",
+    "Urdu",
+    "Other",
+  ];
+  const followerOptions = [
+    { label: "Under 1k", value: "baby" },
+    { label: "1k - 5k", value: "nano_small" },
+    { label: "5k - 10k", value: "nano" },
+    { label: "10k - 50k", value: "micro" },
+    { label: "50k - 100k", value: "mid" },
+    { label: "100k+", value: "macro" },
+  ];
+
+  const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
+  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleMultiSelect = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].includes(value)
+        ? prev[field].filter((item) => item !== value)
+        : [...prev[field], value],
+    }));
+  };
 
   const isStepValid = () => {
     switch (step) {
       case 1:
         return (
-          formData.fullName.trim() !== "" &&
+          formData.fullName &&
           formData.phone.length === 10 &&
-          formData.state !== "" &&
-          formData.city !== "" &&
-          formData.gender !== ""
+          formData.gender &&
+          formData.ageGroup &&
+          formData.email
         );
       case 2:
         return (
-          formData.primaryNiche !== "" &&
+          formData.primaryNiche &&
           formData.secondaryNiche.length > 0 &&
           formData.contentStyle.length > 0 &&
-          formData.revealsFace !== null
+          formData.revealsFace
         );
       case 3:
         return (
           formData.instaLink.includes("instagram.com") &&
-          formData.followerTier !== "" &&
-          formData.language !== ""
+          formData.instaUsername &&
+          formData.followerTier &&
+          formData.avgViews &&
+          formData.language
+        );
+      case 4:
+        return (
+          formData.state &&
+          formData.city &&
+          formData.pincode &&
+          formData.residentialAddress &&
+          formData.agreesToTerms
         );
       default:
         return true;
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, "applications2"), {
+        ...formData,
+        status: "pending",
+        appliedAt: serverTimestamp(),
+      });
+      nextStep(); // Move to success step
+    } catch (e) {
+      alert("Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -169,19 +261,21 @@ export default function CreatorOnboardingForm({ onClose }) {
         exit={{ y: "100%" }}
         className="relative w-full h-full lg:h-auto lg:max-w-2xl bg-white lg:rounded-[32px] overflow-hidden flex flex-col"
       >
-        {/* Progress & Header */}
+        {/* Header */}
         <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-              Apply as Creator
+              Creator Application
             </h2>
-            <p className="text-xs text-[#E60076] font-bold uppercase tracking-widest">
-              Step {step} of {totalSteps}
-            </p>
+            {step < totalSteps && (
+              <p className="text-xs text-[#E60076] font-bold uppercase tracking-widest">
+                Step {step} of {totalSteps - 1}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-50 rounded-full cursor-pointer transition-colors"
+            className="p-2 hover:bg-slate-50 rounded-full cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -201,27 +295,27 @@ export default function CreatorOnboardingForm({ onClose }) {
                     }
                   />
                   <InputField
-                    label="Phone"
+                    label="Email Address"
+                    type="email"
+                    placeholder="email@example.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                  />
+                  <InputField
+                    label="Phone (WhatsApp)"
                     type="tel"
+                    maxLength={10}
                     placeholder="6399..."
                     value={formData.phone}
-                    maxLength={10}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                   />
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <InputField
-                    label="State"
-                    icon={<MapPin size={16} />}
-                    placeholder="State"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                  />
-                  <InputField
-                    label="City"
-                    placeholder="City"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange("city", e.target.value)}
+                  <SelectBox
+                    label="Age Group"
+                    options={ageGroups}
+                    value={formData.ageGroup}
+                    onChange={(e) =>
+                      handleInputChange("ageGroup", e.target.value)
+                    }
                   />
                   <SelectBox
                     label="Gender"
@@ -237,21 +331,21 @@ export default function CreatorOnboardingForm({ onClose }) {
 
             {step === 2 && (
               <StepContent title="Content Details">
+                {/* Existing Step 2 Content: Niches, Styles, Face Reveal */}
                 <div className="space-y-6">
                   <SelectBox
-                    label="Primary Niche (Main focus)"
+                    label="Primary Niche"
                     options={categories}
                     value={formData.primaryNiche}
                     onChange={(e) =>
                       handleInputChange("primaryNiche", e.target.value)
                     }
                   />
-
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                      Secondary Niches (Select multiple)
+                      Secondary Niches
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
                       {categories.map((cat) => (
                         <PillButton
                           key={cat}
@@ -267,7 +361,7 @@ export default function CreatorOnboardingForm({ onClose }) {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                      Content Style
+                      Content Styles (Select multiple)
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {contentStyles.map((style) => (
@@ -282,7 +376,6 @@ export default function CreatorOnboardingForm({ onClose }) {
                       ))}
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
                       Do you do face videos?
@@ -293,11 +386,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                           key={opt}
                           type="button"
                           onClick={() => handleInputChange("revealsFace", opt)}
-                          className={`flex-1 py-3 rounded-2xl border-2 transition-all font-bold text-sm cursor-pointer ${
-                            formData.revealsFace === opt
-                              ? "border-[#E60076] bg-pink-50 text-[#E60076]"
-                              : "border-slate-100 text-slate-500 hover:bg-slate-50"
-                          }`}
+                          className={`flex-1 py-3 cursor-pointer rounded-2xl border-2 transition-all font-bold text-sm ${formData.revealsFace === opt ? "border-[#E60076] bg-pink-50 text-[#E60076]" : "border-slate-100 text-slate-500 hover:bg-slate-50"}`}
                         >
                           {opt}
                         </button>
@@ -309,85 +398,194 @@ export default function CreatorOnboardingForm({ onClose }) {
             )}
 
             {step === 3 && (
-              <StepContent title="Reach & Metrics">
-                <InputField
-                  label="Instagram Profile Link"
-                  icon={<Instagram size={16} />}
-                  value={formData.instaLink}
-                  onChange={(e) =>
-                    handleInputChange("instaLink", e.target.value)
-                  }
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <SelectBox
-                    label="Follower Count"
-                    options={followerOptions.map((f) => f.label)}
-                    value={formData.followerTier}
+              <StepContent title="Social Metrics">
+                <div className="space-y-4">
+                  <InputField
+                    label="Instagram Profile Link"
+                    icon={<Instagram size={16} />}
+                    value={formData.instaLink}
                     onChange={(e) =>
-                      handleInputChange("followerTier", e.target.value)
+                      handleInputChange("instaLink", e.target.value)
                     }
                   />
-                  <SelectBox
-                    label="Content Language"
-                    icon={<Languages size={16} />}
-                    options={languages}
-                    value={formData.language}
+                  <InputField
+                    label="Instagram Username"
+                    icon={<AtSign size={16} />}
+                    placeholder="@username"
+                    value={formData.instaUsername}
                     onChange={(e) =>
-                      handleInputChange("language", e.target.value)
+                      handleInputChange("instaUsername", e.target.value)
                     }
                   />
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectBox
+                      label="Follower Tier"
+                      options={followerOptions.map((f) => f.label)}
+                      value={formData.followerTier}
+                      onChange={(e) =>
+                        handleInputChange("followerTier", e.target.value)
+                      }
+                    />
+                    <InputField
+                      label="Followers (Exact)"
+                      type="number"
+                      placeholder="e.g. 10200"
+                      value={formData.exactFollowers}
+                      onChange={(e) =>
+                        handleInputChange("exactFollowers", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectBox
+                      label="Avg Reels Views"
+                      icon={<TrendingUp size={16} />}
+                      options={avgViewsOptions}
+                      value={formData.avgViews}
+                      onChange={(e) =>
+                        handleInputChange("avgViews", e.target.value)
+                      }
+                    />
+                    <SelectBox
+                      label="Primary Language"
+                      icon={<Languages size={16} />}
+                      options={languagesList}
+                      value={isCustomLanguage ? "Other" : formData.language}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setIsCustomLanguage(val === "Other");
+                        handleInputChange(
+                          "language",
+                          val === "Other" ? "" : val,
+                        );
+                      }}
+                    />
+                  </div>
+                  {isCustomLanguage && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                    >
+                      <InputField
+                        label="Type your language"
+                        value={formData.language}
+                        onChange={(e) =>
+                          handleInputChange("language", e.target.value)
+                        }
+                        autoFocus
+                      />
+                    </motion.div>
+                  )}
                 </div>
               </StepContent>
             )}
 
             {step === 4 && (
+              <StepContent title="Shipping & Agreement">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectBox
+                      label="State"
+                      icon={<MapPin size={16} />}
+                      options={states}
+                      value={formData.state}
+                      onChange={(e) =>
+                        handleInputChange("state", e.target.value)
+                      }
+                    />
+                    <InputField
+                      label="City"
+                      value={formData.city}
+                      onChange={(e) =>
+                        handleInputChange("city", e.target.value)
+                      }
+                    />
+                  </div>
+                  <InputField
+                    label="Pincode"
+                    maxLength={6}
+                    placeholder="560001"
+                    value={formData.pincode}
+                    onChange={(e) =>
+                      handleInputChange("pincode", e.target.value)
+                    }
+                  />
+                  <InputField
+                    label="Full Residential Address"
+                    icon={<Package size={16} />}
+                    placeholder="House No, Street, Landmark..."
+                    value={formData.residentialAddress}
+                    onChange={(e) =>
+                      handleInputChange("residentialAddress", e.target.value)
+                    }
+                  />
+
+                  <div className="mt-6 p-4 bg-pink-50 rounded-2xl border border-pink-100">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1 accent-[#E60076] cursor-pointer"
+                        checked={formData.agreesToTerms}
+                        onChange={(e) =>
+                          handleInputChange("agreesToTerms", e.target.checked)
+                        }
+                      />
+                      <span className="text-xs text-slate-600 leading-relaxed">
+                        <b>Important:</b> I understand the agency role is to
+                        connect creators with brands. Commercials and payments
+                        are handled directly by the brand/agency. I agree to the
+                        terms.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </StepContent>
+            )}
+
+            {step === 5 && (
               <div className="text-center py-10">
                 <div className="w-20 h-20 bg-green-50 text-green-800 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 size={40} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800">
-                  Form Submitted Successfully!
+                  Application Submitted!
                 </h3>
                 <p className="text-slate-500 mt-2">
-                  Your application is saved to our Master Data.
+                  We have received your details for the master database.
                 </p>
               </div>
             )}
           </AnimatePresence>
         </div>
 
+        {/* Footer Buttons */}
         <div className="p-6 bg-slate-50/50 flex gap-3">
-          {step > 1 && (
+          {step > 1 && step < totalSteps && (
             <Button
               variant="ghost"
               onClick={prevStep}
-              className="flex-1 h-14 rounded-2xl font-bold cursor-pointer transition-colors"
+              className="flex-1 h-14 rounded-2xl font-bold cursor-pointer"
             >
               Back
             </Button>
           )}
           <Button
-            // Disable button while firebase is working
             disabled={isSubmitting || !isStepValid()}
             onClick={() => {
-              if (step === 3) {
-                handleSubmit(); // Call Firebase on the last input step
-              } else if (step === totalSteps) {
-                onClose(); // Close modal on the success screen
-              } else {
-                nextStep(); // Move through steps 1 and 2
-              }
+              if (step === 4) handleSubmit();
+              else if (step === 5) onClose();
+              else nextStep();
             }}
-            className="flex-[2] h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] cursor-pointer shadow-lg shadow-pink-100 disabled:opacity-50"
+            className="flex-[2] h-14 cursor-pointer rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-pink-100"
           >
             {isSubmitting
               ? "Submitting..."
-              : step === 3
+              : step === 4
                 ? "Submit Application"
-                : step === totalSteps
+                : step === 5
                   ? "Finish"
                   : "Next Step"}
-            {!isSubmitting && step < totalSteps && (
+            {!isSubmitting && step < 4 && (
               <ArrowRight size={18} className="ml-2" />
             )}
           </Button>
@@ -447,9 +645,11 @@ function SelectBox({ label, options, icon, ...props }) {
         )}
         <select
           {...props}
-          className={`w-full h-12 bg-slate-50 border-none rounded-xl ${icon ? "pl-10" : "pl-4"} pr-10 text-sm font-medium focus:ring-2 focus:ring-pink-100 outline-none appearance-none cursor-pointer relative z-0`}
+          className={`w-full h-12 bg-slate-50 border-none rounded-xl ${icon ? "pl-10" : "pl-4"} pr-10 text-sm font-medium focus:ring-2 focus:ring-pink-100 outline-none appearance-none cursor-pointer custom-scrollbar max-h-56 relative z-0`}
         >
-          <option value="">Select Option</option>
+          <option value="" disabled>
+            Select Option
+          </option>
           {options.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
