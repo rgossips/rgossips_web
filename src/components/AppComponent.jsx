@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Star } from "lucide-react";
-import mobileImg from "@/assets/mobile.png";
+import mobileImg from "@/assets/mobile1.png";
 import gplay from "@/assets/gplay.png";
 import appstore from "@/assets/apple.png";
 
