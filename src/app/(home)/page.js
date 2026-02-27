@@ -31,6 +31,8 @@ import ToolGrid from "@/components/ToolGrid";
 import Pricing from "@/components/Pricing";
 import ComparisonTable from "@/components/ComparisonTable";
 import MovementSection from "@/components/Movement";
+import AppSection from "@/components/AppComponent";
+import BottomHero from "@/components/BottomHero";
 
 const features = [
   {
@@ -88,6 +90,7 @@ export default function Home() {
       <HomeHero />
       {/* <HomeCarousel /> */}
       <BrandsCarousel />
+      <ImpactStats />
 
       {/* <ShowcaseSection />
 
@@ -133,22 +136,23 @@ export default function Home() {
       </div> */}
       <ProductSuite />
       <FeaturesSection />
-      <CategoryGrid />
-      <BrandForms />
+      {/* <CategoryGrid /> */}
+      {/* <BrandForms /> */}
 
       {/* <InfluencerGrid /> */}
-      <Hero2 />
-      <ProductPreview />
+      {/* <Hero2 /> */}
+      {/* <ProductPreview /> */}
       <PainPoints />
-      <FeatureHub />
-      <ImpactStats />
+      {/* <FeatureHub /> */}
       <HowItWorks />
       <TestimonialCarousel />
       <ToolGrid />
       <Pricing />
       <ComparisonTable />
       <MovementSection />
+      <AppSection />
       <FaqSection />
+      {/* <BottomHero /> */}
       <CTASection />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   FaTwitter,
   FaInstagram,
@@ -10,134 +9,127 @@ import {
   FaYoutube,
   FaWhatsapp,
 } from "react-icons/fa";
-import logo from "@/assets/logo2.png";
-import { useRouter } from "next/navigation";
-import { Icon } from "lucide-react";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const router = useRouter();
 
-  const footerLinks = {
-    product: [
-      { name: "Features", href: "/" }, // Set to root as requested
-      { name: "For Brands", href: "/brands" }, // Set to /brands
-      { name: "For Influencers", href: "/influencer" }, // Set to /influencers
-      { name: "Categories", href: "#" },
-      { name: "FAQ", href: "/" }, // Set to root as requested
+  // Updated link structure based on the image
+  const navigation = {
+    platform: [
+      { name: "For Brands", href: "/brands" },
+      { name: "For Influencers", href: "/influencer" },
+      { name: "How It Works", href: "/how-it-works" },
+      { name: "Pricing", href: "/pricing" },
+      { name: "Features", href: "/features" },
+    ],
+    company: [
+      { name: "About Us", href: "/about" },
+      { name: "Careers", href: "/careers" },
+      { name: "Blog", href: "/blog" },
+      { name: "Press Kit", href: "/press" },
+      { name: "Contact", href: "/contact" },
     ],
     legal: [
-      { name: "Privacy", href: "#" },
-      { name: "Terms", href: "#" },
-      { name: "Cookies", href: "#" },
+      { name: "Terms of Service", href: "/terms" },
+      { name: "Privacy Policy", href: "/privacy" },
+      { name: "Cookie Policy", href: "/cookies" },
+      { name: "Help Center", href: "/help" },
+      { name: "Support", href: "/support" },
+    ],
+    social: [
+      { Icon: FaInstagram, href: "https://www.instagram.com/rgossips_/" },
+      { Icon: FaLinkedinIn, href: "https://linkedin.com" },
+      { Icon: FaTwitter, href: "https://twitter.com" },
+      { Icon: FaYoutube, href: "https://youtube.com" },
+      {
+        Icon: FaWhatsapp,
+        href: "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
+      },
     ],
   };
 
   return (
-    <footer className="bg-[#0f172a] text-slate-400 py-16 px-6 md:px-12 lg:px-24 border-t border-slate-800">
+    <footer className="bg-[#0a051a] text-slate-400 py-16 px-6 md:px-12 lg:px-20 border-t border-slate-800/50">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
           {/* Brand Column */}
-          <div className="md:col-span-4 space-y-6">
-            <div className="flex items-center gap-2">
-              <Image src={logo} alt="Recent Gossip" width={250} />
-            </div>
-            <p className="text-slate-400 text-base leading-relaxed max-w-sm">
-              The all-in-one platform connecting brands with perfect
-              influencers. Launch campaigns, track performance, and drive real
-              results.
+          <div className="md:col-span-4 space-y-4">
+            <h2 className="text-white text-3xl font-bold tracking-tight">
+              RGossips
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+              The all-in-one influencer campaign platform connecting brands with
+              verified creators globally.
             </p>
-            <div className="flex items-center gap-4">
-              {[
-                {
-                  Icon: FaInstagram,
-                  href: "https://www.instagram.com/rgossips_/",
-                },
-                { Icon: FaYoutube, href: "#" },
-                { Icon: FaLinkedinIn, href: "#" },
-                {
-                  Icon: FaWhatsapp,
-                  href: "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
-                },
-              ].map((social, i) => (
+            <p className="text-white text-sm font-medium pt-2">
+              Get influencer marketing tips — weekly in your inbox
+            </p>
+
+            {/* Newsletter Subscription */}
+            <div className="flex gap-2 pt-2">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="bg-[#1a142c] border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white w-full max-w-[280px]"
+              />
+              <button className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all">
+                Subscribe
+              </button>
+            </div>
+
+            {/* Social Icons */}
+            <div className="flex items-center gap-3 pt-4">
+              {navigation.social.map((social, i) => (
                 <Link
                   key={i}
-                  target="_blank" // Fixed to "_blank"
+                  target="_blank"
                   href={social.href}
-                  className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300 border border-slate-700/50"
+                  className="w-10 h-10 rounded-full bg-[#1a142c] flex items-center justify-center hover:bg-white/10 transition-all border border-slate-700/50"
                 >
-                  <social.Icon size={18} />
+                  <social.Icon size={16} className="text-slate-300" />
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Links Column */}
-          <div className="md:col-span-3">
-            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">
-              Product
-            </h4>
-            <ul className="space-y-4">
-              {footerLinks.product.map((link) => (
-                <li key={link.name}>
-                  <div
-                    onClick={() => {
-                      if (
-                        link.href == "/influencer" ||
-                        link.href == "/brands"
-                      ) {
-                        //check login
-
-                        router.push(link.href);
-                      } else {
-                        router.push(link.href);
-                      }
-                    }}
-                    className="hover:text-blue-400 transition-colors duration-200 cursor-pointer"
-                  >
-                    {link.name}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Newsletter Column */}
-          <div className="md:col-span-5 space-y-6">
-            <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">
-              Stay Updated
-            </h4>
-            <p className="text-slate-400">
-              Get the latest influencer marketing insights
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="bg-slate-800/40 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white"
-              />
-              <button className="h-12 px-8 cursor-pointer bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-xl font-bold shadow-lg hover:opacity-90 transition-all">
-                Subscribe
-              </button>
-            </div>
+          {/* Links Columns */}
+          <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-8">
+            {[
+              { title: "Platform", links: navigation.platform },
+              { title: "Company", links: navigation.company },
+              { title: "Legal & Support", links: navigation.legal },
+            ].map((section) => (
+              <div key={section.title}>
+                <h4 className="text-white font-semibold mb-6 text-sm tracking-wide">
+                  {section.title}
+                </h4>
+                <ul className="space-y-4">
+                  {section.links.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        href={link.href}
+                        className="text-slate-400 hover:text-white text-sm transition-colors duration-200"
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
-          <p>© {currentYear} Recent Gossip. All rights reserved.</p>
+        <div className="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-slate-500">
+          <p>© {currentYear} RGossips. All rights reserved.</p>
 
-          <div className="flex items-center gap-8">
-            {footerLinks.legal.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="hover:text-white transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+          <div className="flex items-center gap-6">
+            <span>Trusted by 5,000+ brands</span>
+            <span>•</span>
+            <span>200,000+ Influencers</span>
+            <span>•</span>
+            <span>ISO 27001 Certified</span>
           </div>
         </div>
       </div>

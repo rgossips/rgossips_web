@@ -221,8 +221,8 @@ export default function CreatorOnboardingForm({ onClose }) {
           formData.instaLink.includes("instagram.com") &&
           formData.instaUsername &&
           formData.followerTier &&
-          formData.avgViews &&
           formData.language
+          // formData.avgViews &&
         );
       case 4:
         return (
@@ -437,7 +437,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <SelectBox
+                    {/* <SelectBox
                       label="Avg Reels Views"
                       icon={<TrendingUp size={16} />}
                       options={avgViewsOptions}
@@ -445,7 +445,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                       onChange={(e) =>
                         handleInputChange("avgViews", e.target.value)
                       }
-                    />
+                    /> */}
                     <SelectBox
                       label="Primary Language"
                       icon={<Languages size={16} />}

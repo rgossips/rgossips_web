@@ -25,12 +25,7 @@ const tools = [
       "Manage all your campaigns from one intuitive dashboard with real-time updates.",
     icon: <LayoutDashboard className="w-6 h-6 text-indigo-600" />,
   },
-  {
-    title: "Escrow Payment Protection",
-    description:
-      "Your payments are secured until content is delivered and approved.",
-    icon: <ShieldCheck className="w-6 h-6 text-indigo-600" />,
-  },
+
   {
     title: "Live Performance Analytics",
     description:
@@ -89,7 +84,7 @@ const itemVariants = {
 
 export default function ToolGrid() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-20 bg-white w-full">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">

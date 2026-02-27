@@ -117,14 +117,14 @@ export default function Pricing() {
           className="rounded-[32px] p-10 md:p-14 text-center text-white shadow-xl bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96]"
         >
           <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
-            INFLUENCERS — Always Free
+            BRANDS — Always Free
           </h3>
           <p className="text-indigo-100 mb-8 max-w-2xl mx-auto text-sm md:text-base opacity-90">
-            Joining RGossips as a creator is completely free. We never charge
-            influencers a commission.
+            Joining RGossips as a brand is completely free. We never charge
+            brands a commission.
           </p>
           <Button className="bg-white text-[#6C4DFF] hover:bg-slate-50 h-14 px-10 rounded-2xl font-bold text-lg cursor-pointer transition-transform hover:scale-105 active:scale-95">
-            Join as a Creator — It's Free
+            Join as a Brand — It's Free
           </Button>
         </motion.div>
       </div>

@@ -13,6 +13,10 @@ import {
   Briefcase,
   LineChart,
   Award,
+  Search,
+  MessageCircle,
+  BarChart,
+  CreditCard,
 } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
 
@@ -26,57 +30,94 @@ const FeaturesSection = () => {
 
   const brandFeatures = [
     {
-      title: "Reach Your Target Audience",
-      desc: "Connect with influencers whose followers match your ideal customer profile perfectly.",
-      icon: <Target className="w-5 h-5" />,
+      icon: <Search />,
+      title: "Discover Verified Creators Instantly",
+      desc: "Search 200,000+ influencers by niche, platform, engagement rate, and more.",
       color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
-      title: "Measure Real ROI",
-      desc: "Track every dollar spent with comprehensive analytics and performance metrics.",
-      icon: <BarChart3 className="w-5 h-5" />,
+      icon: <Zap />,
+      title: "Launch Campaigns in 5 Steps",
+      desc: "Set your brief, budget, and timeline. Go live in under 10 minutes.",
       color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
-      title: "Scale Your Campaigns",
-      desc: "Manage multiple influencers and campaigns simultaneously from one central dashboard.",
-      icon: <Layers className="w-5 h-5" />,
+      icon: <MessageCircle />,
+      title: "Negotiate & Contract Directly",
+      desc: "Chat, negotiate rates, and sign digital contracts all in one place.",
       color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
     {
-      title: "Fast Execution",
-      desc: "Launch campaigns in minutes with our streamlined workflow and automated processes.",
-      icon: <Zap className="w-5 h-5" />,
+      icon: <BarChart />,
+      title: "Track Every Post in Real Time",
+      desc: "Live dashboards for views, engagement, clicks, and conversions.",
+      color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
+    },
+    {
+      icon: <CreditCard />,
+      title: "Pay Creators Seamlessly",
+      desc: "Escrow-protected payments. 50+ countries supported.",
       color: "bg-linear-to-r from-[#155DFC] to-[#9810FA]",
     },
   ];
 
   const influencerFeatures = [
     {
-      title: "Get Paid What You Deserve",
-      desc: "Transparent pricing and secure payments. Set your rates and get paid on time, every time.",
-      icon: <DollarSign className="w-5 h-5" />,
+      icon: <Search />,
+      title: "Get Discovered by Top Brands",
+      desc: "Showcase your portfolio to global brands looking for your specific style.",
       color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
     {
-      title: "Work With Top Brands",
-      desc: "Access exclusive brand partnerships that align with your content and values.",
-      icon: <Briefcase className="w-5 h-5" />,
-      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
-    },
-    {
-      title: "Grow Your Influence",
-      desc: "Gain insights into your performance and discover opportunities to expand your reach.",
-      icon: <LineChart className="w-5 h-5" />,
-      color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
-    },
-    {
-      title: "Build Your Portfolio",
-      desc: "Showcase your best work and build credibility with verified campaign results.",
-      icon: <Award className="w-5 h-5" />,
+      icon: <Zap />,
+      title: "Apply to Premium Campaigns",
+      desc: "Browse high-paying opportunities and apply with one click.",
       color: "bg-linear-to-r from-[#9810FA] to-[#FA1085]",
     },
   ];
+
+  const content = {
+    brands: [
+      {
+        icon: <Search />,
+        title: "Discover Verified Creators Instantly",
+        desc: "Search 200,000+ influencers by niche, platform, engagement rate, and more.",
+      },
+      {
+        icon: <Zap />,
+        title: "Launch Campaigns in 5 Steps",
+        desc: "Set your brief, budget, and timeline. Go live in under 10 minutes.",
+      },
+      {
+        icon: <MessageCircle />,
+        title: "Negotiate & Contract Directly",
+        desc: "Chat, negotiate rates, and sign digital contracts all in one place.",
+      },
+      {
+        icon: <BarChart />,
+        title: "Track Every Post in Real Time",
+        desc: "Live dashboards for views, engagement, clicks, and conversions.",
+      },
+      {
+        icon: <CreditCard />,
+        title: "Pay Creators Seamlessly",
+        desc: "Escrow-protected payments. 50+ countries supported.",
+      },
+    ],
+    influencers: [
+      {
+        icon: <Search />,
+        title: "Get Discovered by Top Brands",
+        desc: "Showcase your portfolio to global brands looking for your specific style.",
+      },
+      {
+        icon: <Zap />,
+        title: "Apply to Premium Campaigns",
+        desc: "Browse high-paying opportunities and apply with one click.",
+      },
+      // ... add more for influencers as needed
+    ],
+  };
 
   return (
     <section

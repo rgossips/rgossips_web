@@ -2,6 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Flame, Handshake, GraduationCap, MessageSquare } from "lucide-react";
+import img from "@/assets/bg2.png";
 
 const movementFeatures = [
   {
@@ -32,16 +33,14 @@ const movementFeatures = [
 
 export default function MovementSection() {
   return (
-    <section className="relative py-24 bg-[#0F1117] overflow-hidden w-full">
-      {/* Texture Layer: Grid Pattern */}
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
-      />
-
+    <section
+      style={{
+        backgroundImage: `url(${img.src})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+      className="relative py-20 overflow-hidden w-full"
+    >
       {/* Subtle Glow Radial */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent" />
 

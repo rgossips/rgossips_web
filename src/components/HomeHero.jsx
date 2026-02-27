@@ -23,11 +23,11 @@ const HomeHero = () => {
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         {/* Left Content */}
         <div className="space-y-8">
-          <Badge className="bg-blue-50 text-blue-600 border-blue-100 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 w-fit">
+          <Badge className="bg-blue-50 text-blue-600 border-blue-100 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 w-fit max-w-[80vw] flex-wrap">
             {/* <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             </span> */}
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 flex-wrap">
               🚀 Now live: AI-powered Influencer Matching — Try it free →
             </span>
           </Badge>
@@ -124,7 +124,7 @@ const HomeHero = () => {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="absolute -left-5 lg:-left-10 top-20 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
+              className="absolute -left-3 lg:-left-10 bottom-20 lg:bottom-88 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
             >
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
                 <TrendingUp size={20} />
@@ -141,7 +141,7 @@ const HomeHero = () => {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-              className="absolute -right-3 lg:-right-6 bottom-24 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
+              className="absolute -right-3 lg:-right-6 bottom-72 lg:bottom-24 bg-white p-4 rounded-2xl shadow-xl border border-slate-50 flex items-center gap-4 z-20"
             >
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                 <Users size={20} />

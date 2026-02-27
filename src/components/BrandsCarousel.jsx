@@ -14,14 +14,14 @@ import tommyHilfiger from "@/assets/brands/tommyHilfiger.png";
 import versace from "@/assets/brands/versace.png";
 
 const baseBrands = [
-  gucci,
-  burberry,
-  channel,
-  louisVitton,
-  puma,
-  rolex,
-  tommyHilfiger,
-  versace,
+  "https://lh3.googleusercontent.com/d/1y5nOHRt1P-5SB6BCzryeczgmhyoHcuSs",
+  "https://lh3.googleusercontent.com/d/1PS9A-rPC48WUPo8imZjw4XAzChADsceu",
+  "https://lh3.googleusercontent.com/d/1cUytBemciPv8OdMi6-gADzUCKzfymr1R",
+  "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
+  "https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r",
+  "https://lh3.googleusercontent.com/d/14oE-4ohZxzmshUK6LwU8N3l5tOkh6jcT",
+  "https://lh3.googleusercontent.com/d/1rUYya-EIZPqE7lSZBa_TY_wKI5httO6H",
+  "https://lh3.googleusercontent.com/d/1IuS3e9tDzB987BNDkQaEmVLkg6IYDiuy",
 ];
 
 const duplicated = [...baseBrands, ...baseBrands, ...baseBrands];
@@ -85,7 +85,7 @@ const BrandsCarousel = () => {
       </div>
 
       {/* Stats Section */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mt-24 px-4 w-full max-w-6xl">
+      {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mt-24 px-4 w-full max-w-6xl">
         {stats.map((stat, idx) => (
           <div key={idx} className="text-center space-y-2">
             <h3 className="text-3xl md:text-4xl font-bold text-white">
@@ -96,7 +96,7 @@ const BrandsCarousel = () => {
             </p>
           </div>
         ))}
-      </div>
+      </div> */}
     </section>
   );
 };
