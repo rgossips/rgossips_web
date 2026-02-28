@@ -95,45 +95,7 @@ export default function Home() {
       {/* <ShowcaseSection />
 
       <FeaturedSection /> */}
-      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full pl-10 pr-20 my-10 gap-8">
-        {features.map((item, i) => (
-          <div key={i} className="flex items-center gap-5 p-6 ">
-            <div className="text-[100px]">{item.icon}</div>
-            <div className="flex flex-col">
-              <div className="font-semibold text-2xl text-gray-900">
-                {item.title}
-              </div>
-              <div className="text-gray-500 text-base">{item.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div> */}
-      {/* <div className="relative h-screen w-full flex flex-col items-start justify-center gap-10 text-white px-10 lg:px-20 overflow-hidden">
-       
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover"
-        >
-          <source
-            src="https://www.pexels.com/download/video/7964466/"
-            type="video/mp4"
-          />
-        </video>
 
-        
-        <div className="relative z-10 text-3xl font-semibold">Featured</div>
-
-        <div className="relative z-10 text-7xl font-semibold max-w-4xl">
-          We provide creative solutions
-        </div>
-
-        <div className="relative z-10 bg-black px-5 py-3 text-2xl cursor-pointer">
-          Read More
-        </div>
-      </div> */}
       <ProductSuite />
       <FeaturesSection />
       {/* <CategoryGrid /> */}
@@ -146,7 +108,7 @@ export default function Home() {
       {/* <FeatureHub /> */}
       <HowItWorks />
       <TestimonialCarousel />
-      <ToolGrid />
+      {/* <ToolGrid /> */}
       <Pricing />
       <ComparisonTable />
       <MovementSection />

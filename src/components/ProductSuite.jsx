@@ -4,7 +4,18 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  Brain,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Globe,
+  LayoutDashboard,
+  LineChart,
+  Sparkles,
+  UserCheck,
+} from "lucide-react";
 import one from "@/assets/home2.png";
 import two from "@/assets/home3.png";
 import three from "@/assets/home4.png";
@@ -15,10 +26,11 @@ import Image from "next/image";
 
 const platformFeatures = [
   {
-    title: "Influencer Discovery",
-    img: one,
+    title: "AI-Powered Creator Discovery",
+    img: one, // Influencer Discovery
+    icon: <Brain className="w-6 h-6 text-indigo-600" />,
     description:
-      "Find the perfect influencers for your brand with our AI-powered search and advanced filtering system.",
+      "Smart algorithms match you with the perfect influencers based on your campaign goals using AI-powered search.",
     points: [
       "AI-powered matching algorithm",
       "Advanced filters by niche",
@@ -27,10 +39,11 @@ const platformFeatures = [
     ],
   },
   {
-    title: "Campaign Management",
-    img: two,
+    title: "Campaign Management Dashboard",
+    img: two, // Campaign Management
+    icon: <LayoutDashboard className="w-6 h-6 text-indigo-600" />,
     description:
-      "Launch, manage, and optimize your influencer campaigns from a single, intuitive dashboard.",
+      "Manage all your campaigns from one intuitive dashboard with real-time updates and automated workflows.",
     points: [
       "End-to-end campaign workflow",
       "Automated content approval",
@@ -39,10 +52,11 @@ const platformFeatures = [
     ],
   },
   {
-    title: "Performance Analytics",
-    img: three,
+    title: "Live Performance Analytics",
+    img: three, // Performance Analytics
+    icon: <LineChart className="w-6 h-6 text-indigo-600" />,
     description:
-      "Track ROI, engagement, and campaign performance with comprehensive real-time analytics.",
+      "Track engagement, reach, clicks, and conversions in real-time with comprehensive ROI tracking.",
     points: [
       "Real-time performance metrics",
       "ROI tracking",
@@ -51,39 +65,55 @@ const platformFeatures = [
     ],
   },
   {
-    title: "Content Collaboration",
-    img: four,
+    title: "AI Content Creation Suite",
+    img: four, // Content Collaboration
+    icon: <Sparkles className="w-6 h-6 text-indigo-600" />,
     description:
-      "Streamline creation with built-in collaboration tools and approval workflows.",
+      "Generate captions, hashtags, and content ideas while streamlining review with built-in collaboration tools.",
     points: [
       "Integrated messaging",
-      "Content review",
-      "Brand guidelines",
+      "Content review & approval",
+      "AI-assisted brand guidelines",
       "Revision management",
     ],
   },
   {
-    title: "Payment Processing",
-    img: five,
+    title: "Digital Contracts & Payments",
+    img: five, // Payment Processing
+    icon: <FileText className="w-6 h-6 text-indigo-600" />,
     description:
-      "Secure and automated payment system with support for multiple currencies.",
+      "Secure escrow-protected payments and legally binding contracts with e-signatures for safe collaborations.",
     points: [
-      "Automated scheduling",
+      "Secure escrow system",
       "Multi-currency support",
-      "Secure escrow",
-      "Invoice generation",
+      "Automated invoice generation",
+      "E-signature integration",
     ],
   },
   {
-    title: "Relationship Management",
-    img: six,
+    title: "Verified Profiles & Fraud Detection",
+    img: six, // Relationship Management
+    icon: <UserCheck className="w-6 h-6 text-indigo-600" />,
     description:
-      "Build and maintain long-term relationships with your influencer network.",
+      "Protect your brand from fake followers. All influencers are verified to ensure authentic relationship building.",
     points: [
       "Influencer database",
       "Communication history",
-      "Performance history",
+      "Fake follower detection",
       "Relationship scoring",
+    ],
+  },
+  {
+    title: "Multi-Platform Support",
+    img: one, // New or extra image if available
+    icon: <Globe className="w-6 h-6 text-indigo-600" />,
+    description:
+      "Manage integrated campaigns across Instagram, YouTube, Twitter, and TikTok from one central place.",
+    points: [
+      "Cross-platform analytics",
+      "Unified messaging inbox",
+      "Platform-specific briefs",
+      "Global audience reach",
     ],
   },
 ];
