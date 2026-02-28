@@ -1,10 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Target, Zap, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// 1. Updated Brand Data Structure (Kept same as provided)
+// 1. Brand Data Structure
 const brandPlans = [
   {
     name: "Starter",
@@ -60,7 +60,7 @@ const brandPlans = [
   },
 ];
 
-// 2. Updated Influencer Data Structure (Kept same as provided)
+// 2. Influencer Data Structure
 const influencerPlans = {
   monthly: [
     {
@@ -200,18 +200,41 @@ const influencerPlans = {
   ],
 };
 
+// Helper function to highlight specific text patterns
+const highlightText = (text, isHighlighted) => {
+  // Pattern matches: Numbers followed by /month, /mo, /yr, or 'x' followed by words
+  const regex = /(\d+\/\w+|\d+×\s\w+|Unlimited|FREE|Best Value)/g;
+  const parts = text.split(regex);
+
+  return parts.map((part, i) => {
+    if (part.match(regex)) {
+      return (
+        <span
+          key={i}
+          className="text-xs font-semibold bg-clip-text text-transparent"
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, #9810fa 0%, #e60076 100%)",
+          }}
+        >
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+};
+
 export default function Pricing() {
-  const [userType, setUserType] = useState("influencer"); // "brand" or "influencer"
+  const [userType, setUserType] = useState("influencer");
   const [billing, setBilling] = useState("monthly");
 
-  // Determine which plan data to display
   const currentPlans =
     userType === "brand" ? brandPlans : influencerPlans[billing];
 
   return (
     <section className="py-20 bg-[#F8F7FF] px-6" id="pricing">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4">
             Simple, Transparent Pricing
@@ -220,32 +243,8 @@ export default function Pricing() {
             Start free, upgrade when you're ready
           </p>
 
-          {/* User Type Toggle */}
-          {/* <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm mb-6">
-            <button
-              onClick={() => setUserType("brand")}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
-                userType === "brand"
-                  ? "bg-[#6C4DFF] text-white"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              For Brands
-            </button>
-            <button
-              onClick={() => setUserType("influencer")}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
-                userType === "influencer"
-                  ? "bg-[#6C4DFF] text-white"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              For Influencers
-            </button>
-          </div> */}
           <br />
 
-          {/* Billing Toggle (Only show for Influencers for this context) */}
           {userType === "influencer" && (
             <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm">
               <button
@@ -277,12 +276,14 @@ export default function Pricing() {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-12">
-          {currentPlans.map((plan, idx) => (
-            <PricingCard key={idx} plan={plan} userType={userType} />
-          ))}
+          <AnimatePresence mode="wait">
+            {currentPlans.map((plan, idx) => (
+              <PricingCard key={plan.name} plan={plan} userType={userType} />
+            ))}
+          </AnimatePresence>
         </div>
 
-        {/* Influencer CTA Banner */}
+        {/* CTA Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -315,9 +316,11 @@ function PricingCard({ plan, userType }) {
 
   return (
     <motion.div
+      layout // Smooth layout transition
       initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.3 }}
       className={`relative flex flex-col p-10 rounded-[32px] transition-all duration-300 ${
         isHighlighted
           ? "bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96] text-white shadow-2xl z-10 lg:scale-105"
@@ -373,7 +376,10 @@ function PricingCard({ plan, userType }) {
             <Check
               className={`w-5 h-5 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-[#6C4DFF]"}`}
             />
-            <span className="text-sm font-medium leading-snug">{feature}</span>
+            {/* APPLY HIGHLIGHTING HERE */}
+            <span className="text-sm font-medium leading-snug">
+              {highlightText(feature, isHighlighted)}
+            </span>
           </div>
         ))}
         {plan.notIncluded &&
