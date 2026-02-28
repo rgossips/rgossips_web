@@ -40,7 +40,7 @@ const platformFeatures = [
   },
   {
     title: "Campaign Management Dashboard",
-    img: two, // Campaign Management
+    img: three, // Campaign Management
     icon: <LayoutDashboard className="w-6 h-6 text-indigo-600" />,
     description:
       "Manage all your campaigns from one intuitive dashboard with real-time updates and automated workflows.",
@@ -52,16 +52,16 @@ const platformFeatures = [
     ],
   },
   {
-    title: "Live Performance Analytics",
-    img: three, // Performance Analytics
-    icon: <LineChart className="w-6 h-6 text-indigo-600" />,
+    title: "Multi-Platform Support",
+    img: two, // New or extra image if available
+    icon: <Globe className="w-6 h-6 text-indigo-600" />,
     description:
-      "Track engagement, reach, clicks, and conversions in real-time with comprehensive ROI tracking.",
+      "Manage integrated campaigns across Instagram, YouTube, Twitter, and TikTok from one central place.",
     points: [
-      "Real-time performance metrics",
-      "ROI tracking",
-      "Custom reporting",
-      "Competitor benchmarking",
+      "Cross-platform analytics",
+      "Unified messaging inbox",
+      "Platform-specific briefs",
+      "Global audience reach",
     ],
   },
   {
@@ -101,19 +101,6 @@ const platformFeatures = [
       "Communication history",
       "Fake follower detection",
       "Relationship scoring",
-    ],
-  },
-  {
-    title: "Multi-Platform Support",
-    img: one, // New or extra image if available
-    icon: <Globe className="w-6 h-6 text-indigo-600" />,
-    description:
-      "Manage integrated campaigns across Instagram, YouTube, Twitter, and TikTok from one central place.",
-    points: [
-      "Cross-platform analytics",
-      "Unified messaging inbox",
-      "Platform-specific briefs",
-      "Global audience reach",
     ],
   },
 ];
