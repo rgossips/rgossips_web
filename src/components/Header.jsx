@@ -21,7 +21,7 @@ const Header = () => {
       id: "brands-influencers-section",
       type: "influencers",
     },
-    { name: "Campaigns", link: "/offers" },
+    { name: "Pricing", id: "pricing" },
     { name: "FAQ", id: "faq" },
   ];
 

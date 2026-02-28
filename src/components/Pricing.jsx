@@ -63,7 +63,7 @@ export default function Pricing() {
   const [billing, setBilling] = useState("monthly");
 
   return (
-    <section className="py-24 bg-[#F8F7FF] px-6">
+    <section className="py-24 bg-[#F8F7FF] px-6" id="pricing">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
