@@ -73,7 +73,7 @@ const HomeHero = () => {
           </div>
 
           {/* Social Proof */}
-          <div className="flex items-center gap-6 pt-4">
+          {/* <div className="flex items-center gap-6 pt-4">
             <div className="flex -space-x-3">
               {[1, 2, 3, 4].map((i) => (
                 <div
@@ -102,7 +102,7 @@ const HomeHero = () => {
                 </span>
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Content - Interactive Visual */}

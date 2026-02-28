@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   FaTwitter,
@@ -9,9 +9,14 @@ import {
   FaYoutube,
   FaWhatsapp,
 } from "react-icons/fa";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Updated link structure based on the image
   const navigation = {
@@ -48,6 +53,29 @@ const Footer = () => {
     ],
   };
 
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      // Add email to Firestore collection 'subscribers'
+      await addDoc(collection(db, "subscribers"), {
+        email: email,
+        subscribedAt: serverTimestamp(),
+      });
+      setMessage("Thank you for subscribing!");
+      setEmail(""); // Clear input
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      setMessage("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-[#0a051a] text-slate-400 py-16 px-6 md:px-12 lg:px-20 border-t border-slate-800/50">
       <div className="max-w-7xl mx-auto">
@@ -69,13 +97,24 @@ const Footer = () => {
             <div className="flex gap-2 pt-2">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
                 placeholder="Enter your email"
                 className="bg-[#1a142c] border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white w-full max-w-[280px]"
               />
-              <button className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all">
+              <button
+                disabled={loading}
+                onClick={handleSubscribe}
+                className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all"
+              >
                 Subscribe
               </button>
             </div>
+            {message && (
+              <div className="text-[#6C4DFF] font-semiboldm">{message}</div>
+            )}
 
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-4">

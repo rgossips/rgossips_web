@@ -175,7 +175,7 @@ const ProductSuite = () => {
   };
 
   return (
-    <section className="w-full py-24 bg-white overflow-hidden" id="features">
+    <section className="w-full py-16 bg-white overflow-hidden" id="features">
       <div className="lg:max-w-7xl mx-auto px-6">
         {/* Header Section */}
         <div className="text-center mb-16 space-y-4">

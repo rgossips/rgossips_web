@@ -130,7 +130,10 @@ function TimelineItem({ step, index }) {
   const isLeft = step.side === "left";
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center w-full mb-8 md:mb-12">
+    <div
+      className="flex flex-col md:flex-row items-center justify-center w-full mb-8 md:mb-12"
+      id="works"
+    >
       {/* LEFT SIDE: Content or Spacer */}
       <div className="hidden md:flex md:w-1/2 justify-end items-center">
         {isLeft ? (

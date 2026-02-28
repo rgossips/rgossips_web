@@ -19,6 +19,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
+import brandHero from "@/assets/brandHero.png";
+import influencerHero from "@/assets/influencerHero.png";
 
 const FeaturesSection = () => {
   const { type, setType } = useGlobal();
@@ -121,12 +123,12 @@ const FeaturesSection = () => {
 
   return (
     <section
-      className="w-full py-24 bg-white overflow-hidden"
+      className="w-full pb-20 bg-white overflow-hidden"
       id="brands-influencers-section"
     >
       <div className="max-w-7xl mx-auto px-6">
         {/* Toggle Switch */}
-        <div className="flex justify-center mb-20">
+        <div className="flex justify-center mb-10">
           <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex items-center shadow-sm">
             <button
               onClick={() => {
@@ -173,11 +175,24 @@ const FeaturesSection = () => {
               }`}
             >
               <div
-                className={`relative aspect-square w-full max-w-[500px] mx-auto rounded-[3rem] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] border border-white shadow-2xl flex items-center justify-center`}
+                className={`relative aspect-square w-full max-w-[500px] mx-auto rounded-[3rem] flex items-center justify-center`}
               >
-                {/* Abstract Content */}
-                <div className="w-[80%] h-[80%] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] backdrop-blur-md rounded-[2rem] flex items-center justify-center"></div>
-
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={activeTab}
+                    src={
+                      activeTab === "influencers"
+                        ? influencerHero.src || influencerHero
+                        : brandHero.src || brandHero
+                    }
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.1 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-full h-full object-cover rounded-[3rem]"
+                    alt={activeTab}
+                  />
+                </AnimatePresence>
                 {/* Floating Stats Card */}
                 <motion.div
                   animate={{ y: [0, -15, 0] }}

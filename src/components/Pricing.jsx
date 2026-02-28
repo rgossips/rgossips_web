@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Target, Zap, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const plans = [
+// 1. Updated Brand Data Structure (Kept same as provided)
+const brandPlans = [
   {
     name: "Starter",
     tagline: "Perfect for testing the waters",
@@ -59,11 +60,156 @@ const plans = [
   },
 ];
 
+// 2. Updated Influencer Data Structure (Kept same as provided)
+const influencerPlans = {
+  monthly: [
+    {
+      name: "Starter",
+      icon: <Target className="w-5 h-5" />,
+      tagline: "Your launchpad into brand collaborations",
+      price: "99",
+      period: "/mo",
+      description: "Best for: Nano & micro influencers (1K – 25K followers)",
+      features: [
+        "Listed in brand search",
+        "Up to 3 campaign applications/month",
+        "Brand DMs 10/month",
+        "1 media kit template (PDF)",
+        "Basic analytics dashboard",
+        "Verified badge eligibility",
+        "AI caption generator (3/mo)",
+      ],
+      notIncluded: [
+        "Priority brand search",
+        "Unlimited applications",
+        "AI content suite",
+        "Audience insights",
+      ],
+      buttonText: "Get Started",
+      highlighted: false,
+    },
+    {
+      name: "Pro",
+      icon: <Zap className="w-5 h-5" />,
+      tagline: "Built for creators ready to earn seriously",
+      price: "299",
+      period: "/mo",
+      description: "Best for: Micro to mid-tier (10K – 200K followers)",
+      features: [
+        "Priority brand search (3× visibility)",
+        "Unlimited campaign applications",
+        "Unlimited brand DMs",
+        "AI content suite (50/month)",
+        "3 media kit templates (PDF + link)",
+        "Audience insights (Age, Geo)",
+        "Fake follower & engagement audit",
+        "Faster payouts (3-5 days)",
+      ],
+      notIncluded: [
+        "Dedicated account manager",
+        "Homepage spotlight",
+        "Analytics export",
+      ],
+      buttonText: "Start Free Trial",
+      highlighted: true,
+    },
+    {
+      name: "Elite",
+      icon: <Rocket className="w-5 h-5" />,
+      tagline: "Professional-grade OS for full-time influencers",
+      price: "699",
+      period: "/mo",
+      description: "Best for: Macro & mega influencers (200K+ followers)",
+      features: [
+        "Featured in brand search (Top)",
+        "Dedicated account manager (WhatsApp)",
+        "AI content suite - Unlimited",
+        "Custom media kit builder",
+        "Deep psychographics analytics",
+        "Instant payouts (within 48 hrs)",
+        "Homepage spotlight feature",
+        "Elite Verified badge",
+      ],
+      notIncluded: [],
+      buttonText: "Go Elite",
+      highlighted: false,
+    },
+  ],
+  annual: [
+    {
+      name: "Starter",
+      icon: <Target className="w-5 h-5" />,
+      tagline: "12 months for the price of 9",
+      price: "899",
+      period: "/yr",
+      savings: "Save 32%",
+      description: "Works out to just ₹75/month",
+      features: [
+        "All Starter Monthly features",
+        "3 months FREE included",
+        "2× AI generation (6/mo)",
+        "2 media kit templates",
+        "Annual performance report",
+        "Priority access to webinars",
+      ],
+      notIncluded: ["Priority brand search", "AI content suite (unlimited)"],
+      buttonText: "Save ₹289 Now",
+      highlighted: false,
+    },
+    {
+      name: "Pro",
+      icon: <Zap className="w-5 h-5" />,
+      tagline: "Scale your brand deals all year long",
+      price: "2899",
+      period: "/yr",
+      savings: "Save 24%",
+      description: "Works out to just ₹241/month",
+      features: [
+        "All Pro Monthly features",
+        "~2 months FREE included",
+        "2× AI content suite (100/mo)",
+        "2 brand newsletter features/yr",
+        "Exclusive annual-only campaigns",
+        "Annual income summary (Tax-ready)",
+      ],
+      notIncluded: ["Dedicated account manager", "Homepage spotlight"],
+      buttonText: "Claim Best Value",
+      highlighted: true,
+    },
+    {
+      name: "Elite",
+      icon: <Rocket className="w-5 h-5" />,
+      tagline: "The all-in-one professional creator OS",
+      price: "6899",
+      period: "/yr",
+      savings: "Save 22%",
+      description: "Works out to just ₹575/month",
+      features: [
+        "All Elite Monthly features",
+        "~2 months FREE included",
+        "Dedicated manager (8hr SLA)",
+        "Quarterly strategy calls (4/yr)",
+        "4 homepage spotlights/yr",
+        "Creator Summit Invite",
+        "Price locked for 12 months",
+      ],
+      notIncluded: [],
+      buttonText: "Go Elite Annual",
+      highlighted: false,
+    },
+  ],
+};
+
 export default function Pricing() {
+  const [userType, setUserType] = useState("influencer"); // "brand" or "influencer"
   const [billing, setBilling] = useState("monthly");
 
+  // Determine which plan data to display
+  const currentPlans =
+    userType === "brand" ? brandPlans : influencerPlans[billing];
+
   return (
-    <section className="py-24 bg-[#F8F7FF] px-6" id="pricing">
+    <section className="py-20 bg-[#F8F7FF] px-6" id="pricing">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
@@ -74,38 +220,65 @@ export default function Pricing() {
             Start free, upgrade when you're ready
           </p>
 
-          {/* Billing Toggle */}
-          <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm">
+          {/* User Type Toggle */}
+          {/* <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm mb-6">
             <button
-              onClick={() => setBilling("monthly")}
+              onClick={() => setUserType("brand")}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
-                billing === "monthly"
+                userType === "brand"
                   ? "bg-[#6C4DFF] text-white"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              Monthly
+              For Brands
             </button>
             <button
-              onClick={() => setBilling("annual")}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer relative ${
-                billing === "annual"
+              onClick={() => setUserType("influencer")}
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                userType === "influencer"
                   ? "bg-[#6C4DFF] text-white"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              Annual
-              <span className="absolute -top-3 -right-6 bg-[#FF4D4D] text-[10px] text-white px-2 py-0.5 rounded-full font-black">
-                Save 20%
-              </span>
+              For Influencers
             </button>
-          </div>
+          </div> */}
+          <br />
+
+          {/* Billing Toggle (Only show for Influencers for this context) */}
+          {userType === "influencer" && (
+            <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm">
+              <button
+                onClick={() => setBilling("monthly")}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                  billing === "monthly"
+                    ? "bg-[#6C4DFF] text-white"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBilling("annual")}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all cursor-pointer relative ${
+                  billing === "annual"
+                    ? "bg-[#6C4DFF] text-white"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Annual
+                <span className="absolute -top-3 -right-6 bg-[#FF4D4D] text-[10px] text-white px-2 py-0.5 rounded-full font-black">
+                  Save 20%
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-12">
-          {plans.map((plan, idx) => (
-            <PricingCard key={idx} plan={plan} billing={billing} />
+          {currentPlans.map((plan, idx) => (
+            <PricingCard key={idx} plan={plan} userType={userType} />
           ))}
         </div>
 
@@ -117,14 +290,19 @@ export default function Pricing() {
           className="rounded-[32px] p-10 md:p-14 text-center text-white shadow-xl bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96]"
         >
           <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight">
-            BRANDS — Always Free
+            {userType === "brand"
+              ? "INFLUENCERS — Earn More"
+              : "BRANDS — Always Free"}
           </h3>
           <p className="text-indigo-100 mb-8 max-w-2xl mx-auto text-sm md:text-base opacity-90">
-            Joining RGossips as a brand is completely free. We never charge
-            brands a commission.
+            {userType === "brand"
+              ? "Join RGossips as a creator to find brands, use AI tools, and get paid faster."
+              : "Joining RGossips as a brand is completely free. We never charge brands a commission."}
           </p>
           <Button className="bg-white text-[#6C4DFF] hover:bg-slate-50 h-14 px-10 rounded-2xl font-bold text-lg cursor-pointer transition-transform hover:scale-105 active:scale-95">
-            Join as a Brand — It's Free
+            {userType === "brand"
+              ? "Join as an Influencer"
+              : "Join as a Brand — It's Free"}
           </Button>
         </motion.div>
       </div>
@@ -132,13 +310,8 @@ export default function Pricing() {
   );
 }
 
-function PricingCard({ plan, billing }) {
+function PricingCard({ plan, userType }) {
   const isHighlighted = plan.highlighted;
-
-  const displayPrice =
-    billing === "annual" && plan.price !== "Custom"
-      ? Math.floor(plan.price * 0.8)
-      : plan.price;
 
   return (
     <motion.div
@@ -153,23 +326,39 @@ function PricingCard({ plan, billing }) {
     >
       {isHighlighted && (
         <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#FF4D4D] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
-          Most Popular
+          {userType === "brand" ? "Most Popular" : "Best Value"}
         </span>
       )}
 
       <div className="mb-8">
-        <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+        <div className="flex items-center gap-3 mb-2">
+          {plan.icon && (
+            <div
+              className={`${isHighlighted ? "text-indigo-200" : "text-[#6C4DFF]"}`}
+            >
+              {plan.icon}
+            </div>
+          )}
+          <h3 className="text-2xl font-bold">{plan.name}</h3>
+        </div>
         <p
           className={`text-sm leading-relaxed ${isHighlighted ? "text-indigo-100 opacity-90" : "text-slate-500"}`}
         >
           {plan.tagline}
         </p>
+        {plan.description && (
+          <p
+            className={`text-xs mt-2 font-medium ${isHighlighted ? "text-indigo-200" : "text-slate-400"}`}
+          >
+            {plan.description}
+          </p>
+        )}
       </div>
 
       <div className="flex items-baseline gap-1 mb-8">
         <span className="text-5xl font-black tracking-tight">
-          {plan.price === "Custom" ? "" : "₹"}
-          {displayPrice}
+          {plan.price === "Custom" || plan.price === "0" ? "" : "₹"}
+          {plan.price}
         </span>
         <span
           className={`text-sm font-semibold ${isHighlighted ? "text-indigo-200" : "text-slate-500"}`}
@@ -187,6 +376,17 @@ function PricingCard({ plan, billing }) {
             <span className="text-sm font-medium leading-snug">{feature}</span>
           </div>
         ))}
+        {plan.notIncluded &&
+          plan.notIncluded.map((feature, i) => (
+            <div key={i} className="flex items-start gap-3 opacity-50">
+              <X
+                className={`w-5 h-5 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-slate-400"}`}
+              />
+              <span className="text-sm font-medium leading-snug">
+                {feature}
+              </span>
+            </div>
+          ))}
       </div>
 
       <Button
