@@ -33,6 +33,7 @@ import ComparisonTable from "@/components/ComparisonTable";
 import MovementSection from "@/components/Movement";
 import AppSection from "@/components/AppComponent";
 import BottomHero from "@/components/BottomHero";
+import CreatorStories from "@/components/CreatorStories";
 
 const features = [
   {
@@ -90,7 +91,7 @@ export default function Home() {
       <HomeHero />
       {/* <HomeCarousel /> */}
       <BrandsCarousel />
-      <ImpactStats />
+      <CreatorStories />
 
       {/* <ShowcaseSection />
 
@@ -111,6 +112,7 @@ export default function Home() {
       {/* <ToolGrid /> */}
       <Pricing />
       <ComparisonTable />
+      <ImpactStats />
       <MovementSection />
       <AppSection />
       <FaqSection />

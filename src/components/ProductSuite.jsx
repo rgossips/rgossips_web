@@ -230,7 +230,7 @@ const ProductSuite = () => {
                 </div>
 
                 {/* Content */}
-                <div className="p-8 pt-10 flex flex-col flex-grow text-left">
+                <div className="p-4 pt-10 flex flex-col flex-grow text-left">
                   <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">
                     {feature.title}
                   </h3>
@@ -250,10 +250,10 @@ const ProductSuite = () => {
                     ))}
                   </ul>
 
-                  <Button className="w-full h-14 btn-purple hover:opacity-90 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20">
+                  {/* <Button className="w-full h-14 btn-purple hover:opacity-90 text-white rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/20">
                     Learn More
                     <ArrowRight size={18} />
-                  </Button>
+                  </Button> */}
                 </div>
               </motion.div>
             ))}
