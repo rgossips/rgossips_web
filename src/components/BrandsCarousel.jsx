@@ -55,10 +55,10 @@ const BrandsCarousel = () => {
       <div className="flex flex-col gap-8 w-full">
         {/* TOP ROW – Left to Right */}
         <motion.div
-          className="flex gap-8 w-max"
-          animate={{ x: ["0%", "-33.33%"] }}
+          className="flex gap-8 w-max will-change-transform"
+          animate={{ x: ["0%", "-50%"] }}
           transition={{
-            duration: 30,
+            duration: 45,
             repeat: Infinity,
             ease: "linear",
           }}
@@ -70,10 +70,10 @@ const BrandsCarousel = () => {
 
         {/* BOTTOM ROW – Right to Left */}
         <motion.div
-          className="flex gap-8 w-max ml-[-200px]" // Offset for staggered look
-          animate={{ x: ["-33.33%", "0%"] }}
+          className="flex gap-8 w-max ml-[-200px] will-change-transform"
+          animate={{ x: ["-50%", "0%"] }}
           transition={{
-            duration: 30,
+            duration: 45,
             repeat: Infinity,
             ease: "linear",
           }}

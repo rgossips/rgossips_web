@@ -118,7 +118,7 @@ const ProductSuite = () => {
 
     const scrollInterval = setInterval(() => {
       // 1. Exit conditions
-      if (window.innerWidth >= 1024 || isPaused) return;
+      if (window.innerWidth >= 1024 || isPaused || !scrollContainer) return;
 
       const maxScrollLeft =
         scrollContainer.scrollWidth - scrollContainer.clientWidth;
@@ -156,22 +156,32 @@ const ProductSuite = () => {
   };
 
   const scrollToIndex = (index) => {
-    if (scrollRef.current) {
-      const targetIndex =
-        index < 0
-          ? platformFeatures.length - 1
-          : index >= platformFeatures.length
-            ? 0
-            : index;
-      const cardWidth = scrollRef.current.scrollWidth / platformFeatures.length;
+    if (!scrollRef.current) return;
 
-      scrollRef.current.scrollTo({
-        left: targetIndex * cardWidth,
-        behavior: "smooth",
-      });
-      setActiveIndex(targetIndex);
-      lastUpdateRef.current = targetIndex;
-    }
+    // Pause auto scroll
+    setIsPaused(true);
+
+    const targetIndex =
+      index < 0
+        ? platformFeatures.length - 1
+        : index >= platformFeatures.length
+          ? 0
+          : index;
+
+    const cardWidth = scrollRef.current.scrollWidth / platformFeatures.length;
+
+    scrollRef.current.scrollTo({
+      left: targetIndex * cardWidth,
+      behavior: "smooth",
+    });
+
+    setActiveIndex(targetIndex);
+    lastUpdateRef.current = targetIndex;
+
+    // Resume auto-scroll after 3 seconds
+    setTimeout(() => {
+      setIsPaused(false);
+    }, 3000);
   };
 
   return (

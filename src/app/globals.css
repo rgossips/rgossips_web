@@ -178,3 +178,7 @@
   background: #e2e8f0; /* slate-200 */
   border-radius: 10px;
 }
+
+html body {
+  overflow-x: hidden;
+}

@@ -21,6 +21,7 @@ import {
 import { useGlobal } from "@/context/GlobalContext";
 import brandHero from "@/assets/brandHero.png";
 import influencerHero from "@/assets/influencerHero.png";
+import Image from "next/image";
 
 const FeaturesSection = () => {
   const { type, setType } = useGlobal();
@@ -178,20 +179,37 @@ const FeaturesSection = () => {
                 className={`relative aspect-square w-full max-w-[500px] mx-auto rounded-[3rem] flex items-center justify-center`}
               >
                 <AnimatePresence mode="wait">
-                  <motion.img
-                    key={activeTab}
-                    src={
-                      activeTab === "influencers"
-                        ? influencerHero.src || influencerHero
-                        : brandHero.src || brandHero
-                    }
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.1 }}
-                    transition={{ duration: 0.4 }}
-                    className="w-full h-full object-cover rounded-[3rem]"
-                    alt={activeTab}
-                  />
+                  <div className="relative aspect-square w-full max-w-[500px] mx-auto rounded-[3rem] overflow-hidden">
+                    {/* Brand Image */}
+                    <motion.div
+                      animate={{ opacity: activeTab === "brands" ? 1 : 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0"
+                    >
+                      <Image
+                        src={brandHero}
+                        alt="Brand Hero"
+                        fill
+                        priority
+                        className="object-cover rounded-[3rem]"
+                      />
+                    </motion.div>
+
+                    {/* Influencer Image */}
+                    <motion.div
+                      animate={{ opacity: activeTab === "influencers" ? 1 : 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0"
+                    >
+                      <Image
+                        src={influencerHero}
+                        alt="Influencer Hero"
+                        fill
+                        priority
+                        className="object-cover rounded-[3rem]"
+                      />
+                    </motion.div>
+                  </div>
                 </AnimatePresence>
                 {/* Floating Stats Card */}
                 <motion.div
@@ -281,9 +299,9 @@ const FeaturesSection = () => {
                 ))}
               </div>
 
-              <div className="flex gap-4 pt-6">
+              <div className="flex gap-4 pt-6 items-center justify-center">
                 <Button
-                  className={`cursor-pointer h-14 px-10 rounded-2xl text-lg font-bold shadow-xl transition-all hover:opacity-90 ${
+                  className={`cursor-pointer h-14 px-6 rounded-2xl text-lg font-bold shadow-xl transition-all hover:opacity-90 ${
                     activeTab === "brands"
                       ? "bg-gradient-to-r from-[#155DFC] to-[#9810FA]"
                       : "bg-gradient-to-r from-[#9810FA] to-[#FA1085]"

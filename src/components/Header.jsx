@@ -102,6 +102,7 @@ const Header = () => {
               <button
                 key={item.name}
                 onClick={() => {
+                  setMenuOpen(false);
                   setScrollTo(item.id);
 
                   if (item.name == "For Brands") {
