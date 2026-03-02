@@ -143,7 +143,9 @@ function TimelineItem({ step, index }) {
         </div>
 
         {/* 70% Text Box */}
-        <div className="w-[70%] bg-white p-6 rounded-r-2xl border border-slate-100 shadow-sm">
+        <div
+          className={`w-[70%] bg-white p-6 border border-slate-100 shadow-sm ${index % 2 == 0 ? "rounded-r-2xl" : "rounded-l-2xl"}`}
+        >
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-indigo-50 rounded-xl">{step.icon}</div>
             <h3 className="text-lg font-bold text-slate-900">{step.title}</h3>
