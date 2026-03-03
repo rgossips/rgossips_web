@@ -9,6 +9,8 @@ import {
   TrendingUp,
   Star,
   Box,
+  Compass,
+  Crown,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -20,8 +22,8 @@ const UserDoc = () => {
     { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
     { id: 2, label: "For You", icon: <Star size={20} />, active: false },
     { id: 3, label: "Brands", icon: <Box size={20} />, active: false },
-    { id: 4, label: "Trending", icon: <TrendingUp size={20} />, active: false },
-    { id: 5, label: "Trending", icon: <TrendingUp size={20} />, active: false },
+    { id: 4, label: "Discover", icon: <Compass size={20} />, active: false },
+    { id: 5, label: "Top Creators", icon: <Crown size={20} />, active: false },
   ];
 
   return (

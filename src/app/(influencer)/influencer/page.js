@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import React from "react";
-import { TrendingUp, Star, Box } from "lucide-react";
+import { TrendingUp, Star, Box, Compass, Crown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import BrandsCarousel from "@/components/BrandsCarousel2";
 import CounterBanner from "@/components/CounterBanner";
@@ -26,15 +26,21 @@ import TopServices from "@/components/TopServices";
 import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
 import DealsLaptop from "@/components/DealsLaptop";
+import { ProStatusCard } from "@/components/ProStatusCard";
+import { CompleteProfileCard } from "@/components/CompleteProfileCard";
+import { AiMediaKitCard } from "@/components/AMediaKitCard";
+import { AiToolsGrid } from "@/components/AiToolsGrid";
+import { CommunityFeed } from "@/components/CommunityFeed";
+import { PerformanceDashboard } from "@/components/PerformanceDashboard";
+import { GrowthDashboard } from "@/components/GrowthDashboard";
 
 const CATEGORIES = [
   { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
   { id: 2, label: "For You", icon: <Star size={20} />, active: false },
   { id: 3, label: "Brands", icon: <Box size={20} />, active: false },
-  { id: 4, label: "Trending", icon: <TrendingUp size={20} />, active: false },
-  { id: 5, label: "Trending", icon: <TrendingUp size={20} />, active: false },
+  { id: 4, label: "Discover", icon: <Compass size={20} />, active: false },
+  { id: 5, label: "Top Creators", icon: <Crown size={20} />, active: false },
 ];
-
 export default function HomePage() {
   // Pull pre-fetched data and global loading state from Context
   const { profile, loading } = useAuth();
@@ -161,11 +167,22 @@ export default function HomePage() {
             <StackedDeals />
           </div>
 
+          <ProStatusCard />
+          <CompleteProfileCard />
+          <div className="flex items-center w-full px-10 justify-center gap-10 flex-col lg:flex-row">
+            <AiMediaKitCard />
+            <AiToolsGrid />
+          </div>
+
+          <CommunityFeed />
+          <PerformanceDashboard />
+          <GrowthDashboard />
+
           {/* Rest of content */}
           <div className="w-full lg:max-w-[1480px] mx-auto space-y-8">
             <JourneyCarousel />
             <BrandsCarousel />
-            <HotelRecommendations />
+            {/* <HotelRecommendations /> */}
             <TopRatedInfluencers />
             <CounterBanner />
             <TopServices />

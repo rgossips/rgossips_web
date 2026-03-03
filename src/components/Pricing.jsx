@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Target, Zap, Rocket, X } from "lucide-react";
+import { Check, Target, Zap, Rocket, X, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // 1. Brand Data Structure
@@ -275,12 +275,24 @@ export default function Pricing() {
     <section className="py-20 bg-[#F8F7FF] px-6" id="pricing">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-slate-500 mb-10">
+          <p className="text-slate-500 text-lg mb-8">
             Start free, upgrade when you're ready
           </p>
+
+          {/* Social Proof Badges */}
+          <div className="flex flex-wrap justify-center items-center gap-6 mb-10">
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-slate-100 shadow-sm text-sm font-bold text-slate-700">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span>Trusted by 12,000+ creators</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-slate-100 shadow-sm text-sm font-bold text-slate-700">
+              <Users className="w-4 h-4 text-indigo-600" />
+              <span>Used by 200+ brands</span>
+            </div>
+          </div>
 
           <br />
 
@@ -350,99 +362,93 @@ export default function Pricing() {
   );
 }
 
-function PricingCard({ plan, userType }) {
+function PricingCard({ plan, isInfluencer }) {
   const isHighlighted = plan.highlighted;
 
   return (
     <motion.div
-      layout // Smooth layout transition
-      initial={{ opacity: 0, y: 30 }}
+      layout
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
-      transition={{ duration: 0.3 }}
-      className={`relative flex flex-col p-10 rounded-[32px] transition-all duration-300 ${
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`relative flex flex-col p-10 rounded-[45px] transition-all duration-300 ${
         isHighlighted
-          ? "bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96] text-white shadow-2xl z-10 lg:scale-105"
-          : "bg-white text-slate-900 border border-slate-100 shadow-sm hover:shadow-md"
+          ? "bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96] text-white shadow-[0_30px_60px_-15px_rgba(108,77,255,0.4)] md:scale-105 z-10 min-h-[720px]"
+          : "bg-white text-slate-900 border border-slate-100 shadow-xl shadow-slate-200/50 min-h-[680px]"
       }`}
     >
       {isHighlighted && (
-        <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#FF4D4D] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
-          {userType === "brand" ? "Most Popular" : "Best Value"}
-        </span>
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#FF1EAD] text-white text-[10px] font-black uppercase tracking-[0.15em] px-6 py-2 rounded-full shadow-lg">
+          Most Popular
+        </div>
       )}
 
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-4">
           {plan.icon && (
-            <div
-              className={`${isHighlighted ? "text-indigo-200" : "text-[#6C4DFF]"}`}
-            >
+            <div className={isHighlighted ? "text-white" : "text-[#6C4DFF]"}>
               {plan.icon}
             </div>
           )}
-          <h3 className="text-2xl font-bold">{plan.name}</h3>
+          <h3 className="text-3xl font-extrabold tracking-tight">
+            {plan.name}
+          </h3>
         </div>
+
         <p
-          className={`text-sm leading-relaxed ${isHighlighted ? "text-indigo-100 opacity-90" : "text-slate-500"}`}
+          className={`text-[10px] font-black tracking-widest mb-8 uppercase leading-relaxed ${isHighlighted ? "text-indigo-200" : "text-slate-400"}`}
         >
-          {plan.tagline}
+          {plan.description}
         </p>
-        {/* {plan.description && (
-          <p
-            className={`text-xs mt-2 font-medium ${isHighlighted ? "text-indigo-200" : "text-slate-400"}`}
+
+        <div className="flex items-baseline gap-1 mb-8">
+          <span className="text-6xl font-black tracking-tighter">
+            {plan.price !== "Custom" && plan.price !== "0" && "₹"}
+            {plan.price}
+          </span>
+          <span
+            className={`text-sm font-bold ${isHighlighted ? "text-indigo-200" : "text-slate-500"}`}
           >
-            {plan.description}
-          </p>
-        )} */}
-      </div>
+            {plan.period}
+          </span>
+        </div>
 
-      <div className="flex items-baseline gap-1 mb-8">
-        <span className="text-5xl font-black tracking-tight">
-          {plan.price === "Custom" || plan.price === "0" ? "" : "₹"}
-          {plan.price}
-        </span>
-        <span
-          className={`text-sm font-semibold ${isHighlighted ? "text-indigo-200" : "text-slate-500"}`}
+        <Button
+          className={`w-full h-14 rounded-2xl font-bold text-base mb-6 transition-transform active:scale-95 hover:scale-105 cursor-pointer flex items-center justify-center flex-wrap ${
+            isHighlighted
+              ? "bg-white text-[#6C4DFF] hover:bg-slate-50 shadow-lg"
+              : "bg-gradient-to-b from-[#6C4DFF] to-[#3F2B96] text-white hover:bg-[#5A3EE0] shadow-md shadow-indigo-100"
+          }`}
         >
-          {plan.period}
-        </span>
+          {plan.buttonText}
+        </Button>
+
+        <p
+          className={`text-center text-[10px] font-bold ${isHighlighted ? "text-indigo-200" : "text-slate-400"}`}
+        >
+          NO CREDIT CARD REQUIRED
+        </p>
       </div>
 
-      <div className="space-y-4 mb-10 flex-1">
+      <div className="space-y-4 flex-1 pt-4 border-t border-dashed border-opacity-20 border-current">
         {plan.features.map((feature, i) => (
           <div key={i} className="flex items-start gap-3">
             <Check
-              className={`w-5 h-5 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-[#6C4DFF]"}`}
+              className={`w-4 h-4 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-[#6C4DFF]"}`}
             />
-            {/* APPLY HIGHLIGHTING HERE */}
-            <span className="text-sm font-medium leading-snug">
+            <span className="text-xs font-bold leading-snug">
               {highlightText(feature, isHighlighted)}
             </span>
           </div>
         ))}
         {plan.notIncluded &&
           plan.notIncluded.map((feature, i) => (
-            <div key={i} className="flex items-start gap-3 opacity-50">
-              <X
-                className={`w-5 h-5 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-slate-400"}`}
-              />
-              <span className="text-sm font-medium leading-snug">
-                {feature}
-              </span>
+            <div key={i} className="flex items-start gap-3 opacity-30">
+              <X className="w-4 h-4 mt-0.5 shrink-0" />
+              <span className="text-xs font-bold leading-snug">{feature}</span>
             </div>
           ))}
       </div>
-
-      <Button
-        className={`w-full h-14 rounded-2xl font-bold text-lg cursor-pointer transition-all ${
-          isHighlighted
-            ? "bg-white text-[#3F2B96] hover:bg-slate-100"
-            : "bg-[#6C4DFF] text-white hover:bg-[#5A3EE0] shadow-lg shadow-indigo-100"
-        } active:scale-95`}
-      >
-        {plan.buttonText}
-      </Button>
     </motion.div>
   );
 }

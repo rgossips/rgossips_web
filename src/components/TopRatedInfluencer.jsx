@@ -44,9 +44,7 @@ const TopRatedInfluencers = () => {
     <section className="w-full py-6 bg-white">
       {/* Header */}
       <div className="flex justify-between items-center px-6 mb-6">
-        <h2 className="text-lg font-bold text-slate-700">
-          Top Rated Influencer
-        </h2>
+        <h2 className="text-lg font-bold text-slate-700">Creators Like You</h2>
         <button className="text-sm font-bold text-slate-500 hover:opacity-80 transition-opacity cursor-pointer hover:underline">
           Explore more
         </button>

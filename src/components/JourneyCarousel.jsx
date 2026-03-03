@@ -54,7 +54,7 @@ const JourneyCarousel = () => {
       {/* Header Area */}
       <div className="flex justify-between items-center px-6 mb-4">
         <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
-          Journey Together
+          Live Campaigns
         </h2>
         <button className="text-sm font-bold text-slate-500 hover:opacity-80 transition-all cursor-pointer hover:underline">
           See all
