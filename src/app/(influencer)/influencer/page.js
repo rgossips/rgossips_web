@@ -120,7 +120,7 @@ export default function HomePage() {
             <UserDoc />
           </div>
 
-          <div className="hidden lg:flex items-center justify-center px-10 pt-24 w-full">
+          <div className="flex items-center justify-center px-10 lg:pt-24 w-full">
             <ProStatusCard />
           </div>
 
