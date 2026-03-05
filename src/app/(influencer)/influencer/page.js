@@ -116,8 +116,12 @@ export default function HomePage() {
         {/* <SelectionMenu /> */}
         <div className="flex flex-col gap-8 items-center lg:items-start">
           {/* Full Width Header */}
-          <div className="w-full lg:max-w-[1480px] mx-auto">
+          <div className="w-full lg:hidden lg:max-w-[1480px] mx-auto">
             <UserDoc />
+          </div>
+
+          <div className="hidden lg:flex items-center justify-center px-10 pt-24 w-full">
+            <ProStatusCard />
           </div>
 
           {/* Desktop Two-Column Layout */}
@@ -167,12 +171,14 @@ export default function HomePage() {
             <StackedDeals />
           </div>
 
-          <ProStatusCard />
           <CompleteProfileCard />
           <div className="flex items-center w-full px-10 justify-center gap-10 flex-col lg:flex-row">
             <AiMediaKitCard />
             <AiToolsGrid />
           </div>
+
+          <TopRatedInfluencers />
+          <JourneyCarousel />
 
           <CommunityFeed />
           <PerformanceDashboard />
@@ -180,10 +186,9 @@ export default function HomePage() {
 
           {/* Rest of content */}
           <div className="w-full lg:max-w-[1480px] mx-auto space-y-8">
-            <JourneyCarousel />
             <BrandsCarousel />
             {/* <HotelRecommendations /> */}
-            <TopRatedInfluencers />
+
             <CounterBanner />
             <TopServices />
             <TopPicksCarousel />

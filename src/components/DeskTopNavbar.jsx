@@ -1,7 +1,15 @@
 "use client";
 
 import React from "react";
-import { Home, Compass, Briefcase, User } from "lucide-react";
+import {
+  Home,
+  Compass,
+  Briefcase,
+  User,
+  MessageSquare,
+  Bell,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import logo from "@/assets/logo2.png";
@@ -60,6 +68,39 @@ export const DesktopNavbar = () => {
             </Link>
           );
         })}
+      </div>
+      <div className="hidden lg:flex items-center gap-3 flex-1 lg:max-w-2xl">
+        <div className="relative flex-1">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search campaigns, brands..."
+            className="w-full bg-white py-4 lg:py-3.5 pl-12 pr-4 rounded-2xl text-sm font-medium border-none shadow-sm focus:ring-2 focus:ring-pink-500 transition-all placeholder:text-slate-400"
+          />
+        </div>
+
+        {/* Action Buttons (Notification/Filter) */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              router.push("/notifications");
+            }}
+            className="hidden cursor-pointer lg:flex p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:bg-slate-50 border border-slate-100 transition-colors"
+          >
+            <Bell size={22} />
+          </button>
+          <button
+            onClick={() => {
+              router.push("/chats");
+            }}
+            className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
+          >
+            <MessageSquare size={22} />
+          </button>
+        </div>
       </div>
     </nav>
   );
