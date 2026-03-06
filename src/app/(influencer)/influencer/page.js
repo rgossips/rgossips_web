@@ -8,7 +8,6 @@ import BrandsCarousel from "@/components/BrandsCarousel2";
 import CounterBanner from "@/components/CounterBanner";
 import CreatorsCarousel from "@/components/CreatorsCarousel";
 import CreatorsCarouselWithLink from "@/components/CreatorsCarouselWithLink";
-import CreatorStories from "@/components/CreatorStories";
 import ExploreStates from "@/components/ExploreStates";
 import FoodMoodGrid from "@/components/FoodMood";
 import HeroImage from "@/components/HeroImg";
@@ -127,7 +126,7 @@ export default function HomePage() {
           {/* Desktop Two-Column Layout */}
           <div className="hidden lg:flex gap-8 w-full pl-10 lg:max-w-[1480px] mx-auto">
             {/* Left Sidebar: Categories Vertical */}
-            <div className="w-64 flex-shrink-0 pt-10">
+            <div className="w-64 flex-shrink-0">
               <div className="mt-8 space-y-3">
                 {CATEGORIES.map((cat, idx) => (
                   <button
@@ -189,13 +188,13 @@ export default function HomePage() {
             <BrandsCarousel />
             {/* <HotelRecommendations /> */}
 
-            <CounterBanner />
-            <TopServices />
-            <TopPicksCarousel />
+            {/* <CounterBanner /> */}
+            {/* <TopServices /> */}
+            {/* <TopPicksCarousel /> */}
             {/* <TopExperiencesCarousel />
             <ExploreStates /> */}
             <StayCarousel />
-            <CreatorStories />
+
             {/* <FoodMoodGrid /> */}
             {/* <CreatorsCarousel /> */}
             <CreatorsCarouselWithLink />

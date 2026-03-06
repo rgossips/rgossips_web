@@ -41,7 +41,7 @@ export function ProStatusCard() {
               </div>
             </div>
 
-            <h2 className="text-lg font-bold text-slate-900 leading-snug mb-5 max-w-md">
+            <h2 className="text-lg font-bold text-slate-900 leading-snug mb-5 max-w-lg">
               <span className="bg-gradient-to-br from-[#9810fa] to-[#e60076] bg-clip-text text-transparent">
                 142 brands
               </span>{" "}
