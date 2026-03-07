@@ -14,6 +14,7 @@ const SignInPhone = ({
   minLen = 10,
   maxLen = 10,
   userExists = false,
+  role = "influencer",
   onSwitchToSignIn = () => {},
 }) => {
   const [localPhone, setLocalPhone] = useState(phone);
@@ -83,7 +84,7 @@ const SignInPhone = ({
           disabled={
             loading || localPhone.length < minLen || localPhone.length > maxLen
           }
-          className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+          className={`w-full cursor-pointer ${role == "influencer" ? "btn-purple" : "bg-linear-to-b from-[#5B3DF5] to-[#7A5CFF]"} h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100`}
         >
           {loading
             ? "Sending OTP..."

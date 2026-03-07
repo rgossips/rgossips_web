@@ -244,7 +244,8 @@ const Login = () => {
             <div className="w-full max-md mx-auto">
               {flow === "signin" && (
                 <>
-                  {step === 1 && (
+                  {step === 1 && <RoleSelection onNext={handleRoleSelection} />}
+                  {step === 2 && (
                     <SignInPhone
                       onNext={handlePhoneSignIn}
                       loading={loading}
@@ -252,9 +253,10 @@ const Login = () => {
                       phone={phone}
                       setPhone={setPhone}
                       mode="signin"
+                      role={signupData.role}
                     />
                   )}
-                  {step === 2 && (
+                  {step === 3 && (
                     <VerifyOTP
                       onNext={handleVerifyOTP}
                       loading={loading}
@@ -262,6 +264,7 @@ const Login = () => {
                       otp={otp}
                       setOtp={setOtp}
                       phoneNumber={phone}
+                      role={signupData.role}
                     />
                   )}
                 </>
@@ -278,6 +281,7 @@ const Login = () => {
                       phone={phone}
                       setPhone={setPhone}
                       mode="signup"
+                      role={signupData.role}
                     />
                   )}
                   {step === 3 && (
@@ -288,6 +292,7 @@ const Login = () => {
                       otp={otp}
                       setOtp={setOtp}
                       phoneNumber={phone}
+                      role={signupData.role}
                     />
                   )}
                   {step === 4 && (

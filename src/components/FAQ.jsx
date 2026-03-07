@@ -19,7 +19,7 @@ const faqs = [
   {
     question: "What types of influencers are on the platform?",
     answer:
-      "Our network includes nano, micro, and mega-influencers across various niches including fashion, tech, lifestyle, and gaming, primarily on Instagram, TikTok, and YouTube.",
+      "Our network includes nano, micro, macro and celebrity influencers across various niches including Beauty, Finance and Travel primarily on Instagram, TikTok, Snapchat and YouTube.",
   },
   {
     question: "How much does it cost?",
