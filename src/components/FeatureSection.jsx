@@ -22,10 +22,12 @@ import { useGlobal } from "@/context/GlobalContext";
 import brandHero from "@/assets/brandHero.png";
 import influencerHero from "@/assets/influencerHero.png";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const FeaturesSection = () => {
   const { type, setType } = useGlobal();
   const [activeTab, setActiveTab] = useState("brands");
+  const router = useRouter();
 
   useEffect(() => {
     setActiveTab(type);
@@ -301,6 +303,9 @@ const FeaturesSection = () => {
 
               <div className="flex gap-4 pt-6 items-center justify-center">
                 <Button
+                  onClick={() => {
+                    router.push("/login");
+                  }}
                   className={`cursor-pointer h-14 px-6 rounded-2xl text-lg font-bold shadow-xl transition-all hover:opacity-90 ${
                     activeTab === "brands"
                       ? "bg-gradient-to-r from-[#155DFC] to-[#9810FA]"

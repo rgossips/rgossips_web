@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Target, Zap, Rocket, X, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 // 1. Brand Data Structure
 const brandPlans = [
@@ -267,6 +268,7 @@ const highlightText = (text, isHighlighted) => {
 export default function Pricing() {
   const [userType, setUserType] = useState("influencer");
   const [billing, setBilling] = useState("monthly");
+  const router = useRouter();
 
   const currentPlans =
     userType === "brand" ? brandPlans : influencerPlans[billing];
@@ -351,7 +353,12 @@ export default function Pricing() {
               ? "Join RGossips as a creator to find brands, use AI tools, and get paid faster."
               : "Joining RGossips as a brand is completely free. We never charge brands a commission."}
           </p>
-          <Button className="bg-white text-[#6C4DFF] hover:bg-slate-50 h-14 px-10 rounded-2xl font-bold text-lg cursor-pointer transition-transform hover:scale-105 active:scale-95">
+          <Button
+            onClick={() => {
+              router.push("/login");
+            }}
+            className="bg-white text-[#6C4DFF] hover:bg-slate-50 h-14 px-10 rounded-2xl font-bold text-lg cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          >
             {userType === "brand"
               ? "Join as an Influencer"
               : "Join as a Brand — It's Free"}
@@ -364,6 +371,7 @@ export default function Pricing() {
 
 function PricingCard({ plan, isInfluencer }) {
   const isHighlighted = plan.highlighted;
+  const router = useRouter();
 
   return (
     <motion.div
@@ -414,6 +422,9 @@ function PricingCard({ plan, isInfluencer }) {
         </div>
 
         <Button
+          onClick={() => {
+            router.push("/login");
+          }}
           className={`w-full h-14 rounded-2xl font-bold text-base mb-6 transition-transform active:scale-95 hover:scale-105 cursor-pointer flex items-center justify-center flex-wrap ${
             isHighlighted
               ? "bg-white text-[#6C4DFF] hover:bg-slate-50 shadow-lg"
