@@ -11,26 +11,125 @@ import {
 
 const topCreators = [
   {
-    id: 1,
-    name: "Rohan Sharma",
-    location: "Mumbai",
-    followers: "45k",
-    rating: 4.9,
-    priceRange: "₹2k - 5k",
+    name: "sahilanandofficial",
+    verified: true,
+    rating: "4.2",
     image:
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=400&h=300&fit=crop",
+      "https://lh3.googleusercontent.com/d/1gpAUlvG4g-c8fCqx_YJUPZYDwUTDSSfL",
+    posts: "1454",
+    followers: "1.4M",
+    following: "1123",
+    bio: "Sahil Nanda | Male",
+    link: "https://www.instagram.com/sahilanandofficial/",
   },
   {
-    id: 2,
-    name: "Ananya Iyer",
-    location: "Bangalore",
-    followers: "52k",
-    rating: 4.8,
-    priceRange: "₹3k - 6k",
+    name: "nonaberrry",
+    verified: true,
+    rating: "4.2",
     image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400&h=300&fit=crop",
+      "https://lh3.googleusercontent.com/d/17FV8146Zu6KAYNxfTEj-SGxj40nlyo_5",
+    posts: "860",
+    followers: "798K",
+    following: "1181",
+    bio: "Naina Singh | Female",
+    link: "https://www.instagram.com/nonaberrry/",
   },
-  // Add more creators as needed
+  {
+    name: "aditirajputofficial",
+    verified: false,
+    rating: "4.2",
+    image:
+      "https://lh3.googleusercontent.com/d/18IKmd6vgmGBOz9T5KVBAm8Oozl5iQyyo",
+    posts: "319",
+    followers: "166K",
+    following: "102",
+    bio: "Aditi Rajput | Female",
+    link: "https://www.instagram.com/aditirajputofficial/",
+  },
+  {
+    name: "alifestyledition",
+    verified: false,
+    rating: "4.2",
+    image:
+      "https://lh3.googleusercontent.com/d/1cCyYWXM-rJ8SV3s6EX3xYxvXCOYKmYNu",
+    posts: "792",
+    followers: "12.4K",
+    following: "7103",
+    bio: "Hassan Ali | Male",
+    link: "https://www.instagram.com/alifestyledition/",
+  },
+  {
+    name: "theyayawar",
+    verified: false,
+    rating: "4.2",
+    image:
+      "https://lh3.googleusercontent.com/d/1Gw5GOW8qUE0kXI6gj0ak23tN7oVIFtV7",
+    posts: "652",
+    followers: "29.4K",
+    following: "453",
+    bio: "Harsh Rawat | Male",
+    link: "https://www.instagram.com/theyayawar/",
+  },
+  {
+    name: "karishmatalwar93",
+    verified: false,
+    rating: "4.2",
+    image:
+      "https://lh3.googleusercontent.com/d/10tTiJ3qm15UAS8KUDr5Hs7EFdGPo7pvG",
+    posts: "1606",
+    followers: "366K",
+    following: "1345",
+    bio: "Karishma Talwar | Female",
+    link: "https://www.instagram.com/karishmatalwar93",
+  },
+  {
+    name: "vees_corner57",
+    rating: "4.2",
+    verified: false,
+    image:
+      "https://lh3.googleusercontent.com/d/1m2g3DGzTjlWrXoxibPvFsqq2wc5xy8Ni",
+    posts: "1048",
+    followers: "131K",
+    following: "455",
+    bio: "Vandna chopra | Female",
+    link: "https://www.instagram.com/vees_corner57/",
+  },
+  {
+    name: "nawab__adnan",
+    rating: "4.2",
+    verified: false,
+    image:
+      "https://lh3.googleusercontent.com/d/19CMc1g0nMAFE61V_aeYk9G6gGT2A9mMX",
+    posts: "355",
+    followers: "114K",
+    following: "1136",
+    bio: "Nawab Adnan | Male",
+    link: "https://www.instagram.com/nawab__adnan/",
+  },
+  {
+    name: "theshilpa_official",
+    rating: "4.2",
+    verified: false,
+    image:
+      "https://lh3.googleusercontent.com/d/173V34LvsTJ4n-UB6qE2S49cSm3junhkR",
+    posts: "659",
+    followers: "235K",
+    following: "450",
+    bio: "Shilpa Choudhary | Female",
+    link: "https://www.instagram.com/theshilpa_official/",
+  },
+  {
+    name: "roohh_lifetstyle",
+    rating: "4.2",
+    verified: false,
+    image:
+      "https://lh3.googleusercontent.com/d/1FBc3erStqqFdaH-C1wpCWtc11KIPJsmK",
+    posts: "192",
+    followers: "93K",
+    following: "297",
+    bio: "Rooh Sharma | Female",
+    link: "https://www.instagram.com/roohh_lifestyle/",
+  },
 ];
 
 export const TopCreatorsCarousel = () => {
@@ -59,14 +158,14 @@ export const TopCreatorsCarousel = () => {
           className="w-full"
         >
           <CarouselContent className="-ml-4">
-            {topCreators.map((creator) => (
+            {topCreators.map((creator, index) => (
               <CarouselItem
-                key={creator.id}
+                key={index}
                 className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3"
               >
                 <div className="bg-white rounded-4xl border border-slate-100 shadow-sm overflow-hidden group">
                   {/* Image Container */}
-                  <div className="relative h-48 w-full">
+                  <div className="relative h-64 w-full">
                     <Image
                       src={creator.image}
                       alt={creator.name}
