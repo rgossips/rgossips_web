@@ -31,6 +31,34 @@ const locations = [
       "https://images.unsplash.com/photo-1679214803434-af50c2c92009?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     attribution: "Naman Jaswani",
   },
+  {
+    id: 5,
+    name: "Hyderabase",
+    image:
+      "https://images.unsplash.com/photo-1598434192043-71111c1b3f41?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    attribution: "Ahmad syahrir",
+  },
+  {
+    id: 6,
+    name: "Kolkata",
+    image:
+      "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=600&auto=format&fit=crop",
+    attribution: "Brijeshwar Singh",
+  },
+  {
+    id: 7,
+    name: "Pune",
+    image:
+      "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=600&auto=format&fit=crop",
+    attribution: "Mukul Jaiswal",
+  },
+  {
+    id: 8,
+    name: "Gurgaon",
+    image:
+      "https://images.unsplash.com/photo-1679214803434-af50c2c92009?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    attribution: "Naman Jaswani",
+  },
 ];
 
 export const CreatorsByLocation = () => {
@@ -46,11 +74,11 @@ export const CreatorsByLocation = () => {
       </div>
 
       {/* 2x2 Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 grid-rows-2 gap-4">
         {locations.map((location) => (
           <div
             key={location.id}
-            className="group relative h-32 rounded-3xl overflow-hidden cursor-pointer shadow-md transition-all hover:shadow-lg active:scale-95"
+            className="group relative h-36 rounded-3xl overflow-hidden cursor-pointer shadow-md transition-all hover:shadow-lg active:scale-95"
           >
             {/* Iconic Background Image */}
             <Image

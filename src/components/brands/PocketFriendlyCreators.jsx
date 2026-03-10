@@ -75,7 +75,7 @@ export default function PocketFriendlyCreators() {
               <div className="group bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 flex flex-col items-center text-center">
                 {/* Profile Image with Gradient Border */}
                 <div className="relative w-24 h-24 mb-4">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-400 p-[3px] group-hover:rotate-180 transition-transform duration-700">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-400 p-[3px] transition-transform duration-700">
                     <div className="bg-white rounded-full p-1 h-full w-full">
                       <img
                         src={creator.image}
@@ -98,7 +98,7 @@ export default function PocketFriendlyCreators() {
                   {creator.followers}
                 </p>
 
-                <button className="mt-6 w-full py-3 bg-[#1C115A] text-white rounded-2xl text-xs font-bold hover:bg-[#5B3DF5] transition-colors active:scale-95">
+                <button className="mt-6 w-full cursor-pointer py-3 bg-[#1C115A] text-white rounded-2xl text-xs font-bold hover:bg-[#5B3DF5] transition-colors active:scale-95">
                   View Profile
                 </button>
               </div>

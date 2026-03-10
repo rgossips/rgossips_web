@@ -30,7 +30,7 @@ export const BeyondInfluencers = () => {
   ];
 
   return (
-    <section className="w-full px-4 lg:px-6 space-y-6">
+    <section className="w-full lg:hidden px-4 lg:px-6 space-y-6">
       <h2 className="px-6 text-xl font-black text-[#1C115A]">
         Beyond Influencers
       </h2>

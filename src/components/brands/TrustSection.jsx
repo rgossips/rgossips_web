@@ -5,7 +5,7 @@ export const TrustSection = () => {
   return (
     <div className="px-4 lg:px-6 space-y-6 flex items-center flex-col lg:flex-row w-full gap-3 lg:gap-5">
       {/* Floating Search */}
-      <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
+      <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
         <p className="text-slate-400 text-sm font-medium pl-2">
           Looking for 10 nano creators, 15L...
         </p>

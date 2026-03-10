@@ -12,9 +12,11 @@ import { CreatorCTASection } from "@/components/brands/CreatorCTASection";
 
 const page = () => {
   return (
-    <div className="flex items-center flex-col gap-8 lg:gap-10 lg:px-10 lg:py-20 overflow-x-hidden bg-white">
+    <div className="flex items-center flex-col gap-8 lg:gap-10 lg:px-10 overflow-x-hidden bg-white">
       <BrandHero />
-      <TrustSection />
+      <div className="block lg:hidden">
+        <TrustSection />
+      </div>
       <CategorySection />
       <TopCreatorsCarousel />
       <RecentlyConnected />
