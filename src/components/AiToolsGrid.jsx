@@ -52,7 +52,7 @@ const tools = [
 
 export function AiToolsGrid() {
   return (
-    <Card className="w-full max-w-2xl p-8 bg-white border-slate-100 shadow-sm rounded-[32px]">
+    <Card className="w-full max-w-2xl p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-xl font-bold text-slate-900">AI Creator Tools</h2>
         <div className="text-xs font-medium text-slate-400">

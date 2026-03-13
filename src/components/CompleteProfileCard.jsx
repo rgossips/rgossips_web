@@ -37,7 +37,7 @@ export function CompleteProfileCard() {
   ];
 
   return (
-    <div className="w-full flex justify-center px-10 py-6">
+    <div className="w-full flex justify-center">
       <Card className="w-full max-w-2xl lg:max-w-none p-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
         {/* Header */}
         <div className="mb-6">

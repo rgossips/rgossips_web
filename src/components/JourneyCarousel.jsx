@@ -180,7 +180,7 @@ const JourneyCarousel = () => {
   return (
     <section className="w-full py-6 lg:px-10 bg-white">
       {/* Header Area */}
-      <div className="flex justify-between items-center px-6 mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
           For You
         </h2>
@@ -194,7 +194,7 @@ const JourneyCarousel = () => {
         {journeyData.map((item) => (
           <div
             key={item.id}
-            className="flex-none basis-[80%] sm:basis-1/2 lg:basis-1/3 snap-start"
+            className="flex-none basis-[80%] sm:basis-1/2 lg:basis-1/4 snap-start"
           >
             <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 flex flex-col h-full active:scale-[0.98] transition-transform">
               {/* Image Section */}

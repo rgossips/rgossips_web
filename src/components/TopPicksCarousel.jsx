@@ -2,157 +2,192 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-} from "@/components/ui/carousel";
-
-import SectionTitle from "./SectionTitle";
+import { Bookmark, MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-// 1. Realistic Dummy Data matching your structure
+const CATEGORIES = ["All", "Beauty", "Travel", "Tech"];
+
 const DUMMY_OFFERS = [
   {
     id: "camp-001",
     imageUrl:
       "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
     category: "Beauty",
-    brand: { name: "Glow Essentials" },
-    metadata: {
-      title: "Summer Radiance Campaign",
-      location: "New York, USA",
-    },
+    badge: "Trending",
+    match: "98% Match",
+    brand: "Glow Essential",
+    title: "Summer Radiance Campaign",
+    location: "New York",
+    desc: "Showcase our new summer glow collection in your daily skincare routine.",
+    pay: "₹30k - 45k",
+    req: "20k+ Followers",
   },
   {
     id: "camp-002",
     imageUrl:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600",
     category: "Travel",
-    brand: { name: "Blue Horizon" },
-    metadata: {
-      title: "Luxury Bali Retreat",
-      location: "Bali, Indonesia",
-    },
+    badge: "High Paying",
+    match: "95% Match",
+    brand: "Blue Horizon",
+    title: "Luxury Bali Retreat",
+    location: "Bali",
+    desc: "Exclusive 3-night stay at our newest eco-luxury resort in Uluwatu.",
+    pay: "₹80k + Flights",
+    req: "Travel Niche",
   },
   {
     id: "camp-003",
     imageUrl:
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600",
     category: "Tech",
-    brand: { name: "Sonic Audio" },
-    metadata: {
-      title: "Pro Headset Review",
-      location: "Remote",
-    },
-  },
-  {
-    id: "camp-004",
-    imageUrl:
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=600",
-    category: "Fashion",
-    brand: { name: "Urban Threads" },
-    metadata: {
-      title: "Streetwear Launch",
-      location: "London, UK",
-    },
+    badge: "New",
+    match: "92% Match",
+    brand: "Sonic Audio",
+    title: "Pro Headset Review",
+    location: "Remote",
+    desc: "Test and review our flagship noise-cancelling wireless headphones.",
+    pay: "₹15k + Product",
+    req: "Tech Reviewers",
   },
 ];
 
-export default function CarouselTopPicks() {
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function RecommendedCampaigns() {
+  const [activeTab, setActiveTab] = useState("All");
   const router = useRouter();
 
-  useEffect(() => {
-    // Simulating an API fetch delay
-    const timer = setTimeout(() => {
-      setOffers(DUMMY_OFFERS);
-      setLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D61F69]"></div>
-      </div>
-    );
-  }
-
-  if (offers.length === 0) return null;
-
   return (
-    <section className="w-full relative py-6 px-3 lg:px-8">
-      <div className="px-6 mb-4">
-        <div className="flex justify-between items-center">
-          <SectionTitle text="JOURNEY TOGETHER" />
+    <section className="w-full py-10 px-6 lg:px-12 bg-white">
+      {/* Header & Tabs */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+            Recommended Campaigns
+          </h2>
+          <p className="text-sm text-slate-400 font-medium">
+            Opportunities matched to your creator profile
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+          {CATEGORIES.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2 cursor-pointer rounded-xl text-xs font-bold transition-all ${
+                activeTab === tab
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+          <button className="text-[#D61F69] cursor-pointer text-xs font-bold px-4 hover:underline">
+            View All ›
+          </button>
         </div>
       </div>
 
-      <div className="relative">
-        <Carousel
-          opts={{
-            align: "start",
-            containScroll: "trimSnaps",
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-4">
-            {offers.map((item) => (
-              <CarouselItem
-                key={item.id}
-                className="pl-4 basis-[82%] sm:basis-1/2 lg:basis-1/3"
-              >
-                <motion.div
-                  whileTap={{ scale: 0.98 }}
-                  whileHover={{ y: -4 }}
-                  onClick={() => router.push(`/offers/${item.id}`)}
-                  className="rounded-[32px] bg-white overflow-hidden shadow-sm border border-slate-100 flex flex-col h-full cursor-pointer transition-shadow hover:shadow-md"
-                >
-                  {/* Image Container */}
-                  <div className="relative w-full h-48 overflow-hidden">
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.metadata?.title || "Offer"}
-                      fill
-                      className="object-cover"
-                    />
-                    {/* Category Badge */}
-                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider text-[#D61F69] shadow-sm">
-                      {item.category}
+      {/* Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {DUMMY_OFFERS.map((item) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
+          >
+            {/* Image Section */}
+            <div className="relative h-60 w-full p-4">
+              <div className="relative h-full w-full rounded-4xl overflow-hidden">
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+
+                {/* Overlay Badges */}
+                <div className="absolute top-4 left-4 flex gap-2">
+                  <span className="bg-white/90 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                    {item.category}
+                  </span>
+                </div>
+                <div className="absolute top-4 right-4">
+                  <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />{" "}
+                    {item.badge}
+                  </span>
+                </div>
+                <div className="absolute bottom-4 left-4">
+                  <span className="bg-[#22C55E] text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg">
+                    {item.match}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="px-6 pb-8 flex flex-col flex-1">
+              <div className="mb-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600">
+                      {item.brand[0]}
+                    </div>
+                    <span className="text-xs font-bold text-slate-400">
+                      {item.brand} •
+                    </span>
+                    <div className="flex items-center text-slate-400 gap-0.5">
+                      <MapPin size={10} />
+                      <span className="text-[10px] font-bold">
+                        {item.location}
+                      </span>
                     </div>
                   </div>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 group-hover:text-[#D61F69] transition-colors">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
 
-                  {/* Content Container */}
-                  <div className="p-5 flex flex-col gap-1">
-                    <h3 className="text-base font-black text-slate-900 line-clamp-1 leading-tight uppercase">
-                      {item.metadata?.title}
-                    </h3>
+              {/* Pay & Req Boxes */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+                    <DollarSign size={10} className="text-green-500" /> Pay
+                  </p>
+                  <p className="text-xs font-black text-slate-800">
+                    {item.pay}
+                  </p>
+                </div>
+                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+                    <Users size={10} className="text-blue-500" /> Req
+                  </p>
+                  <p className="text-xs font-black text-slate-800">
+                    {item.req}
+                  </p>
+                </div>
+              </div>
 
-                    <div className="flex justify-between items-center">
-                      <div className="flex flex-col">
-                        <p className="text-xs text-slate-500 font-bold">
-                          {item.brand?.name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          {item.metadata?.location?.split(",")[0]}
-                        </p>
-                      </div>
-
-                      <div className="bg-[#D61F69] text-white text-[10px] font-bold px-4 py-2 rounded-full hover:bg-[#b81a5a] transition-colors">
-                        APPLY
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
+              {/* Actions */}
+              <div className="flex gap-3 mt-auto">
+                <button className="flex-1 cursor-pointer bg-linear-to-r from-[#8E2DE2] to-[#F6339A] text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all">
+                  Apply Now
+                </button>
+                <button className="p-4 cursor-pointer rounded-2xl border border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
+                  <Bookmark size={20} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

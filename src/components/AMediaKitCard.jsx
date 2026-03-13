@@ -3,7 +3,7 @@ import { Instagram, ArrowRight, BarChart3, Users, Eye } from "lucide-react";
 
 export function AiMediaKitCard() {
   return (
-    <Card className="w-full max-w-3xl overflow-hidden rounded-[32px] border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] bg-white relative">
+    <Card className="w-full max-w-3xl overflow-hidden rounded-3xl border-slate-200  border shadow-sm bg-white relative">
       <div className="p-4">
         {/* Header */}
         <div className="flex justify-between items-start mb-8">

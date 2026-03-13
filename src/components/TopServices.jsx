@@ -1,146 +1,216 @@
 import React from "react";
-import { Star } from "lucide-react";
-
-const servicesData = [
-  {
-    id: 1,
-    name: "Miss Zachary Will",
-    role: "Beautician",
-    rating: 4.9,
-    bgImage:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80",
-    profilePic: "https://i.pravatar.cc/150?u=zachary",
-  },
-  {
-    id: 2,
-    name: "Miss Zachary Will",
-    role: "Beautician",
-    rating: 4.9,
-    bgImage:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80",
-    profilePic: "https://i.pravatar.cc/150?u=will",
-  },
-  {
-    id: 3,
-    name: "Miss Zachary Will",
-    role: "Beautician",
-    rating: 4.9,
-    bgImage:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80",
-    profilePic: "https://i.pravatar.cc/150?u=zachary",
-  },
-  {
-    id: 4,
-    name: "Miss Zachary Will",
-    role: "Beautician",
-    rating: 4.9,
-    bgImage:
-      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80",
-    profilePic: "https://i.pravatar.cc/150?u=will",
-  },
-];
+import { Star, Bookmark } from "lucide-react";
+import Image from "next/image";
 
 const TopServices = () => {
   return (
-    <section className="w-full py-6 px-6 bg-white">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-black text-[#334155]">Top Services</h2>
-        <button className="text-xs font-bold text-slate-400 underline">
-          View All
+    <section className="w-full py-10 px-10 bg-white">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-xl font-black text-[#0F172A] uppercase tracking-tight">
+            Top Services
+          </h2>
+          <p className="text-sm text-slate-400">
+            Popular creator services brands are booking right now
+          </p>
+        </div>
+        <button className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1">
+          View All Services <span className="text-lg">›</span>
         </button>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-2 gap-10">
-        {servicesData.map((service) => (
-          <div
-            key={service.id}
-            className="relative w-full h-52 lg:h-40 lg:bg-white lg:rounded-[32px] lg:shadow-md lg:flex lg:items-center lg:gap-6 lg:p-4 lg:border lg:border-slate-50"
-          >
-            {/* Mobile: Floating Card over BG */}
-            <div className="block lg:hidden w-[85%] h-full rounded-[32px] overflow-hidden shadow-md">
-              <img
-                src={service.bgImage}
-                className="w-full h-full object-cover"
-                alt="service bg"
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* LEFT FEATURED SERVICE */}
+        <div className="lg:col-span-5 flex flex-col group cursor-pointer border border-slate-200 hover:shadow-md rounded-4xl">
+          <div className="relative aspect-4/3 rounded-t-4xl overflow-hidden mb-4 border border-slate-100 shadow-sm">
+            <Image
+              height={200}
+              width={200}
+              src="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80"
+              alt="Premium Photography"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute top-4 left-4 flex gap-2">
+              <span className="bg-white/90 backdrop-blur-sm text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1">
+                <span className="text-pink-500">⚡</span> TOP RATED
+              </span>
+              <span className="bg-[#475569]/80 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1 rounded-full">
+                LIFESTYLE
+              </span>
             </div>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[60%] bg-white rounded-[24px] shadow-xl p-4 border border-slate-50 block lg:hidden">
-              <div className="flex items-center gap-3 mb-2">
-                <img
-                  src={service.profilePic}
-                  className="w-10 h-10 rounded-full object-cover"
-                  alt="profile"
-                />
-                <div>
-                  <h4 className="text-[11px] font-black text-slate-900 leading-tight">
-                    {service.name}
-                  </h4>
-                  <p className="text-[9px] text-slate-400 font-bold">
-                    {service.role}
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-between items-center mt-3">
-                <div className="flex items-center gap-1">
-                  <Star size={10} className="fill-yellow-400 text-yellow-400" />
-                  <span className="text-[10px] font-black text-slate-700">
-                    {service.rating}
-                  </span>
-                </div>
-                <button className="bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-[10px] font-black px-5 py-1.5 rounded-full">
-                  Apply
-                </button>
-              </div>
-            </div>
-            {/* Laptop: Unified Card Layout */}
-            <>
-              <div className="hidden lg:block h-28 w-28 rounded-2xl overflow-hidden flex-shrink-0">
-                <img
-                  src={service.bgImage}
-                  className="w-full h-full object-cover"
-                  alt="service bg"
-                />
-              </div>
-              <div className="hidden lg:flex flex-1 items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={service.profilePic}
-                    className="w-12 h-12 rounded-full object-cover"
-                    alt="profile"
-                  />
-                  <div>
-                    <h4 className="text-base font-black text-slate-900 leading-tight">
-                      {service.name}
-                    </h4>
-                    <p className="text-xs text-slate-400 font-bold">
-                      {service.role}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1 max-w-[220px]">
-                      Delicious meat at aminim price Veniam deserunt sunt
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2 min-w-[90px]">
-                  <div className="flex items-center gap-1">
-                    <Star
-                      size={14}
-                      className="fill-yellow-400 text-yellow-400"
-                    />
-                    <span className="text-xs font-black text-slate-700">
-                      {service.rating}
-                    </span>
-                  </div>
-                  <button className="bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-xs font-black px-6 py-2 rounded-full">
-                    Apply
-                  </button>
-                </div>
-              </div>
-            </>
+            <button className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-black transition-colors">
+              <Bookmark size={16} />
+            </button>
           </div>
-        ))}
+
+          <div className="flex items-center gap-3 mb-3 px-3">
+            <Image
+              height={200}
+              width={200}
+              src="https://i.pravatar.cc/150?u=emma"
+              className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+              alt="Emma"
+            />
+            <div>
+              <h4 className="text-sm font-black text-slate-900 leading-tight">
+                Emma Davis
+              </h4>
+              <p className="text-[10px] text-slate-400 font-bold">
+                Lifestyle & Decor
+              </p>
+            </div>
+          </div>
+
+          <h3 className="text-2xl font-black text-slate-900 mb-2 leading-tight p-2">
+            Premium Product Photography & Reel
+          </h3>
+          <p className="text-sm text-slate-500 mb-6 line-clamp-2 px-3">
+            I will create a high-quality aesthetic Instagram Reel and 5
+            retouched product photos for your brand in a modern lifestyle
+            setting.
+          </p>
+
+          <div className="mt-auto px-3 py-4 border-t border-slate-100 flex justify-between items-center">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                Package Price
+              </p>
+              <p className="text-3xl font-black text-slate-900">$350</p>
+            </div>
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
+                <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                <span className="text-xs font-black text-yellow-700">
+                  4.9{" "}
+                  <span className="text-slate-400 font-bold">
+                    (124 reviews)
+                  </span>
+                </span>
+              </div>
+              <button className="cursor-pointer btn-purple text-sm font-black px-10 py-3 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 transition-all">
+                Book Service
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT SERVICE LIST */}
+        <div className="lg:col-span-7 space-y-4">
+          <ServiceRow
+            img="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80"
+            tag="FASHION"
+            creator="Zachary Will"
+            role="Fashion Stylist"
+            title="Try-on Haul Video for TikTok"
+            rating="4.8"
+            reviews="89"
+            price="150"
+          />
+          <ServiceRow
+            img="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80"
+            tag="BEAUTY"
+            creator="Jessica Che"
+            role="Beauty Guru"
+            title="Detailed Makeup Tutorial & Review"
+            rating="5.0"
+            reviews="210"
+            price="250"
+          />
+          <ServiceRow
+            img="https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80"
+            tag="TECH"
+            creator="Alex Rivera"
+            role="Tech Reviewer"
+            title="Tech Gadget Unboxing & Setup"
+            rating="4.7"
+            reviews="56"
+            price="200"
+          />
+          <ServiceRow
+            img="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80"
+            tag="FASHION"
+            creator="Zachary Will"
+            role="Fashion Stylist"
+            title="Try-on Haul Video for TikTok"
+            rating="4.8"
+            reviews="89"
+            price="150"
+          />
+        </div>
       </div>
     </section>
   );
 };
+
+const ServiceRow = ({
+  img,
+  tag,
+  creator,
+  role,
+  title,
+  rating,
+  reviews,
+  price,
+}) => (
+  <div className="flex gap-4 p-4 rounded-4xl border border-slate-200 hover:shadow-md transition-shadow cursor-pointer bg-white group">
+    <div className="relative w-32 h-32 rounded-2xl overflow-hidden shrink-0">
+      <Image
+        src={img}
+        height={200}
+        width={200}
+        className="w-full h-full object-cover"
+        alt={title}
+      />
+      <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-[8px] font-black px-2 py-0.5 rounded-full">
+        {tag}
+      </span>
+    </div>
+
+    <div className="flex-1 py-1">
+      <div className="flex items-center gap-2 mb-1">
+        <Image
+          height={200}
+          width={200}
+          src={`https://i.pravatar.cc/100?u=${creator}`}
+          className="w-5 h-5 rounded-full"
+          alt={creator}
+        />
+        <span className="text-[10px] font-black text-slate-900">{creator}</span>
+        <span className="text-[10px] text-slate-400 font-bold">• {role}</span>
+      </div>
+      <h4 className="text-base font-black text-slate-900 leading-tight mb-2 group-hover:text-[#F6339A] transition-colors">
+        {title}
+      </h4>
+
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <Star size={12} className="fill-yellow-400 text-yellow-400" />
+          <span className="text-[11px] font-black text-slate-700">
+            {rating}{" "}
+            <span className="text-slate-400 font-bold">({reviews})</span>
+          </span>
+        </div>
+        <span className="bg-green-100 text-green-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight">
+          Available Now
+        </span>
+      </div>
+    </div>
+
+    <div className="flex flex-col items-end justify-between py-1 min-w-[100px]">
+      <button className="text-slate-300 hover:text-slate-600">
+        <Bookmark size={18} />
+      </button>
+      <div className="text-right">
+        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-1">
+          Starting At
+        </p>
+        <p className="text-xl font-black text-slate-900 mb-2">${price}</p>
+        <button className="btn-purple cursor-pointer text-white text-[11px] font-black px-6 py-2 rounded-xl transition-all">
+          Book
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export default TopServices;

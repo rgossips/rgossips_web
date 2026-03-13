@@ -20,7 +20,7 @@ import StackedDeals from "@/components/StackedDeals";
 import StayCarousel from "@/components/StayCarousel";
 import TopExperiencesCarousel from "@/components/TopExperienceCarousel";
 import TopPicksCarousel from "@/components/TopPicksCarousel";
-import TopRatedInfluencers from "@/components/TopRatedInfluencer";
+import TopRatedInfluencers from "@/components/CreatorsLikeYou";
 import TopServices from "@/components/TopServices";
 import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
@@ -30,8 +30,9 @@ import { CompleteProfileCard } from "@/components/CompleteProfileCard";
 import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
 import { CommunityFeed } from "@/components/CommunityFeed";
-import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 import { GrowthDashboard } from "@/components/GrowthDashboard";
+import CreatorsLikeYou from "@/components/CreatorsLikeYou";
+import PerformanceDashboard from "@/components/PerformanceDashboard";
 
 const CATEGORIES = [
   { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
@@ -170,18 +171,18 @@ export default function HomePage() {
             <StackedDeals />
           </div>
 
-          <CompleteProfileCard />
-          <div className="flex items-center w-full px-10 justify-center gap-10 flex-col lg:flex-row">
+          <div className="flex  w-full px-10 justify-center gap-10 flex-col lg:flex-row">
+            <CompleteProfileCard />
             <AiMediaKitCard />
             <AiToolsGrid />
           </div>
 
-          <TopRatedInfluencers />
+          <CreatorsLikeYou />
           <JourneyCarousel />
 
           <CommunityFeed />
           <PerformanceDashboard />
-          <GrowthDashboard />
+          {/* <GrowthDashboard /> */}
 
           {/* Rest of content */}
           <div className="w-full lg:max-w-[1480px] mx-auto space-y-8">
@@ -189,8 +190,8 @@ export default function HomePage() {
             {/* <HotelRecommendations /> */}
 
             {/* <CounterBanner /> */}
-            {/* <TopServices /> */}
-            {/* <TopPicksCarousel /> */}
+            <TopServices />
+            <TopPicksCarousel />
             {/* <TopExperiencesCarousel />
             <ExploreStates /> */}
             <StayCarousel />
