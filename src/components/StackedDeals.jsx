@@ -216,7 +216,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
           );
         })}
 
-        <motion.div
+        {/* <motion.div
           className="w-[350px] z-50 lg:hidden mt-4"
           animate={{ y: isCompact ? 335 : 400 }} // Fine-tune position when collapsed
         >
@@ -229,7 +229,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
               <FaChevronDown size={14} />
             </motion.span>
           </button>
-        </motion.div>
+        </motion.div> */}
       </AnimatePresence>
     </div>
   );

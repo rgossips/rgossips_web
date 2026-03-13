@@ -80,9 +80,9 @@ export function AiMediaKitCard() {
             </span>
           </button>
 
-          <p className="text-center text-[11px] text-slate-400">
+          {/* <p className="text-center text-[11px] text-slate-400">
             No credit card required for preview
-          </p>
+          </p> */}
         </div>
       </div>
     </Card>

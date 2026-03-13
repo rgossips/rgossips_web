@@ -69,7 +69,7 @@ export default function CreatorsLikeYou() {
       {/* Layout */}
       <div className="flex flex-col lg:flex-row justify-between gap-6 mx-auto">
         {/* Featured Card */}
-        <div className="bg-white w-full lg:max-w-[55%] min-h-full rounded-3xl p-8 shadow-sm border flex flex-col justify-between">
+        <div className="bg-white w-full lg:max-w-[70%] min-h-full rounded-3xl p-8 shadow-sm border flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-6">
               <Image

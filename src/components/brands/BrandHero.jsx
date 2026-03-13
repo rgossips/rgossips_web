@@ -44,29 +44,29 @@ const BrandHero = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* LEFT SIDE */}
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-xs text-white/90">
+            {/* <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-xs text-white/90">
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
               Welcome back, Add your name
-            </div>
+            </div> */}
 
             <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight max-w-xl">
               Connect with the <br />
               right creators, <span className="text-indigo-300">fast.</span>
             </h1>
 
-            <p className="text-slate-300 text-sm md:text-base max-w-lg">
+            {/* <p className="text-slate-300 text-sm md:text-base max-w-lg">
               Discover, verify, and collaborate with top-tier creators across
               all platforms. Build your next campaign in minutes.
-            </p>
+            </p> */}
 
             {/* ACTION BUTTONS */}
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
-              <button className="flex items-center justify-center gap-2 bg-white text-black px-6 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition">
+              <button className="flex items-center justify-center gap-2 bg-white text-black px-8 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition">
                 <Search size={16} />
                 Browse Creators
               </button>
 
-              <button className="bg-[#5B3DF5] px-6 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition">
+              <button className="bg-[#5B3DF5] px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition">
                 View Active Campaigns
               </button>
             </div>
@@ -75,7 +75,7 @@ const BrandHero = () => {
           {/* RIGHT SIDE */}
           <div className="hidden lg:flex flex-col gap-6 items-end">
             {/* Agencies Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl w-[280px]">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl w-[400px]">
               <p className="text-sm text-slate-300 mb-4">
                 Trusted by 2800+ Agencies
               </p>
@@ -101,7 +101,7 @@ const BrandHero = () => {
             </div>
 
             {/* Trust Score Card */}
-            <div className="bg-black/80 border border-white/10 p-5 rounded-2xl w-[300px] flex items-center justify-between">
+            <div className="bg-black/80 border border-white/10 p-5 rounded-2xl w-[400px] flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-400 uppercase">
                   Your Trust Score
