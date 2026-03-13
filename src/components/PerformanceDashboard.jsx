@@ -83,7 +83,7 @@ export default function PerformanceDashboard() {
   return (
     <section className="w-full px-10 py-10 bg-[#F7F7FB] space-y-6">
       {/* TOP PERFORMANCE CARD */}
-      <Card className="rounded-3xl p-8 flex flex-row items-center bg-white border shadow-sm h-[320px]">
+      <Card className="rounded-3xl p-8 flex lg:flex-row items-center bg-white border shadow-sm lg:h-80">
         <div className="w-full max-w-[50%] space-y-4">
           <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
             <div className="w-2 h-2 bg-indigo-500 rounded-full" />
@@ -125,7 +125,7 @@ export default function PerformanceDashboard() {
       </Card>
 
       {/* METRIC CARDS GRID */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           icon={<DollarSign size={18} className="text-green-600" />}
           title="Total Earnings"
@@ -155,7 +155,7 @@ export default function PerformanceDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-8 lg:grid-cols-12 gap-6">
         {/* PINK EARNINGS OVERVIEW */}
         <Card className="col-span-8 rounded-3xl p-6 border bg-white flex flex-col h-[400px]">
           <div className="mb-4">
@@ -182,7 +182,7 @@ export default function PerformanceDashboard() {
         </Card>
 
         {/* SIDEBAR */}
-        <div className="col-span-4 space-y-6">
+        <div className="col-span-8 lg:col-span-4 space-y-6">
           <Card className="p-6 rounded-3xl text-white bg-slate-900 shadow-lg h-[180px] flex flex-col justify-between">
             <div>
               <p className="text-[10px] uppercase opacity-60">

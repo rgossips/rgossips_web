@@ -6,6 +6,8 @@ import { MessageSquare, Flame, Heart, Eye, Plus } from "lucide-react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { FaPlus } from "react-icons/fa";
+import { IoPersonAddOutline } from "react-icons/io5";
+import { LuMessageSquareText } from "react-icons/lu";
 
 const posts = [
   {
@@ -65,7 +67,7 @@ export function CommunityFeed() {
       </div>
 
       {/* Layout */}
-      <div className="grid grid-cols-12 gap-8">
+      <div className="grid grid-cols-9 lg:grid-cols-12 gap-8">
         {/* LEFT COLUMN */}
         <div className="col-span-9 space-y-4">
           {/* Feed Header */}
@@ -158,7 +160,7 @@ export function CommunityFeed() {
         </div>
 
         {/* RIGHT SIDEBAR */}
-        <div className="col-span-3 space-y-6">
+        <div className="col-span-9 lg:col-span-3 space-y-6">
           <div className="btn-purple flex items-center justify-center gap-3 px-3 py-2 rounded-2xl cursor-pointer">
             <FaPlus /> Start a Discussions
           </div>
@@ -167,13 +169,19 @@ export function CommunityFeed() {
             <h4 className="text-sm font-semibold mb-4">COMMUNITY STATS</h4>
 
             <div className="flex justify-between">
-              <div className="text-center">
-                <p className="text-xl font-bold">12.4k</p>
+              <div className="text-center bg-slate-100 w-[125px] flex flex-col items-center justify-center aspect-square rounded-3xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <IoPersonAddOutline />
+                  <p className="text-xl font-bold">12.4k</p>
+                </div>
                 <p className="text-xs text-slate-400">Members</p>
               </div>
 
-              <div className="text-center">
-                <p className="text-xl font-bold text-green-600">342</p>
+              <div className="text-center bg-slate-100 w-[125px] flex flex-col items-center justify-center aspect-square rounded-3xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <LuMessageSquareText />
+                  <p className="text-xl font-bold text-green-600">342</p>
+                </div>
                 <p className="text-xs text-slate-400">Online</p>
               </div>
             </div>

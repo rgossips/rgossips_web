@@ -142,6 +142,8 @@ const TopServices = () => {
   );
 };
 
+export default TopServices;
+
 const ServiceRow = ({
   img,
   tag,
@@ -152,65 +154,91 @@ const ServiceRow = ({
   reviews,
   price,
 }) => (
-  <div className="flex gap-4 p-4 rounded-4xl border border-slate-200 hover:shadow-md transition-shadow cursor-pointer bg-white group">
-    <div className="relative w-32 h-32 rounded-2xl overflow-hidden shrink-0">
+  <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-3xl lg:rounded-4xl border border-slate-200 hover:shadow-md transition-shadow cursor-pointer bg-white group relative">
+    {/* Image Section: Full width on mobile, fixed size on desktop */}
+    <div className="relative w-full sm:w-32 h-48 sm:h-32 rounded-2xl overflow-hidden shrink-0">
       <Image
         src={img}
-        height={200}
-        width={200}
-        className="w-full h-full object-cover"
+        height={400} // Increased for better quality on mobile full-width
+        width={400}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         alt={title}
       />
-      <span className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-[8px] font-black px-2 py-0.5 rounded-full">
+      <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[10px] sm:text-[8px] font-black px-2.5 py-1 rounded-full shadow-sm">
         {tag}
       </span>
+
+      {/* Mobile Bookmark: Easier to tap in the corner of the image */}
+      <button className="absolute top-3 right-3 p-2 bg-white/20 backdrop-blur-md rounded-full text-white sm:hidden">
+        <Bookmark size={18} fill="currentColor" className="text-white" />
+      </button>
     </div>
 
-    <div className="flex-1 py-1">
-      <div className="flex items-center gap-2 mb-1">
-        <Image
-          height={200}
-          width={200}
-          src={`https://i.pravatar.cc/100?u=${creator}`}
-          className="w-5 h-5 rounded-full"
-          alt={creator}
-        />
-        <span className="text-[10px] font-black text-slate-900">{creator}</span>
-        <span className="text-[10px] text-slate-400 font-bold">• {role}</span>
-      </div>
-      <h4 className="text-base font-black text-slate-900 leading-tight mb-2 group-hover:text-[#F6339A] transition-colors">
-        {title}
-      </h4>
-
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
-          <Star size={12} className="fill-yellow-400 text-yellow-400" />
-          <span className="text-[11px] font-black text-slate-700">
-            {rating}{" "}
-            <span className="text-slate-400 font-bold">({reviews})</span>
+    {/* Content Section */}
+    <div className="flex-1 flex flex-col justify-between py-1">
+      <div>
+        <div className="flex items-center gap-2 mb-2 sm:mb-1">
+          <Image
+            height={40}
+            width={40}
+            src={`https://i.pravatar.cc/100?u=${creator}`}
+            className="w-5 h-5 rounded-full border border-slate-100"
+            alt={creator}
+          />
+          <span className="text-[11px] sm:text-[10px] font-black text-slate-900">
+            {creator}
+          </span>
+          <span className="text-[11px] sm:text-[10px] text-slate-400 font-bold">
+            • {role}
           </span>
         </div>
-        <span className="bg-green-100 text-green-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight">
-          Available Now
-        </span>
+
+        <h4 className="text-lg sm:text-base font-black text-slate-900 leading-tight mb-2 group-hover:text-[#F6339A] transition-colors line-clamp-2">
+          {title}
+        </h4>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Star size={14} className="fill-yellow-400 text-yellow-400" />
+            <span className="text-xs sm:text-[11px] font-black text-slate-700">
+              {rating}{" "}
+              <span className="text-slate-400 font-bold">({reviews})</span>
+            </span>
+          </div>
+          <span className="bg-green-100 text-green-600 text-[10px] sm:text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight">
+            Available Now
+          </span>
+        </div>
+      </div>
+
+      {/* Mobile Pricing: Shows up below the title on small screens */}
+      <div className="flex sm:hidden items-center justify-between mt-4 pt-4 border-t border-slate-50">
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+            Starting At
+          </p>
+          <p className="text-xl font-black text-slate-900">${price}</p>
+        </div>
+        <button className="btn-purple bg-[#8E2DE2] text-white text-xs font-black px-8 py-3 rounded-xl">
+          Book
+        </button>
       </div>
     </div>
 
-    <div className="flex flex-col items-end justify-between py-1 min-w-[100px]">
-      <button className="text-slate-300 hover:text-slate-600">
-        <Bookmark size={18} />
+    {/* Desktop Action Sidebar: Hidden on mobile */}
+    <div className="hidden sm:flex flex-col items-end justify-between py-1 min-w-[110px]">
+      <button className="text-slate-300 hover:text-slate-600 transition-colors">
+        <Bookmark size={20} />
       </button>
       <div className="text-right">
         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mb-1">
           Starting At
         </p>
         <p className="text-xl font-black text-slate-900 mb-2">${price}</p>
-        <button className="btn-purple cursor-pointer text-white text-[11px] font-black px-6 py-2 rounded-xl transition-all">
+        <button className="btn-purple bg-[#8E2DE2] hover:bg-[#F6339A] text-white text-[11px] font-black px-6 py-2 rounded-xl transition-all shadow-md shadow-purple-100">
           Book
         </button>
       </div>
     </div>
   </div>
 );
-
-export default TopServices;

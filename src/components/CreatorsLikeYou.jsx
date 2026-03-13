@@ -49,7 +49,7 @@ const creators = [
 
 export default function CreatorsLikeYou() {
   return (
-    <section className="w-full bg-[#F7F7FB] py-6 lg:px-10">
+    <section className="w-full bg-[#F7F7FB] py-6 px-2 lg:px-10">
       {/* Header */}
       <div className="flex justify-between items-center mb-10 mx-auto">
         <div>
@@ -67,9 +67,9 @@ export default function CreatorsLikeYou() {
       </div>
 
       {/* Layout */}
-      <div className="flex justify-between gap-6 mx-auto">
+      <div className="flex flex-col lg:flex-row justify-between gap-6 mx-auto">
         {/* Featured Card */}
-        <div className="bg-white w-full max-w-[55%] min-h-full rounded-3xl p-8 shadow-sm border flex flex-col justify-between">
+        <div className="bg-white w-full lg:max-w-[55%] min-h-full rounded-3xl p-8 shadow-sm border flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-6">
               <Image
@@ -113,7 +113,7 @@ export default function CreatorsLikeYou() {
           {creators.map((person) => (
             <div
               key={person.id}
-              className="bg-white rounded-2xl p-6 border shadow-sm aspect-square flex flex-col max-h- justify-between"
+              className="bg-white rounded-2xl p-6 border shadow-sm lg:aspect-square flex flex-col max-h- justify-between"
             >
               <div>
                 <div className="flex items-center gap-3 mb-4">
