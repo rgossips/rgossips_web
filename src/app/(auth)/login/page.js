@@ -68,76 +68,80 @@ const Login = () => {
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
-    try {
-      const rawDigits = phoneNumber.replace(/\D/g, "");
-      if (rawDigits.length < 10) {
-        setError("Please enter a valid phone number");
-        setLoading(false);
-        return;
-      }
-      // Ensure E.164 format (e.g., +919041891005)
-      const formattedPhone = rawDigits.startsWith("91")
-        ? `+${rawDigits}`
-        : `+91${rawDigits}`;
-      setPhone(formattedPhone);
+    setLoading(false);
+    setOtpSent(true);
+    nextStep();
+    // try {
+    //   const rawDigits = phoneNumber.replace(/\D/g, "");
+    //   if (rawDigits.length < 10) {
+    //     setError("Please enter a valid phone number");
+    //     setLoading(false);
+    //     return;
+    //   }
+    //   // Ensure E.164 format (e.g., +919041891005)
+    //   const formattedPhone = rawDigits.startsWith("91")
+    //     ? `+${rawDigits}`
+    //     : `+91${rawDigits}`;
+    //   setPhone(formattedPhone);
 
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
-      });
+    //   const { error: authError } = await supabase.auth.signInWithOtp({
+    //     phone: formattedPhone,
+    //   });
 
-      if (authError) throw authError;
+    //   if (authError) throw authError;
 
-      setOtpSent(true);
-      nextStep();
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to send OTP.");
-    } finally {
-      setLoading(false);
-    }
+    //   setOtpSent(true);
+    //   nextStep();
+    // } catch (err) {
+    //   console.error(err);
+    //   setError(err.message || "Failed to send OTP.");
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   const handleVerifyOTP = async (otpCode) => {
     setLoading(true);
     setError("");
-    try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: otpCode,
-        type: "sms",
-      });
+    nextStep();
+    // try {
+    //   const { data, error: verifyError } = await supabase.auth.verifyOtp({
+    //     phone: phone,
+    //     token: otpCode,
+    //     type: "sms",
+    //   });
 
-      if (verifyError) throw verifyError;
+    //   if (verifyError) throw verifyError;
 
-      if (flow === "signin") {
-        // Check if profile exists in your custom tables
-        const { data: profile } = await supabase
-          .from("influencers")
-          .select("id")
-          .eq("id", data.user.id)
-          .single();
+    //   if (flow === "signin") {
+    //     // Check if profile exists in your custom tables
+    //     const { data: profile } = await supabase
+    //       .from("influencers")
+    //       .select("id")
+    //       .eq("id", data.user.id)
+    //       .single();
 
-        const { data: brandProfile } = await supabase
-          .from("brands")
-          .select("id")
-          .eq("id", data.user.id)
-          .single();
+    //     const { data: brandProfile } = await supabase
+    //       .from("brands")
+    //       .select("id")
+    //       .eq("id", data.user.id)
+    //       .single();
 
-        if (profile || brandProfile) {
-          router.push("/influencer");
-        } else {
-          // Auth works but no profile -> Force them to finish signup
-          setFlow("signup");
-          setStep(4);
-        }
-      } else {
-        nextStep();
-      }
-    } catch (err) {
-      setError("Invalid or expired OTP.");
-    } finally {
-      setLoading(false);
-    }
+    //     if (profile || brandProfile) {
+    //       router.push("/influencer");
+    //     } else {
+    //       // Auth works but no profile -> Force them to finish signup
+    //       setFlow("signup");
+    //       setStep(4);
+    //     }
+    //   } else {
+    //     nextStep();
+    //   }
+    // } catch (err) {
+    //   setError("Invalid or expired OTP.");
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   // --- STEP HANDLERS ---

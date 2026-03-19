@@ -3,7 +3,7 @@ import { MessageCircle, Instagram, Hash } from "lucide-react";
 export function CreatorCTASection() {
   return (
     <>
-      <section className="w-full px-4 lg:px-6 text-center lg:hidden">
+      <section className="w-full px-4 lg:px-6 text-center lg:hidden pb-20">
         <h2 className="text-xl font-semibold text-gray-900">
           Home of creator collaborations.
         </h2>
@@ -34,7 +34,7 @@ export function CreatorCTASection() {
         </div>
       </section>
 
-      <div className="w-full max-w-5xl mx-auto p-4 pb-20">
+      <div className="w-full max-w-5xl mx-auto p-4 pb-20 hidden lg:block">
         {/* Main Container */}
         <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-100 rounded-[32px] p-6 md:p-10 shadow-sm">
           {/* Left Section: Icon and Text */}

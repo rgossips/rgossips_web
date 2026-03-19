@@ -2,18 +2,19 @@
 
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, Search, Briefcase, User } from "lucide-react";
+import { Home, Search, Briefcase, User, Bell } from "lucide-react";
 
-const BottomNav = () => {
+const BottomNavBrands = () => {
   const router = useRouter();
   const pathname = usePathname();
 
   // Navigation configuration matching your screenshot
   const navItems = [
-    { label: "Home", icon: Home, path: "/influencer" },
-    { label: "Discover", icon: Search, path: "/influencer/discover" },
-    { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
-    { label: "Profile", icon: User, path: "/influencer/profile" },
+    { label: "Home", icon: Home, path: "/brands" },
+    { label: "Search", icon: Search, path: "/brands/search" },
+    { label: "Campaigns", icon: Briefcase, path: "/brands/campaigns" },
+    { label: "Messages", icon: Bell, path: "/brands/chats" },
+    { label: "Profile", icon: User, path: "/brands/profile" },
   ];
 
   return (
@@ -31,7 +32,7 @@ const BottomNav = () => {
             >
               {/* Active Indicator Line at the top of the button */}
               {isActive && (
-                <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] animate-in fade-in slide-in-from-top-1 duration-300" />
+                <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] animate-in fade-in slide-in-from-top-1 duration-300" />
               )}
 
               <item.icon
@@ -39,14 +40,14 @@ const BottomNav = () => {
                 strokeWidth={isActive ? 2.5 : 2}
                 className={`transition-all duration-300 pt-1 ${
                   isActive
-                    ? "text-[#F6339A] scale-110"
+                    ? "text-[#4A3996] bg-clip-text scale-110"
                     : "text-[#64748B] group-active:scale-90"
                 }`}
               />
 
               <span
                 className={`text-[10px] mt-1 font-semibold transition-colors duration-300 ${
-                  isActive ? "text-[#F6339A]" : "text-[#94A3B8]"
+                  isActive ? "text-[#4A3996] " : "text-[#94A3B8]"
                 }`}
               >
                 {item.label}
@@ -59,4 +60,4 @@ const BottomNav = () => {
   );
 };
 
-export default BottomNav;
+export default BottomNavBrands;

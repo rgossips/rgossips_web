@@ -32,6 +32,60 @@ const ProfileDetails = ({ onNext }) => {
   const handleContinue = () => {
     onNext(formData);
   };
+
+  const validateInstagram = async () => {
+    try {
+      const accessToken = process.env.NEXT_PUBLIC_INSTA_OAUTH_TOKEN;
+
+      // This is the Instagram Business Account ID associated with YOUR Meta App/Business
+      // You can find this in your Meta Business Suite or via the Graph Explorer
+      const myIgBusinessId = process.env.NEXT_PUBLIC_APP_ID;
+      const targetUsername = formData.username.replace("@", ""); // Clean the input
+
+      console.log("a", accessToken);
+      console.log(myIgBusinessId, targetUsername);
+      if (!targetUsername) {
+        alert("Please enter a username first");
+        return;
+      }
+
+      // 1. Single API call using Business Discovery
+      // We query YOUR ID, but ask it to "discover" the target username
+      const url = `https://graph.facebook.com/v21.0/${myIgBusinessId}?fields=business_discovery.username(${targetUsername}){id,username,followers_count,media_count,profile_picture_url,biography}&access_token=${accessToken}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        // If error code is 100, the user likely isn't a Business/Creator account
+        throw new Error(
+          data.error.message ||
+            "Account not found or not a Business/Creator profile",
+        );
+      }
+
+      const userData = data.business_discovery;
+
+      // 2. Save into form
+      setFormData((prev) => ({
+        ...prev,
+        instagram: userData.username,
+        instagramFollowers: userData.followers_count,
+        instagramProfilePic: userData.profile_picture_url,
+        biography: userData.biography,
+        instaId: userData.id,
+      }));
+
+      alert(`Validated! ${userData.followers_count} followers found. ✅`);
+    } catch (err) {
+      console.error(err);
+      alert(
+        err.message ||
+          "Validation failed. Ensure the account is Public & a Creator/Business account.",
+      );
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-3">
       {/* Header with Upload Photo Section */}
@@ -88,6 +142,13 @@ const ProfileDetails = ({ onNext }) => {
               onChange={handleChange}
               className="h-12 pl-12 rounded-xl border-slate-200"
             />
+            <Button
+              onClick={validateInstagram}
+              className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2"
+            >
+              <Instagram size={18} />
+              Verify Instagram
+            </Button>
           </div>
         </div>
 

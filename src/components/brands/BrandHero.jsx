@@ -4,13 +4,20 @@ import React from "react";
 import Image from "next/image";
 import { Plus, Search } from "lucide-react";
 import { TrustSection } from "./TrustSection";
+const baseBrands = [
+  "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
+  "https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r",
+
+  "https://lh3.googleusercontent.com/d/1rUYya-EIZPqE7lSZBa_TY_wKI5httO6H",
+  "https://lh3.googleusercontent.com/d/1IuS3e9tDzB987BNDkQaEmVLkg6IYDiuy",
+];
 
 const BrandHero = () => {
   return (
-    <section className="w-full bg-gradient-to-b from-[#1C115A] to-[#3B22B2] px-6 pt-12 pb-16 rounded-b-[40px] md:rounded-b-[60px] text-white">
+    <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
       <div className="max-w-7xl mx-auto">
         {/* TOP ROW */}
-        <div className="flex justify-between items-center mb-10">
+        <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
               <Image
@@ -58,16 +65,32 @@ const BrandHero = () => {
               Discover, verify, and collaborate with top-tier creators across
               all platforms. Build your next campaign in minutes.
             </p> */}
+            <div className="flex items-center gap-5">
+              <div className="flex lg:hidden -space-x-3">
+                {baseBrands.map((i, index) => (
+                  <Image
+                    key={index}
+                    src={i}
+                    width={36}
+                    height={36}
+                    alt="agency"
+                    className="rounded-full border-2 border-[#2A1885]"
+                  />
+                ))}
+              </div>
+              <div className="text-slate-100 opacity-90 font-light">
+                2800+ Agencies
+              </div>
+            </div>
 
             {/* ACTION BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+            <div className="flex gap-4 pt-2">
               <button className="flex items-center justify-center gap-2 bg-white text-black px-8 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition">
-                <Search size={16} />
                 Browse Creators
               </button>
 
               <button className="bg-[#5B3DF5] px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition">
-                View Active Campaigns
+                Post Requirements
               </button>
             </div>
           </div>
@@ -82,10 +105,10 @@ const BrandHero = () => {
 
               <div className="flex items-center">
                 <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
+                  {baseBrands.map((i, index) => (
                     <Image
-                      key={i}
-                      src={`https://i.pravatar.cc/150?img=${i + 20}`}
+                      key={index}
+                      src={i}
                       width={36}
                       height={36}
                       alt="agency"

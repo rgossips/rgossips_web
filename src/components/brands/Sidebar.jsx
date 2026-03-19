@@ -12,9 +12,9 @@ import {
 export default function Sidebar() {
   const menu = [
     { name: "Overview", icon: LayoutDashboard },
+    { name: "Campaigns", icon: LayoutDashboard },
     { name: "Creators", icon: Users },
-    { name: "RFPs", icon: FileText },
-    { name: "CRM", icon: BookOpen },
+    { name: "Reports", icon: FileText },
     { name: "Brand Database", icon: Users },
     { name: "Marketplace", icon: LayoutDashboard },
     { name: "Message Center", icon: Bell },

@@ -85,7 +85,7 @@ export const CategorySection = () => {
           </div>
 
           {/* Selection Cards (Who Are You Looking For?) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <motion.div
               whileHover={{ y: -4 }}
               className="bg-[#E9F0FF] p-6 rounded-[32px] flex flex-col justify-between h-40 border border-blue-100 cursor-pointer"

@@ -11,23 +11,28 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import logo from "@/assets/logo2.png";
 import Image from "next/image";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
-  { label: "Discover", icon: <Compass size={20} />, href: "/discover" },
+  {
+    label: "Discover",
+    icon: <Compass size={20} />,
+    href: "/influencer/discover",
+  },
   {
     label: "Campaigns",
     icon: <Briefcase size={20} />,
-    href: "/campaigns",
+    href: "/influencer/campaigns",
   },
-  { label: "Profile", icon: <User size={20} />, href: "/profile" },
+  { label: "Profile", icon: <User size={20} />, href: "/influencer/profile" },
 ];
 
 export const DesktopNavbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
@@ -86,7 +91,7 @@ export const DesktopNavbar = () => {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              router.push("/notifications");
+              router.push("/influencer/notifications");
             }}
             className="hidden cursor-pointer lg:flex p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:bg-slate-50 border border-slate-100 transition-colors"
           >
@@ -94,7 +99,7 @@ export const DesktopNavbar = () => {
           </button>
           <button
             onClick={() => {
-              router.push("/chats");
+              router.push("/influencer/chats");
             }}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
           >

@@ -98,8 +98,8 @@ export default function PocketFriendlyCreators() {
                   {creator.followers}
                 </p>
 
-                <button className="mt-6 w-full cursor-pointer py-3 bg-[#1C115A] text-white rounded-2xl text-xs font-bold hover:bg-[#5B3DF5] transition-colors active:scale-95">
-                  View Profile
+                <button className="mt-6 w-full cursor-pointer py-3 border-2 border-[#5B3DF5] text-[#5B3DF5] rounded-2xl text-base font-bold hover:bg-[#5B3DF5] transition-colors active:scale-95">
+                  Connect
                 </button>
               </div>
             </CarouselItem>

@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 
 export const TrustSection = () => {
   return (
-    <div className="px-4 lg:px-6 space-y-6 flex items-center flex-col lg:flex-row w-full gap-3 lg:gap-5">
+    <div className="flex items-center flex-col lg:flex-row w-screen px-3 gap-3 lg:gap-5">
       {/* Floating Search */}
       <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
         <p className="text-slate-400 text-sm font-medium pl-2">
@@ -15,7 +15,7 @@ export const TrustSection = () => {
       </div>
 
       {/* Trust Score Card */}
-      <div className="bg-[#1F1F1F] w-full max-w-[90%] lg:max-w-[40%] rounded-4xl p-6 flex justify-between items-center text-white">
+      <div className="bg-[#1F1F1F] w-full lg:max-w-[40%] rounded-4xl p-6 flex justify-between items-center text-white">
         <div>
           <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">
             Your Trust Score

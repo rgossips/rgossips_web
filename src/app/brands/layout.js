@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import { DesktopNavbar } from "@/components/DeskTopNavbar";
 import Sidebar from "@/components/brands/Sidebar";
 import { BrandNavbar } from "@/components/brands/BrandNavbar";
+import BottomNavBrands from "@/components/brands/BottomNavBrands";
 
 export default function BrandsLayout({ children }) {
   return (
@@ -28,7 +29,7 @@ export default function BrandsLayout({ children }) {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <BottomNav />
+      <BottomNavBrands />
 
       <div className="mb-16 lg:mb-0 lg:ml-[220px]">
         <Footer />
