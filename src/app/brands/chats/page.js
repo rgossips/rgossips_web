@@ -40,7 +40,7 @@ export default function ChatModule() {
             {/* The Pink Circular Back Button from your image */}
             <button
               onClick={() => router.back()}
-              className="p-2 rounded-full bg-blue-200 hover:bg-blue-400 transition-colors active:scale-90 flex items-center justify-center"
+              className="p-2 rounded-full bg-[#EAE7FF]  transition-colors active:scale-90 flex items-center justify-center"
             >
               <ChevronLeft className="w-6 h-6 text-[#4F46E5]" />
             </button>
@@ -134,7 +134,7 @@ export default function ChatModule() {
                     {isMobile && (
                       <button
                         onClick={() => setSelectedChat(null)}
-                        className="p-2 rounded-full bg-[#FCE6F1]"
+                        className="p-2 rounded-full bg-[#EAE7FF]"
                       >
                         <ChevronLeft className="w-5 h-5 text-[#4F46E5]" />
                       </button>
@@ -181,7 +181,7 @@ export default function ChatModule() {
                       <div
                         className={`max-w-[85%] lg:max-w-[70%] p-4 rounded-2xl shadow-sm text-sm ${
                           msg.sender === "me"
-                            ? "bg-[#4F46E5] text-white rounded-tr-none shadow-[#4F46E5]/20"
+                            ? "bg-[#EAE7FF] text-slate-700 rounded-tr-none shadow-[#4F46E5]/20"
                             : "bg-white text-slate-700 rounded-tl-none border border-slate-100"
                         }`}
                       >
