@@ -33,7 +33,7 @@ const locations = [
   },
   {
     id: 5,
-    name: "Hyderabase",
+    name: "Hyderabad",
     image:
       "https://images.unsplash.com/photo-1598434192043-71111c1b3f41?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     attribution: "Ahmad syahrir",

@@ -2,17 +2,19 @@
 
 import { Search, Zap, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import logo from "@/assets/logo2.png";
 
 export function BrandNavbar() {
   return (
     <header className="w-full h-[72px] border-b bg-white hidden lg:flex items-center justify-between px-6 sticky top-0 z-40">
       {/* Left */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white font-semibold">
+        {/* <div className="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white font-semibold">
           #
         </div>
 
-        <span className="font-semibold text-gray-800 text-sm">RGossips</span>
+        <span className="font-semibold text-gray-800 text-sm">RGossips</span> */}
+        <Image src={logo} alt="logo" height={100} width={200} />
       </div>
 
       {/* Search */}
