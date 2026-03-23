@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
+import { useRouter } from "next/navigation";
 
 const DashboardView = ({
   onOpenInfo,
@@ -28,10 +29,11 @@ const DashboardView = ({
   onhelpSupportClick,
 }) => {
   const [showLogout, setShowLogout] = useState(false);
-
+  const router = useRouter();
   const handleLogout = () => {
     // TODO: Add actual logout logic here
     setShowLogout(false);
+    router.push("/login");
     // e.g., redirect or clear auth
   };
 

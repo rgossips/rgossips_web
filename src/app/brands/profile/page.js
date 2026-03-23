@@ -22,8 +22,11 @@ import {
   LogOut,
   ExternalLink,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const BrandProfile = () => {
+  const router = useRouter();
+
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
       {/* 1. Header Section - No overlap with the card below */}
@@ -209,7 +212,12 @@ const BrandProfile = () => {
               last
             />
           </div>
-          <button className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform">
+          <button
+            onClick={() => {
+              router.push("/login");
+            }}
+            className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform"
+          >
             <div className="p-2 bg-red-50 rounded-xl">
               <LogOut size={18} />
             </div>
