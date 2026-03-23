@@ -16,7 +16,7 @@ export const CategoryFilters = () => (
     {categories.map((cat) => (
       <button
         key={cat.name}
-        className={`flex flex-col items-center justify-center p-3 rounded-xl ${cat.color} hover:opacity-80 transition-all`}
+        className={`flex flex-col items-center justify-center p-3 rounded-xl ${cat.color} hover:opacity-80 transition-all cursor-pointer`}
       >
         <cat.icon size={24} strokeWidth={1.5} />
         <span className="text-[10px] font-semibold mt-2">{cat.name}</span>

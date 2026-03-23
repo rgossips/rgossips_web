@@ -45,10 +45,10 @@ export const InfluencerCard = ({
 
     {/* Actions */}
     <div className="flex gap-3">
-      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-pointer">
         <MessageCircle size={20} strokeWidth={1.5} />
       </button>
-      <button className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors">
+      <button className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors cursor-pointer">
         <UserPlus size={20} strokeWidth={1.5} />
       </button>
     </div>

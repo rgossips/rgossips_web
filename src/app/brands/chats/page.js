@@ -7,19 +7,20 @@ import {
   ChevronLeft,
   MoreVertical,
   Send,
-  Paperclip,
-  Smile,
-  Box,
+  Mic,
+  ThumbsUp,
+  Play,
+  Pause,
+  ArrowRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation"; // For back navigation
 
 export default function ChatModule() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("All");
+  const [playingAudio, setPlayingAudio] = useState(null);
 
   React.useEffect(() => {
     const checkSize = () => setIsMobile(window.innerWidth < 1024);
@@ -28,252 +29,291 @@ export default function ChatModule() {
     return () => window.removeEventListener("resize", checkSize);
   }, []);
 
-  return (
-    <div className="flex h-screen w-full bg-[#F8F9FD] overflow-hidden font-sans">
-      {/* Sidebar */}
-      <div
-        className={`${isMobile && selectedChat ? "hidden" : "flex"} w-full lg:w-[400px] flex-col border-r bg-white`}
-      >
-        {/* Header with Back Button */}
-        <div className="p-6 space-y-4">
-          <div className="flex items-center gap-4">
-            {/* The Pink Circular Back Button from your image */}
-            <button
-              onClick={() => router.back()}
-              className="p-2 rounded-full bg-[#EAE7FF]  transition-colors active:scale-90 flex items-center justify-center"
-            >
-              <ChevronLeft className="w-6 h-6 text-[#4F46E5]" />
-            </button>
-            <h1 className="text-xl font-bold text-slate-800">Messages</h1>
-          </div>
+  const tabs = ["All", "Unread", "Pinned", "Campaigns"];
 
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={16}
-            />
-            <Input
-              className="pl-10 bg-slate-50 border-none rounded-xl h-12"
-              placeholder="Search messages..."
-            />
+  return (
+    <div className="flex flex-col h-screen w-full bg-white overflow-hidden font-sans">
+      {/* Full-width Purple Gradient Header */}
+      <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 lg:px-10 pt-8 lg:pt-10 pb-10 lg:pb-14 mb-4 rounded-b-[40px] text-white relative z-10">
+        <div className="flex justify-between items-start mb-5">
+          <div>
+            <h1 className="text-2xl font-bold">Messages</h1>
+            <p className="text-white/70 text-xs mt-1">6 Running Projects</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-5 border-y-2 px-5 py-5">
-          {["All", "Unread", "Pinned", "Campaigns"].map((tab, index) => {
-            return (
-              <div
-                key={index}
-                className="border bg-gray-200 rounded-2xl px-4 py-2"
+        {/* Search Bar - positioned to overlap bottom edge */}
+        <div className="absolute left-6 right-6 lg:left-10 lg:right-10 -bottom-6 flex items-center bg-white rounded-full p-2 shadow-lg shadow-gray-200/50">
+          <input
+            type="text"
+            placeholder="Search or start a new chat"
+            className="w-full pl-4 text-sm text-gray-800 outline-none placeholder:text-gray-400"
+          />
+          <button className="bg-[#5851DB] hover:bg-[#4338CA] p-2.5 rounded-full text-white shrink-0 transition-colors">
+            <ArrowRight size={18} />
+          </button>
+        </div>
+      </section>
+
+      {/* Main Content - Sidebar + Chat */}
+      <div className="flex flex-1 mt-8 overflow-hidden">
+        {/* Sidebar */}
+        <div
+          className={`${isMobile && selectedChat ? "hidden" : "flex"} w-full lg:w-[420px] flex-col border-r bg-white`}
+        >
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? "bg-[#4F46E5] text-white shadow-md shadow-[#4F46E5]/25"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
               >
                 {tab}
-              </div>
-            );
-          })}
-        </div>
+              </button>
+            ))}
+          </div>
 
-        {/* Contact List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          {CONTACTS.map((contact) => (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              key={contact.id}
-              onClick={() => setSelectedChat(contact)}
-              className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all mb-1 ${
-                selectedChat?.id === contact.id
-                  ? "bg-[#FCE6F1]"
-                  : "hover:bg-slate-50"
-              }`}
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                  <AvatarImage src={contact.avatar} />
-                  <AvatarFallback>{contact.name[0]}</AvatarFallback>
-                </Avatar>
-                {contact.unread && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#4F46E5] border-2 border-white text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                    {contact.unread}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center">
+          {/* Contact List */}
+          <div className="flex-1 overflow-y-auto px-3 pb-4">
+            {CONTACTS.map((contact) => (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                key={contact.id}
+                onClick={() => setSelectedChat(contact)}
+                className={`flex items-center gap-3.5 p-3.5 rounded-2xl cursor-pointer transition-all mb-1 ${
+                  selectedChat?.id === contact.id
+                    ? "bg-[#F3F1FF]"
+                    : "hover:bg-slate-50"
+                }`}
+              >
+                <div className="relative">
+                  <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                    <AvatarImage src={contact.avatar} />
+                    <AvatarFallback>{contact.name[0]}</AvatarFallback>
+                  </Avatar>
+                  {contact.unread && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#4F46E5] border-2 border-white text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {contact.unread}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-sm text-slate-800">
+                      {contact.name}
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {contact.time}
+                    </span>
+                  </div>
                   <span
-                    className={`font-bold text-sm ${selectedChat?.id === contact.id ? "text-[#4F46E5]" : "text-slate-800"}`}
+                    className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full mt-1 ${contact.tagColor}`}
                   >
-                    {contact.name}
+                    {contact.campaign}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    {contact.time}
-                  </span>
+                  <p className="text-xs text-slate-500 truncate mt-1">
+                    {contact.lastMsg}
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 truncate mt-0.5">
-                  {contact.lastMsg}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Chat Area */}
-      <AnimatePresence mode="wait">
-        {(selectedChat || !isMobile) && (
-          <motion.div
-            key={selectedChat?.id || "empty"}
-            initial={isMobile ? { x: "100%" } : { opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%" }}
-            className={`${isMobile && !selectedChat ? "hidden" : "flex"} flex-1 flex-col bg-[#F8F9FD] h-full relative`}
-          >
-            {selectedChat ? (
-              <>
-                <header className="bg-white p-4 lg:px-8 lg:py-5 flex items-center justify-between border-b shadow-sm sticky top-0 z-10">
-                  <div className="flex items-center gap-4">
-                    {isMobile && (
-                      <button
-                        onClick={() => setSelectedChat(null)}
-                        className="p-2 rounded-full bg-[#EAE7FF]"
-                      >
-                        <ChevronLeft className="w-5 h-5 text-[#4F46E5]" />
-                      </button>
-                    )}
-                    <Avatar className="h-10 w-10 ring-2 ring-[#FCE6F1]">
-                      <AvatarImage src={selectedChat.avatar} />
-                    </Avatar>
-                    <div>
-                      <h3 className="font-bold text-slate-800 text-sm lg:text-base">
-                        {selectedChat.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                          Active Now
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-slate-400 rounded-full"
-                    >
-                      <Search size={20} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-slate-400 rounded-full"
-                    >
-                      <MoreVertical size={20} />
-                    </Button>
-                  </div>
-                </header>
-
-                <div className="flex-1 max-h-[75%] overflow-y-auto p-4 lg:p-8 space-y-6 scrollbar-hide">
-                  {MOCK_MESSAGES.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`max-w-[85%] lg:max-w-[70%] p-4 rounded-2xl shadow-sm text-sm ${
-                          msg.sender === "me"
-                            ? "bg-[#EAE7FF] text-slate-700 rounded-tr-none shadow-[#4F46E5]/20"
-                            : "bg-white text-slate-700 rounded-tl-none border border-slate-100"
-                        }`}
-                      >
-                        <p className="leading-relaxed">{msg.text}</p>
-                        <span
-                          className={`text-[9px] mt-2 block font-medium opacity-70 ${msg.sender === "me" ? "text-right" : ""}`}
+        {/* Chat Area */}
+        <AnimatePresence mode="wait">
+          {(selectedChat || !isMobile) && (
+            <motion.div
+              key={selectedChat?.id || "empty"}
+              initial={isMobile ? { x: "100%" } : { opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%" }}
+              className={`${isMobile && !selectedChat ? "hidden" : "flex"} flex-1 flex-col bg-[#F8F9FD] h-full relative`}
+            >
+              {selectedChat ? (
+                <>
+                  {/* Chat Header */}
+                  <header className="bg-white px-6 py-4 flex items-center justify-between border-b shadow-sm sticky top-0 z-10">
+                    <div className="flex items-center gap-4">
+                      {isMobile && (
+                        <button
+                          onClick={() => setSelectedChat(null)}
+                          className="p-2 rounded-full bg-[#EAE7FF]"
                         >
-                          {msg.time}
-                        </span>
+                          <ChevronLeft className="w-5 h-5 text-[#4F46E5]" />
+                        </button>
+                      )}
+                      <Avatar className="h-10 w-10 ring-2 ring-[#EAE7FF]">
+                        <AvatarImage src={selectedChat.avatar} />
+                        <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-bold text-slate-800 text-base">
+                          {selectedChat.name}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          <span className="text-slate-500">★</span> Regarding:{" "}
+                          <span className="font-medium text-slate-600">
+                            {selectedChat.campaign}
+                          </span>
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Footer Input UI */}
-                <footer className="p-4 lg:p-6 bg-white border-t">
-                  <div className="max-w-4xl lg:max-w-[100%] mx-auto space-y-3">
-                    {/* Main Input Box */}
-                    <div className="flex items-end gap-2 bg-slate-50 p-2 rounded-2xl border border-slate-100 shadow-inner">
-                      {/* Plus/Expand Action */}
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-slate-400 shrink-0 hover:text-[#4F46E5] hover:bg-[#FCE6F1] rounded-xl"
+                        className="text-slate-400 rounded-full hover:text-[#4F46E5] hover:bg-[#F3F1FF]"
                       >
-                        <div className="bg-[#4F46E5] rounded-lg p-1">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="white"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                          </svg>
-                        </div>
+                        <Search size={18} />
                       </Button>
-
-                      {/* Hidden File Input Trigger (UI Only) */}
-                      <label className="cursor-pointer p-2 text-slate-400 hover:text-[#4F46E5] transition-colors">
-                        <Paperclip size={22} />
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                        />
-                      </label>
-
-                      {/* Textarea for multi-line support */}
-                      <textarea
-                        rows={1}
-                        placeholder="Type a message..."
-                        className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 resize-none max-h-32 outline-none text-slate-700 placeholder:text-slate-400"
-                        onInput={(e) => {
-                          e.target.style.height = "auto";
-                          e.target.style.height = e.target.scrollHeight + "px";
-                        }}
-                      />
-
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-slate-400 shrink-0 hover:text-[#4F46E5]"
+                        className="text-slate-400 rounded-full hover:text-[#4F46E5] hover:bg-[#F3F1FF]"
                       >
-                        <Smile size={22} />
-                      </Button>
-
-                      {/* Send Button with Brand Glow */}
-                      <Button className="rounded-xl bg-[#4F46E5] hover:bg-[#c50065] h-11 w-11 p-0 shadow-lg shadow-[#4F46E5]/30 transition-all active:scale-95 shrink-0">
-                        <Send size={20} className="ml-1" />
+                        <MoreVertical size={18} />
                       </Button>
                     </div>
+                  </header>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-6 lg:px-10 lg:py-8 space-y-5 scrollbar-hide">
+                    {MOCK_MESSAGES.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[75%] lg:max-w-[60%] ${
+                            msg.type === "audio" ? "w-[320px]" : ""
+                          }`}
+                        >
+                          {msg.type === "audio" ? (
+                            <div
+                              className={`p-3.5 rounded-2xl shadow-sm flex items-center gap-3 ${
+                                msg.sender === "me"
+                                  ? "bg-[#4F46E5] rounded-tr-sm"
+                                  : "bg-white border border-slate-100 rounded-tl-sm"
+                              }`}
+                            >
+                              <button
+                                onClick={() =>
+                                  setPlayingAudio(
+                                    playingAudio === msg.id ? null : msg.id,
+                                  )
+                                }
+                                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                                  msg.sender === "me"
+                                    ? "bg-white/20"
+                                    : "bg-[#F3F1FF]"
+                                }`}
+                              >
+                                {playingAudio === msg.id ? (
+                                  <Pause
+                                    size={16}
+                                    className={
+                                      msg.sender === "me"
+                                        ? "text-white"
+                                        : "text-[#4F46E5]"
+                                    }
+                                  />
+                                ) : (
+                                  <Play
+                                    size={16}
+                                    className={`ml-0.5 ${msg.sender === "me" ? "text-white" : "text-[#4F46E5]"}`}
+                                  />
+                                )}
+                              </button>
+                              <div className="flex-1">
+                                <div
+                                  className={`flex items-center gap-[3px] h-6 ${msg.sender === "me" ? "opacity-80" : "opacity-50"}`}
+                                >
+                                  {Array.from({ length: 30 }).map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className={`w-[3px] rounded-full ${msg.sender === "me" ? "bg-white" : "bg-slate-400"}`}
+                                      style={{
+                                        height: `${Math.random() * 16 + 4}px`,
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                                <span
+                                  className={`text-[10px] mt-1 block ${msg.sender === "me" ? "text-white/60" : "text-slate-400"}`}
+                                >
+                                  {msg.duration}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className={`p-4 rounded-2xl shadow-sm text-sm ${
+                                msg.sender === "me"
+                                  ? "bg-[#4F46E5] text-white rounded-tr-sm"
+                                  : "bg-white text-slate-700 rounded-tl-sm border border-slate-100"
+                              }`}
+                            >
+                              <p className="leading-relaxed">{msg.text}</p>
+                            </div>
+                          )}
+                          <span
+                            className={`text-[10px] mt-1.5 block text-slate-400 ${msg.sender === "me" ? "text-right" : ""}`}
+                          >
+                            {msg.time}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </footer>
-              </>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <Send size={32} />
+
+                  {/* Footer Input */}
+                  <footer className="p-4 lg:px-8 lg:py-5 bg-white border-t">
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1 flex items-end gap-2 bg-[#F8F9FD] p-2.5 rounded-2xl border border-slate-100">
+                        <textarea
+                          rows={1}
+                          placeholder="Type a message..."
+                          className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 resize-none max-h-32 outline-none text-slate-700 placeholder:text-slate-400"
+                          onInput={(e) => {
+                            e.target.style.height = "auto";
+                            e.target.style.height =
+                              e.target.scrollHeight + "px";
+                          }}
+                        />
+                      </div>
+                      <button className="h-11 w-11 rounded-full bg-[#F3F1FF] hover:bg-[#EAE7FF] flex items-center justify-center transition-colors text-[#4F46E5] shrink-0">
+                        <Mic size={20} />
+                      </button>
+                      <button className="h-11 w-11 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] flex items-center justify-center transition-all shadow-lg shadow-[#4F46E5]/30 active:scale-95 shrink-0">
+                        <Send size={18} className="text-white ml-0.5" />
+                      </button>
+                      <button className="h-11 w-11 rounded-full bg-[#F3F1FF] hover:bg-[#EAE7FF] flex items-center justify-center transition-colors text-[#4F46E5] shrink-0">
+                        <ThumbsUp size={20} />
+                      </button>
+                    </div>
+                  </footer>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
+                  <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <Send size={32} />
+                  </div>
+                  <p className="font-medium">
+                    Select a conversation to start chatting
+                  </p>
                 </div>
-                <p className="font-medium">
-                  Select a conversation to start chatting
-                </p>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -282,25 +322,58 @@ export default function ChatModule() {
 const CONTACTS = [
   {
     id: 1,
-    name: "Alicia Rochefort",
-    lastMsg: "Hey Ronald, we have to attend our daily stand up...",
-    time: "09:12",
-    avatar: "https://i.pravatar.cc/150?u=alicia",
+    name: "Faisal Shaikh",
+    campaign: "Food Campaign",
+    tagColor: "bg-[#EAE7FF] text-[#4F46E5]",
+    lastMsg: "Hey, I can do this in 2 days",
+    time: "3:45 PM",
+    avatar: "https://i.pravatar.cc/150?u=faisal",
     unread: 1,
   },
   {
     id: 2,
-    name: "Jessica Tan",
-    lastMsg: "Sure, wait, I'll send you",
-    time: "09:10",
-    avatar: "https://i.pravatar.cc/150?u=jessica",
+    name: "Sarah Rahman",
+    campaign: "Skincare Launch",
+    tagColor: "bg-[#FCE6F1] text-[#C5006A]",
+    lastMsg: "Let me check the brief again.",
+    time: "1:16 PM",
+    avatar: "https://i.pravatar.cc/150?u=sarah",
   },
   {
     id: 3,
-    name: "Lolita Xue",
-    lastMsg: "It's around 11:00, in the meeting room",
-    time: "09:10",
-    avatar: "https://i.pravatar.cc/150?u=lolita",
+    name: "Arjun Mehta",
+    campaign: "Tech Review",
+    tagColor: "bg-[#E0F7EC] text-[#0D7C4A]",
+    lastMsg: "I'll send the draft by tonight",
+    time: "12:30 PM",
+    avatar: "https://i.pravatar.cc/150?u=arjun",
+  },
+  {
+    id: 4,
+    name: "Priya Nair",
+    campaign: "Fashion Week",
+    tagColor: "bg-[#FFF3E0] text-[#E65100]",
+    lastMsg: "Can we reschedule the shoot?",
+    time: "11:45 AM",
+    avatar: "https://i.pravatar.cc/150?u=priya",
+  },
+  {
+    id: 5,
+    name: "Ravi Kumar",
+    campaign: "Fitness Brand",
+    tagColor: "bg-[#E3F2FD] text-[#1565C0]",
+    lastMsg: "The content is ready for review",
+    time: "10:20 AM",
+    avatar: "https://i.pravatar.cc/150?u=ravi",
+  },
+  {
+    id: 6,
+    name: "Meera Joshi",
+    campaign: "Travel Vlog",
+    tagColor: "bg-[#F3E5F5] text-[#7B1FA2]",
+    lastMsg: "Uploaded the final cut!",
+    time: "Yesterday",
+    avatar: "https://i.pravatar.cc/150?u=meera",
   },
 ];
 
@@ -308,25 +381,32 @@ const MOCK_MESSAGES = [
   {
     id: 1,
     sender: "them",
-    text: "Hey Ronald, we have to attend our daily stand up",
-    time: "09:10",
+    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
+    time: "04:45 PM",
   },
   {
     id: 2,
     sender: "me",
-    text: "Sure, when will daily stand up starts?",
-    time: "09:12",
+    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
+    time: "04:01 PM",
   },
   {
     id: 3,
     sender: "them",
-    text: "It's around 11:00, in the meeting room",
-    time: "09:13",
+    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
+    time: "04:33 PM",
   },
   {
     id: 4,
+    sender: "them",
+    type: "audio",
+    duration: "01:24",
+    time: "04:33 PM",
+  },
+  {
+    id: 5,
     sender: "me",
-    text: "Okay Alicia, I'll make sure to attend the daily stand up and make sure everything goes well.",
-    time: "09:14",
+    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
+    time: "04:45 PM",
   },
 ];

@@ -68,80 +68,82 @@ const Login = () => {
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
-    setLoading(false);
-    setOtpSent(true);
-    nextStep();
-    // try {
-    //   const rawDigits = phoneNumber.replace(/\D/g, "");
-    //   if (rawDigits.length < 10) {
-    //     setError("Please enter a valid phone number");
-    //     setLoading(false);
-    //     return;
-    //   }
-    //   // Ensure E.164 format (e.g., +919041891005)
-    //   const formattedPhone = rawDigits.startsWith("91")
-    //     ? `+${rawDigits}`
-    //     : `+91${rawDigits}`;
-    //   setPhone(formattedPhone);
 
-    //   const { error: authError } = await supabase.auth.signInWithOtp({
-    //     phone: formattedPhone,
-    //   });
+    try {
+      const rawDigits = phoneNumber.replace(/\D/g, "");
+      const formattedPhone = rawDigits.startsWith("91")
+        ? rawDigits
+        : `91${rawDigits}`;
 
-    //   if (authError) throw authError;
+      // 1. Generate a 6-digit OTP
+      const generatedOtp = Math.floor(
+        100000 + Math.random() * 900000,
+      ).toString();
 
-    //   setOtpSent(true);
-    //   nextStep();
-    // } catch (err) {
-    //   console.error(err);
-    //   setError(err.message || "Failed to send OTP.");
-    // } finally {
-    //   setLoading(false);
-    // }
+      setPhone(`+${formattedPhone}`);
+      console.log("for", formattedPhone);
+
+      // 2. Match the body to what the function expects
+      const { data, error: funcError } = await supabase.functions.invoke(
+        "whatsapp-otp-sender",
+        {
+          body: {
+            phone: formattedPhone,
+            otp: generatedOtp,
+            role: "Influencer", // Or your dynamic role
+          },
+        },
+      );
+
+      if (funcError) throw new Error(funcError.message);
+
+      // Store OTP in state/session to verify later
+      setSentOtp(generatedOtp);
+      setOtpSent(true);
+      nextStep();
+    } catch (err) {
+      setError(err.message || "Failed to send WhatsApp OTP.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOTP = async (otpCode) => {
     setLoading(true);
     setError("");
-    nextStep();
-    // try {
-    //   const { data, error: verifyError } = await supabase.auth.verifyOtp({
-    //     phone: phone,
-    //     token: otpCode,
-    //     type: "sms",
-    //   });
 
-    //   if (verifyError) throw verifyError;
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: phone,
+        token: otpCode,
+        type: "sms", // Supabase treats phone-based OTPs under the 'sms' type
+      });
 
-    //   if (flow === "signin") {
-    //     // Check if profile exists in your custom tables
-    //     const { data: profile } = await supabase
-    //       .from("influencers")
-    //       .select("id")
-    //       .eq("id", data.user.id)
-    //       .single();
+      if (verifyError) throw verifyError;
 
-    //     const { data: brandProfile } = await supabase
-    //       .from("brands")
-    //       .select("id")
-    //       .eq("id", data.user.id)
-    //       .single();
+      // Logic for checking existing profile
+      if (flow === "signin") {
+        const table = signupData.role === "brand" ? "brands" : "influencers";
+        const { data: profile } = await supabase
+          .from(table)
+          .select("id")
+          .eq("id", data.user.id)
+          .single();
 
-    //     if (profile || brandProfile) {
-    //       router.push("/influencer");
-    //     } else {
-    //       // Auth works but no profile -> Force them to finish signup
-    //       setFlow("signup");
-    //       setStep(4);
-    //     }
-    //   } else {
-    //     nextStep();
-    //   }
-    // } catch (err) {
-    //   setError("Invalid or expired OTP.");
-    // } finally {
-    //   setLoading(false);
-    // }
+        if (profile) {
+          router.push(signupData.role === "brand" ? "/brand" : "/influencer");
+        } else {
+          setFlow("signup");
+          setStep(4);
+        }
+      } else {
+        nextStep(); // Continue to ProfileDetails
+      }
+    } catch (err) {
+      setError("Invalid or expired OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- STEP HANDLERS ---
