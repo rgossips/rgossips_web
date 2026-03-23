@@ -223,7 +223,7 @@ const Login = () => {
 
         // Navigate based on role
         if (testUser.role === "brand") {
-          router.push("/brand");
+          router.push("/brands");
         } else {
           router.push("/influencer");
         }
