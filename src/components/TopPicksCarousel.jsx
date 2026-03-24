@@ -84,7 +84,12 @@ export default function RecommendedCampaigns() {
               {tab}
             </button>
           ))}
-          <button className="text-[#D61F69] cursor-pointer text-xs font-bold px-4 hover:underline">
+          <button
+            onClick={() => {
+              router.push("/influencer/recommendedCampaigns");
+            }}
+            className="text-[#D61F69] cursor-pointer text-xs font-bold px-4 hover:underline"
+          >
             View All ›
           </button>
         </div>

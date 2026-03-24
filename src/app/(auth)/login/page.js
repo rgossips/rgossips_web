@@ -65,127 +65,44 @@ const Login = () => {
 
   // --- AUTH LOGIC (SUPABASE) ---
 
-  // const handlePhoneSignIn = async (phoneNumber) => {
-  //   setLoading(true);
-  //   setError("");
-
-  //   try {
-  //     const rawDigits = phoneNumber.replace(/\D/g, "");
-  //     const formattedPhone = rawDigits.startsWith("91")
-  //       ? rawDigits
-  //       : `91${rawDigits}`;
-
-  //     // 1. Generate a 6-digit OTP
-  //     const generatedOtp = Math.floor(
-  //       100000 + Math.random() * 900000,
-  //     ).toString();
-
-  //     setPhone(`+${formattedPhone}`);
-  //     console.log("for", formattedPhone);
-
-  //     // 2. Match the body to what the function expects
-  //     const { data, error: funcError } = await supabase.functions.invoke(
-  //       "whatsapp-otp-sender",
-  //       {
-  //         body: {
-  //           phone: formattedPhone,
-  //           otp: generatedOtp,
-  //           role: "Influencer", // Or your dynamic role
-  //         },
-  //       },
-  //     );
-
-  //     if (funcError) throw new Error(funcError.message);
-
-  //     // Store OTP in state/session to verify later
-  //     setSentOtp(generatedOtp);
-  //     setOtpSent(true);
-  //     nextStep();
-  //   } catch (err) {
-  //     setError(err.message || "Failed to send WhatsApp OTP.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const handleVerifyOTP = async (otpCode) => {
-  //   setLoading(true);
-  //   setError("");
-
-  //   try {
-  //     const { data, error: verifyError } = await supabase.auth.verifyOtp({
-  //       phone: phone,
-  //       token: otpCode,
-  //       type: "sms", // Supabase treats phone-based OTPs under the 'sms' type
-  //     });
-
-  //     if (verifyError) throw verifyError;
-
-  //     // Logic for checking existing profile
-  //     if (flow === "signin") {
-  //       const table = signupData.role === "brand" ? "brands" : "influencers";
-  //       const { data: profile } = await supabase
-  //         .from(table)
-  //         .select("id")
-  //         .eq("id", data.user.id)
-  //         .single();
-
-  //       if (profile) {
-  //         router.push(signupData.role === "brand" ? "/brand" : "/influencer");
-  //       } else {
-  //         setFlow("signup");
-  //         setStep(4);
-  //       }
-  //     } else {
-  //       nextStep(); // Continue to ProfileDetails
-  //     }
-  //   } catch (err) {
-  //     setError("Invalid or expired OTP. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // --- HARDCODED TEST CREDENTIALS ---
-  const TEST_USERS = {
-    "+911111111111": {
-      otp: "111111",
-      role: "influencer",
-      id: "11111111-1111-1111-1111-111111111111",
-    },
-    "+912222222222": {
-      otp: "222222",
-      role: "brand",
-      id: "22222222-2222-2222-2222-222222222222",
-    },
-  };
-
   const handlePhoneSignIn = async (phoneNumber) => {
     setLoading(true);
     setError("");
 
     try {
       const rawDigits = phoneNumber.replace(/\D/g, "");
-      const formattedPhone =
-        rawDigits.startsWith("91") || rawDigits.startsWith("92")
-          ? `+${rawDigits}`
-          : `+91${rawDigits}`;
+      const formattedPhone = rawDigits.startsWith("91")
+        ? rawDigits
+        : `91${rawDigits}`;
 
-      setPhone(formattedPhone);
+      // 1. Generate a 6-digit OTP
+      const generatedOtp = Math.floor(
+        100000 + Math.random() * 900000,
+      ).toString();
 
-      // Check if test user
-      if (TEST_USERS[formattedPhone]) {
-        console.log("🧪 Test user detected:", formattedPhone);
-        console.log("🔑 Use OTP:", TEST_USERS[formattedPhone].otp);
-        setOtpSent(true);
-        nextStep();
-        return;
-      }
+      setPhone(`+${formattedPhone}`);
+      console.log("for", formattedPhone);
 
-      // Real flow (disabled for now)
-      throw new Error("Only test numbers allowed right now.");
+      // 2. Match the body to what the function expects
+      const { data, error: funcError } = await supabase.functions.invoke(
+        "whatsapp-otp-sender",
+        {
+          body: {
+            phone: formattedPhone,
+            otp: generatedOtp,
+            role: "Influencer", // Or your dynamic role
+          },
+        },
+      );
+
+      if (funcError) throw new Error(funcError.message);
+
+      // Store OTP in state/session to verify later
+      setSentOtp(generatedOtp);
+      setOtpSent(true);
+      nextStep();
     } catch (err) {
-      setError(err.message || "Failed to send OTP.");
+      setError(err.message || "Failed to send WhatsApp OTP.");
     } finally {
       setLoading(false);
     }
@@ -196,49 +113,15 @@ const Login = () => {
     setError("");
 
     try {
-      const testUser = TEST_USERS[phone];
-
-      if (testUser) {
-        // Validate hardcoded OTP
-        if (otpCode !== testUser.otp) {
-          throw new Error("Wrong OTP. Use " + testUser.otp);
-        }
-
-        // Set role from test user
-        setSignupData((prev) => ({ ...prev, role: testUser.role }));
-
-        // Sign in via Supabase using dummy session trick
-        const { data, error: signInError } =
-          await supabase.auth.signInWithPassword({
-            phone: phone,
-            password: "testpassword123", // we'll set this below
-          });
-
-        // If signInWithPassword fails (first time), just navigate directly
-        if (signInError) {
-          console.warn(
-            "Direct session not available, navigating anyway for test",
-          );
-        }
-
-        // Navigate based on role
-        if (testUser.role === "brand") {
-          router.push("/brands");
-        } else {
-          router.push("/influencer");
-        }
-        return;
-      }
-
-      // Real OTP verification
       const { data, error: verifyError } = await supabase.auth.verifyOtp({
         phone: phone,
         token: otpCode,
-        type: "sms",
+        type: "sms", // Supabase treats phone-based OTPs under the 'sms' type
       });
 
       if (verifyError) throw verifyError;
 
+      // Logic for checking existing profile
       if (flow === "signin") {
         const table = signupData.role === "brand" ? "brands" : "influencers";
         const { data: profile } = await supabase
@@ -254,14 +137,131 @@ const Login = () => {
           setStep(4);
         }
       } else {
-        nextStep();
+        nextStep(); // Continue to ProfileDetails
       }
     } catch (err) {
-      setError(err.message || "Invalid or expired OTP.");
+      setError("Invalid or expired OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // --- HARDCODED TEST CREDENTIALS ---
+  const TEST_USERS = {
+    "+911111111111": {
+      otp: "111111",
+      role: "influencer",
+      id: "11111111-1111-1111-1111-111111111111",
+    },
+    "+912222222222": {
+      otp: "222222",
+      role: "brand",
+      id: "22222222-2222-2222-2222-222222222222",
+    },
+  };
+
+  // const handlePhoneSignIn = async (phoneNumber) => {
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const rawDigits = phoneNumber.replace(/\D/g, "");
+  //     const formattedPhone =
+  //       rawDigits.startsWith("91") || rawDigits.startsWith("92")
+  //         ? `+${rawDigits}`
+  //         : `+91${rawDigits}`;
+
+  //     setPhone(formattedPhone);
+
+  //     // Check if test user
+  //     if (TEST_USERS[formattedPhone]) {
+  //       console.log("🧪 Test user detected:", formattedPhone);
+  //       console.log("🔑 Use OTP:", TEST_USERS[formattedPhone].otp);
+  //       setOtpSent(true);
+  //       nextStep();
+  //       return;
+  //     }
+
+  //     // Real flow (disabled for now)
+  //     throw new Error("Only test numbers allowed right now.");
+  //   } catch (err) {
+  //     setError(err.message || "Failed to send OTP.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const handleVerifyOTP = async (otpCode) => {
+  //   setLoading(true);
+  //   setError("");
+
+  //   try {
+  //     const testUser = TEST_USERS[phone];
+
+  //     if (testUser) {
+  //       // Validate hardcoded OTP
+  //       if (otpCode !== testUser.otp) {
+  //         throw new Error("Wrong OTP. Use " + testUser.otp);
+  //       }
+
+  //       // Set role from test user
+  //       setSignupData((prev) => ({ ...prev, role: testUser.role }));
+
+  //       // Sign in via Supabase using dummy session trick
+  //       const { data, error: signInError } =
+  //         await supabase.auth.signInWithPassword({
+  //           phone: phone,
+  //           password: "testpassword123", // we'll set this below
+  //         });
+
+  //       // If signInWithPassword fails (first time), just navigate directly
+  //       if (signInError) {
+  //         console.warn(
+  //           "Direct session not available, navigating anyway for test",
+  //         );
+  //       }
+
+  //       // Navigate based on role
+  //       if (testUser.role === "brand") {
+  //         router.push("/brands");
+  //       } else {
+  //         router.push("/influencer");
+  //       }
+  //       return;
+  //     }
+
+  //     // Real OTP verification
+  //     const { data, error: verifyError } = await supabase.auth.verifyOtp({
+  //       phone: phone,
+  //       token: otpCode,
+  //       type: "sms",
+  //     });
+
+  //     if (verifyError) throw verifyError;
+
+  //     if (flow === "signin") {
+  //       const table = signupData.role === "brand" ? "brands" : "influencers";
+  //       const { data: profile } = await supabase
+  //         .from(table)
+  //         .select("id")
+  //         .eq("id", data.user.id)
+  //         .single();
+
+  //       if (profile) {
+  //         router.push(signupData.role === "brand" ? "/brand" : "/influencer");
+  //       } else {
+  //         setFlow("signup");
+  //         setStep(4);
+  //       }
+  //     } else {
+  //       nextStep();
+  //     }
+  //   } catch (err) {
+  //     setError(err.message || "Invalid or expired OTP.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // --- STEP HANDLERS ---
 
