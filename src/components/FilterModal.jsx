@@ -50,7 +50,7 @@ export const FilterContent = ({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 lg:overflow-y-auto lg:max-h-[48vh] lg:pb-64">
       {/* Category */}
       <section className="space-y-4">
         <h3 className="text-sm font-bold text-slate-800">Category</h3>
@@ -208,10 +208,10 @@ const FilterModal = ({
             transition: { type: "spring", stiffness: 300, damping: 30 },
           }}
           exit={{ x: "100%", opacity: 0 }}
-          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl overflow-y-auto scrollbar-hide flex flex-col"
+          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col"
         >
           {/* Mobile Header */}
-          <div className="flex items-center justify-between p-6 sticky top-0 bg-white z-10 border-b border-slate-50">
+          <div className="flex items-center justify-between p-6 bg-white z-10 border-b border-slate-50">
             <button
               onClick={onClose}
               className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076] hover:bg-[#ffd6eb] transition-colors"
@@ -228,7 +228,7 @@ const FilterModal = ({
           </div>
 
           {/* Scrollable Content */}
-          <div className="p-6 flex-1">
+          <div className="p-6 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
             <FilterContent
               activeCategory={activeCategory}
               setActiveCategory={setActiveCategory}
@@ -242,7 +242,7 @@ const FilterModal = ({
           </div>
 
           {/* Mobile Footer Buttons */}
-          <div className="sticky bottom-16 bg-white border-t border-slate-100 p-6 flex gap-4">
+          <div className="bg-white border-t border-slate-100 p-6 flex gap-4">
             <Button
               variant="ghost"
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100"
@@ -270,10 +270,10 @@ const FilterModal = ({
             transition: { type: "spring", stiffness: 300, damping: 30 },
           }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col"
+          className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
         >
           {/* Desktop Header */}
-          <div className="flex items-center justify-between p-8 sticky top-0 bg-white z-10 border-b border-slate-100">
+          <div className="flex items-center justify-between p-8 bg-white z-10 border-b border-slate-100 rounded-t-4xl">
             <h2 className="text-2xl font-bold text-slate-800">Filter Brands</h2>
             <button
               onClick={onClose}
@@ -284,7 +284,7 @@ const FilterModal = ({
           </div>
 
           {/* Desktop Content */}
-          <div className="p-8 flex-1">
+          <div className="p-8 flex-1 overflow-y-auto min-h-0">
             <FilterContent
               activeCategory={activeCategory}
               setActiveCategory={setActiveCategory}
@@ -298,7 +298,7 @@ const FilterModal = ({
           </div>
 
           {/* Desktop Footer Buttons */}
-          <div className="sticky bottom-0 bg-white border-t border-slate-100 p-8 flex gap-4">
+          <div className="bg-white border-t border-slate-100 p-8 flex gap-4 rounded-b-4xl">
             <Button
               variant="ghost"
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100"
@@ -323,21 +323,66 @@ export default FilterModal;
 
 // Data Constants
 const FILTER_CATEGORIES = [
-  { label: "Beauty & Skincare", icon: <Sparkles size={14} className="text-pink-500" /> },
-  { label: "Fashion & Lifestyle", icon: <Shirt size={14} className="text-purple-500" /> },
-  { label: "Food & Beverage", icon: <Utensils size={14} className="text-orange-500" /> },
-  { label: "Health, Fitness & Wellness", icon: <Dumbbell size={14} className="text-green-500" /> },
-  { label: "Travel & Hospitality", icon: <Plane size={14} className="text-blue-500" /> },
-  { label: "Technology & Gadgets", icon: <Smartphone size={14} className="text-slate-600" /> },
-  { label: "Parenting & Family", icon: <Users size={14} className="text-amber-500" /> },
-  { label: "Home & Decor", icon: <Home size={14} className="text-indigo-500" /> },
-  { label: "Finance & Personal Finance", icon: <DollarSign size={14} className="text-emerald-500" /> },
-  { label: "Education & Career", icon: <GraduationCap size={14} className="text-blue-600" /> },
-  { label: "Gaming & Entertainment", icon: <Gamepad2 size={14} className="text-red-500" /> },
-  { label: "Automobile & Mobility", icon: <Car size={14} className="text-cyan-500" /> },
-  { label: "Entrepreneurship & Business", icon: <Briefcase size={14} className="text-violet-500" /> },
-  { label: "Sustainable & Eco-conscious Living", icon: <Leaf size={14} className="text-green-600" /> },
-  { label: "Pet Care & Animals", icon: <Dog size={14} className="text-amber-600" /> },
+  {
+    label: "Beauty & Skincare",
+    icon: <Sparkles size={14} className="text-pink-500" />,
+  },
+  {
+    label: "Fashion & Lifestyle",
+    icon: <Shirt size={14} className="text-purple-500" />,
+  },
+  {
+    label: "Food & Beverage",
+    icon: <Utensils size={14} className="text-orange-500" />,
+  },
+  {
+    label: "Health, Fitness & Wellness",
+    icon: <Dumbbell size={14} className="text-green-500" />,
+  },
+  {
+    label: "Travel & Hospitality",
+    icon: <Plane size={14} className="text-blue-500" />,
+  },
+  {
+    label: "Technology & Gadgets",
+    icon: <Smartphone size={14} className="text-slate-600" />,
+  },
+  {
+    label: "Parenting & Family",
+    icon: <Users size={14} className="text-amber-500" />,
+  },
+  {
+    label: "Home & Decor",
+    icon: <Home size={14} className="text-indigo-500" />,
+  },
+  {
+    label: "Finance & Personal Finance",
+    icon: <DollarSign size={14} className="text-emerald-500" />,
+  },
+  {
+    label: "Education & Career",
+    icon: <GraduationCap size={14} className="text-blue-600" />,
+  },
+  {
+    label: "Gaming & Entertainment",
+    icon: <Gamepad2 size={14} className="text-red-500" />,
+  },
+  {
+    label: "Automobile & Mobility",
+    icon: <Car size={14} className="text-cyan-500" />,
+  },
+  {
+    label: "Entrepreneurship & Business",
+    icon: <Briefcase size={14} className="text-violet-500" />,
+  },
+  {
+    label: "Sustainable & Eco-conscious Living",
+    icon: <Leaf size={14} className="text-green-600" />,
+  },
+  {
+    label: "Pet Care & Animals",
+    icon: <Dog size={14} className="text-amber-600" />,
+  },
 ];
 
 const PLATFORMS = [
