@@ -146,7 +146,7 @@ const CampaignPage = () => {
       {/* Global Floating FAB */}
       <CreateCampaignPopup
         trigger={
-          <button className="fixed bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-50 transition-transform active:scale-95">
+          <button className="fixed cursor-pointer bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-50 transition-transform active:scale-95">
             <Plus size={20} /> Post Request
           </button>
         }
@@ -261,7 +261,7 @@ const CreateCampaignPopup = ({ trigger }) => {
         >
           <DialogHeader className="border-b border-gray-100 flex-row justify-between items-center px-6 py-4">
             <DialogClose>
-              <X className="text-gray-400" size={24} />
+              <X className="text-gray-400 cursor-pointer" size={24} />
             </DialogClose>
             <DialogTitle className="text-lg font-bold">
               Create Campaign Request

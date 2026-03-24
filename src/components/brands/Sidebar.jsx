@@ -13,7 +13,7 @@ import {
   Plus,
   Hash,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Sidebar() {
   const mainMenu = [
@@ -28,7 +28,6 @@ export default function Sidebar() {
     {
       name: "Message",
       icon: MessageSquare,
-      active: true,
       url: "/brands/chats",
     },
     { name: "Profile", icon: User, url: "/brands/profile" },
@@ -46,6 +45,7 @@ export default function Sidebar() {
   ];
 
   const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[220px] bg-white border-r border-gray-200 flex flex-col justify-between z-40">
@@ -69,7 +69,7 @@ export default function Sidebar() {
                   router.push(item.url);
                 }}
                 className={`flex cursor-pointer items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition ${
-                  item.active
+                  (item.url === "/brands" ? pathname === "/brands" : pathname.startsWith(item.url))
                     ? "bg-purple-600 text-white"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}

@@ -2,8 +2,9 @@
 
 import React from "react";
 import Image from "next/image";
-import { Plus, Search } from "lucide-react";
-import { TrustSection } from "./TrustSection";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 const baseBrands = [
   "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
   "https://lh3.googleusercontent.com/d/1ua9IVd7PYxaIP44G3XHLKgauW5VgTy2r",
@@ -13,6 +14,8 @@ const baseBrands = [
 ];
 
 const BrandHero = () => {
+  const router = useRouter();
+
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
       <div className="max-w-7xl mx-auto">
@@ -85,11 +88,21 @@ const BrandHero = () => {
 
             {/* ACTION BUTTONS */}
             <div className="flex gap-4 pt-2">
-              <button className="flex items-center justify-center gap-2 bg-white text-black px-8 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition">
+              <button
+                onClick={() => {
+                  router.push("/brands/search");
+                }}
+                className="flex cursor-pointer items-center justify-center gap-2 bg-white text-black px-8 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition"
+              >
                 Browse Creators
               </button>
 
-              <button className="bg-[#5B3DF5] px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition">
+              <button
+                onClick={() => {
+                  router.push("/brands/campaigns");
+                }}
+                className="bg-[#5B3DF5] cursor-pointer px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition"
+              >
                 Post Requirements
               </button>
             </div>
