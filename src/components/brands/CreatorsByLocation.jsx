@@ -1,63 +1,63 @@
 import Image from "next/image";
 import React from "react";
+import mumbai from "@/assets/states/mumbai.jpg";
+import banglore from "@/assets/states/banglore.jpg";
+import chennai from "@/assets/states/chennai.jpg";
+import gurgaon from "@/assets/states/gurgaon.png";
+import hyderabad from "@/assets/states/hyderabad.jpg";
+import kolkata from "@/assets/states/kolkata.png";
+import delhi from "@/assets/states/delhi.jpg";
+import pune from "@/assets/states/pune.png";
 
 // Optimized mock data using Unsplash Image API
 const locations = [
   {
-    id: 1,
-    name: "Mumbai",
-    image:
-      "https://images.unsplash.com/photo-1598434192043-71111c1b3f41?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    attribution: "Ahmad syahrir",
-  },
-  {
-    id: 2,
-    name: "Delhi",
-    image:
-      "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=600&auto=format&fit=crop",
-    attribution: "Brijeshwar Singh",
-  },
-  {
     id: 3,
     name: "Bangalore",
-    image:
-      "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=600&auto=format&fit=crop",
+    image: banglore,
     attribution: "Mukul Jaiswal",
   },
   {
     id: 4,
     name: "Chennai",
-    image:
-      "https://images.unsplash.com/photo-1679214803434-af50c2c92009?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    image: chennai,
+    attribution: "Naman Jaswani",
+  },
+  {
+    id: 2,
+    name: "Delhi",
+    image: delhi,
+    attribution: "Brijeshwar Singh",
+  },
+  {
+    id: 8,
+    name: "Gurgaon",
+    image: gurgaon,
     attribution: "Naman Jaswani",
   },
   {
     id: 5,
     name: "Hyderabad",
-    image:
-      "https://images.unsplash.com/photo-1598434192043-71111c1b3f41?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    image: hyderabad,
     attribution: "Ahmad syahrir",
   },
   {
     id: 6,
     name: "Kolkata",
-    image:
-      "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=600&auto=format&fit=crop",
+    image: kolkata,
     attribution: "Brijeshwar Singh",
+  },
+  {
+    id: 1,
+    name: "Mumbai",
+    image: mumbai,
+    attribution: "Ahmad syahrir",
   },
   {
     id: 7,
     name: "Pune",
-    image:
-      "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?q=80&w=600&auto=format&fit=crop",
+    image: pune,
     attribution: "Mukul Jaiswal",
-  },
-  {
-    id: 8,
-    name: "Gurgaon",
-    image:
-      "https://images.unsplash.com/photo-1679214803434-af50c2c92009?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    attribution: "Naman Jaswani",
   },
 ];
 
@@ -86,7 +86,7 @@ export const CreatorsByLocation = () => {
               height={200}
               src={location.image}
               alt={`${location.name} Skyline`}
-              className="absolute inset-0 w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 ease-in-out"
+              className="absolute inset-0 w-full h-full object-cover grayscale-25 opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 ease-in-out"
             />
 
             {/* Subtle Gradient Overlay for Text Contrast */}
