@@ -185,6 +185,10 @@ const SignUpForm = ({
       setLocalError("Please verify your phone number");
       return;
     }
+    if (!instaProfile) {
+      setLocalError("Please connect your Instagram account");
+      return;
+    }
     onSubmit({
       ...formData,
       instagram: instaProfile?.username || "",
@@ -324,7 +328,7 @@ const SignUpForm = ({
         {/* Instagram Connect */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">
-            Instagram Account
+            Instagram Account <span className="text-red-400">*</span>
           </Label>
 
           {!instaProfile ? (
@@ -392,7 +396,7 @@ const SignUpForm = ({
       <div className="pt-2">
         <Button
           onClick={handleSubmit}
-          disabled={loading || !formData.name || !otpVerified}
+          disabled={loading || !formData.name || !otpVerified || !instaProfile}
           className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
         >
           {loading ? (

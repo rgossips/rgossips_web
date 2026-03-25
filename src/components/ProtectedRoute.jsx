@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-const publicPaths = ["/", "/login", "/register"];
+const publicPaths = ["/", "/login", "/register", "/instagram-callback"];
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
