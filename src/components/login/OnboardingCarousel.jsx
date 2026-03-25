@@ -126,7 +126,6 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
               animate={{ opacity: 1, y: 0 }}
               className="w-full space-y-3"
             >
-              {/* Note: md:hidden ensures these only show on mobile per your requirement */}
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={onLoginClick}

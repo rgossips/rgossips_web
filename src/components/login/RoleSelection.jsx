@@ -5,17 +5,14 @@ import { Button } from "@/components/ui/button";
 import { User, Briefcase, CheckCircle2 } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
 
-const RoleSelection = ({ onNext }) => {
+const RoleSelection = ({ onNext, mode = "signin", onSwitchMode }) => {
   const { type, setType } = useGlobal();
   const [selectedRole, setSelectedRole] = useState(type);
 
   const handleSelect = (role) => {
     setSelectedRole(role);
     setType(role);
-  };
-
-  const handleContinue = () => {
-    onNext(selectedRole);
+    onNext(role);
   };
 
   return (
@@ -121,13 +118,19 @@ const RoleSelection = ({ onNext }) => {
         </button>
       </div>
 
-      <Button
-        onClick={handleContinue}
-        disabled={!selectedRole}
-        className="w-full cursor-pointer btn-purple h-14 rounded-2xl text-lg font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
-      >
-        Continue
-      </Button>
+      {onSwitchMode && (
+        <div className="text-center pt-2">
+          <p className="text-sm text-slate-500">
+            {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
+            <button
+              onClick={onSwitchMode}
+              className="text-[#6347F9] font-semibold hover:underline cursor-pointer"
+            >
+              {mode === "signin" ? "Sign Up" : "Sign In"}
+            </button>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

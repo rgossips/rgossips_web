@@ -89,17 +89,20 @@ const ProfileDetails = ({ onNext }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-3">
       {/* Header with Upload Photo Section */}
-      <div className="text-center space-y-4">
-        <h2 className="text-xl font-bold text-[#6347F9]">
+      <div className="text-center space-y-3">
+        <h2 className="text-2xl font-bold text-slate-900">
           Set Up Your Creator Profile
         </h2>
+        <p className="text-sm text-slate-500">
+          Tell us about yourself so brands can find you
+        </p>
 
-        <div className="relative inline-block">
-          <div className="w-24 h-24 bg-[#F3EFFF] rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-            <User size={40} className="text-[#6347F9]/40" />
+        <div className="relative inline-block pt-2">
+          <div className="w-20 h-20 bg-[#F3EFFF] rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+            <User size={32} className="text-[#6347F9]/40" />
           </div>
-          <button className="absolute bottom-0 right-0 btn-purple p-1.5 rounded-full border-2 border-white text-white">
-            <Camera size={16} />
+          <button className="absolute bottom-0 right-0 btn-purple p-1.5 rounded-full border-2 border-white text-white cursor-pointer">
+            <Camera size={14} />
           </button>
         </div>
         <p className="text-xs text-slate-400 font-medium">Upload Photo</p>
@@ -142,14 +145,15 @@ const ProfileDetails = ({ onNext }) => {
               onChange={handleChange}
               className="h-12 pl-12 rounded-xl border-slate-200"
             />
-            <Button
-              onClick={validateInstagram}
-              className="w-full h-12 rounded-xl border border-slate-200 flex items-center justify-center gap-2"
-            >
-              <Instagram size={18} />
-              Verify Instagram
-            </Button>
           </div>
+          <Button
+            onClick={validateInstagram}
+            variant="outline"
+            className="w-full h-10 rounded-xl border-slate-200 text-[#6347F9] hover:bg-[#F3EFFF] flex items-center justify-center gap-2 text-sm font-medium"
+          >
+            <Instagram size={16} />
+            Verify Instagram
+          </Button>
         </div>
 
         <div className="space-y-1.5">
@@ -169,8 +173,21 @@ const ProfileDetails = ({ onNext }) => {
               <option value="" disabled>
                 Select niche
               </option>
-              <option value="fitness">Fitness</option>
-              <option value="tech">Tech</option>
+              <option value="fashion">Fashion & Style</option>
+              <option value="beauty">Beauty & Skincare</option>
+              <option value="fitness">Fitness & Health</option>
+              <option value="tech">Tech & Gadgets</option>
+              <option value="food">Food & Cooking</option>
+              <option value="travel">Travel & Adventure</option>
+              <option value="lifestyle">Lifestyle</option>
+              <option value="gaming">Gaming</option>
+              <option value="education">Education</option>
+              <option value="entertainment">Entertainment & Comedy</option>
+              <option value="music">Music & Dance</option>
+              <option value="business">Business & Finance</option>
+              <option value="photography">Photography & Art</option>
+              <option value="parenting">Parenting & Family</option>
+              <option value="other">Other</option>
             </select>
             <ChevronDown
               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60"
@@ -199,13 +216,13 @@ const ProfileDetails = ({ onNext }) => {
         </div>
 
         {/* Social Links Section */}
-        <div className="pt-2">
+        <div className="pt-3 border-t border-slate-100">
           <Label className="text-xs font-bold text-slate-900 ml-1">
             Social Links
           </Label>
           <div className="mt-3 space-y-3">
-            <div className="space-y-1">
-              <Label className="text-[10px]  ml-1 font-medium">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-500 ml-1">
                 Instagram Handle
               </Label>
               <div className="relative">
@@ -218,13 +235,14 @@ const ProfileDetails = ({ onNext }) => {
                   name="instagram"
                   value={formData.instagram}
                   onChange={handleChange}
-                  className="h-12 pl-12 rounded-xl border-slate-200"
+                  className="h-12 pl-12 rounded-xl border-slate-200 focus:ring-[#6347F9]"
                 />
               </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] ml-1 font-medium">
-                YouTube Channel (optional)
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-500 ml-1">
+                YouTube Channel
+                <span className="text-slate-400 font-normal ml-1">(optional)</span>
               </Label>
               <div className="relative">
                 <Youtube
@@ -236,7 +254,7 @@ const ProfileDetails = ({ onNext }) => {
                   name="youtube"
                   value={formData.youtube}
                   onChange={handleChange}
-                  className="h-12 pl-12 rounded-xl border-slate-200"
+                  className="h-12 pl-12 rounded-xl border-slate-200 focus:ring-[#6347F9]"
                 />
               </div>
             </div>
@@ -248,12 +266,12 @@ const ProfileDetails = ({ onNext }) => {
       <div className="space-y-3 pt-2">
         <Button
           onClick={handleContinue}
-          className="w-full btn-purple h-[54px] rounded-3xl text-base font-semibold shadow-lg shadow-purple-100"
+          className="w-full cursor-pointer btn-purple h-[54px] rounded-3xl text-base font-semibold shadow-lg shadow-purple-100"
         >
           Save & Continue
         </Button>
         <button
-          className="w-full text-sm font-semibold text-[#6347F9] hover:underline"
+          className="w-full cursor-pointer text-sm font-semibold text-[#6347F9] hover:underline"
           onClick={handleContinue}
         >
           Skip for now

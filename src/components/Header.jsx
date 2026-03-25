@@ -68,19 +68,12 @@ const Header = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-8 ml-6 border-l border-slate-200 pl-8">
+          <div className="ml-6 border-l border-slate-200 pl-8">
             <button
               onClick={() => router.push("/login")}
-              className="text-slate-700 font-bold text-[15px] hover:text-blue-600 transition-colors cursor-pointer"
-            >
-              Login
-            </button>
-
-            <button
-              onClick={() => router.push("/register")}
               className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
             >
-              Sign Up
+              Login / Sign Up
             </button>
           </div>
         </nav>
@@ -117,24 +110,15 @@ const Header = () => {
               </button>
             ))}
 
-            <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
+            <div className="pt-4 border-t border-slate-100">
               <button
                 onClick={() => {
                   router.push("/login");
                   setMenuOpen(false);
                 }}
-                className="w-full py-3 text-slate-800 font-bold text-center"
+                className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
               >
-                Login
-              </button>
-              <button
-                onClick={() => {
-                  router.push("/register");
-                  setMenuOpen(false);
-                }}
-                className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg"
-              >
-                Sign Up
+                Login / Sign Up
               </button>
             </div>
           </nav>

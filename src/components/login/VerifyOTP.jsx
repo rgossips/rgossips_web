@@ -10,11 +10,13 @@ import {
 
 const VerifyOTP = ({
   onNext,
+  onResend,
   loading = false,
   error = "",
   otp = "",
   setOtp = () => {},
   phoneNumber = "+91 98765 43210",
+  resendSuccess = false,
 }) => {
   const [timer, setTimer] = useState(30);
 
@@ -74,6 +76,12 @@ const VerifyOTP = ({
           </div>
         )}
 
+        {resendSuccess && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600 text-center">
+            OTP sent successfully!
+          </div>
+        )}
+
         <div className="text-center">
           {timer > 0 ? (
             <p className="text-sm text-slate-400 font-medium">
@@ -85,7 +93,10 @@ const VerifyOTP = ({
           ) : (
             <button
               className="text-sm cursor-pointer text-[#6347F9] font-bold hover:underline"
-              onClick={() => setTimer(30)}
+              onClick={() => {
+                setTimer(30);
+                if (onResend) onResend();
+              }}
             >
               Resend OTP
             </button>

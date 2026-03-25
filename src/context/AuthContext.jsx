@@ -19,8 +19,8 @@ export const AuthProvider = ({ children }) => {
       try {
         // Parallel fetch for influencer and brand tables
         const [infRes, brandRes] = await Promise.all([
-          supabase.from("influencers").select("*").eq("id", userId).single(),
-          supabase.from("brands").select("*").eq("id", userId).single(),
+          supabase.from("influencer_profiles").select("*").eq("influencer_id", userId).maybeSingle(),
+          supabase.from("brand_profiles").select("*").eq("brand_id", userId).maybeSingle(),
         ]);
 
         if (infRes.data) {
