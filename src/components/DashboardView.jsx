@@ -115,12 +115,17 @@ const DashboardView = ({
                 </p>
               )}
               <div className="flex gap-1.5 justify-center pt-2 flex-wrap">
-                <span className="px-3 py-1 bg-[#F3F4F9] text-[#374151] text-[9px] font-bold rounded-full">
-                  Fashion & Lifestyle
-                </span>
-                <span className="px-3 py-1 bg-[#FF2D78] text-white text-[9px] font-bold rounded-full shadow-md shadow-pink-100">
-                  Pro Creator
-                </span>
+                {profile?.categories?.length > 0 ? (
+                  profile.categories.map((cat) => (
+                    <span key={cat} className="px-3 py-1 bg-[#F3F4F9] text-[#374151] text-[9px] font-bold rounded-full">
+                      {cat}
+                    </span>
+                  ))
+                ) : (
+                  <span className="px-3 py-1 bg-[#F3F4F9] text-[#374151] text-[9px] font-bold rounded-full">
+                    Creator
+                  </span>
+                )}
               </div>
             </div>
             <div className="w-full mt-4 pt-3 border-t border-gray-100 flex justify-around items-center px-2">
@@ -392,13 +397,18 @@ const DashboardView = ({
                   @{userHandle}
                 </p>
               )}
-              <div className="flex gap-2 justify-center pt-2">
-                <span className="px-4 py-1.5 bg-[#F3F4F9] text-[#374151] text-[10px] font-bold rounded-full">
-                  Fashion & Lifestyle
-                </span>
-                <span className="px-4 py-1.5 bg-[#FF2D78] text-white text-[10px] font-bold rounded-full shadow-md shadow-pink-100">
-                  Pro Creator
-                </span>
+              <div className="flex gap-2 justify-center pt-2 flex-wrap">
+                {profile?.categories?.length > 0 ? (
+                  profile.categories.map((cat) => (
+                    <span key={cat} className="px-4 py-1.5 bg-[#F3F4F9] text-[#374151] text-[10px] font-bold rounded-full">
+                      {cat}
+                    </span>
+                  ))
+                ) : (
+                  <span className="px-4 py-1.5 bg-[#F3F4F9] text-[#374151] text-[10px] font-bold rounded-full">
+                    Creator
+                  </span>
+                )}
               </div>
             </div>
 

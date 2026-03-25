@@ -47,7 +47,9 @@ export const DesktopNavbar = () => {
       <div className="flex items-center gap-2">
         {DESKTOP_NAV_ITEMS.map((item) => {
           const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+            item.href === "/influencer"
+              ? pathname === "/influencer"
+              : pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.label}
