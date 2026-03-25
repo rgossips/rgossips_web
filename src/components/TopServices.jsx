@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const TopServices = () => {
   return (
-    <section className="w-full py-10 px-10 bg-white">
+    <section className="w-full py-6 lg:py-10 px-4 lg:px-10 bg-white">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-xl font-black text-[#0F172A] uppercase tracking-tight">

@@ -1,89 +1,78 @@
 import { Card } from "@/components/ui/card";
-import { Instagram, ArrowRight, BarChart3, Users, Eye } from "lucide-react";
+import { ArrowRight, Users, TrendingUp, Eye } from "lucide-react";
+import Image from "next/image";
 
 export function AiMediaKitCard() {
+  const stats = [
+    { icon: <Users size={14} />, label: "FOLLOWS", value: "12.4K" },
+    { icon: <TrendingUp size={14} />, label: "ENGAGE", value: "4.2%" },
+    { icon: <Eye size={14} />, label: "VIEWS", value: "8.5K" },
+  ];
+
   return (
-    <Card className="w-full max-w-3xl overflow-hidden rounded-3xl border-slate-200  border shadow-sm bg-white relative">
-      <div className="p-4">
+    <Card className="w-full max-w-3xl overflow-hidden rounded-3xl border-slate-200 border shadow-sm bg-white">
+      <div className="p-5 lg:p-6">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-              AI Media Kit
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+              Media Kit
             </h3>
-            <p className="text-slate-500 text-sm mt-1">
-              Professional analytics in seconds.
-            </p>
+            <p className="text-slate-400 text-sm mt-0.5">Profile analytics.</p>
           </div>
-          <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100">
-            Free with trial
+          <span className="text-[10px] uppercase tracking-wider px-3 py-1 rounded-full bg-blue-50 text-blue-600 font-bold border border-blue-100">
+            Preview
           </span>
         </div>
 
-        {/* Preview Identity Section */}
-        <div className="relative rounded-2xl bg-slate-50 border border-slate-100 p-6 mb-6 overflow-hidden">
-          {/* Decorative background blob */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-[#9810fa]/10 to-transparent rounded-full blur-2xl" />
-
-          <div className="relative z-10 flex flex-col items-center">
-            {/* Avatar with Gradient Ring */}
-            <div className="p-1 rounded-full bg-gradient-to-tr from-[#9810fa] to-[#ff8ba7] mb-4 shadow-md">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full bg-slate-200 animate-pulse" />
-              </div>
-            </div>
-
-            <h4 className="text-lg font-bold text-slate-800">Your Name</h4>
-            <div className="flex items-center gap-1.5 text-slate-500 text-sm mb-6">
-              <Instagram size={14} className="text-pink-500" />
-              <span>@yourhandle</span>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 w-full pt-6 border-t border-slate-200/60">
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">
-                  Followers
-                </p>
-                <div className="h-1.5 w-10 bg-slate-200 rounded-full mx-auto" />
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">
-                  Eng. Rate
-                </p>
-                <div className="h-1.5 w-10 bg-slate-200 rounded-full mx-auto" />
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">
-                  Avg. Views
-                </p>
-                <div className="h-1.5 w-10 bg-slate-200 rounded-full mx-auto" />
-              </div>
+        {/* Avatar + Name */}
+        <div className="flex flex-col items-center mb-5">
+          <div className="p-1 rounded-full bg-gradient-to-tr from-[#9810fa] to-[#ff8ba7] mb-3 shadow-md">
+            <div className="w-16 h-16 rounded-full bg-white overflow-hidden">
+              <Image
+                src="https://i.pravatar.cc/150?u=alexcreates"
+                alt="Alex Rivera"
+                width={64}
+                height={64}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
+          <h4 className="text-base font-bold text-slate-800">Alex Rivera</h4>
+          <p className="text-sm text-slate-400">@alexcreates</p>
         </div>
 
-        {/* Action Area */}
-        <div className="space-y-4">
-          <p className="text-center text-sm text-slate-500 px-4">
-            Connect your socials to sync real-time data and generate your kit.
-          </p>
-
-          <button className="group relative w-full py-4 px-6 rounded-2xl font-bold text-white cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#9810fa] to-[#e60076] transition-opacity group-hover:opacity-90" />
-            <span className="relative flex items-center justify-center gap-2 ">
-              Generate My Media Kit
-              <ArrowRight
-                size={18}
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </span>
-          </button>
-
-          {/* <p className="text-center text-[11px] text-slate-400">
-            No credit card required for preview
-          </p> */}
+        {/* Stats Row */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          {stats.map((stat, i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-2xl px-5 py-3 min-w-[90px]"
+            >
+              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                {stat.icon}
+                <span className="text-[9px] font-bold uppercase tracking-wider">
+                  {stat.label}
+                </span>
+              </div>
+              <span className="text-lg font-bold text-slate-800">
+                {stat.value}
+              </span>
+            </div>
+          ))}
         </div>
+
+        {/* CTA Button */}
+        <button className="group relative w-full py-4 px-6 rounded-2xl font-bold text-white cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 transition-opacity group-hover:opacity-90" />
+          <span className="relative flex items-center justify-center gap-2">
+            Generate Media Kit
+            <ArrowRight
+              size={18}
+              className="transition-transform group-hover:translate-x-1"
+            />
+          </span>
+        </button>
       </div>
     </Card>
   );

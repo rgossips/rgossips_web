@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 
 export function GrowthDashboard() {
   return (
-    <div className="w-full px-10 space-y-8">
+    <div className="w-full px-4 lg:px-10 space-y-8">
       {/* SECTION: Stats Grid */}
       <div>
         <h3 className="text-xl font-bold text-slate-900 mb-6 px-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Search,
   Plus,
@@ -9,10 +10,15 @@ import {
   Activity,
   Bookmark,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { TrustSection } from "@/components/brands/TrustSection";
 import { CategoryFilters } from "@/components/brands/CategoryFilters";
 import { InfluencerCard } from "@/components/brands/InfluencerCard";
-import { FilterDrawer } from "@/components/brands/FilterDrawer";
+import { FilterDrawer, filterData } from "@/components/brands/FilterDrawer";
 
 const influencers = [
   {
@@ -43,20 +49,266 @@ const influencers = [
     youtube: "20K",
     imageUrl: "https://i.pravatar.cc/150?u=nidhi",
   },
+  {
+    name: "Bhuvan Bam",
+    category: "Comedy, Entertainment",
+    instagram: "18.2M",
+    youtube: "27M",
+    imageUrl: "https://i.pravatar.cc/150?u=bhuvan",
+  },
+  {
+    name: "Ashish Chanchlani",
+    category: "Comedy",
+    instagram: "12.5M",
+    youtube: "30.5M",
+    imageUrl: "https://i.pravatar.cc/150?u=ashish",
+  },
+  {
+    name: "Prajakta Koli",
+    category: "Entertainment, Lifestyle",
+    instagram: "7.2M",
+    youtube: "7.8M",
+    imageUrl: "https://i.pravatar.cc/150?u=prajakta",
+  },
+  {
+    name: "Ranveer Allahbadia",
+    category: "Business & Startups, Fitness",
+    instagram: "9.1M",
+    youtube: "10.2M",
+    imageUrl: "https://i.pravatar.cc/150?u=ranveer",
+  },
+  {
+    name: "Kusha Kapila",
+    category: "Comedy, Fashion",
+    instagram: "3.8M",
+    youtube: "620K",
+    imageUrl: "https://i.pravatar.cc/150?u=kusha",
+  },
+  {
+    name: "Dolly Singh",
+    category: "Comedy, Lifestyle",
+    instagram: "1.8M",
+    youtube: "290K",
+    imageUrl: "https://i.pravatar.cc/150?u=dolly",
+  },
+  {
+    name: "Ankur Warikoo",
+    category: "Business & Startups",
+    instagram: "4.2M",
+    youtube: "5.1M",
+    imageUrl: "https://i.pravatar.cc/150?u=ankur",
+  },
+  {
+    name: "Nikhil Sharma",
+    category: "Finance",
+    instagram: "2.9M",
+    youtube: "4.5M",
+    imageUrl: "https://i.pravatar.cc/150?u=nikhils",
+  },
+  {
+    name: "Shivani Bafna",
+    category: "Dance, Lifestyle",
+    instagram: "1.2M",
+    youtube: "350K",
+    imageUrl: "https://i.pravatar.cc/150?u=shivani",
+  },
+  {
+    name: "Komal Pandey",
+    category: "Fashion",
+    instagram: "2.1M",
+    youtube: "800K",
+    imageUrl: "https://i.pravatar.cc/150?u=komal",
+  },
+  {
+    name: "Viraj Ghelani",
+    category: "Comedy",
+    instagram: "1.5M",
+    youtube: null,
+    imageUrl: "https://i.pravatar.cc/150?u=viraj",
+  },
+  {
+    name: "Sejal Kumar",
+    category: "Fashion, Lifestyle",
+    instagram: "1.3M",
+    youtube: "1.1M",
+    imageUrl: "https://i.pravatar.cc/150?u=sejal",
+  },
+  {
+    name: "Gaurav Taneja",
+    category: "Fitness, Vlogs",
+    instagram: "5.5M",
+    youtube: "9.8M",
+    imageUrl: "https://i.pravatar.cc/150?u=gaurav",
+  },
+  {
+    name: "Malvika Sitlani",
+    category: "Beauty",
+    instagram: "890K",
+    youtube: "710K",
+    imageUrl: "https://i.pravatar.cc/150?u=malvika",
+  },
+  {
+    name: "Abhi & Niyu",
+    category: "Education, Travel",
+    instagram: "3.6M",
+    youtube: "5.2M",
+    imageUrl: "https://i.pravatar.cc/150?u=abhiniyu",
+  },
+  {
+    name: "Triggered Insaan",
+    category: "Gaming, Comedy",
+    instagram: "8.3M",
+    youtube: "21M",
+    imageUrl: "https://i.pravatar.cc/150?u=triggered",
+  },
+  {
+    name: "Dhruv Rathee",
+    category: "Education, News",
+    instagram: "6.7M",
+    youtube: "24M",
+    imageUrl: "https://i.pravatar.cc/150?u=dhruv",
+  },
+  {
+    name: "Mithila Palkar",
+    category: "Acting, Music",
+    instagram: "4.8M",
+    youtube: "1.2M",
+    imageUrl: "https://i.pravatar.cc/150?u=mithila",
+  },
+  {
+    name: "Harsh Beniwal",
+    category: "Comedy",
+    instagram: "7.1M",
+    youtube: "15M",
+    imageUrl: "https://i.pravatar.cc/150?u=harsh",
+  },
+  {
+    name: "Srishti Dixit",
+    category: "Comedy, Lifestyle",
+    instagram: "720K",
+    youtube: "450K",
+    imageUrl: "https://i.pravatar.cc/150?u=srishti",
+  },
+  {
+    name: "Sandeep Maheshwari",
+    category: "Motivation, Business",
+    instagram: "5.4M",
+    youtube: "28M",
+    imageUrl: "https://i.pravatar.cc/150?u=sandeep",
+  },
+  {
+    name: "Raj Shamani",
+    category: "Business & Startups",
+    instagram: "3.2M",
+    youtube: "4.8M",
+    imageUrl: "https://i.pravatar.cc/150?u=raj",
+  },
+  {
+    name: "Sakshi Sindwani",
+    category: "Fashion, Body Positivity",
+    instagram: "680K",
+    youtube: "210K",
+    imageUrl: "https://i.pravatar.cc/150?u=sakshi",
+  },
+  {
+    name: "Mumbiker Nikhil",
+    category: "Vlogs, Travel",
+    instagram: "3.9M",
+    youtube: "4.3M",
+    imageUrl: "https://i.pravatar.cc/150?u=nikhilm",
+  },
+  {
+    name: "Tanmay Bhat",
+    category: "Comedy, Tech",
+    instagram: "6.2M",
+    youtube: "12M",
+    imageUrl: "https://i.pravatar.cc/150?u=tanmay",
+  },
+  {
+    name: "Larissa D'Sa",
+    category: "Beauty, Lifestyle",
+    instagram: "520K",
+    youtube: "180K",
+    imageUrl: "https://i.pravatar.cc/150?u=larissa",
+  },
 ];
+
+const FilterPopover = ({ label, options, icon, activeClass }) => {
+  const [selected, setSelected] = useState([]);
+
+  const toggle = (option) =>
+    setSelected((prev) =>
+      prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
+    );
+
+  const hasSelection = selected.length > 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={`flex items-center gap-2 px-2 py-1.5 border rounded-full text-[11px] font-semibold cursor-pointer whitespace-nowrap ${
+            activeClass
+              ? activeClass
+              : hasSelection
+              ? "border-[#5851DB] bg-purple-50/30 text-[#5851DB]"
+              : "border-gray-200 text-gray-700"
+          }`}
+        >
+          {icon}
+          {label} {hasSelection && `(${selected.length})`}
+          <ChevronDown size={12} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-56 p-0 rounded-xl shadow-xl border border-gray-100 max-h-72 overflow-hidden"
+      >
+        <div className="flex justify-between items-center px-4 py-3 border-b">
+          <h4 className="text-xs font-bold text-gray-900">{label}</h4>
+          {hasSelection && (
+            <button
+              onClick={() => setSelected([])}
+              className="text-[10px] text-[#5851DB] font-semibold cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="overflow-y-auto max-h-52 p-2">
+          {options.map((option) => (
+            <label
+              key={option}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50/50 rounded-lg cursor-pointer transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(option)}
+                onChange={() => toggle(option)}
+                className="w-4 h-4 rounded border-gray-300 text-[#5851DB] focus:ring-[#5851DB] cursor-pointer"
+              />
+              <span className="text-[11px] font-medium text-gray-700">
+                {option}
+              </span>
+            </label>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const FilterBar = () => (
   <div className="flex items-center gap-2 flex-wrap">
     <FilterDrawer />
-    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-semibold cursor-pointer">
-      Sort by <ChevronDown size={12} />
-    </button>
-    <button className="flex items-center gap-2 px-3 py-1.5 border border-pink-200 bg-pink-50/30 rounded-full text-[11px] font-semibold text-pink-600 cursor-pointer">
-      <InstaIcon size={12} /> Instagram <ChevronDown size={12} />
-    </button>
-    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-semibold cursor-pointer">
-      Category <ChevronDown size={12} />
-    </button>
+    <FilterPopover label="Sort by" options={filterData["Sort by"]} />
+    <FilterPopover
+      label="Instagram"
+      options={filterData["Social Platform"]}
+      icon={<InstaIcon size={12} />}
+      activeClass="border-pink-200 bg-pink-50/30 text-pink-600"
+    />
+    <FilterPopover label="Category" options={filterData["Categories"]} />
   </div>
 );
 
@@ -148,10 +400,12 @@ const InfluencerDirectory = () => {
       </div>
 
       {/* ── Influencer Grid: 1-col mobile, 2-col desktop ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:px-8">
-        {influencers.map((inf, i) => (
-          <InfluencerCard key={i} {...inf} />
-        ))}
+      <div className="flex-1 overflow-y-auto max-h-[80vh] lg:px-8 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          {influencers.map((inf, i) => (
+            <InfluencerCard key={i} {...inf} />
+          ))}
+        </div>
       </div>
     </div>
   );
