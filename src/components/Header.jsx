@@ -6,11 +6,16 @@ import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
 import logo from "@/assets/logo2.png";
 import { useGlobal } from "@/context/GlobalContext";
+import { useAuth } from "@/context/AuthContext";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { setScrollTo, setType } = useGlobal();
+  const { user, profile, role } = useAuth();
+
+  const dashboardPath = role === "brand" ? "/brands" : "/influencer";
+  const displayName = profile?.full_name?.split(" ")[0] || "Dashboard";
 
   // Navigation items based on your reference images
   const navItems = [
@@ -69,12 +74,21 @@ const Header = () => {
           </div>
 
           <div className="ml-6 border-l border-slate-200 pl-8">
-            <button
-              onClick={() => router.push("/login")}
-              className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
-            >
-              Login / Sign Up
-            </button>
+            {user ? (
+              <button
+                onClick={() => router.push(dashboardPath)}
+                className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
+              >
+                Hi, {displayName}
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push("/login")}
+                className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
+              >
+                Login / Sign Up
+              </button>
+            )}
           </div>
         </nav>
 
@@ -111,15 +125,27 @@ const Header = () => {
             ))}
 
             <div className="pt-4 border-t border-slate-100">
-              <button
-                onClick={() => {
-                  router.push("/login");
-                  setMenuOpen(false);
-                }}
-                className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
-              >
-                Login / Sign Up
-              </button>
+              {user ? (
+                <button
+                  onClick={() => {
+                    router.push(dashboardPath);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
+                >
+                  Hi, {displayName}
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    router.push("/login");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
+                >
+                  Login / Sign Up
+                </button>
+              )}
             </div>
           </nav>
         </div>

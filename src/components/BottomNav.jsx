@@ -1,35 +1,32 @@
 "use client";
 
 import React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Home, Search, Briefcase, User } from "lucide-react";
 
-const BottomNav = () => {
-  const router = useRouter();
-  const pathname = usePathname();
+const navItems = [
+  { label: "Home", icon: Home, path: "/influencer" },
+  { label: "Discover", icon: Search, path: "/influencer/discover" },
+  { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
+  { label: "Profile", icon: User, path: "/influencer/profile" },
+];
 
-  // Navigation configuration matching your screenshot
-  const navItems = [
-    { label: "Home", icon: Home, path: "/influencer" },
-    { label: "Discover", icon: Search, path: "/influencer/discover" },
-    { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
-    { label: "Profile", icon: User, path: "/influencer/profile" },
-  ];
+const BottomNav = () => {
+  const pathname = usePathname();
 
   return (
     <div className="fixed lg:hidden bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto relative">
         {navItems.map((item) => {
-          // Check if current path matches to apply active styles
           const isActive = pathname === item.path;
 
           return (
-            <button
+            <Link
               key={item.label}
-              onClick={() => router.push(item.path)}
+              href={item.path}
               className="flex flex-col items-center justify-center flex-1 relative group"
             >
-              {/* Active Indicator Line at the top of the button */}
               {isActive && (
                 <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] animate-in fade-in slide-in-from-top-1 duration-300" />
               )}
@@ -51,7 +48,7 @@ const BottomNav = () => {
               >
                 {item.label}
               </span>
-            </button>
+            </Link>
           );
         })}
       </div>

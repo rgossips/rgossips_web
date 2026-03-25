@@ -12,10 +12,11 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import logo from "@/assets/logo2.png";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -92,22 +93,18 @@ export const DesktopNavbar = () => {
 
         {/* Action Buttons (Notification/Filter) */}
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              router.push("/influencer/notifications");
-            }}
+          <Link
+            href="/influencer/notifications"
             className="hidden cursor-pointer lg:flex p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:bg-slate-50 border border-slate-100 transition-colors"
           >
             <Bell size={22} />
-          </button>
-          <button
-            onClick={() => {
-              router.push("/influencer/chats");
-            }}
+          </Link>
+          <Link
+            href="/influencer/chats"
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
           >
             <MessageSquare size={22} />
-          </button>
+          </Link>
           <button
             onClick={async () => { await signOut(); router.push("/login"); }}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-red-500 hover:bg-red-50 border border-slate-100 transition-colors"

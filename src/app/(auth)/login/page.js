@@ -260,9 +260,24 @@ const Login = () => {
   };
 
   const handleFinish = async () => {
+    // Save onboarding data (categories, services, rate range, notifications) to profile
+    if (authUserId) {
+      const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
+      await supabase.functions.invoke("update-profile", {
+        body: {
+          userId: authUserId,
+          table,
+          categories: signupData.categories || [],
+          services: signupData.services || [],
+          rateRange: signupData.rateRange || "",
+          notificationsEnabled: signupData.notificationsEnabled || false,
+        },
+      });
+    }
+
     // Apply session now that onboarding is complete
     if (pendingSession) {
-      supabase.auth.setSession({
+      await supabase.auth.setSession({
         access_token: pendingSession.access_token,
         refresh_token: pendingSession.refresh_token,
       });

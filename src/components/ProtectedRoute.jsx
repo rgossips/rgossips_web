@@ -3,24 +3,31 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
+const publicPaths = ["/", "/login", "/register"];
+
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Define public paths
-  const publicPaths = ["/", "/login", "/register"];
+  const isPublic = publicPaths.includes(pathname);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user && !publicPaths.includes(pathname)) {
-        // User not logged in and trying to access private page
-        router.push("/login");
-      }
+    if (!loading && !user && !isPublic) {
+      router.replace("/login");
     }
-  }, [user, loading, pathname, router]);
+  }, [user, loading, isPublic, router]);
 
   if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Block render of protected pages until user is confirmed
+  if (!user && !isPublic) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
         <p>Loading...</p>
