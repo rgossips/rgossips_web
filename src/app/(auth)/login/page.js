@@ -217,8 +217,16 @@ const Login = () => {
       if (createError) throw new Error(createError.message);
       if (createResult?.error) throw new Error(createResult.error);
 
-      // Store session for later (will be applied when user finishes onboarding)
-      console.log("Signup step 3: Moving to next step");
+      // Apply session now that profile exists (fire-and-forget to avoid hanging)
+      if (pendingSession) {
+        console.log("Signup step 3: Applying session...");
+        supabase.auth.setSession({
+          access_token: pendingSession.access_token,
+          refresh_token: pendingSession.refresh_token,
+        });
+      }
+
+      console.log("Signup step 4: Moving to next step");
       nextStep(); // → step 3 (categories)
     } catch (err) {
       setError(err.message || "Failed to create account.");

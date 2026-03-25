@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client"; // Ensure this path matches your setup
+import { createClient } from "@/utils/supabase/client";
 
 const AuthContext = createContext(null);
 
@@ -14,14 +14,24 @@ export const AuthProvider = ({ children }) => {
   const supabase = createClient();
 
   useEffect(() => {
-    // 1. Fetch profile and role based on UID
+    let isMounted = true;
+
     const fetchProfile = async (userId) => {
       try {
-        // Parallel fetch for influencer and brand tables
         const [infRes, brandRes] = await Promise.all([
-          supabase.from("influencer_profiles").select("*").eq("influencer_id", userId).maybeSingle(),
-          supabase.from("brand_profiles").select("*").eq("brand_id", userId).maybeSingle(),
+          supabase
+            .from("influencer_profiles")
+            .select("*")
+            .eq("influencer_id", userId)
+            .maybeSingle(),
+          supabase
+            .from("brand_profiles")
+            .select("*")
+            .eq("brand_id", userId)
+            .maybeSingle(),
         ]);
+
+        if (!isMounted) return;
 
         if (infRes.data) {
           setProfile(infRes.data);
@@ -29,33 +39,45 @@ export const AuthProvider = ({ children }) => {
         } else if (brandRes.data) {
           setProfile(brandRes.data);
           setRole("brand");
+        } else {
+          // User exists in auth but no profile yet (mid-signup)
+          setProfile(null);
+          setRole(null);
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
       }
     };
 
-    // 2. Initial Session Check
     const initializeAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const currentUser = session?.user ?? null;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
 
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
+        if (!isMounted) return;
+
+        setUser(currentUser);
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
     };
 
     initializeAuth();
 
-    // 3. Listen for Auth Changes (Login, Logout, Token Refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
+
+      if (!isMounted) return;
+
       setUser(currentUser);
 
       if (currentUser) {
@@ -64,15 +86,15 @@ export const AuthProvider = ({ children }) => {
         setProfile(null);
         setRole(null);
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Helper function for logout
   const signOut = async () => {
     await supabase.auth.signOut();
   };
