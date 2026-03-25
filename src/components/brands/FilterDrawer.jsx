@@ -22,7 +22,7 @@ import {
 import { SlidersHorizontal, X } from "lucide-react";
 
 // 1. Data Structure for all filter options
-const filterData = {
+export const filterData = {
   "Sort by": [
     "Followers (High to Low)",
     "Followers (Low to High)",
@@ -38,17 +38,21 @@ const filterData = {
     "TikTok",
   ],
   Categories: [
-    "Acting, Professional: Movies",
-    "Acting, Professional: TV, OTT",
-    "Animal Love & Welfare",
-    "Anime Talk",
-    "Architecture & Construction",
-    "Art & Artist Community",
-    "Automotive",
-    "Beauty & Personal Care",
-    "Business & Startups",
-    "Dance & Choreography",
-    "Gaming",
+    "Beauty & Skincare",
+    "Fashion & Lifestyle",
+    "Food & Beverage",
+    "Health, Fitness & Wellness",
+    "Travel & Hospitality",
+    "Technology & Gadgets",
+    "Parenting & Family",
+    "Home & Decor",
+    "Finance & Personal Finance",
+    "Education & Career",
+    "Gaming & Entertainment",
+    "Automobile & Mobility",
+    "Entrepreneurship & Business",
+    "Sustainable & Eco-conscious Living",
+    "Pet Care & Animals",
   ],
   Location: [
     "Mumbai",
