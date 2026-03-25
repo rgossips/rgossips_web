@@ -18,27 +18,33 @@ export const AuthProvider = ({ children }) => {
 
     const fetchProfile = async (userId) => {
       try {
-        const [infRes, brandRes] = await Promise.all([
-          supabase
-            .from("influencer_profiles")
-            .select("*")
-            .eq("influencer_id", userId)
-            .maybeSingle(),
-          supabase
-            .from("brand_profiles")
-            .select("*")
-            .eq("brand_id", userId)
-            .maybeSingle(),
-        ]);
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+        const res = await fetch(`${supabaseUrl}/functions/v1/check-profile`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": supabaseKey,
+            "Authorization": `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ userId }),
+        });
+
+        const data = await res.json();
 
         if (!isMounted) return;
 
-        if (infRes.data) {
-          setProfile(infRes.data);
-          setRole("influencer");
-        } else if (brandRes.data) {
-          setProfile(brandRes.data);
-          setRole("brand");
+        if (!res.ok || data?.error) {
+          console.error("Error fetching profile:", data?.error);
+          setProfile(null);
+          setRole(null);
+          return;
+        }
+
+        if (data?.exists) {
+          setProfile(data.profile);
+          setRole(data.role);
         } else {
           setProfile(null);
           setRole(null);

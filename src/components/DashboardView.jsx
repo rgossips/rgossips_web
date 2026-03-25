@@ -19,6 +19,8 @@ import {
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
 
 const DashboardView = ({
   onOpenInfo,
@@ -30,11 +32,29 @@ const DashboardView = ({
 }) => {
   const [showLogout, setShowLogout] = useState(false);
   const router = useRouter();
-  const handleLogout = () => {
-    // TODO: Add actual logout logic here
+  const { profile, signOut } = useAuth();
+
+  const userName = profile?.full_name || "User";
+  const userHandle = profile?.username || profile?.instagram_handle || "";
+  const userPhoto = profile?.profile_photo_url;
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const formatCount = (n) => {
+    if (!n) return "0";
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+    return String(n);
+  };
+
+  const handleLogout = async () => {
     setShowLogout(false);
+    await signOut();
     router.push("/login");
-    // e.g., redirect or clear auth
   };
 
   return (
@@ -54,18 +74,33 @@ const DashboardView = ({
           {/* Profile Card */}
           <section className="bg-white p-5 rounded-xl shadow border border-gray-100 flex flex-col items-center">
             <div className="relative mb-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-pink-200">
-                AK
-                <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
-                  <Edit2 size={10} className="text-white" />
+              {userPhoto ? (
+                <div className="relative">
+                  <Image
+                    src={userPhoto}
+                    alt={userName}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-xl object-cover shadow-lg shadow-pink-200"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                    <Edit2 size={10} className="text-white" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="w-20 h-20 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-pink-200">
+                  {initials}
+                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                    <Edit2 size={10} className="text-white" />
+                  </div>
+                </div>
+              )}
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#22C55E] border-[3px] border-white rounded-full shadow-sm" />
             </div>
             <div className="text-center space-y-1 w-full">
               <div className="flex items-center justify-center gap-1.5">
                 <h2 className="text-base font-extrabold text-[#1A1A1A]">
-                  Alex Kumar
+                  {userName}
                 </h2>
                 <div className="bg-[#3B82F6] rounded-full p-0.5">
                   <CheckCircle2
@@ -74,9 +109,11 @@ const DashboardView = ({
                   />
                 </div>
               </div>
-              <p className="text-gray-400 text-xs font-medium italic">
-                @alexkumar
-              </p>
+              {userHandle && (
+                <p className="text-gray-400 text-xs font-medium italic">
+                  @{userHandle}
+                </p>
+              )}
               <div className="flex gap-1.5 justify-center pt-2 flex-wrap">
                 <span className="px-3 py-1 bg-[#F3F4F9] text-[#374151] text-[9px] font-bold rounded-full">
                   Fashion & Lifestyle
@@ -86,13 +123,21 @@ const DashboardView = ({
                 </span>
               </div>
             </div>
-            <div className="w-full mt-4 pt-3 border-t border-gray-100 flex flex-col items-center px-2 gap-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                Total Reach
-              </span>
-              <span className="font-black text-[#1A1A1A] text-sm">
-                125K followers
-              </span>
+            <div className="w-full mt-4 pt-3 border-t border-gray-100 flex justify-around items-center px-2">
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.media_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
+              </div>
+              <div className="w-px h-8 bg-gray-100" />
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.followers_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Followers</span>
+              </div>
+              <div className="w-px h-8 bg-gray-100" />
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.follows_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
+              </div>
             </div>
           </section>
 
@@ -306,19 +351,34 @@ const DashboardView = ({
         <section className="bg-white p-6 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white">
           <div className="flex flex-col items-center">
             <div className="relative mb-4">
-              <div className="w-24 h-24 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-pink-200">
-                AK
-                <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
-                  <Edit2 size={12} className="text-white" />
+              {userPhoto ? (
+                <div className="relative">
+                  <Image
+                    src={userPhoto}
+                    alt={userName}
+                    width={96}
+                    height={96}
+                    className="w-24 h-24 rounded-xl object-cover shadow-lg shadow-pink-200"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                    <Edit2 size={12} className="text-white" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-pink-200">
+                  {initials}
+                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                    <Edit2 size={12} className="text-white" />
+                  </div>
+                </div>
+              )}
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#22C55E] border-[3.5px] border-white rounded-full shadow-sm" />
             </div>
 
             <div className="text-center space-y-1">
               <div className="flex items-center justify-center gap-1.5">
                 <h2 className="text-xl font-extrabold text-[#1A1A1A]">
-                  Alex Kumar
+                  {userName}
                 </h2>
                 <div className="bg-[#3B82F6] rounded-full p-0.5">
                   <CheckCircle2
@@ -327,9 +387,11 @@ const DashboardView = ({
                   />
                 </div>
               </div>
-              <p className="text-gray-400 text-sm font-medium italic">
-                @alexkumar
-              </p>
+              {userHandle && (
+                <p className="text-gray-400 text-sm font-medium italic">
+                  @{userHandle}
+                </p>
+              )}
               <div className="flex gap-2 justify-center pt-2">
                 <span className="px-4 py-1.5 bg-[#F3F4F9] text-[#374151] text-[10px] font-bold rounded-full">
                   Fashion & Lifestyle
@@ -340,11 +402,21 @@ const DashboardView = ({
               </div>
             </div>
 
-            <div className="w-full mt-6 pt-5 border-t border-gray-100 flex justify-between items-center px-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">
-                Total Reach
-              </span>
-              <span className="font-black text-[#1A1A1A]">125K followers</span>
+            <div className="w-full mt-6 pt-5 border-t border-gray-100 flex justify-around items-center px-2">
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.media_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
+              </div>
+              <div className="w-px h-9 bg-gray-100" />
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.followers_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Followers</span>
+              </div>
+              <div className="w-px h-9 bg-gray-100" />
+              <div className="flex flex-col items-center">
+                <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.follows_count)}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
+              </div>
             </div>
           </div>
         </section>

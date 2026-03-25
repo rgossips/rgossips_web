@@ -1,7 +1,14 @@
+"use client";
+
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export function CompleteProfileCard() {
+  const { profile } = useAuth();
+
+  const hasInstagram = !!profile?.instagram_handle;
+
   const steps = [
     {
       id: 1,
@@ -12,15 +19,17 @@ export function CompleteProfileCard() {
     {
       id: 2,
       title: "Connect Instagram",
-      subtitle: "Brands discover you instantly",
-      action: "Connect",
-      active: true,
+      subtitle: hasInstagram ? `@${profile.instagram_handle}` : "Brands discover you instantly",
+      action: hasInstagram ? null : "Connect",
+      completed: hasInstagram,
+      active: !hasInstagram,
     },
     {
       id: 3,
       title: "Generate AI Media Kit",
       subtitle: "Look pro in 60 seconds",
       action: "Create",
+      active: hasInstagram,
     },
     {
       id: 4,
@@ -35,6 +44,8 @@ export function CompleteProfileCard() {
       action: "Browse",
     },
   ];
+
+  const completedCount = steps.filter((s) => s.completed).length;
 
   return (
     <div className="w-full flex justify-center">
@@ -52,13 +63,13 @@ export function CompleteProfileCard() {
               <h3 className="text-lg font-bold text-slate-900">
                 Get Your First Brand Deal
               </h3>
-              <p className="text-sm text-slate-500">1/5 steps — keep going!</p>
+              <p className="text-sm text-slate-500">{completedCount}/5 steps — {completedCount === 5 ? "all done!" : "keep going!"}</p>
             </div>
           </div>
 
           {/* Progress Bar */}
           <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-            <div className="h-full w-1/5 bg-gradient-to-r from-[#9810fa] to-[#e60076]" />
+            <div className={`h-full bg-gradient-to-r from-[#9810fa] to-[#e60076]`} style={{ width: `${(completedCount / 5) * 100}%` }} />
           </div>
         </div>
 

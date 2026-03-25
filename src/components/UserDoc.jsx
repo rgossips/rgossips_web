@@ -17,11 +17,13 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 
 const UserDoc = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { profile, signOut } = useAuth();
 
   const navLinks = [
     { label: "Home", icon: Home, path: "/influencer" },
@@ -76,7 +78,7 @@ const UserDoc = () => {
               <Image
                 width={32}
                 height={32}
-                src="https://i.pravatar.cc/150?u=jones"
+                src={profile?.profile_photo_url || "/default-avatar.svg"}
                 alt="User"
                 className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
               />
@@ -112,12 +114,12 @@ const UserDoc = () => {
                   <Image
                     width={44}
                     height={44}
-                    src="https://i.pravatar.cc/150?u=jones"
+                    src={profile?.profile_photo_url || "/default-avatar.svg"}
                     alt="User"
                     className="w-11 h-11 rounded-full border-2 border-white shadow-sm object-cover"
                   />
                   <div>
-                    <p className="text-sm font-bold text-slate-800">Jones</p>
+                    <p className="text-sm font-bold text-slate-800">{profile?.full_name || "User"}</p>
                     <p className="text-[11px] text-emerald-600 font-semibold">
                       Pro Member
                     </p>
@@ -186,7 +188,10 @@ const UserDoc = () => {
 
               {/* Sidebar footer */}
               <div className="p-4 border-t border-slate-100">
-                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors">
+                <button
+                  onClick={async () => { await signOut(); router.push("/login"); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                >
                   <LogOut size={20} />
                   <span className="text-sm font-semibold">Log Out</span>
                 </button>
@@ -205,7 +210,7 @@ const UserDoc = () => {
                 <Image
                   width={60}
                   height={60}
-                  src="https://i.pravatar.cc/150?u=jones"
+                  src={profile?.profile_photo_url || "/default-avatar.svg"}
                   alt="User"
                   className="w-14 h-14 lg:w-16 lg:h-16 rounded-full border-2 border-white shadow-sm object-cover"
                 />
@@ -213,7 +218,7 @@ const UserDoc = () => {
               </div>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-black text-slate-800 leading-tight">
-                  Hi, Jones
+                  Hi, {profile?.full_name?.split(" ")[0] || "there"}
                 </h1>
                 <p className="text-sm font-bold text-emerald-600">
                   Total Earnings:{" "}

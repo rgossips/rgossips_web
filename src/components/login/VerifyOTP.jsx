@@ -48,7 +48,7 @@ const VerifyOTP = ({
       </div>
 
       <div className="flex justify-center">
-        <InputOTP maxLength={6} value={otp} onChange={handleOtpChange}>
+        <InputOTP maxLength={6} value={otp} onChange={handleOtpChange} autoFocus>
           <InputOTPGroup className="gap-2">
             {[...Array(6)].map((_, i) => (
               <InputOTPSlot

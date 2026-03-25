@@ -1,8 +1,12 @@
+"use client";
+
 import { Card } from "@/components/ui/card";
 import { ChevronRight, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
 
 export function ProStatusCard() {
+  const { profile } = useAuth();
   return (
     <div className="lg:px-10 pb-6 w-full flex items-center justify-center">
       <Card className="w-full p-4 md:p-8 bg-white border border-slate-200 shadow-sm rounded-3xl space-y-3">
@@ -12,15 +16,15 @@ export function ProStatusCard() {
             <Image
               width={48}
               height={48}
-              src="https://i.pravatar.cc/150?u=jones"
-              alt="User"
+              src={profile?.profile_photo_url || "/default-avatar.svg"}
+              alt={profile?.full_name || "User"}
               className="w-11 h-11 md:w-12 md:h-12 rounded-full border-2 border-white shadow-sm object-cover"
             />
             <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />
           </div>
           <div>
             <h1 className="text-lg md:text-xl font-black text-slate-800 leading-tight">
-              Hi, Jones
+              Hi, {profile?.full_name?.split(" ")[0] || "there"}
             </h1>
             <p className="text-xs font-bold text-emerald-600 tracking-wide">
               EARNINGS:{" "}

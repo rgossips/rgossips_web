@@ -9,11 +9,13 @@ import {
   MessageSquare,
   Bell,
   Search,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import logo from "@/assets/logo2.png";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -33,6 +35,7 @@ const DESKTOP_NAV_ITEMS = [
 export const DesktopNavbar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { signOut } = useAuth();
 
   return (
     <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
@@ -104,6 +107,13 @@ export const DesktopNavbar = () => {
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
           >
             <MessageSquare size={22} />
+          </button>
+          <button
+            onClick={async () => { await signOut(); router.push("/login"); }}
+            className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-red-500 hover:bg-red-50 border border-slate-100 transition-colors"
+            title="Log Out"
+          >
+            <LogOut size={22} />
           </button>
         </div>
       </div>

@@ -143,16 +143,22 @@ const Login = () => {
     try {
       const data = await verifyOtp(phone.replace(/\D/g, ""), otpCode);
 
-      // Check if profile exists
+      // Check if profile exists via edge function (bypasses RLS)
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
-      const idCol = signupData.role === "brand" ? "brand_id" : "influencer_id";
-      const { data: profile } = await supabase
-        .from(table)
-        .select(idCol)
-        .eq(idCol, data.user.id)
-        .maybeSingle();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const checkRes = await fetch(`${supabaseUrl}/functions/v1/check-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId: data.user.id, table }),
+      });
+      const checkResult = await checkRes.json();
 
-      if (profile) {
+      if (checkResult?.exists) {
         // Existing user — apply session and go to dashboard
         await supabase.auth.setSession({
           access_token: data.session.access_token,
@@ -162,9 +168,9 @@ const Login = () => {
         return;
       }
 
-      // No profile — switch to signup flow for profile setup
+      // No profile — switch to signup flow for profile creation
       setFlow("signup");
-      setStep(3); // Skip to categories (after signup form)
+      setStep(2); // Go to SignUpForm to collect name & instagram
     } catch (err) {
       setError(err.message || "Invalid or expired OTP.");
     } finally {
@@ -208,6 +214,9 @@ const Login = () => {
             username: formData.instagram || "",
             instagram: formData.instagram || "",
             profilePictureUrl: formData.instaProfile?.profilePictureUrl || "",
+            followersCount: formData.instaProfile?.followersCount || 0,
+            followsCount: formData.instaProfile?.followsCount || 0,
+            mediaCount: formData.instaProfile?.mediaCount || 0,
           },
         },
       );
@@ -280,8 +289,7 @@ const Login = () => {
         <OnboardingCarousel onLoginClick={switchToSignIn} onSignUpClick={switchToSignUp} />
         {flow !== "onboarding" && (
           <div
-            className="absolute inset-0 bg-[#ff92ca] opacity-70 z-10 cursor-pointer animate-in fade-in duration-500"
-            onClick={() => setFlow("onboarding")}
+            className="absolute inset-0 bg-[#ff92ca] opacity-70 z-10 animate-in fade-in duration-500"
           />
         )}
       </div>
@@ -358,6 +366,8 @@ const Login = () => {
                       loading={loading}
                       error={error}
                       role={signupData.role}
+                      initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
+                      otpPreVerified={!!authUserId}
                     />
                   )}
                   {step === 3 && (

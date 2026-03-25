@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount } = await req.json();
 
     if (!userId || !table) {
       return new Response(
@@ -45,6 +45,9 @@ Deno.serve(async (req) => {
         username: username || instagram || "",
         instagram_handle: instagram || "",
         profile_photo_url: profilePictureUrl || "",
+        followers_count: followersCount || 0,
+        follows_count: followsCount || 0,
+        media_count: mediaCount || 0,
         status: "active",
         updated_at: new Date().toISOString(),
       };

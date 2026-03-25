@@ -20,16 +20,18 @@ const SignUpForm = ({
   loading = false,
   error = "",
   role = "influencer",
+  initialPhone = "",
+  otpPreVerified = false,
 }) => {
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
+    phone: initialPhone,
   });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(otpPreVerified);
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);

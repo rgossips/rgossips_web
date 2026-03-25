@@ -11,14 +11,14 @@ export default function ProtectedRoute({ children }) {
   // Define public paths
   const publicPaths = ["/", "/login", "/register"];
 
-  // useEffect(() => {
-  //   if (!loading) {
-  //     if (!user && !publicPaths.includes(pathname)) {
-  //       // User not logged in and trying to access private page
-  //       router.push("/login");
-  //     }
-  //   }
-  // }, [user, loading, pathname, router]);
+  useEffect(() => {
+    if (!loading) {
+      if (!user && !publicPaths.includes(pathname)) {
+        // User not logged in and trying to access private page
+        router.push("/login");
+      }
+    }
+  }, [user, loading, pathname, router]);
 
   if (loading) {
     return (
