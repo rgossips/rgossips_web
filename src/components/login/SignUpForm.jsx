@@ -94,9 +94,9 @@ const SignUpForm = ({
   const handleConnectInstagram = () => {
     const appId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID;
     const redirectUri = `${window.location.origin}/instagram-callback`;
-    const scope = "instagram_business_basic";
+    const scope = "instagram_business_basic,instagram_business_manage_insights";
 
-    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
     const width = 500;
     const height = 650;
