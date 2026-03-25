@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx shadcn@latest add popover -y)"
+      "Bash(npx shadcn@latest add popover -y)",
+      "Bash(npx next:*)"
     ]
   }
 }

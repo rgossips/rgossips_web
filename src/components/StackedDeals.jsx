@@ -145,7 +145,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
   }, [stack, sendToBack]);
 
   return (
-    <div className="relative w-full h-[350px] lg:h-[500px] flex items-start justify-center perspective-[1200px] lg:overflow-hidden mb-20 lg:mb-0">
+    <div className="relative w-full h-[350px] lg:h-[500px] flex items-start justify-center perspective-[1200px] overflow-hidden mb-12 lg:mb-0">
       <AnimatePresence initial={false}>
         {stack.map((card, index) => {
           const isTop = index === stack.length - 1;
@@ -175,7 +175,7 @@ export default function StackedDeals({ sensitivity = 120 }) {
             >
               <motion.div
                 // pointer-events-none on the inner div ensures the drag surface gets the hits
-                className={`bg-white ${isCompact ? " rounded-t-[45px]" : " rounded-[45px]"} shadow-lg border border-slate-100 overflow-hidden w-[350px] lg:w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none`}
+                className={`bg-white ${isCompact ? " rounded-t-[45px]" : " rounded-[45px]"} shadow-lg border border-slate-100 overflow-hidden w-[calc(100vw-48px)] max-w-[350px] lg:w-[500px] lg:max-w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none`}
                 animate={{
                   x: xOffset,
                   y: yOffset,

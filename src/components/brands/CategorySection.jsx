@@ -8,19 +8,30 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
+import { filterData } from "@/components/brands/FilterDrawer";
 
-const CATEGORIES = [
-  { label: "Lifestyle & Living", emoji: "🏠" },
-  { label: "Tech", emoji: "💻" },
-  { label: "Finance", emoji: "📈" },
-  { label: "Education", emoji: "🎓" },
-  { label: "Health", emoji: "🏥" },
-  { label: "Fashion", emoji: "👗" },
-  { label: "Food", emoji: "🍕" },
-  { label: "Fitness", emoji: "🏋️" },
-  { label: "Beauty", emoji: "💄" },
-  { label: "Travel & Places", emoji: "✈️" },
-];
+const CATEGORY_EMOJIS = {
+  "Beauty & Skincare": "💄",
+  "Fashion & Lifestyle": "👗",
+  "Food & Beverage": "🍕",
+  "Health, Fitness & Wellness": "🏋️",
+  "Travel & Hospitality": "✈️",
+  "Technology & Gadgets": "💻",
+  "Parenting & Family": "👨‍👩‍👧",
+  "Home & Decor": "🏠",
+  "Finance & Personal Finance": "📈",
+  "Education & Career": "🎓",
+  "Gaming & Entertainment": "🎮",
+  "Automobile & Mobility": "🚗",
+  "Entrepreneurship & Business": "💼",
+  "Sustainable & Eco-conscious Living": "🌱",
+  "Pet Care & Animals": "🐾",
+};
+
+const CATEGORIES = filterData["Categories"].map((cat) => ({
+  label: cat,
+  emoji: CATEGORY_EMOJIS[cat] || "📌",
+}));
 
 const CategoryIcon = ({ label, emoji, index }) => (
   <motion.div
@@ -72,7 +83,7 @@ export const CategorySection = () => {
             </Carousel>
           </div>
 
-          {/* DESKTOP GRID (2 rows of 5) */}
+          {/* DESKTOP GRID */}
           <div className="hidden lg:grid grid-cols-5 gap-4">
             {CATEGORIES.map((cat, i) => (
               <CategoryIcon

@@ -105,7 +105,7 @@ export default function HomePage() {
     );
   }
   return (
-    <main className="relative w-full">
+    <main className="relative w-full overflow-x-hidden">
       {/* {profile && profile?.verificationState < 5 && (
         <ProfileStepPopup userData={profile} />
       )}
@@ -114,13 +114,13 @@ export default function HomePage() {
 
       <div className="relative z-20 bg-white p-2">
         {/* <SelectionMenu /> */}
-        <div className="flex flex-col gap-8 items-center lg:items-start">
+        <div className="flex flex-col gap-4 lg:gap-8 items-center lg:items-start">
           {/* Full Width Header */}
           <div className="w-full lg:hidden lg:max-w-[1480px] mx-auto">
             <UserDoc />
           </div>
 
-          <div className="flex items-center justify-center px-10 lg:pt-24 w-full">
+          <div className="flex items-center justify-center px-2 lg:pt-24 w-full">
             <ProStatusCard />
           </div>
 
@@ -171,7 +171,7 @@ export default function HomePage() {
             <StackedDeals />
           </div>
 
-          <div className="flex  w-full px-10 justify-center gap-10 flex-col lg:flex-row">
+          <div className="flex w-full px-4 lg:px-10 justify-center gap-6 lg:gap-10 flex-col lg:flex-row">
             <CompleteProfileCard />
             <AiMediaKitCard />
             <AiToolsGrid />
