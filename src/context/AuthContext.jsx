@@ -40,12 +40,15 @@ export const AuthProvider = ({ children }) => {
           setProfile(brandRes.data);
           setRole("brand");
         } else {
-          // User exists in auth but no profile yet (mid-signup)
           setProfile(null);
           setRole(null);
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
+        if (isMounted) {
+          setProfile(null);
+          setRole(null);
+        }
       }
     };
 
@@ -69,6 +72,14 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
+    // Safety: ensure loading is set to false even if everything hangs
+    const safetyTimer = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn("Auth initialization timed out, forcing loading=false");
+        setLoading(false);
+      }
+    }, 5000);
+
     initializeAuth();
 
     const {
@@ -91,6 +102,7 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, []);
