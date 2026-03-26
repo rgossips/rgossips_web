@@ -157,10 +157,21 @@ export default function HomePage() {
             <StackedDeals />
           </div>
 
-          <div className="flex w-full px-4 lg:px-10 justify-center gap-6 lg:gap-10 flex-col lg:flex-row">
-            <CompleteProfileCard />
-            <AiMediaKitCard />
-            <AiToolsGrid />
+          <div className="flex w-full px-4 lg:px-10 justify-center gap-6 lg:gap-10 flex-col lg:flex-row items-stretch">
+            {/* Order 2 on mobile (default), Order 1 on desktop */}
+            <div className="flex w-full order-2 lg:order-1 lg:flex-1">
+              <CompleteProfileCard />
+            </div>
+
+            {/* Order 1 on mobile, Order 2 on desktop */}
+            <div className="flex w-full order-1 lg:order-2 lg:flex-1">
+              <AiMediaKitCard />
+            </div>
+
+            {/* Order 3 on both */}
+            <div className="flex w-full order-3 lg:order-3 lg:flex-1">
+              <AiToolsGrid />
+            </div>
           </div>
 
           <CreatorsLikeYou />

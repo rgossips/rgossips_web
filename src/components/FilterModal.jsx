@@ -199,7 +199,7 @@ const FilterModal = ({
   return (
     <>
       {/* Mobile Modal - Right Slide */}
-      <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden ">
+      <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden mb-16">
         <motion.div
           initial={{ x: "100%", opacity: 1 }}
           animate={{

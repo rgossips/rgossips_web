@@ -52,7 +52,7 @@ const tools = [
 
 export function AiToolsGrid() {
   return (
-    <Card className="w-full max-w-2xl p-5 lg:p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
+    <Card className="w-full h-full max-w-2xl p-5 lg:p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-xl font-bold text-slate-900">AI Creator Tools</h2>
         <div className="text-xs font-medium text-slate-400">
@@ -60,7 +60,7 @@ export function AiToolsGrid() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {tools.map((tool, index) => (
           <motion.div
             key={index}

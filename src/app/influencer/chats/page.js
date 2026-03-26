@@ -29,7 +29,7 @@ export default function ChatModule() {
   }, []);
 
   return (
-    <div className="flex h-screen w-full bg-[#F8F9FD] overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-[#F8F9FD] overflow-hidden font-sans lg:mt-20">
       {/* Sidebar */}
       <div
         className={`${isMobile && selectedChat ? "hidden" : "flex"} w-full lg:w-[400px] flex-col border-r bg-white`}
@@ -40,7 +40,7 @@ export default function ChatModule() {
             {/* The Pink Circular Back Button from your image */}
             <button
               onClick={() => router.back()}
-              className="p-2 rounded-full bg-[#FCE6F1] hover:bg-[#F9CFE3] transition-colors active:scale-90 flex items-center justify-center"
+              className="p-2 rounded-full bg-[#FCE6F1] hover:bg-[#F9CFE3] cursor-pointer transition-colors active:scale-90 flex items-center justify-center"
             >
               <ChevronLeft className="w-6 h-6 text-[#E60076]" />
             </button>

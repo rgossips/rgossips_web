@@ -94,7 +94,7 @@ export default function CreatorsLikeYou() {
       {/* Layout */}
       <div className="flex flex-col lg:flex-row justify-between gap-6">
         {/* Featured Card */}
-        <div className="bg-white w-full lg:max-w-[70%] min-h-full rounded-3xl p-5 lg:p-8 shadow-sm border flex flex-col justify-between">
+        <div className="bg-white w-full lg:max-w-[40%] min-h-full rounded-3xl p-5 lg:p-8 shadow-sm border flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-4 lg:mb-6">
               <Image
@@ -152,7 +152,7 @@ export default function CreatorsLikeYou() {
           {creators.map((person) => (
             <div
               key={person.id}
-              className="bg-white rounded-2xl p-5 lg:p-6 border shadow-sm flex flex-col justify-between min-w-[200px] w-[200px] lg:w-auto lg:min-w-0 snap-start shrink-0 lg:shrink lg:aspect-square"
+              className="bg-white rounded-2xl p-5 lg:p-6 border shadow-sm flex flex-col justify-between min-w-[200px] w-[200px] lg:w-auto lg:min-w-0 snap-start shrink-0 lg:shrink"
             >
               <div>
                 <div className="flex items-center gap-2.5 mb-3 lg:mb-4">

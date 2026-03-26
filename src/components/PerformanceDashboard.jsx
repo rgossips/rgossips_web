@@ -163,64 +163,103 @@ export default function PerformanceDashboard() {
         />
       </div>
 
-      {/* AVAILABLE BALANCE */}
-      <Card className="rounded-3xl p-5 lg:p-6 text-white bg-slate-900 shadow-lg">
+      {/* AVAILABLE BALANCE — mobile: appears here, desktop: moves into right column */}
+      <Card className="rounded-3xl p-5 lg:p-6 text-white bg-slate-900 shadow-lg lg:hidden">
         <div className="flex items-center gap-2 mb-1">
           <Wallet size={14} className="opacity-60" />
           <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
             Available Balance
           </p>
         </div>
-        <h2 className="text-3xl lg:text-4xl font-bold mt-1">₹1,50,000</h2>
+        <h2 className="text-3xl font-bold mt-1">₹1,50,000</h2>
         <p className="text-xs text-slate-400 mt-1 mb-4">Ready for withdrawal</p>
         <button className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 transition-colors font-bold text-sm flex items-center justify-center gap-2">
           Withdraw Funds <ArrowRight size={16} />
         </button>
       </Card>
 
-      {/* EARNINGS CHART */}
-      <Card className="w-full rounded-3xl p-4 lg:p-6 border bg-white flex flex-col h-[300px] lg:h-[400px]">
-        <div className="flex justify-between items-start mb-3 lg:mb-4">
-          <div>
-            <h3 className="font-bold text-base lg:text-lg">Earnings</h3>
-            <p className="text-[11px] lg:text-xs text-slate-400">
-              Revenue growth
-            </p>
+      {/* BOTTOM TWO-COLUMN LAYOUT (desktop) */}
+      <div className="flex flex-col lg:grid lg:grid-cols-5 gap-4 lg:gap-6">
+        {/* EARNINGS CHART — left column */}
+        <Card className="w-full rounded-3xl p-4 lg:p-6 border bg-white flex flex-col h-[300px] lg:h-auto lg:col-span-3">
+          <div className="flex justify-between items-start mb-3 lg:mb-4">
+            <div>
+              <h3 className="font-bold text-base lg:text-lg">Earnings Overview</h3>
+              <p className="text-[11px] lg:text-xs text-slate-400">
+                Your revenue growth over time
+              </p>
+            </div>
+            <div className="hidden lg:flex gap-2">
+              <button className="text-xs px-3 py-1 rounded-lg bg-slate-100 text-slate-500">
+                Week
+              </button>
+              <button className="text-xs px-3 py-1 rounded-lg bg-slate-900 text-white">
+                Month
+              </button>
+            </div>
           </div>
-          <div className="hidden lg:flex gap-2">
-            <button className="text-xs px-3 py-1 rounded-lg bg-slate-100 text-slate-500">
-              Week
-            </button>
-            <button className="text-xs px-3 py-1 rounded-lg bg-slate-900 text-white">
-              Month
-            </button>
-          </div>
-        </div>
-        <div className="w-full flex-1 min-h-0">
-          <Line
-            data={earningsData}
-            options={{
-              ...commonOptions,
-              scales: {
-                x: {
-                  grid: { display: false },
-                  ticks: { font: { size: 10 } },
-                },
-                y: {
-                  grid: { color: "#f1f1f1" },
-                  ticks: {
-                    callback: (v) => `₹${v / 1000}k`,
-                    font: { size: 10 },
+          <div className="w-full flex-1 min-h-0">
+            <Line
+              data={earningsData}
+              options={{
+                ...commonOptions,
+                scales: {
+                  x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10 } },
+                  },
+                  y: {
+                    grid: { color: "#f1f1f1" },
+                    ticks: {
+                      callback: (v) => `₹${v / 1000}k`,
+                      font: { size: 10 },
+                    },
                   },
                 },
-              },
-            }}
-          />
-        </div>
-      </Card>
+              }}
+            />
+          </div>
+        </Card>
 
-      {/* TODAY ACTIONS */}
-      <Card className="p-5 lg:p-6 rounded-3xl border bg-white">
+        {/* RIGHT COLUMN — desktop only: balance + today actions */}
+        <div className="hidden lg:flex flex-col gap-6 lg:col-span-2">
+          {/* AVAILABLE BALANCE (desktop) */}
+          <Card className="rounded-3xl p-6 text-white bg-slate-900 shadow-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet size={14} className="opacity-60" />
+              <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
+                Available Balance
+              </p>
+            </div>
+            <h2 className="text-4xl font-bold mt-1">₹1,50,000</h2>
+            <p className="text-xs text-slate-400 mt-1 mb-4">Ready for withdrawal</p>
+            <button className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 transition-colors font-bold text-sm flex items-center justify-center gap-2">
+              Withdraw Funds <ArrowRight size={16} />
+            </button>
+          </Card>
+
+          {/* TODAY ACTIONS (desktop) */}
+          <Card className="p-6 rounded-3xl border bg-white flex-1">
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-3">
+                <p className="font-bold text-base">Today</p>
+                <span className="bg-red-100 text-red-500 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                  3 ACTIONS
+                </span>
+              </div>
+              <span className="text-xs text-slate-400">Mar 1</span>
+            </div>
+            <div className="space-y-4">
+              <ActionItem title="Submit BoAt Reel" sub="overdue · 1 day" alert actionLabel="Upload" />
+              <ActionItem title="Reply to Mamaearth" sub="brief clarification" actionLabel="Reply" />
+              <ActionItem title="Sugar Cosmetics" sub="post scheduled content" actionLabel="View Brief" />
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* TODAY ACTIONS — mobile only */}
+      <Card className="p-5 rounded-3xl border bg-white lg:hidden">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-3">
             <p className="font-bold text-base">Today</p>

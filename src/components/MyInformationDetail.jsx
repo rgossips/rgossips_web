@@ -129,7 +129,7 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => {
         </div>
         <h3 className="text-lg font-black text-gray-900 mb-2">Delete Reel?</h3>
         <p className="text-xs text-gray-500 mb-6">
-          Are you sure you want to delete "Day in My Life"? This action cannot
+          Are you sure you want to delete &ldquo;Day in My Life&rdquo;? This action cannot
           be undone.
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -291,7 +291,8 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
           </button>
 
           {/* Profile/Bio Card */}
-          <section className="bg-white rounded-2xl border-2 border-pink-100 p-6 shadow-sm flex flex-col items-center relative">
+          <section className="rounded-2xl p-[2.5px] shadow-sm relative" style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}>
+            <div className="bg-white rounded-[calc(1rem-1px)] p-6 flex flex-col items-center">
             <div className="w-24 h-24 rounded-3xl overflow-hidden border-4 border-pink-500 p-1 mb-4 shadow-lg">
               <img
                 src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
@@ -301,12 +302,12 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
             </div>
 
             <h2 className="text-lg font-black text-center text-gray-900 leading-tight">
-              Ali | Men's Grooming, Skincare & Lifestyle
+              Ali | Men&apos;s Grooming, Skincare & Lifestyle
             </h2>
 
             <div className="text-center mt-3 space-y-1">
               <p className="text-[10px] font-bold text-gray-600 flex items-center justify-center gap-1">
-                <span className="text-gray-400">🎬</span> Men's Lifestyle,
+                <span className="text-gray-400">🎬</span> Men&apos;s Lifestyle,
                 Skincare & Grooming
               </p>
               <p className="text-[10px] font-bold text-gray-600">
@@ -327,12 +328,13 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
             </div>
 
             <div className="flex gap-2 w-full mt-6">
-              <button className="flex-1 bg-gradient-to-r from-[#A855F7] to-[#EC4899] text-white font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-pink-100 active:scale-95 transition-transform text-sm">
+              <button className="flex-1 btn-purple font-black py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-pink-100 active:scale-95 transition-transform text-sm">
                 Email Me <Share2 size={14} />
               </button>
               <button className="border-2 border-pink-100 rounded-xl flex items-center justify-center text-pink-500 bg-pink-50/30 active:scale-95 transition-transform p-3">
                 <ExternalLink size={18} />
               </button>
+            </div>
             </div>
           </section>
 
@@ -422,7 +424,7 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
                 key={cat}
                 className={`px-4 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${
                   idx === 0
-                    ? "bg-[#EC4899] text-white shadow-md shadow-pink-100"
+                    ? "btn-purple shadow-md shadow-pink-100"
                     : "bg-white border border-gray-100 text-gray-400 hover:border-gray-200"
                 }`}
               >
@@ -509,7 +511,8 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
         </button>
 
         {/* Profile/Bio Card (Static) */}
-        <section className="bg-white rounded-[2.5rem] border-2 border-pink-100 p-6 shadow-sm flex flex-col items-center relative">
+        <section className="rounded-[2.5rem] p-[2.5px] shadow-sm relative" style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}>
+          <div className="bg-white rounded-[2.3rem] p-6 flex flex-col items-center">
           <div className="w-24 h-24 rounded-3xl overflow-hidden border-4 border-pink-500 p-1 mb-4 shadow-lg">
             <img
               src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"
@@ -519,12 +522,12 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
           </div>
 
           <h2 className="text-xl font-black text-center text-gray-900 leading-tight">
-            Ali | Men's Grooming, <br /> Skincare & Lifestyle
+            Ali | Men&apos;s Grooming, <br /> Skincare & Lifestyle
           </h2>
 
           <div className="text-center mt-3 space-y-1">
             <p className="text-[11px] font-bold text-gray-600 flex items-center justify-center gap-1">
-              <span className="text-gray-400">🎬</span> Men's Lifestyle,
+              <span className="text-gray-400">🎬</span> Men&apos;s Lifestyle,
               Skincare & Grooming Tips
             </p>
             <p className="text-[11px] font-bold text-gray-600">
@@ -545,12 +548,13 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
           </div>
 
           <div className="grid grid-cols-5 gap-3 w-full mt-6">
-            <button className="col-span-4 bg-gradient-to-r from-[#A855F7] to-[#EC4899] text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-pink-100 active:scale-95 transition-transform">
+            <button className="col-span-4 btn-purple font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-pink-100 active:scale-95 transition-transform">
               Email Me <Share2 size={16} />
             </button>
             <button className="col-span-1 border-2 border-pink-100 rounded-2xl flex items-center justify-center text-pink-500 bg-pink-50/30 active:scale-95 transition-transform">
               <ExternalLink size={20} />
             </button>
+          </div>
           </div>
         </section>
 
@@ -596,7 +600,7 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
                 key={cat}
                 className={`px-5 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${
                   idx === 0
-                    ? "bg-[#EC4899] text-white shadow-md shadow-pink-100"
+                    ? "btn-purple shadow-md shadow-pink-100"
                     : "bg-white border border-gray-100 text-gray-400"
                 }`}
               >

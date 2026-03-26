@@ -32,7 +32,7 @@ export function CampaignFilters({ onClose, filterData }) {
           <div className="flex items-center justify-between sticky top-0 bg-white z-10 pb-4 border-b border-slate-50">
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076]"
+              className="w-10 cursor-pointer h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076]"
             >
               <ChevronLeft size={24} />
             </button>
@@ -164,12 +164,12 @@ export function CampaignFilters({ onClose, filterData }) {
         <div className="sticky bottom-0 bg-white border-t border-slate-100 p-6 flex gap-4 lg:rounded-b-[40px]">
           <Button
             variant="outline"
-            className="flex-1 h-14 rounded-2xl font-bold border-slate-100 text-slate-400"
+            className="flex-1 cursor-pointer h-14 rounded-2xl font-bold border-slate-100 text-slate-400"
             onClick={onClose}
           >
             Reset
           </Button>
-          <Button className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-pink-200 hover:opacity-90 transition-all">
+          <Button className="flex-1 cursor-pointer h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-pink-200 hover:opacity-90 transition-all">
             Apply Filters
           </Button>
         </div>

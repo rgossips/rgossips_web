@@ -1,11 +1,109 @@
-import React from "react";
+"use client";
+
+import React, { useRef, useEffect } from "react";
 import { Star, Bookmark } from "lucide-react";
 import Image from "next/image";
 
+const services = [
+  {
+    img: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80",
+    tag: "LIFESTYLE",
+    creator: "Emma Davis",
+    role: "Lifestyle & Decor",
+    title: "Premium Product Photography & Reel",
+    rating: "4.9",
+    reviews: "124",
+    price: "350",
+    featured: true,
+  },
+  {
+    img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80",
+    tag: "FASHION",
+    creator: "Zachary Will",
+    role: "Fashion Stylist",
+    title: "Try-on Haul Video for TikTok",
+    rating: "4.8",
+    reviews: "89",
+    price: "150",
+  },
+  {
+    img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80",
+    tag: "BEAUTY",
+    creator: "Jessica Che",
+    role: "Beauty Guru",
+    title: "Detailed Makeup Tutorial & Review",
+    rating: "5.0",
+    reviews: "210",
+    price: "250",
+  },
+  {
+    img: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80",
+    tag: "TECH",
+    creator: "Alex Rivera",
+    role: "Tech Reviewer",
+    title: "Tech Gadget Unboxing & Setup",
+    rating: "4.7",
+    reviews: "56",
+    price: "200",
+  },
+  {
+    img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80",
+    tag: "FASHION",
+    creator: "Zachary Will",
+    role: "Fashion Stylist",
+    title: "Try-on Haul Video for TikTok",
+    rating: "4.8",
+    reviews: "89",
+    price: "150",
+  },
+];
+
 const TopServices = () => {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    let raf;
+    let scrollPos = 0;
+    const speed = 0.5; // px per frame
+
+    const step = () => {
+      scrollPos += speed;
+      // loop back when we've scrolled half (duplicated list)
+      if (scrollPos >= container.scrollWidth / 2) {
+        scrollPos = 0;
+      }
+      container.scrollLeft = scrollPos;
+      raf = requestAnimationFrame(step);
+    };
+
+    // only auto-scroll on mobile
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const start = () => { if (mq.matches) raf = requestAnimationFrame(step); };
+    const stop = () => cancelAnimationFrame(raf);
+
+    if (mq.matches) start();
+    mq.addEventListener("change", (e) => (e.matches ? start() : stop()));
+
+    // pause on touch
+    container.addEventListener("touchstart", stop);
+    container.addEventListener("touchend", () => {
+      scrollPos = container.scrollLeft;
+      start();
+    });
+
+    return () => {
+      stop();
+      mq.removeEventListener("change", start);
+      container.removeEventListener("touchstart", stop);
+      container.removeEventListener("touchend", start);
+    };
+  }, []);
+
   return (
     <section className="w-full py-6 lg:py-10 px-4 lg:px-10 bg-white">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6 lg:mb-8">
         <div>
           <h2 className="text-xl font-black text-[#0F172A] uppercase tracking-tight">
             Top Services
@@ -19,14 +117,27 @@ const TopServices = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* ── MOBILE: auto-scroll carousel ── */}
+      <div
+        ref={scrollRef}
+        className="flex lg:hidden gap-4 overflow-x-auto scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+      >
+        {/* duplicate list for seamless loop */}
+        {[...services, ...services].map((s, i) => (
+          <CarouselCard key={i} {...s} />
+        ))}
+      </div>
+
+      {/* ── DESKTOP: original grid layout ── */}
+      <div className="hidden lg:grid grid-cols-12 gap-8">
         {/* LEFT FEATURED SERVICE */}
-        <div className="lg:col-span-5 flex flex-col group cursor-pointer border border-slate-200 hover:shadow-md rounded-4xl">
+        <div className="col-span-5 flex flex-col group cursor-pointer border border-slate-200 hover:shadow-md rounded-4xl">
           <div className="relative aspect-4/3 rounded-t-4xl overflow-hidden mb-4 border border-slate-100 shadow-sm">
             <Image
               height={200}
               width={200}
-              src="https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&w=800&q=80"
+              src={services[0].img}
               alt="Premium Photography"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -95,47 +206,10 @@ const TopServices = () => {
         </div>
 
         {/* RIGHT SERVICE LIST */}
-        <div className="lg:col-span-7 space-y-4">
-          <ServiceRow
-            img="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80"
-            tag="FASHION"
-            creator="Zachary Will"
-            role="Fashion Stylist"
-            title="Try-on Haul Video for TikTok"
-            rating="4.8"
-            reviews="89"
-            price="150"
-          />
-          <ServiceRow
-            img="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80"
-            tag="BEAUTY"
-            creator="Jessica Che"
-            role="Beauty Guru"
-            title="Detailed Makeup Tutorial & Review"
-            rating="5.0"
-            reviews="210"
-            price="250"
-          />
-          <ServiceRow
-            img="https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=400&q=80"
-            tag="TECH"
-            creator="Alex Rivera"
-            role="Tech Reviewer"
-            title="Tech Gadget Unboxing & Setup"
-            rating="4.7"
-            reviews="56"
-            price="200"
-          />
-          <ServiceRow
-            img="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80"
-            tag="FASHION"
-            creator="Zachary Will"
-            role="Fashion Stylist"
-            title="Try-on Haul Video for TikTok"
-            rating="4.8"
-            reviews="89"
-            price="150"
-          />
+        <div className="col-span-7 space-y-4">
+          {services.slice(1).map((s, i) => (
+            <ServiceRow key={i} {...s} />
+          ))}
         </div>
       </div>
     </section>
@@ -143,6 +217,50 @@ const TopServices = () => {
 };
 
 export default TopServices;
+
+const CarouselCard = ({ img, tag, creator, role, title, rating, reviews, price }) => (
+  <div className="min-w-[260px] max-w-[260px] shrink-0 rounded-2xl border border-slate-200 bg-white overflow-hidden cursor-pointer group">
+    <div className="relative h-36 overflow-hidden">
+      <Image
+        src={img}
+        height={300}
+        width={300}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        alt={title}
+      />
+      <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-[9px] font-black px-2 py-0.5 rounded-full">
+        {tag}
+      </span>
+    </div>
+    <div className="p-3">
+      <div className="flex items-center gap-2 mb-1.5">
+        <Image
+          height={24}
+          width={24}
+          src={`https://i.pravatar.cc/100?u=${creator}`}
+          className="w-5 h-5 rounded-full border border-slate-100"
+          alt={creator}
+        />
+        <span className="text-[10px] font-black text-slate-900 truncate">{creator}</span>
+      </div>
+      <h4 className="text-sm font-black text-slate-900 leading-tight mb-2 line-clamp-2">
+        {title}
+      </h4>
+      <div className="flex items-center gap-1 mb-3">
+        <Star size={12} className="fill-yellow-400 text-yellow-400" />
+        <span className="text-[10px] font-black text-slate-700">
+          {rating} <span className="text-slate-400 font-bold">({reviews})</span>
+        </span>
+      </div>
+      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
+        <p className="text-lg font-black text-slate-900">${price}</p>
+        <button className="btn-purple text-[10px] font-black px-4 py-1.5 rounded-xl">
+          Book
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 const ServiceRow = ({
   img,

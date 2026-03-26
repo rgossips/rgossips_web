@@ -42,7 +42,9 @@ export function CampaignCard({ campaign, onApply }) {
           </div>
           <div>
             <div className="flex items-center gap-1">
-              <h4 className="font-bold text-slate-800">{campaign.title}</h4>
+              <h4 className="font-bold text-slate-800 truncate max-w-[160px]">
+                {campaign.title}
+              </h4>
               <Award size={14} className="text-amber-500 fill-amber-100" />
             </div>
             <p className="text-[11px] text-slate-400 font-medium">
@@ -126,7 +128,7 @@ export function CampaignCard({ campaign, onApply }) {
               if (onApply) {
                 onApply();
               } else {
-                router.push("/offers/" + campaign.id);
+                router.push("/influencer/offers/" + campaign.id);
               }
             }}
             className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
@@ -137,7 +139,7 @@ export function CampaignCard({ campaign, onApply }) {
 
         {isApplied && (
           <Button
-            onClick={() => router.push("/offers/" + campaign.id)}
+            onClick={() => router.push("/influencer/offers/" + campaign.id)}
             className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
           >
             <Eye size={16} className="mr-2" /> View Status{" "}
@@ -147,7 +149,7 @@ export function CampaignCard({ campaign, onApply }) {
 
         {isCompleted && (
           <Button
-            onClick={() => router.push("/offers/" + campaign.id)}
+            onClick={() => router.push("/influencer/offers/" + campaign.id)}
             className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
           >
             <BarChart3 size={16} className="mr-2" /> Full Analytics{" "}

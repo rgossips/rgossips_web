@@ -12,11 +12,11 @@ const EditProfilePage = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans lg:pb-12 lg:pt-32">
       {/* Desktop Header */}
-      <div className="hidden sticky top-0 w-full z-20 px-8 py-4 lg:flex items-center justify-between border-b border-gray-100">
+      <div className="hidden sticky top-0 w-full z-20 px-8 py-4 lg:flex items-center justify-between border-b border-gray-100 bg-white/80 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="cursor-pointer p-2 bg-pink-50 text-pink-500 rounded-2xl active:scale-90 transition-transform"
+            className="cursor-pointer p-2 btn-purple rounded-2xl active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
@@ -24,7 +24,7 @@ const EditProfilePage = ({ onBack }) => {
             Edit Profile
           </h1>
         </div>
-        <button className="bg-pink-500 text-white px-8 py-2.5 rounded-xl cursor-pointer text-xs font-black shadow-lg shadow-pink-100 active:scale-95 transition-all">
+        <button className="btn-purple px-8 py-2.5 rounded-xl cursor-pointer text-xs font-black shadow-lg shadow-pink-100 active:scale-95 transition-all">
           Save
         </button>
       </div>
@@ -34,7 +34,7 @@ const EditProfilePage = ({ onBack }) => {
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="cursor-pointer p-2 bg-pink-500 text-pink-500 rounded-2xl active:scale-90 transition-transform"
+            className="cursor-pointer p-2 btn-purple rounded-2xl active:scale-90 transition-transform"
           >
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
@@ -42,7 +42,7 @@ const EditProfilePage = ({ onBack }) => {
             Edit Profile
           </h1>
         </div>
-        <button className="bg-pink-500 text-white px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-pink-100 active:scale-95 transition-all cursor-pointer">
+        <button className="btn-purple px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-pink-100 active:scale-95 transition-all cursor-pointer">
           Save
         </button>
       </div>
@@ -77,7 +77,7 @@ const EditProfilePage = ({ onBack }) => {
                   <p className="text-[10px] font-bold text-gray-400 mb-4">
                     JPG, PNG or GIF. Max 5MB
                   </p>
-                  <button className="w-full lg:w-56 px-4 py-2.5 cursor-pointer bg-pink-500 text-white rounded-xl text-[10px] font-black uppercase shadow-md hover:bg-pink-600 transition-colors">
+                  <button className="w-full lg:w-56 px-4 py-2.5 cursor-pointer btn-purple rounded-xl text-[10px] font-black uppercase shadow-md transition-colors">
                     Upload New Photo
                   </button>
                 </div>
@@ -153,7 +153,7 @@ const EditProfilePage = ({ onBack }) => {
             >
               Cancel
             </button>
-            <button className="flex-1 cursor-pointer py-3 bg-pink-500 rounded-xl text-sm font-black text-white active:scale-95 transition-all shadow-lg shadow-pink-100 hover:bg-pink-600">
+            <button className="flex-1 cursor-pointer py-3 btn-purple rounded-xl text-sm font-black active:scale-95 transition-all shadow-lg shadow-pink-100">
               Save Changes
             </button>
           </div>
@@ -187,7 +187,7 @@ const EditProfilePage = ({ onBack }) => {
               <p className="text-[10px] font-bold text-gray-400 mb-3">
                 JPG, PNG or GIF. Max size 5MB
               </p>
-              <button className="px-4 py-2 cursor-pointer bg-pink-500 text-white rounded-xl text-[10px] font-black uppercase shadow-md">
+              <button className="px-4 py-2 cursor-pointer btn-purple rounded-xl text-[10px] font-black uppercase shadow-md">
                 Upload New Photo
               </button>
             </div>
@@ -263,7 +263,7 @@ const EditProfilePage = ({ onBack }) => {
           >
             Cancel
           </button>
-          <button className="flex-1 cursor-pointer py-4 bg-pink-500 rounded-[2rem] text-sm font-black text-white active:scale-95 transition-all shadow-lg shadow-pink-100">
+          <button className="flex-1 cursor-pointer py-4 btn-purple rounded-[2rem] text-sm font-black active:scale-95 transition-all shadow-lg shadow-pink-100">
             Save Changes
           </button>
         </div>

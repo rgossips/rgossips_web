@@ -19,7 +19,9 @@ export function CompleteProfileCard() {
     {
       id: 2,
       title: "Connect Instagram",
-      subtitle: hasInstagram ? `@${profile.instagram_handle}` : "Brands discover you instantly",
+      subtitle: hasInstagram
+        ? `@${profile.instagram_handle}`
+        : "Brands discover you instantly",
       action: hasInstagram ? null : "Connect",
       completed: hasInstagram,
       active: !hasInstagram,
@@ -48,84 +50,142 @@ export function CompleteProfileCard() {
   const completedCount = steps.filter((s) => s.completed).length;
 
   return (
-    <div className="w-full flex justify-center">
-      <Card className="w-full max-w-2xl lg:max-w-none p-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
-        {/* Header */}
+    <div className="w-full h-full flex justify-center">
+      <Card className="w-full h-full p-5 lg:p-6 rounded-[32px] border border-slate-200 bg-white shadow-sm flex flex-col">
+        {/* Header Section */}
         <div className="mb-6">
-          <div className="flex items-center gap-4 mb-3">
-            {/* Progress Circle */}
-            <div className="relative w-14 h-14">
-              <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#9810fa] border-r-[#e60076] rotate-[45deg]" />
+          <div className="flex items-center gap-4 mb-5">
+            {/* Progress Circle Container */}
+            <div className="relative w-14 h-14 shrink-0">
+              {/* Background Track */}
+              <svg className="w-full h-full -rotate-90">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  fill="transparent"
+                  stroke="currentColor"
+                  strokeWidth="5"
+                  className="text-slate-100"
+                />
+                {/* Progress Fill */}
+                <circle
+                  cx="28"
+                  cy="28"
+                  r="24"
+                  fill="transparent"
+                  stroke="url(#gradient)"
+                  strokeWidth="5"
+                  strokeDasharray="150.8"
+                  strokeDashoffset={150.8 - 150.8 * (completedCount / 5)}
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient
+                    id="gradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <stop offset="0%" stopColor="#9810fa" />
+                    <stop offset="100%" stopColor="#e60076" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              {/* Percentage Text in Center */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-black text-slate-800">
+                  {Math.round((completedCount / 5) * 100)}%
+                </span>
+              </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-[17px] font-black text-slate-900 leading-tight">
                 Get Your First Brand Deal
               </h3>
-              <p className="text-sm text-slate-500">{completedCount}/5 steps — {completedCount === 5 ? "all done!" : "keep going!"}</p>
+              <p className="text-xs font-bold text-slate-400 mt-0.5">
+                {completedCount}/5 steps —{" "}
+                {completedCount === 5 ? "All done!" : "Keep going!"}
+              </p>
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-            <div className={`h-full bg-gradient-to-r from-[#9810fa] to-[#e60076]`} style={{ width: `${(completedCount / 5) * 100}%` }} />
+          {/* Horizontal Progress Bar */}
+          <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#9810fa] to-[#e60076] transition-all duration-500"
+              style={{ width: `${(completedCount / 5) * 100}%` }}
+            />
           </div>
         </div>
 
-        {/* Steps */}
-        <div className="divide-y divide-slate-200">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className="flex items-center justify-between py-4"
-            >
-              <div className="flex items-center gap-4">
-                {/* Step Indicator */}
-                {step.completed ? (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9810fa] to-[#e60076] flex items-center justify-center text-white">
-                    <Check size={16} strokeWidth={3} />
+        {/* Steps List */}
+        <div className="flex-1 flex flex-col justify-between">
+          {steps.map((step, index) => (
+            <div key={step.id}>
+              <div
+                className={`flex items-center justify-between py-3.5 ${
+                  index !== steps.length - 1 ? "border-b border-slate-50" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  {/* Step Indicator Icon */}
+                  <div className="shrink-0">
+                    {step.completed ? (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9810fa] to-[#e60076] flex items-center justify-center text-white shadow-sm">
+                        <Check size={16} strokeWidth={4} />
+                      </div>
+                    ) : (
+                      <div
+                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[13px] font-black
+                        ${
+                          step.active
+                            ? "border-[#9810fa] text-[#9810fa] bg-purple-50/30"
+                            : "border-slate-200 text-slate-400"
+                        }`}
+                      >
+                        {step.id}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div
-                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-semibold
-                      ${
-                        step.active
-                          ? "border-[#9810fa] text-[#9810fa]"
-                          : "border-slate-300 text-slate-400"
+
+                  {/* Text Content */}
+                  <div className="min-w-0">
+                    <p
+                      className={`text-sm font-bold truncate ${
+                        step.completed
+                          ? "text-slate-300 line-through"
+                          : "text-slate-800"
                       }`}
-                  >
-                    {step.id}
+                    >
+                      {step.title}
+                    </p>
+                    <p className="text-[11px] font-semibold text-slate-400 truncate">
+                      {step.subtitle}
+                    </p>
                   </div>
-                )}
-
-                {/* Text */}
-                <div>
-                  <p
-                    className={`font-semibold ${
-                      step.completed
-                        ? "text-slate-400 line-through"
-                        : "text-slate-900"
-                    }`}
-                  >
-                    {step.title}
-                  </p>
-                  <p className="text-sm text-slate-500">{step.subtitle}</p>
                 </div>
-              </div>
 
-              {/* Action Button */}
-              {step.action && (
-                <button
-                  className={`px-4 cursor-pointer py-2 rounded-xl text-sm font-semibold transition
+                {/* Action Button */}
+                {step.action && !step.completed && (
+                  <button
+                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all active:scale-95
                     ${
                       step.active
-                        ? "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-white shadow-sm"
-                        : "border border-slate-300 text-slate-500 hover:border-slate-400"
+                        ? "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-white shadow-md shadow-purple-100"
+                        : "border border-slate-200 text-slate-400"
                     }`}
-                >
-                  {step.action}
-                </button>
+                  >
+                    {step.action}
+                  </button>
+                )}
+              </div>
+              {/* Vertical Connector Line */}
+
+              {index !== steps.length - 1 && (
+                <div className="w-px h-6 border-l-2 border-dashed border-slate-200 my-1 mx-4" />
               )}
             </div>
           ))}
