@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
 
     if (fields.categories !== undefined) updateData.categories = fields.categories;
     if (fields.services !== undefined) updateData.services = fields.services;
-    if (fields.rateRange !== undefined) updateData.rate_range = fields.rateRange;
     if (fields.notificationsEnabled !== undefined) updateData.notifications_enabled = fields.notificationsEnabled;
 
     // Also support updating basic profile fields

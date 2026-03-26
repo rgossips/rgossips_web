@@ -8,7 +8,6 @@ import {
   Youtube,
   Image as ImageIcon,
   Clapperboard,
-  ChevronDown,
 } from "lucide-react";
 
 const services = [
@@ -19,18 +18,8 @@ const services = [
   { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={24} /> },
 ];
 
-const rateRanges = [
-  "₹10,000 - ₹50,000",
-  "₹50,000 - ₹1,00,000",
-  "₹1,00,00,000 - ₹2,50,000",
-  "₹2,50,000 - ₹5,00,000",
-  "₹5,00,000 - ₹10,00,000",
-  "₹10,00,000+",
-];
-
 const Preferences = ({ onNext }) => {
   const [selectedServices, setSelectedServices] = useState([]);
-  const [rateRange, setRateRange] = useState("");
 
   const toggleService = (id) => {
     setSelectedServices((prev) =>
@@ -71,37 +60,9 @@ const Preferences = ({ onNext }) => {
         ))}
       </div>
 
-      {/* Rate Range Dropdown */}
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-500 ml-1">Rate Range</p>
-        <div className="relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]">
-            <span className="text-lg font-bold">₹</span>
-          </div>
-          <select
-            value={rateRange}
-            onChange={(e) => setRateRange(e.target.value)}
-            className="flex h-14 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-12 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#6347F9] appearance-none"
-          >
-            <option value="" disabled>
-              Select rate range
-            </option>
-            {rateRanges.map((range) => (
-              <option key={range} value={range}>
-                {range}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
-        </div>
-      </div>
-
       <Button
-        onClick={() => onNext({ services: selectedServices, rateRange })}
-        disabled={selectedServices.length === 0 || !rateRange}
+        onClick={() => onNext({ services: selectedServices })}
+        disabled={selectedServices.length === 0}
         className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
       >
         Continue

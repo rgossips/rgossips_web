@@ -10,6 +10,7 @@ import SignUpForm from "@/components/login/SignUpForm";
 import CategorySelection from "@/components/login/CategorySelection";
 import Preferences from "@/components/login/Preferences";
 import Notifications from "@/components/login/Notifications";
+import InstagramConnect from "@/components/login/InstagramConnect";
 import SuccessScreen from "@/components/login/SuccessScreen";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
@@ -22,7 +23,7 @@ const Login = () => {
   // --- UI & FLOW STATE ---
   // flow: "onboarding" | "signin" | "signup"
   // signin steps: 1=role, 2=phone, 3=otp
-  // signup steps: 1=role, 2=signupForm, 3=categories, 4=preferences, 5=notifications, 6=success
+  // signup steps: 1=role, 2=signupForm, 3=instagram, 4=categories, 5=preferences, 6=notifications, 7=success
   const [flow, setFlow] = useState("onboarding");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,6 @@ const Login = () => {
     youtube: "",
     categories: [],
     services: [],
-    rateRange: "",
     notificationsEnabled: false,
   });
 
@@ -187,19 +187,21 @@ const Login = () => {
     nextStep(); // → step 2 (SignUpForm)
   };
 
-  const handleSignUpFormSubmit = async (formData) => {
+  const handleSignUpFormSubmit = (formData) => {
+    setSignupData((prev) => ({ ...prev, ...formData }));
+    nextStep(); // → step 3 (Instagram connect)
+  };
+
+  const handleInstagramConnect = async (instaProfile) => {
     setLoading(true);
     setError("");
     try {
-      // Save form data
-      setSignupData((prev) => ({ ...prev, ...formData }));
+      setSignupData((prev) => ({ ...prev, instaProfile }));
 
       const userId = authUserId;
       if (!userId) throw new Error("No user found. Please verify OTP first.");
 
-      console.log("Signup step 1: Creating profile via edge function...");
-
-      // Create profile via edge function (bypasses RLS, no session needed)
+      // Create profile via edge function (bypasses RLS)
       const storagePhone = phone.replace(/\D/g, "").slice(-10);
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
 
@@ -210,33 +212,29 @@ const Login = () => {
             userId,
             table,
             phone: storagePhone,
-            name: formData.name,
-            username: formData.instagram || "",
-            instagram: formData.instagram || "",
-            profilePictureUrl: formData.instaProfile?.profilePictureUrl || "",
-            followersCount: formData.instaProfile?.followersCount || 0,
-            followsCount: formData.instaProfile?.followsCount || 0,
-            mediaCount: formData.instaProfile?.mediaCount || 0,
+            name: signupData.name,
+            username: instaProfile?.username || "",
+            instagram: instaProfile?.username || "",
+            profilePictureUrl: instaProfile?.profilePictureUrl || "",
+            followersCount: instaProfile?.followersCount || 0,
+            followsCount: instaProfile?.followsCount || 0,
+            mediaCount: instaProfile?.mediaCount || 0,
           },
         },
       );
 
-      console.log("Signup step 2: Profile create result:", { createResult, createError });
-
       if (createError) throw new Error(createError.message);
       if (createResult?.error) throw new Error(createResult.error);
 
-      // Apply session now that profile exists (fire-and-forget to avoid hanging)
+      // Apply session now that profile exists
       if (pendingSession) {
-        console.log("Signup step 3: Applying session...");
         supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
         });
       }
 
-      console.log("Signup step 4: Moving to next step");
-      nextStep(); // → step 3 (categories)
+      nextStep(); // → step 4 (categories)
     } catch (err) {
       setError(err.message || "Failed to create account.");
     } finally {
@@ -269,7 +267,6 @@ const Login = () => {
           table,
           categories: signupData.categories || [],
           services: signupData.services || [],
-          rateRange: signupData.rateRange || "",
           notificationsEnabled: signupData.notificationsEnabled || false,
         },
       });
@@ -386,11 +383,14 @@ const Login = () => {
                     />
                   )}
                   {step === 3 && (
+                    <InstagramConnect onNext={handleInstagramConnect} />
+                  )}
+                  {step === 4 && (
                     <CategorySelection onNext={handleCategorySelection} />
                   )}
-                  {step === 4 && <Preferences onNext={handlePreferences} />}
-                  {step === 5 && <Notifications onNext={handleNotifications} />}
-                  {step === 6 && (
+                  {step === 5 && <Preferences onNext={handlePreferences} />}
+                  {step === 6 && <Notifications onNext={handleNotifications} />}
+                  {step === 7 && (
                     <SuccessScreen onNext={handleFinish} loading={loading} />
                   )}
                 </div>

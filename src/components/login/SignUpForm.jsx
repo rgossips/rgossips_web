@@ -9,8 +9,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { User, CheckCircle2, Loader2, Instagram, X } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { User, CheckCircle2, Loader2 } from "lucide-react";
 
 const SignUpForm = ({
   onSubmit,
@@ -23,8 +22,6 @@ const SignUpForm = ({
   initialPhone = "",
   otpPreVerified = false,
 }) => {
-  const supabase = createClient();
-
   const [formData, setFormData] = useState({
     name: "",
     phone: initialPhone,
@@ -37,10 +34,6 @@ const SignUpForm = ({
   const [timer, setTimer] = useState(0);
   const [localError, setLocalError] = useState("");
 
-  // Instagram OAuth state
-  const [instaConnecting, setInstaConnecting] = useState(false);
-  const [instaProfile, setInstaProfile] = useState(null);
-
   useEffect(() => {
     if (timer <= 0) return;
     const interval = setInterval(() => {
@@ -48,73 +41,6 @@ const SignUpForm = ({
     }, 1000);
     return () => clearInterval(interval);
   }, [timer]);
-
-  // Listen for Instagram OAuth callback from popup
-  useEffect(() => {
-    const handleMessage = async (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== "instagram-oauth") return;
-
-      if (event.data.error) {
-        setLocalError(
-          event.data.errorDescription || "Instagram connection was denied"
-        );
-        setInstaConnecting(false);
-        return;
-      }
-
-      if (event.data.code) {
-        await exchangeInstagramCode(event.data.code);
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  const exchangeInstagramCode = async (code) => {
-    setInstaConnecting(true);
-    setLocalError("");
-    try {
-      const redirectUri = `${window.location.origin}/instagram-callback`;
-      const { data, error: funcError } = await supabase.functions.invoke(
-        "instagram-connect",
-        { body: { code, redirectUri } }
-      );
-
-      if (funcError) throw new Error(funcError.message);
-      if (data?.error) throw new Error(data.error);
-
-      setInstaProfile(data.profile);
-    } catch (err) {
-      setLocalError(err.message || "Failed to connect Instagram");
-    } finally {
-      setInstaConnecting(false);
-    }
-  };
-
-  const handleConnectInstagram = () => {
-    const appId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID;
-    const redirectUri = `${window.location.origin}/instagram-callback`;
-    const scope = "instagram_business_basic,instagram_business_manage_insights";
-
-    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-
-    const width = 500;
-    const height = 650;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    window.open(
-      authUrl,
-      "instagram-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-  };
-
-  const handleDisconnectInstagram = () => {
-    setInstaProfile(null);
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -185,15 +111,7 @@ const SignUpForm = ({
       setLocalError("Please verify your phone number");
       return;
     }
-    if (!instaProfile) {
-      setLocalError("Please connect your Instagram account");
-      return;
-    }
-    onSubmit({
-      ...formData,
-      instagram: instaProfile?.username || "",
-      instaProfile,
-    });
+    onSubmit({ ...formData });
   };
 
   const displayError = error || localError;
@@ -325,78 +243,13 @@ const SignUpForm = ({
           )}
         </div>
 
-        {/* Instagram Connect */}
-        <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">
-            Instagram Account <span className="text-red-400">*</span>
-          </Label>
-
-          {!instaProfile ? (
-            <button
-              onClick={handleConnectInstagram}
-              disabled={instaConnecting}
-              className="w-full h-12 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#E1306C] flex items-center justify-center gap-3 text-sm font-semibold transition-all cursor-pointer group bg-white hover:bg-gradient-to-r hover:from-[#FCAF45]/5 hover:via-[#E1306C]/5 hover:to-[#833AB4]/5"
-            >
-              {instaConnecting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin text-[#E1306C]" />
-                  <span className="text-slate-500">Connecting...</span>
-                </>
-              ) : (
-                <>
-                  <Instagram
-                    size={20}
-                    className="text-[#E1306C] group-hover:scale-110 transition-transform"
-                  />
-                  <span className="bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] bg-clip-text text-transparent">
-                    Connect with Instagram
-                  </span>
-                </>
-              )}
-            </button>
-          ) : (
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-green-50/50">
-              {instaProfile.profilePictureUrl ? (
-                <img
-                  src={instaProfile.profilePictureUrl}
-                  alt={instaProfile.username}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F77737] via-[#E1306C] to-[#833AB4] flex items-center justify-center text-white font-bold text-sm">
-                  {instaProfile.username?.charAt(0)?.toUpperCase() || "?"}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">
-                  @{instaProfile.username}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {formatCount(instaProfile.followersCount)} followers
-                  {" · "}
-                  {formatCount(instaProfile.mediaCount)} posts
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 size={18} className="text-green-500" />
-                <button
-                  onClick={handleDisconnectInstagram}
-                  className="p-1 rounded-full hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
-                  title="Disconnect"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Submit */}
       <div className="pt-2">
         <Button
           onClick={handleSubmit}
-          disabled={loading || !formData.name || !otpVerified || !instaProfile}
+          disabled={loading || !formData.name || !otpVerified}
           className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
         >
           {loading ? (
@@ -412,12 +265,5 @@ const SignUpForm = ({
     </div>
   );
 };
-
-function formatCount(n) {
-  if (!n) return "0";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return String(n);
-}
 
 export default SignUpForm;
