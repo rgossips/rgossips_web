@@ -3,11 +3,14 @@
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export function CompleteProfileCard() {
   const { profile } = useAuth();
+  const router = useRouter();
 
   const hasInstagram = !!profile?.instagram_handle;
+  const hasMediaKit = !!profile?.media_kit_published;
 
   const steps = [
     {
@@ -29,15 +32,18 @@ export function CompleteProfileCard() {
     {
       id: 3,
       title: "Generate AI Media Kit",
-      subtitle: "Look pro in 60 seconds",
-      action: "Create",
-      active: hasInstagram,
+      subtitle: hasMediaKit ? "Published" : "Look pro in 60 seconds",
+      action: hasMediaKit ? null : "Create",
+      completed: hasMediaKit,
+      active: hasInstagram && !hasMediaKit,
+      href: "/influencer/media-kit",
     },
     {
       id: 4,
       title: "Set your rate card",
       subtitle: "Know your worth",
       action: "Set Rates",
+      active: hasMediaKit,
     },
     {
       id: 5,
@@ -171,7 +177,8 @@ export function CompleteProfileCard() {
                 {/* Action Button */}
                 {step.action && !step.completed && (
                   <button
-                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all active:scale-95
+                    onClick={step.href ? () => router.push(step.href) : undefined}
+                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer
                     ${
                       step.active
                         ? "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-white shadow-md shadow-purple-100"

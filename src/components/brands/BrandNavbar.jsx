@@ -1,19 +1,23 @@
 "use client";
 
-import { Search, Zap, ChevronDown } from "lucide-react";
+import { Search, Zap, ChevronDown, LogOut } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export function BrandNavbar() {
+  const { profile, signOut } = useAuth();
+  const router = useRouter();
+
+  const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
+  const logoUrl = profile?.logo_url;
+  const initials = brandName.charAt(0).toUpperCase();
+
   return (
     <header className="w-full h-[72px] border-b bg-white hidden lg:flex items-center justify-between px-6 sticky top-0 z-40">
       {/* Left */}
       <div className="flex items-center gap-3">
-        {/* <div className="w-9 h-9 rounded-lg bg-black flex items-center justify-center text-white font-semibold">
-          #
-        </div>
-
-        <span className="font-semibold text-gray-800 text-sm">RGossips</span> */}
         <Image src={logo} alt="logo" height={100} width={200} />
       </div>
 
@@ -46,18 +50,34 @@ export function BrandNavbar() {
           <span className="text-lg leading-none">+</span>
         </button>
 
-        {/* Avatar */}
+        {/* Avatar & Name */}
         <div className="flex items-center gap-2 cursor-pointer">
-          <Image
-            src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e"
-            width={55}
-            height={55}
-            className="rounded-full aspect-square"
-            alt="profile"
-          />
-
-          <ChevronDown size={16} className="text-gray-500" />
+          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                width={40}
+                height={40}
+                className="rounded-full object-cover"
+                alt={brandName}
+              />
+            ) : (
+              <span className="text-purple-600 font-bold text-sm">{initials}</span>
+            )}
+          </div>
+          <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
+            {brandName}
+          </span>
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={async () => { await signOut(); router.push("/login"); }}
+          className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+          title="Log Out"
+        >
+          <LogOut size={18} />
+        </button>
       </div>
     </header>
   );

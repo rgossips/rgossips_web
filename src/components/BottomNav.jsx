@@ -7,7 +7,7 @@ import { Home, Search, Briefcase, User } from "lucide-react";
 
 const navItems = [
   { label: "Home", icon: Home, path: "/influencer" },
-  { label: "Discover", icon: Search, path: "/influencer/discover" },
+  { label: "Brands", icon: Search, path: "/influencer/brands" },
   { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
   { label: "Profile", icon: User, path: "/influencer/profile" },
 ];

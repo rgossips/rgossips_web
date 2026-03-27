@@ -51,7 +51,18 @@ const InstagramConnect = ({ onNext }) => {
       if (funcError) throw new Error(funcError.message);
       if (data?.error) throw new Error(data.error);
 
-      setProfile(data.profile);
+      // Check Instagram uniqueness
+      const { data: uniqueCheck } = await supabase.functions.invoke(
+        "check-uniqueness",
+        { body: { instagram: data.profile?.username } }
+      );
+      if (uniqueCheck?.conflicts?.includes("instagram")) {
+        setError("This Instagram account is already linked to another account.");
+        setConnecting(false);
+        return;
+      }
+
+      setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
     } catch (err) {
       setError(err.message || "Failed to connect Instagram");
     } finally {

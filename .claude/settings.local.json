@@ -5,7 +5,19 @@
       "Bash(find /d/Development/React/RS_Gossips/supabase -type f -name *.js)",
       "Bash(xargs grep:*)",
       "Bash(ls -la /d/Development/React/RS_Gossips/src/app/\\\\\\(home\\\\\\)/)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(find /d/Development/React/RS_Gossips -name *.json -path */supabase/* -o -name *schema* -type f)",
+      "Bash(find /d/Development/React/RS_Gossips -type f -path */src/app/* \\\\\\(-name *.jsx -o -name *.tsx -o -name *.ts \\\\\\))",
+      "Bash(find /d/Development/React/RS_Gossips/src/app -type f \\\\\\(-name *.jsx -o -name *.tsx -o -name *.ts \\\\\\))",
+      "Bash(npm install:*)",
+      "Bash(supabase functions:*)",
+      "Bash(for fn:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(ls -la /d/Development/React/RS_Gossips/src/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(ls -la /d/Development/React/RS_Gossips/src/app/\\\\\\(auth\\\\\\)/register/)",
+      "Bash(find d:DevelopmentReactRS_Gossips -type f -name *check-profile* -o -name *edge* -o -name *functions*)",
+      "Bash(grep -r \"INSTAGRAM\\\\|INSTA\" d:DevelopmentReactRS_Gossips --include=*.env* --include=*.ts --include=*.js --include=*.jsx)"
     ]
   }
 }

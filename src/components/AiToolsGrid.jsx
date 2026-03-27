@@ -52,7 +52,14 @@ const tools = [
 
 export function AiToolsGrid() {
   return (
-    <Card className="w-full h-full max-w-2xl p-5 lg:p-8 bg-white border-slate-200 shadow-sm rounded-3xl">
+    <Card className="w-full h-full max-w-2xl p-5 lg:p-8 bg-white border-slate-200 shadow-sm rounded-3xl relative group/card">
+      {/* Coming Soon Overlay */}
+      <div className="absolute inset-0 z-10 bg-white/70 backdrop-blur-[2px] rounded-3xl flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl">
+          <p className="text-sm font-black tracking-wide uppercase">Coming Soon</p>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-xl font-bold text-slate-900">AI Creator Tools</h2>
         <div className="text-xs font-medium text-slate-400">
@@ -64,11 +71,10 @@ export function AiToolsGrid() {
         {tools.map((tool, index) => (
           <motion.div
             key={index}
-            whileHover={{ y: -4 }}
-            className={`cursor-pointer p-6 rounded-3xl border transition-colors flex flex-col items-center text-center space-y-3 ${
+            className={`p-6 rounded-3xl border transition-colors flex flex-col items-center text-center space-y-3 ${
               tool.active
                 ? "bg-orange-50/50 border-orange-100 shadow-sm"
-                : "bg-slate-50 border-transparent hover:border-slate-200"
+                : "bg-slate-50 border-transparent"
             }`}
           >
             <div className={`p-3 rounded-2xl bg-white shadow-sm`}>

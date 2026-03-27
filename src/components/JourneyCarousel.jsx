@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Star } from "lucide-react";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Image from "next/image";
+import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 
 const journeyData = [
   {
@@ -177,85 +179,117 @@ const journeyData = [
 ];
 
 const JourneyCarousel = () => {
+  const [api, setApi] = useState(null);
+
+  useEffect(() => {
+    if (!api) return;
+    const interval = setInterval(() => {
+      api.scrollNext();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [api]);
+
   return (
-    <section className="w-full py-6 lg:px-10 bg-white">
+    <section className="w-full py-6 lg:px-10 bg-white overflow-hidden">
       {/* Header Area */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 px-6 lg:px-0">
         <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">
           For You
         </h2>
-        <button className="text-sm font-bold text-slate-500 hover:opacity-80 transition-all cursor-pointer hover:underline">
+        <button className="text-sm font-bold text-pink-500 hover:opacity-80 transition-all cursor-pointer hover:underline">
           See all
         </button>
       </div>
 
-      {/* Scrollable Container */}
-      <div className="flex overflow-x-auto gap-4 px-6 pb-6 scrollbar-hide snap-x snap-mandatory">
-        {journeyData.map((item) => (
-          <div
-            key={item.id}
-            className="flex-none basis-[80%] sm:basis-1/2 lg:basis-1/4 snap-start"
-          >
-            <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 flex flex-col h-full active:scale-[0.98] transition-transform">
-              {/* Image Section */}
-              <div className="relative w-full h-48">
-                <Image
-                  height={200}
-                  width={200}
-                  src={item.image}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      {/* Carousel */}
+      <div className="relative">
+        <button
+          onClick={() => api?.scrollPrev()}
+          className="hidden lg:flex absolute -left-2 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full hover:scale-110 transition-all text-slate-800 cursor-pointer"
+        >
+          <FaChevronLeft size={14} />
+        </button>
 
-              {/* Content Section */}
-              <div className="p-5 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black text-slate-900 leading-tight">
-                    {item.title}
-                  </h3>
+        <Carousel
+          opts={{ align: "start", loop: true, dragFree: true }}
+          setApi={setApi}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-3 px-6 lg:px-0">
+            {journeyData.map((item) => (
+              <CarouselItem
+                key={item.id}
+                className="pl-3 basis-[75%] sm:basis-1/2 lg:basis-1/4"
+              >
+                <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 flex flex-col h-full active:scale-[0.98] transition-transform cursor-pointer">
+                  {/* Image Section */}
+                  <div className="relative w-full h-48">
+                    <Image
+                      height={200}
+                      width={200}
+                      src={item.image}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
 
-                  <div className="flex flex-col gap-1">
-                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
-                      {item.location}
-                    </p>
+                  {/* Content Section */}
+                  <div className="p-5 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-slate-900 leading-tight">
+                        {item.title}
+                      </h3>
 
-                    {/* Rating */}
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Star
-                        size={14}
-                        className="fill-yellow-400 text-yellow-400"
-                      />
-                      <span className="text-sm font-black text-slate-700">
-                        {item.rating}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+                          {item.location}
+                        </p>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Star
+                            size={14}
+                            className="fill-yellow-400 text-yellow-400"
+                          />
+                          <span className="text-sm font-black text-slate-700">
+                            {item.rating}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer: Price and Duration */}
+                    <div className="flex justify-between items-end mt-5">
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
+                          Start from
+                        </p>
+                        <p className="text-lg font-black text-slate-900">
+                          $ {item.price}
+                          <span className="text-[10px] font-bold text-slate-400">
+                            /pax
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* Duration Badge with Gradient */}
+                      <div className="bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-[10px] font-black px-5 py-2 rounded-full shadow-lg shadow-pink-100">
+                        {item.duration}
+                      </div>
                     </div>
                   </div>
                 </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
 
-                {/* Footer: Price and Duration */}
-                <div className="flex justify-between items-end mt-5">
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">
-                      Start from
-                    </p>
-                    <p className="text-lg font-black text-slate-900">
-                      $ {item.price}
-                      <span className="text-[10px] font-bold text-slate-400">
-                        /pax
-                      </span>
-                    </p>
-                  </div>
-
-                  {/* Duration Badge with Gradient */}
-                  <div className="bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-[10px] font-black px-5 py-2 rounded-full shadow-lg shadow-pink-100">
-                    {item.duration}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+        <button
+          onClick={() => api?.scrollNext()}
+          className="hidden lg:flex absolute -right-2 top-1/2 -translate-y-1/2 z-20 bg-white shadow-lg p-3 rounded-full hover:scale-110 transition-all text-slate-800 cursor-pointer"
+        >
+          <FaChevronRight size={14} />
+        </button>
       </div>
     </section>
   );

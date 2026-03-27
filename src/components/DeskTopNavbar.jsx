@@ -21,9 +21,9 @@ import { useRouter } from "next/navigation";
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
   {
-    label: "Discover",
+    label: "Brands",
     icon: <Compass size={20} />,
-    href: "/influencer/discover",
+    href: "/influencer/brands",
   },
   {
     label: "Campaigns",

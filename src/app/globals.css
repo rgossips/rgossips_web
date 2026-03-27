@@ -165,18 +165,28 @@
   }
 }
 
-/* Add this to your globals.css */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+/* Global gradient floating scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c026d3 transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0; /* slate-200 */
-  border-radius: 10px;
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9810fa 0%, #e60076 100%);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #7a0dd4 0%, #c20063 100%);
 }
 
 html body {

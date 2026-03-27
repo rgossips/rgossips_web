@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
-import { FaPlus } from "react-icons/fa";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { LuMessageSquareText } from "react-icons/lu";
 
@@ -138,17 +137,10 @@ export function CommunityFeed() {
             </motion.div>
           ))}
 
-          <button className="w-full cursor-pointer hover:scale-[1.02] transition-transform py-3 text-sm text-slate-500 bg-slate-100 rounded-xl mt-auto">
-            Load more discussions
-          </button>
         </div>
 
         {/* RIGHT SIDEBAR — same height as left */}
         <div className="col-span-4 flex flex-col gap-5">
-          <button className="btn-purple w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl cursor-pointer text-sm font-bold">
-            <FaPlus size={12} /> Start a Discussion
-          </button>
-
           <Card className="p-5 rounded-2xl border bg-white">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-base">📊</span>

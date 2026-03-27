@@ -76,6 +76,7 @@ export default function CreatorsLikeYou() {
 
   return (
     <section className="w-full bg-[#F7F7FB] py-6 px-4 lg:px-10">
+      <div className="max-w-[1440px] mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 lg:mb-10">
         <div>
@@ -86,9 +87,6 @@ export default function CreatorsLikeYou() {
             See how others are growing their income
           </p>
         </div>
-        <button className="text-pink-500 text-sm font-semibold hover:underline shrink-0">
-          See all
-        </button>
       </div>
 
       {/* Layout */}
@@ -196,6 +194,7 @@ export default function CreatorsLikeYou() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </section>
   );

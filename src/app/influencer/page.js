@@ -2,6 +2,7 @@
 
 import React from "react";
 import { TrendingUp, Star, Box, Compass, Crown } from "lucide-react";
+import { useRouter } from "next/navigation";
 import BrandsCarousel from "@/components/BrandsCarousel2";
 import CreatorsCarouselWithLink from "@/components/CreatorsCarouselWithLink";
 import JourneyCarousel from "@/components/JourneyCarousel";
@@ -19,17 +20,27 @@ import { AiToolsGrid } from "@/components/AiToolsGrid";
 import { CommunityFeed } from "@/components/CommunityFeed";
 import CreatorsLikeYou from "@/components/CreatorsLikeYou";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
+import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 
 const CATEGORIES = [
-  { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true },
-  { id: 2, label: "For You", icon: <Star size={20} />, active: false },
-  { id: 3, label: "Brands", icon: <Box size={20} />, active: false },
-  { id: 4, label: "Discover", icon: <Compass size={20} />, active: false },
-  { id: 5, label: "Top Creators", icon: <Crown size={20} />, active: false },
+  { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true, action: "scroll", target: "section-trending" },
+  { id: 2, label: "For You", icon: <Star size={20} />, active: false, action: "scroll", target: "section-for-you" },
+  { id: 3, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
+  { id: 4, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
+  { id: 5, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
 ];
 export default function HomePage() {
-  // Pull pre-fetched data and global loading state from Context
+  const router = useRouter();
   const { loading } = useAuth();
+
+  const handleCategoryClick = (cat) => {
+    if (cat.action === "navigate") {
+      router.push(cat.target);
+    } else if (cat.action === "scroll") {
+      const el = document.getElementById(cat.target);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   //   const [homeData, setHomeData] = useState({
   //   activeOffers: [],
@@ -99,10 +110,10 @@ export default function HomePage() {
       <HeroImage userData={profile} /> */}
 
       <div className="relative z-20 bg-white p-2">
-        {/* <SelectionMenu /> */}
-        <div className="flex flex-col gap-4 lg:gap-8 items-center lg:items-start">
-          {/* Full Width Header */}
-          <div className="w-full lg:hidden lg:max-w-[1480px] mx-auto">
+        {/* Constrained content */}
+        <div className="flex flex-col gap-4 lg:gap-8 items-center max-w-[1440px] mx-auto lg:mb-10">
+          {/* Mobile Header */}
+          <div className="w-full lg:hidden">
             <UserDoc />
           </div>
 
@@ -110,91 +121,76 @@ export default function HomePage() {
             <ProStatusCard />
           </div>
 
+          {/* Instagram Reconnect Banner */}
+          <div className="w-full">
+            <InstagramReconnectBanner />
+          </div>
+
           {/* Desktop Two-Column Layout */}
-          <div className="hidden lg:flex gap-8 w-full pl-10 lg:max-w-[1480px] mx-auto">
-            {/* Left Sidebar: Categories Vertical */}
+          <div className="hidden lg:flex gap-8 w-full pl-10">
             <div className="w-64 flex-shrink-0">
               <div className="mt-8 space-y-3">
                 {CATEGORIES.map((cat, idx) => (
                   <button
                     key={idx}
+                    onClick={() => handleCategoryClick(cat)}
                     className={`w-full flex items-center gap-4 px-4 cursor-pointer py-4 rounded-[24px] transition-all duration-300 shadow-sm ${
-                      cat.active
-                        ? "bg-white border-l-4 border-pink-500"
-                        : "bg-white hover:bg-slate-50"
+                      cat.active ? "bg-white border-l-4 border-pink-500" : "bg-white hover:bg-slate-50"
                     }`}
                   >
-                    <div
-                      className={`p-2.5 rounded-2xl ${
-                        cat.active
-                          ? "bg-pink-50 text-pink-500"
-                          : "bg-slate-50 text-slate-400"
-                      }`}
-                    >
-                      {React.cloneElement(cat.icon, { size: 20 })}
-                    </div>
-                    <span
-                      className={`text-sm font-bold ${
-                        cat.active ? "text-slate-900" : "text-slate-400"
-                      }`}
-                    >
-                      {cat.label}
-                    </span>
+                    <div className={`p-2.5 rounded-2xl ${cat.active ? "bg-pink-50 text-pink-500" : "bg-slate-50 text-slate-400"}`}>{React.cloneElement(cat.icon, { size: 20 })}</div>
+                    <span className={`text-sm font-bold ${cat.active ? "text-slate-900" : "text-slate-400"}`}>{cat.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Right: StackedDeals */}
             <div className="flex-1">
-              {/* <StackedDeals /> */}
               <DealsLaptop />
             </div>
           </div>
 
           {/* Mobile Layout: Stacked */}
-          <div className="lg:hidden w-full lg:max-w-[1480px] mx-auto">
+          <div className="lg:hidden w-full">
             <StackedDeals />
           </div>
 
           <div className="flex w-full px-4 lg:px-10 justify-center gap-6 lg:gap-10 flex-col lg:flex-row items-stretch">
-            {/* Order 2 on mobile (default), Order 1 on desktop */}
             <div className="flex w-full order-2 lg:order-1 lg:flex-1">
               <CompleteProfileCard />
             </div>
-
-            {/* Order 1 on mobile, Order 2 on desktop */}
             <div className="flex w-full order-1 lg:order-2 lg:flex-1">
               <AiMediaKitCard />
             </div>
-
-            {/* Order 3 on both */}
-            <div className="flex w-full order-3 lg:order-3 lg:flex-1">
+            <div className="flex w-full order-3 lg:flex-1">
               <AiToolsGrid />
             </div>
           </div>
+        </div>
 
+        {/* Full-width background sections */}
+        <div id="section-trending">
           <CreatorsLikeYou />
-          <JourneyCarousel />
+        </div>
 
+        <div className="max-w-[1440px] mx-auto">
+          <div id="section-for-you">
+            <JourneyCarousel />
+          </div>
           <CommunityFeed />
-          <PerformanceDashboard />
-          {/* <GrowthDashboard /> */}
+        </div>
 
-          {/* Rest of content */}
-          <div className="w-full lg:max-w-[1480px] mx-auto space-y-8">
-            <BrandsCarousel />
-            {/* <HotelRecommendations /> */}
+        <PerformanceDashboard />
 
-            {/* <CounterBanner /> */}
+        {/* Constrained content */}
+        <div className="max-w-[1440px] mx-auto space-y-8">
+          <BrandsCarousel />
+          <div id="section-top-services">
             <TopServices />
-            <TopPicksCarousel />
-            {/* <TopExperiencesCarousel />
-            <ExploreStates /> */}
-            <StayCarousel />
-
-            {/* <FoodMoodGrid /> */}
-            {/* <CreatorsCarousel /> */}
+          </div>
+          <TopPicksCarousel />
+          <StayCarousel />
+          <div id="section-top-creators">
             <CreatorsCarouselWithLink />
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 const AuthContext = createContext(null);
@@ -10,53 +10,83 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [instagramTokenMissing, setInstagramTokenMissing] = useState(false);
 
   const supabase = createClient();
 
+  const fetchProfile = useCallback(async (userId) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/check-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data?.error) {
+        console.error("Error fetching profile:", data?.error);
+        setProfile(null);
+        setRole(null);
+        return;
+      }
+
+      if (data?.exists) {
+        setProfile(data.profile);
+        setRole(data.role);
+      } else {
+        setProfile(null);
+        setRole(null);
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      setProfile(null);
+      setRole(null);
+    }
+  }, []);
+
+  const refreshInstagram = useCallback(async (userId) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/refresh-instagram`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (data?.success && !data?.skipped) {
+        setInstagramTokenMissing(false);
+        await fetchProfile(userId);
+      } else if (data?.error?.includes("No Instagram token stored")) {
+        setInstagramTokenMissing(true);
+      } else if (data?.error?.includes("token expired")) {
+        setInstagramTokenMissing(true);
+      }
+    } catch (err) {
+      console.error("Instagram refresh failed:", err);
+    }
+  }, [fetchProfile]);
+
+  const refreshProfile = useCallback(async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
+    }
+  }, [user, fetchProfile]);
+
   useEffect(() => {
     let isMounted = true;
-
-    const fetchProfile = async (userId) => {
-      try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-        const res = await fetch(`${supabaseUrl}/functions/v1/check-profile`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": supabaseKey,
-            "Authorization": `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ userId }),
-        });
-
-        const data = await res.json();
-
-        if (!isMounted) return;
-
-        if (!res.ok || data?.error) {
-          console.error("Error fetching profile:", data?.error);
-          setProfile(null);
-          setRole(null);
-          return;
-        }
-
-        if (data?.exists) {
-          setProfile(data.profile);
-          setRole(data.role);
-        } else {
-          setProfile(null);
-          setRole(null);
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        if (isMounted) {
-          setProfile(null);
-          setRole(null);
-        }
-      }
-    };
 
     const initializeAuth = async () => {
       try {
@@ -70,6 +100,8 @@ export const AuthProvider = ({ children }) => {
         setUser(currentUser);
         if (currentUser) {
           await fetchProfile(currentUser.id);
+          // Background refresh Instagram data (throttled to once per hour server-side)
+          refreshInstagram(currentUser.id);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -118,7 +150,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, role, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, setProfile, role, loading, signOut, refreshProfile, instagramTokenMissing, setInstagramTokenMissing }}>
       {children}
     </AuthContext.Provider>
   );

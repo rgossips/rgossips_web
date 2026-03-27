@@ -7,6 +7,7 @@ import RoleSelection from "@/components/login/RoleSelection";
 import SignInPhone from "@/components/login/SignInPhone";
 import VerifyOTP from "@/components/login/VerifyOTP";
 import SignUpForm from "@/components/login/SignUpForm";
+import BrandSignUpForm from "@/components/login/BrandSignUpForm";
 import CategorySelection from "@/components/login/CategorySelection";
 import Preferences from "@/components/login/Preferences";
 import Notifications from "@/components/login/Notifications";
@@ -164,7 +165,7 @@ const Login = () => {
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
-        router.push(signupData.role === "brand" ? "/brand" : "/influencer");
+        router.push(signupData.role === "brand" ? "/brands" : "/influencer");
         return;
       }
 
@@ -187,9 +188,50 @@ const Login = () => {
     nextStep(); // → step 2 (SignUpForm)
   };
 
-  const handleSignUpFormSubmit = (formData) => {
+  const handleSignUpFormSubmit = async (formData) => {
     setSignupData((prev) => ({ ...prev, ...formData }));
-    nextStep(); // → step 3 (Instagram connect)
+
+    if (signupData.role === "brand") {
+      // Brands: create profile and go straight to dashboard
+      setLoading(true);
+      setError("");
+      try {
+        const userId = authUserId;
+        if (!userId) throw new Error("No user found. Please verify OTP first.");
+
+        const storagePhone = phone.replace(/\D/g, "").slice(-10);
+        const { data: createResult, error: createError } = await supabase.functions.invoke(
+          "create-profile",
+          {
+            body: {
+              userId,
+              table: "brand_profiles",
+              phone: storagePhone,
+              name: formData.name,
+              gstinData: formData.gstinData || null,
+            },
+          },
+        );
+
+        if (createError) throw new Error(createError.message);
+        if (createResult?.error) throw new Error(createResult.error);
+
+        if (pendingSession) {
+          await supabase.auth.setSession({
+            access_token: pendingSession.access_token,
+            refresh_token: pendingSession.refresh_token,
+          });
+        }
+
+        router.push("/brands");
+      } catch (err) {
+        setError(err.message || "Failed to create account.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      nextStep(); // → step 3 (Instagram connect)
+    }
   };
 
   const handleInstagramConnect = async (instaProfile) => {
@@ -201,7 +243,6 @@ const Login = () => {
       const userId = authUserId;
       if (!userId) throw new Error("No user found. Please verify OTP first.");
 
-      // Create profile via edge function (bypasses RLS)
       const storagePhone = phone.replace(/\D/g, "").slice(-10);
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
 
@@ -219,6 +260,9 @@ const Login = () => {
             followersCount: instaProfile?.followersCount || 0,
             followsCount: instaProfile?.followsCount || 0,
             mediaCount: instaProfile?.mediaCount || 0,
+            instagramAccessToken: instaProfile?.accessToken || "",
+            instagramTokenExpiresAt: instaProfile?.tokenExpiresAt || "",
+            gstinData: signupData.gstinData || null,
           },
         },
       );
@@ -226,7 +270,6 @@ const Login = () => {
       if (createError) throw new Error(createError.message);
       if (createResult?.error) throw new Error(createResult.error);
 
-      // Apply session now that profile exists
       if (pendingSession) {
         supabase.auth.setSession({
           access_token: pendingSession.access_token,
@@ -258,7 +301,8 @@ const Login = () => {
   };
 
   const handleFinish = async () => {
-    // Save onboarding data (categories, services, rate range, notifications) to profile
+    setLoading(true);
+    // Save onboarding data (categories, services, notifications) to profile
     if (authUserId) {
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
       await supabase.functions.invoke("update-profile", {
@@ -279,7 +323,7 @@ const Login = () => {
         refresh_token: pendingSession.refresh_token,
       });
     }
-    router.push(signupData.role === "brand" ? "/brand" : "/influencer");
+    router.push(signupData.role === "brand" ? "/brands" : "/influencer");
   };
 
   const closeAuth = () => {
@@ -309,8 +353,9 @@ const Login = () => {
       {/* Auth Container */}
       {flow !== "onboarding" && (
         <div className="relative z-20 w-full max-w-[500px] h-full md:h-auto md:max-h-[90vh] flex flex-col justify-end md:justify-center px-0 md:px-6">
-          <div className="auth-drawer-card bg-white w-full px-8 pt-6 pb-12 rounded-t-[40px] md:rounded-[40px] shadow-2xl overflow-y-auto animate-in slide-in-from-bottom duration-500">
-            <div className="flex flex-col items-center">
+          <div className="auth-drawer-card bg-white w-full rounded-t-[40px] md:rounded-[40px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500">
+            {/* Sticky header with close button */}
+            <div className="relative flex flex-col items-center px-8 pt-6 pb-2 shrink-0">
               <div className="w-12 h-1 bg-slate-200 rounded-full mb-4 md:hidden" />
               <button
                 onClick={closeAuth}
@@ -321,7 +366,8 @@ const Login = () => {
               </button>
             </div>
 
-            <div className="w-full max-md mx-auto">
+            {/* Scrollable content */}
+            <div className="w-full max-md mx-auto overflow-y-auto px-8 pb-12">
               {/* ===== SIGN IN FLOW ===== */}
               {flow === "signin" && (
                 <>
@@ -369,7 +415,19 @@ const Login = () => {
                       onSwitchMode={switchToSignIn}
                     />
                   )}
-                  {step === 2 && (
+                  {step === 2 && signupData.role === "brand" && (
+                    <BrandSignUpForm
+                      onSubmit={handleSignUpFormSubmit}
+                      onSendOtp={sendOtp}
+                      onResendOtp={sendOtp}
+                      onVerifyOtp={verifyOtp}
+                      loading={loading}
+                      error={error}
+                      initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
+                      otpPreVerified={!!authUserId}
+                    />
+                  )}
+                  {step === 2 && signupData.role !== "brand" && (
                     <SignUpForm
                       onSubmit={handleSignUpFormSubmit}
                       onSendOtp={sendOtp}

@@ -53,6 +53,21 @@ Deno.serve(async (req) => {
     if (fields.followersCount !== undefined) updateData.followers_count = fields.followersCount;
     if (fields.followsCount !== undefined) updateData.follows_count = fields.followsCount;
     if (fields.mediaCount !== undefined) updateData.media_count = fields.mediaCount;
+    if (fields.subscriptionPlan !== undefined) updateData.subscription_plan = fields.subscriptionPlan;
+    if (fields.billingCycle !== undefined) updateData.billing_cycle = fields.billingCycle;
+    if (fields.bio !== undefined) updateData.bio = fields.bio;
+    if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
+    if (fields.customProfilePhotoUrl !== undefined) updateData.custom_profile_photo_url = fields.customProfilePhotoUrl || null;
+    if (fields.location !== undefined) updateData.location = fields.location;
+    if (fields.email !== undefined) updateData.email = fields.email;
+    if (fields.phone !== undefined) updateData.phone = fields.phone;
+    if (fields.address !== undefined) updateData.address = fields.address;
+    if (fields.serviceRates !== undefined) updateData.service_rates = fields.serviceRates;
+    if (fields.tiktokUrl !== undefined) updateData.tiktok_url = fields.tiktokUrl;
+    if (fields.youtubeUrl !== undefined) updateData.youtube_url = fields.youtubeUrl;
+    if (fields.facebookUrl !== undefined) updateData.facebook_url = fields.facebookUrl;
+    if (fields.instagramAccessToken !== undefined) updateData.instagram_access_token = fields.instagramAccessToken;
+    if (fields.instagramTokenExpiresAt !== undefined) updateData.instagram_token_expires_at = fields.instagramTokenExpiresAt;
 
     const { error: dbError } = await supabaseAdmin
       .from(table)

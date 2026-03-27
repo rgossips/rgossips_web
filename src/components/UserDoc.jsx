@@ -27,7 +27,7 @@ const UserDoc = () => {
 
   const navLinks = [
     { label: "Home", icon: Home, path: "/influencer" },
-    { label: "Discover", icon: Search, path: "/influencer/discover" },
+    { label: "Brands", icon: Search, path: "/influencer/brands" },
     { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
     { label: "Chats", icon: MessageSquare, path: "/influencer/chats" },
     {
@@ -59,7 +59,7 @@ const UserDoc = () => {
           {/* Right actions */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push("/influencer/discover")}
+              onClick={() => router.push("/influencer/brands")}
               className="p-2 rounded-xl hover:bg-slate-50 transition-colors"
             >
               <Search size={20} className="text-slate-600" />

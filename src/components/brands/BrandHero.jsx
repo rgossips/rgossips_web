@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const baseBrands = [
   "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
@@ -15,6 +16,11 @@ const baseBrands = [
 
 const BrandHero = () => {
   const router = useRouter();
+  const { profile } = useAuth();
+
+  const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
+  const logoUrl = profile?.logo_url;
+  const initials = brandName.charAt(0).toUpperCase();
 
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
@@ -22,13 +28,17 @@ const BrandHero = () => {
         {/* TOP ROW */}
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20">
-              <Image
-                src="https://i.pravatar.cc/150?u=brand"
-                alt="Profile"
-                fill
-                className="object-cover"
-              />
+            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex items-center justify-center">
+              {logoUrl ? (
+                <Image
+                  src={logoUrl}
+                  alt={brandName}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-lg">{initials}</span>
+              )}
             </div>
 
             <div>
@@ -36,7 +46,7 @@ const BrandHero = () => {
                 Welcome back
               </p>
               <h3 className="text-white font-bold text-sm md:text-base">
-                Versace
+                {brandName}
               </h3>
             </div>
           </div>

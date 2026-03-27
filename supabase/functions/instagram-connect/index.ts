@@ -83,6 +83,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Calculate token expiry (long-lived tokens last 60 days)
+    const expiresIn = longData.expires_in || 5184000; // default 60 days in seconds
+    const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -97,6 +101,8 @@ Deno.serve(async (req) => {
           accountType: profile.account_type || "",
           igUserId: profile.user_id || "",
         },
+        accessToken: accessToken,
+        tokenExpiresAt,
       }),
       { status: 200, headers: jsonHeaders }
     );

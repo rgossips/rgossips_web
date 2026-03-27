@@ -6,7 +6,7 @@ import DashboardView from "@/components/DashboardView";
 import MyInformationDetail from "@/components/MyInformationDetail";
 import AnalyticsPage from "@/components/AnalyticsPage";
 import DetailedCampaignAnalytics from "@/components/CampaignAnalytics";
-import EditProfilePage from "@/components/EditProfilePage";
+
 import NotificationSettings from "@/components/NotificationSettings";
 import PrivacySecurityPage from "@/components/PrivacySettings";
 import ChangePassword from "@/components/ChangePassword";
@@ -27,9 +27,6 @@ export default function ProfilePage() {
         {view === "dashboard" && (
           <DashboardView
             key="dash"
-            onOpenEdit={() => {
-              setView("edit-profile");
-            }}
             onNotificationClick={() => {
               setView("notifications");
             }}
@@ -66,12 +63,6 @@ export default function ProfilePage() {
           <DetailedCampaignAnalytics
             key="campaign"
             onBack={() => setView("analytics")}
-          />
-        )}
-        {view === "edit-profile" && (
-          <EditProfilePage
-            key="edit-profile"
-            onBack={() => setView("dashboard")}
           />
         )}
         {view === "notifications" && (

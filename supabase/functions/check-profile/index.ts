@@ -27,6 +27,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Strip sensitive fields before returning to client
+    const sanitize = (data: Record<string, unknown> | null) => {
+      if (!data) return data;
+      const { instagram_access_token, instagram_token_expires_at, ...safe } = data;
+      return safe;
+    };
+
     // If a specific table is requested, check only that one
     if (table) {
       if (table !== "influencer_profiles" && table !== "brand_profiles") {
@@ -54,7 +61,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           exists: !!data,
-          profile: data,
+          profile: sanitize(data),
           role: data ? (table === "brand_profiles" ? "brand" : "influencer") : null,
         }),
         { status: 200, headers: jsonHeaders }
@@ -85,14 +92,14 @@ Deno.serve(async (req) => {
 
     if (infRes.data) {
       return new Response(
-        JSON.stringify({ exists: true, profile: infRes.data, role: "influencer" }),
+        JSON.stringify({ exists: true, profile: sanitize(infRes.data), role: "influencer" }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
     if (brandRes.data) {
       return new Response(
-        JSON.stringify({ exists: true, profile: brandRes.data, role: "brand" }),
+        JSON.stringify({ exists: true, profile: sanitize(brandRes.data), role: "brand" }),
         { status: 200, headers: jsonHeaders }
       );
     }

@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData } = await req.json();
 
     if (!userId || !table) {
       return new Response(
@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
         followers_count: followersCount || 0,
         follows_count: followsCount || 0,
         media_count: mediaCount || 0,
+        instagram_access_token: instagramAccessToken || null,
+        instagram_token_expires_at: instagramTokenExpiresAt || null,
         status: "active",
         updated_at: new Date().toISOString(),
       };
@@ -55,12 +57,21 @@ Deno.serve(async (req) => {
       // brand_profiles
       row = {
         brand_id: userId,
-        brand_name: name || "",
+        brand_name: gstinData?.tradeName || name || "",
         contact_name: name || "",
         contact_email: "",
         contact_phone: phone || "",
         instagram_username: instagram || "",
         logo_url: profilePictureUrl || "",
+        gstin: gstinData?.gstin || "",
+        gstin_legal_name: gstinData?.legalName || "",
+        gstin_trade_name: gstinData?.tradeName || "",
+        gstin_business_type: gstinData?.businessType || "",
+        gstin_status: gstinData?.gstStatus || "",
+        gstin_registration_date: gstinData?.registrationDate || "",
+        gstin_address: gstinData?.address || "",
+        gstin_state: gstinData?.state || "",
+        gstin_pincode: gstinData?.pincode || "",
         status: "active",
         updated_at: new Date().toISOString(),
       };

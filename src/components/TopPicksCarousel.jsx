@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Bookmark, MapPin, DollarSign, Users } from "lucide-react";
+import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -185,9 +185,6 @@ export default function RecommendedCampaigns() {
               <div className="flex gap-3 mt-auto">
                 <button className="flex-1 cursor-pointer bg-linear-to-r from-[#8E2DE2] to-[#F6339A] text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all">
                   Apply Now
-                </button>
-                <button className="p-4 cursor-pointer rounded-2xl border border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
-                  <Bookmark size={20} />
                 </button>
               </div>
             </div>

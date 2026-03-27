@@ -4,13 +4,14 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 const publicPaths = ["/", "/login", "/register", "/instagram-callback"];
+const publicPrefixes = ["/kit/"];
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const isPublic = publicPaths.includes(pathname);
+  const isPublic = publicPaths.includes(pathname) || publicPrefixes.some((p) => pathname.startsWith(p));
 
   useEffect(() => {
     if (!loading && !user && !isPublic) {

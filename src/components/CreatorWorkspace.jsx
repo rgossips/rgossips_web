@@ -191,7 +191,7 @@ export default function CreatorWorkspace() {
           </div>
 
           <button
-            onClick={() => router.push("/influencer/discover")}
+            onClick={() => router.push("/influencer/brands")}
             className="w-full py-3 rounded-xl bg-linear-to-r from-[#9810fa] to-[#e60076] text-white text-sm font-bold cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
             <Search size={16} />

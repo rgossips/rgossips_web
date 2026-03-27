@@ -87,7 +87,8 @@ export default function PerformanceDashboard() {
   };
 
   return (
-    <section className="w-full px-4 lg:px-10 py-6 lg:py-10 bg-[#F7F7FB] space-y-4 lg:space-y-6">
+    <section className="w-full px-4 lg:px-10 py-6 lg:py-10 bg-[#F7F7FB]">
+      <div className="max-w-[1440px] mx-auto space-y-4 lg:space-y-6">
       {/* TOP PERFORMANCE CARD */}
       <Card className="rounded-3xl p-5 lg:p-8 flex flex-col lg:flex-row items-start lg:items-center bg-white border shadow-sm lg:h-80 gap-4 lg:gap-0">
         <div className="w-full lg:max-w-[50%] space-y-3 lg:space-y-4">
@@ -275,6 +276,7 @@ export default function PerformanceDashboard() {
           <ActionItem title="Sugar Cosmetics" sub="post scheduled content" actionLabel="View Brief" />
         </div>
       </Card>
+      </div>
     </section>
   );
 }

@@ -15,7 +15,7 @@ const Header = () => {
   const { user, profile, role } = useAuth();
 
   const dashboardPath = role === "brand" ? "/brands" : "/influencer";
-  const displayName = profile?.full_name?.split(" ")[0] || "Dashboard";
+  const displayName = (profile?.full_name || profile?.contact_name || profile?.brand_name || "").split(" ")[0] || "Dashboard";
 
   // Navigation items based on your reference images
   const navItems = [

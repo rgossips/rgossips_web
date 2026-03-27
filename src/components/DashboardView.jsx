@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
+import Cropper from "react-easy-crop";
 import {
   Settings,
   Edit2,
@@ -7,7 +8,6 @@ import {
   CreditCard,
   BarChart3,
   FileText,
-  User,
   Bell,
   Lock,
   LogOut,
@@ -15,28 +15,53 @@ import {
   HelpCircle,
   Clock,
   Award,
+  Crown,
+  Zap,
+  X,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+
+const TRIAL_DAYS = 30;
+
+function getTrialInfo(profile) {
+  const createdAt = profile?.created_at || profile?.updated_at;
+  if (!createdAt) return { daysLeft: TRIAL_DAYS, progress: 0, expired: false };
+  const start = new Date(createdAt);
+  const now = new Date();
+  const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.max(0, TRIAL_DAYS - elapsed);
+  const progress = Math.min(100, Math.round(((TRIAL_DAYS - daysLeft) / TRIAL_DAYS) * 100));
+  return { daysLeft, progress, expired: daysLeft === 0 };
+}
 
 const DashboardView = ({
   onOpenInfo,
   onOpenAnalytics,
-  onOpenEdit,
   onNotificationClick,
   onPrivacyClick,
   onhelpSupportClick,
 }) => {
-  const [showLogout, setShowLogout] = useState(false);
   const router = useRouter();
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
+
+  const [showLogout, setShowLogout] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [customPhoto, setCustomPhoto] = useState(profile?.custom_profile_photo_url || null);
+  const fileInputRef = useRef(null);
 
   const userName = profile?.full_name || "User";
   const userHandle = profile?.username || profile?.instagram_handle || "";
-  const userPhoto = profile?.profile_photo_url;
+  const userPhoto = customPhoto || profile?.custom_profile_photo_url || profile?.profile_photo_url;
   const initials = userName
     .split(" ")
     .map((n) => n[0])
@@ -56,6 +81,114 @@ const DashboardView = ({
     await signOut();
     router.push("/login");
   };
+
+  const handleEditPhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result);
+      setShowCropper(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const onCropComplete = useCallback((_, croppedPixels) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const getCroppedImg = async (src, pixelCrop) => {
+    const image = new window.Image();
+    image.src = src;
+    await new Promise((resolve) => { image.onload = resolve; });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+      0, 0, pixelCrop.width, pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (!croppedAreaPixels || !imageSrc || uploading) return;
+    setUploading(true);
+
+    try {
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      const formData = new FormData();
+      formData.append("userId", user.id);
+      formData.append("file", blob, "profile.jpg");
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/upload-profile-photo`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!data.success) throw new Error(data.error || "Upload failed");
+
+      setCustomPhoto(data.url);
+      setShowCropper(false);
+      setImageSrc(null);
+    } catch (err) {
+      console.error("Failed to upload photo:", err);
+      alert("Failed to upload photo. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveCustomPhoto = async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          table: "influencer_profiles",
+          customProfilePhotoUrl: "",
+        }),
+      });
+
+      setCustomPhoto(null);
+    } catch (err) {
+      console.error("Failed to remove photo:", err);
+    }
+  };
+
+  const hasCustomPhoto = !!(customPhoto || profile?.custom_profile_photo_url);
 
   return (
     <main className="px-5 pt-6 space-y-6 lg:space-y-0 lg:px-8 lg:pt-32 lg:pb-8 min-h-screen lg:bg-gray-50">
@@ -83,14 +216,19 @@ const DashboardView = ({
                     height={80}
                     className="w-20 h-20 rounded-xl object-cover shadow-lg shadow-pink-200"
                   />
-                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                  <div onClick={handleEditPhoto} className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
                     <Edit2 size={10} className="text-white" />
                   </div>
+                  {hasCustomPhoto && (
+                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white cursor-pointer shadow-md" title="Remove custom photo">
+                      <X size={8} className="text-white" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="w-20 h-20 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-pink-200">
                   {initials}
-                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                  <div onClick={handleEditPhoto} className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
                     <Edit2 size={10} className="text-white" />
                   </div>
                 </div>
@@ -145,6 +283,9 @@ const DashboardView = ({
               </div>
             </div>
           </section>
+
+          {/* Current Plan Card */}
+          <PlanCard profile={profile} />
 
           {/* Support Section */}
           <section className="bg-white rounded-xl shadow border border-gray-100 p-0 overflow-hidden">
@@ -219,8 +360,8 @@ const DashboardView = ({
             </div>
             <div className="flex flex-col gap-2 p-4">
               <HubCard
-                title="My Information"
-                sub="View and update your profile details"
+                title="My Profile"
+                sub="View, edit and manage your profile"
                 bgColor="bg-[#EFECFF]"
                 icon={FileText}
                 iconGradient="from-[#8B5CF6] to-[#6366F1]"
@@ -240,15 +381,6 @@ const DashboardView = ({
                   </div>
                 </div>
               </HubCard>
-
-              <HubCard
-                onClick={onOpenEdit}
-                title="Edit Profile"
-                sub="Update bio, niche, socials and portfolio"
-                bgColor="bg-[#FFE5BE]"
-                icon={User}
-                iconGradient="from-[#F97316] to-[#FB923C]"
-              />
 
               <HubCard
                 onClick={onOpenAnalytics}
@@ -308,32 +440,6 @@ const DashboardView = ({
             </div>
           </section>
 
-          {/* Right Column: Boost Profile */}
-          <div className="col-span-3 flex flex-col gap-6">
-            <section className="bg-white rounded-xl shadow border border-pink-200 p-5 flex flex-col gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <TrendingUp size={20} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm text-[#1A1A1A]">
-                    Boost Your Profile
-                  </h4>
-                  <p className="text-[10px] text-gray-500 font-medium">
-                    Complete your profile to get more campaign opportunities.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button className="flex-1 py-2.5 bg-pink-50 text-pink-600 rounded-xl font-bold text-[11px] border border-pink-200 hover:bg-pink-100 transition-colors">
-                  Complete Profile
-                </button>
-                <button className="flex-1 py-2.5 bg-[#FF2D78] text-white rounded-xl font-bold text-[11px] shadow-md shadow-pink-200">
-                  Add Portfolio
-                </button>
-              </div>
-            </section>
-          </div>
         </div>
       </div>
 
@@ -365,14 +471,19 @@ const DashboardView = ({
                     height={96}
                     className="w-24 h-24 rounded-xl object-cover shadow-lg shadow-pink-200"
                   />
-                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                  <div onClick={handleEditPhoto} className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
                     <Edit2 size={12} className="text-white" />
                   </div>
+                  {hasCustomPhoto && (
+                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1.5 rounded-full border-2 border-white cursor-pointer shadow-md" title="Remove custom photo">
+                      <X size={10} className="text-white" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="w-24 h-24 bg-gradient-to-br from-[#FF2D78] via-[#FF3B8D] to-[#FF6BA1] rounded-xl flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-pink-200">
                   {initials}
-                  <div className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
+                  <div onClick={handleEditPhoto} className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
                     <Edit2 size={12} className="text-white" />
                   </div>
                 </div>
@@ -474,8 +585,8 @@ const DashboardView = ({
           </div>
           <div className="p-4 rounded-xl border border-[#FFF0F3] bg-white/50 space-y-4 shadow-sm">
             <HubCard
-              title="My Information"
-              sub="View and update your profile details"
+              title="My Profile"
+              sub="View, edit and manage your profile"
               bgColor="bg-[#EFECFF]"
               icon={FileText}
               iconGradient="from-[#8B5CF6] to-[#6366F1]"
@@ -495,15 +606,6 @@ const DashboardView = ({
                 </div>
               </div>
             </HubCard>
-
-            <HubCard
-              onClick={onOpenEdit}
-              title="Edit Profile"
-              sub="Update bio, niche, socials and portfolio"
-              bgColor="bg-[#FFE5BE]"
-              icon={User}
-              iconGradient="from-[#F97316] to-[#FB923C]"
-            />
 
             <HubCard
               onClick={onOpenAnalytics}
@@ -563,6 +665,9 @@ const DashboardView = ({
           </div>
         </section>
 
+        {/* Current Plan Card */}
+        <PlanCard profile={profile} />
+
         {/* Support & Logout */}
         <section className="space-y-4 pt-2 pb-6">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-2">
@@ -600,6 +705,64 @@ const DashboardView = ({
       </div>
 
       {/* Logout Modal */}
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Crop Modal */}
+      {showCropper && imageSrc && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+            <button
+              onClick={() => { setShowCropper(false); setImageSrc(null); }}
+              className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+            <h3 className="text-white text-sm font-bold">Crop Photo</h3>
+            <button
+              onClick={handleCropSave}
+              disabled={uploading}
+              className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}
+            >
+              {uploading ? "Saving..." : "Save"}
+            </button>
+          </div>
+
+          <div className="flex-1 relative">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="rect"
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+            />
+          </div>
+
+          <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+            <span className="text-white/60 text-xs font-bold shrink-0">Zoom</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1 accent-purple-500"
+            />
+          </div>
+        </div>
+      )}
+
       {showLogout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-[90vw] max-w-xs flex flex-col items-center animate-in fade-in zoom-in duration-200">
@@ -630,6 +793,77 @@ const DashboardView = ({
     </main>
   );
 };
+
+// Plan Card
+function PlanCard({ profile }) {
+  const currentPlan = profile?.subscription_plan || "free";
+  const hasPaidPlan = currentPlan !== "free";
+  const { daysLeft, progress, expired } = getTrialInfo(profile);
+
+  const planLabel = hasPaidPlan
+    ? currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : expired
+    ? "Free"
+    : "Starter Trial";
+
+  return (
+    <section className="bg-white rounded-xl shadow border border-gray-100 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+            <Crown size={20} className="text-purple-600" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm text-[#1A1A1A]">{planLabel}</h4>
+            <p className="text-[10px] text-gray-400 font-medium">
+              {hasPaidPlan
+                ? "Active subscription"
+                : expired
+                ? "Trial expired"
+                : `${daysLeft} days left`}
+            </p>
+          </div>
+        </div>
+        {hasPaidPlan && (
+          <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-green-50 text-green-600">
+            Active
+          </span>
+        )}
+      </div>
+
+      {!hasPaidPlan && (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Zap size={12} className={expired ? "text-red-400" : "text-purple-500 fill-purple-500"} />
+              <span className="text-[10px] font-bold text-gray-400 uppercase">
+                {expired ? "Expired" : "Trial Progress"}
+              </span>
+            </div>
+            <span className={`text-[10px] font-black ${expired ? "text-red-400" : "text-purple-600"}`}>
+              {daysLeft}/{TRIAL_DAYS} days
+            </span>
+          </div>
+          <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div
+              className={`h-full rounded-full ${expired ? "bg-red-400" : "bg-gradient-to-r from-[#9810fa] to-[#e60076]"}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <Link
+        href="/influencer/pricing"
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]"
+        style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+      >
+        <Crown size={16} />
+        {hasPaidPlan ? "Manage Plan" : "Upgrade Now"}
+      </Link>
+    </section>
+  );
+}
 
 // Internal Helper for Settings Rows
 const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
