@@ -1,17 +1,20 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import BrandCard from "@/components/BrandCard";
-import FilterModal, { FilterContent } from "@/components/FilterModal";
+import FilterModal, { FilterSidebar } from "@/components/FilterModal";
+import { useAuth } from "@/context/AuthContext";
+import { calculateBrandMatchScore } from "@/utils/matchScore";
 
 export default function DiscoverBrands() {
+  const { profile } = useAuth();
   // --- FILTER STATES ---
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 10000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
@@ -24,7 +27,7 @@ export default function DiscoverBrands() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
       const matchesCategory =
-        activeCategory === "All" || brand.category === activeCategory;
+        selectedCategories.length === 0 || selectedCategories.includes(brand.category);
       const matchesBudget =
         brand.minBudget >= budgetRange.min &&
         brand.minBudget <= budgetRange.max;
@@ -43,7 +46,7 @@ export default function DiscoverBrands() {
     });
   }, [
     searchQuery,
-    activeCategory,
+    selectedCategories,
     budgetRange,
     isVerifiedOnly,
     selectedPlatforms,
@@ -51,7 +54,7 @@ export default function DiscoverBrands() {
 
   const resetFilters = () => {
     setSearchQuery("");
-    setActiveCategory("All");
+    setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
     setSelectedPlatforms([]);
     setIsVerifiedOnly(false);
@@ -88,80 +91,27 @@ export default function DiscoverBrands() {
               />
             </div>
 
-            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-black text-slate-800 text-lg">Filters</h2>
-                <button
-                  onClick={resetFilters}
-                  className="text-xs font-bold text-slate-400 hover:text-[#E60076]"
-                >
-                  Reset
-                </button>
-              </div>
+            <FilterSidebar
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              budgetRange={budgetRange}
+              setBudgetRange={setBudgetRange}
+              selectedPlatforms={selectedPlatforms}
+              setSelectedPlatforms={setSelectedPlatforms}
+              isVerifiedOnly={isVerifiedOnly}
+              setIsVerifiedOnly={setIsVerifiedOnly}
+              onExpand={() => setIsFiltersOpen(true)}
+            />
 
-              {/* Passing States to Sidebar Filter */}
-              <FilterContent
-                activeCategory={activeCategory}
-                setActiveCategory={setActiveCategory}
-                budgetRange={budgetRange}
-                setBudgetRange={setBudgetRange}
-                selectedPlatforms={selectedPlatforms}
-                setSelectedPlatforms={setSelectedPlatforms}
-                isVerifiedOnly={isVerifiedOnly}
-                setIsVerifiedOnly={setIsVerifiedOnly}
-              />
-            </div>
-
-            {/* Match Score Card Placeholder */}
-            <div className="bg-[#00BA88] p-6 rounded-[32px] text-white">
-              <div className="flex items-center gap-3 mb-6">
-                <TrendingUp size={20} />
-                <h3 className="font-bold text-sm">Match Score</h3>
-              </div>
-              <p className="text-3xl font-black">92%</p>
-            </div>
           </aside>
 
           {/* --- RIGHT CONTENT --- */}
           <main className="lg:col-span-9 space-y-8">
-            {/* Quick Category Switcher */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {[
-                "All",
-                "Beauty & Skincare",
-                "Fashion & Lifestyle",
-                "Food & Beverage",
-                "Health, Fitness & Wellness",
-                "Travel & Hospitality",
-                "Technology & Gadgets",
-                "Parenting & Family",
-                "Home & Decor",
-                "Finance & Personal Finance",
-                "Education & Career",
-                "Gaming & Entertainment",
-                "Automobile & Mobility",
-                "Entrepreneurship & Business",
-                "Sustainable & Eco-conscious Living",
-                "Pet Care & Animals",
-              ].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-6 py-3 rounded-2xl font-bold text-sm shrink-0 transition-all ${
-                    activeCategory === cat
-                      ? "bg-[#E60076] text-white shadow-lg"
-                      : "bg-white text-slate-500"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
                 {filteredBrands.map((brand) => (
-                  <BrandCard key={brand.id} brand={brand} />
+                  <BrandCard key={brand.id} brand={brand} matchScore={calculateBrandMatchScore(profile, brand)} />
                 ))}
               </AnimatePresence>
             </div>
@@ -179,8 +129,8 @@ export default function DiscoverBrands() {
         {isFiltersOpen && (
           <FilterModal
             onClose={() => setIsFiltersOpen(false)}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
             budgetRange={budgetRange}
             setBudgetRange={setBudgetRange}
             selectedPlatforms={selectedPlatforms}

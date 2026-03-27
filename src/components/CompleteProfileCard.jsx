@@ -11,6 +11,8 @@ export function CompleteProfileCard() {
 
   const hasInstagram = !!profile?.instagram_handle;
   const hasMediaKit = !!profile?.media_kit_published;
+  const serviceRates = profile?.service_rates || profile?.serviceRates || {};
+  const hasRates = Object.values(serviceRates).some((v) => v && Number(v) > 0);
 
   const steps = [
     {
@@ -41,15 +43,19 @@ export function CompleteProfileCard() {
     {
       id: 4,
       title: "Set your rate card",
-      subtitle: "Know your worth",
-      action: "Set Rates",
-      active: hasMediaKit,
+      subtitle: hasRates ? "Rates configured" : "Know your worth",
+      action: hasRates ? null : "Set Rates",
+      completed: hasRates,
+      active: hasMediaKit && !hasRates,
+      href: "/influencer/profile",
     },
     {
       id: 5,
       title: "Apply to first campaign",
       subtitle: "Land your first deal",
       action: "Browse",
+      active: hasRates,
+      href: "/influencer/campaigns",
     },
   ];
 

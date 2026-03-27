@@ -12,11 +12,12 @@ import {
   Award,
   BarChart3,
   Eye,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
-export function CampaignCard({ campaign, onApply }) {
+export function CampaignCard({ campaign, onApply, matchScore }) {
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   const isActive = campaign.status === "Active";
@@ -52,11 +53,23 @@ export function CampaignCard({ campaign, onApply }) {
             </p>
           </div>
         </div>
-        <span
-          className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider ${statusStyles[campaign.status]}`}
-        >
-          {campaign.status}
-        </span>
+        <div className="flex items-center gap-2">
+          {matchScore > 0 && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
+              matchScore >= 80 ? "text-emerald-500 bg-emerald-50" :
+              matchScore >= 60 ? "text-amber-500 bg-amber-50" :
+              "text-slate-400 bg-slate-50"
+            }`}>
+              <Zap size={10} />
+              <span className="text-[10px] font-black">{matchScore}%</span>
+            </div>
+          )}
+          <span
+            className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider ${statusStyles[campaign.status]}`}
+          >
+            {campaign.status}
+          </span>
+        </div>
       </div>
 
       {/* Info Rows */}

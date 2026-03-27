@@ -11,9 +11,10 @@ import {
   Settings,
   HelpCircle,
   Plus,
-  Hash,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
+import logoIcon from "@/assets/logoIcon.png";
 
 export default function Sidebar() {
   const mainMenu = [
@@ -52,9 +53,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="overflow-y-auto">
         <div className="flex items-center gap-2 px-5 py-5">
-          <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-            <Hash size={16} className="text-white" />
-          </div>
+          <Image src={logoIcon} alt="RGossips" width={32} height={32} className="w-8 h-8 rounded-lg" />
           <span className="font-bold text-lg text-gray-900">RGossips</span>
         </div>
 

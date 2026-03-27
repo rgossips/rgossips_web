@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 
 export default function InstagramReconnectBanner() {
-  const { user, instagramTokenMissing, setInstagramTokenMissing, refreshProfile } = useAuth();
+  const { user, instagramTokenMissing, setInstagramTokenMissing, refreshProfile, refreshInstagram } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [error, setError] = useState("");
@@ -66,7 +66,8 @@ export default function InstagramReconnectBanner() {
       if (updateData.error) throw new Error(updateData.error);
 
       setInstagramTokenMissing(false);
-      await refreshProfile();
+      // Trigger Instagram data + analytics refresh, then reload profile
+      await refreshInstagram(user.id);
     } catch (err) {
       setError(err.message || "Failed to reconnect Instagram");
     } finally {

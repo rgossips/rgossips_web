@@ -13,6 +13,8 @@ import {
   Phone,
   Globe,
 } from "lucide-react";
+import logoIcon from "@/assets/logoIcon.png";
+import logo from "@/assets/logo2.png";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -34,6 +36,11 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
   const posts = profile?.media_count || profile?.mediaCount || 0;
   const services = profile?.services || [];
   const serviceRates = profile?.service_rates || profile?.serviceRates || {};
+  const engagementRate = profile?.engagement_rate || profile?.engagementRate || 0;
+  const avgLikes = profile?.avg_likes || profile?.avgLikes || 0;
+  const avgComments = profile?.avg_comments || profile?.avgComments || 0;
+  const totalImpressions = profile?.total_impressions || profile?.totalImpressions || 0;
+  const totalReach = profile?.total_reach || profile?.totalReach || 0;
 
   const SERVICE_LABELS = {
     reels: "Reels",
@@ -221,7 +228,25 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
             <div className="grid grid-cols-3 gap-3">
               <MetricCircle label="Posts" value={formatCount(posts)} color="from-purple-400 to-purple-600" />
               <MetricCircle label="Followers" value={formatCount(followers)} color="from-pink-400 to-pink-600" />
-              <MetricCircle label="Following" value={formatCount(following)} color="from-blue-400 to-blue-600" />
+              <MetricCircle label="Engagement" value={engagementRate ? `${engagementRate}%` : "—"} color="from-green-400 to-green-600" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                <p className="text-lg font-black text-slate-900">{avgLikes ? formatCount(avgLikes) : "—"}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Likes</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                <p className="text-lg font-black text-slate-900">{avgComments ? formatCount(avgComments) : "—"}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Avg Comments</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                <p className="text-lg font-black text-slate-900">{totalImpressions ? formatCount(totalImpressions) : "—"}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Impressions</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                <p className="text-lg font-black text-slate-900">{totalReach ? formatCount(totalReach) : "—"}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reach</p>
+              </div>
             </div>
           </section>
 
@@ -262,12 +287,13 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
 
       {/* Footer */}
       <div className="border-t border-slate-100 px-6 lg:px-8 py-4 flex items-center justify-between bg-slate-50">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-          Generated on RGossips
-        </p>
-        <p className="text-[10px] text-slate-400">
-          recentgossips.com
-        </p>
+        <div className="flex items-center gap-2">
+          <Image src={logoIcon} alt="RGossips" width={20} height={20} className="rounded" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            Generated on RGossips
+          </p>
+        </div>
+        <Image src={logo} alt="recentgossips" width={100} height={24} className="h-4 w-auto opacity-40" />
       </div>
     </div>
   );

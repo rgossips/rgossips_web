@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     const { data: influencer, error: infError } = await supabaseAdmin
       .from("influencer_profiles")
       .select(
-        "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, services, bio, created_at, service_rates, location, email, phone, tiktok_url, youtube_url, facebook_url"
+        "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, services, bio, created_at, service_rates, location, email, phone, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach"
       )
       .eq("influencer_id", userId)
       .maybeSingle();
@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
         tiktokUrl: influencer.tiktok_url,
         youtubeUrl: influencer.youtube_url,
         facebookUrl: influencer.facebook_url,
+        engagementRate: influencer.engagement_rate,
+        avgLikes: influencer.avg_likes,
+        avgComments: influencer.avg_comments,
+        totalImpressions: influencer.total_impressions,
+        totalReach: influencer.total_reach,
       };
       return new Response(
         JSON.stringify({ profile, role: "influencer" }),

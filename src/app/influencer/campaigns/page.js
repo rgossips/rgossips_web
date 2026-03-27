@@ -1,24 +1,31 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Search,
   SlidersHorizontal,
   Activity,
   Clock,
   CheckCircle,
-  Instagram,
-  Youtube,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CampaignCard } from "@/components/CampaignCard";
 import { SearchOverlay } from "@/components/SearchOverlay";
-import { CampaignFilters } from "@/components/CampaignFilters";
+import FilterModal, { FilterSidebar } from "@/components/FilterModal";
+import { useAuth } from "@/context/AuthContext";
+import { calculateCampaignMatchScore } from "@/utils/matchScore";
 
 export default function CampaignsPage() {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("Active");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
+  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
+  const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
 
   const RECENT_SEARCHES = [
     "Fashion campaigns",
@@ -27,182 +34,163 @@ export default function CampaignsPage() {
     "Instagram only",
   ];
 
-  const CAMPAIGN_FILTER_DATA = {
-    categories: [
-      "Beauty & Skincare",
-      "Fashion & Lifestyle",
-      "Food & Beverage",
-      "Health, Fitness & Wellness",
-      "Travel & Hospitality",
-      "Technology & Gadgets",
-      "Parenting & Family",
-      "Home & Decor",
-      "Finance & Personal Finance",
-      "Education & Career",
-      "Gaming & Entertainment",
-      "Automobile & Mobility",
-      "Entrepreneurship & Business",
-      "Sustainable & Eco-conscious Living",
-      "Pet Care & Animals",
-    ],
-    platforms: [
-      { label: "Instagram", icon: <Instagram size={18} /> },
-      { label: "YouTube", icon: <Youtube size={18} /> },
-      { label: "TikTok", icon: <Activity size={18} /> },
-    ],
-    statusOptions: ["Active", "Applied", "Completed"],
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategories([]);
+    setBudgetRange({ min: 0, max: 200000 });
+    setSelectedPlatforms([]);
+    setIsVerifiedOnly(false);
   };
 
-  const filteredCampaigns = CAMPAIGNS_DATA.filter(
-    (campaign) => campaign.status === activeTab,
-  );
+  const filteredCampaigns = useMemo(() => {
+    return CAMPAIGNS_DATA.filter((campaign) => {
+      const matchesTab = campaign.status === activeTab;
+      const matchesSearch = campaign.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+        campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory =
+        selectedCategories.length === 0 ||
+        campaign.tags.some((t) => selectedCategories.some((c) => t.toLowerCase().includes(c.toLowerCase())));
+      const matchesPlatform =
+        selectedPlatforms.length === 0 ||
+        campaign.platforms.some((p) =>
+          selectedPlatforms.map((sp) => sp.toLowerCase()).includes(p.toLowerCase())
+        );
+      return matchesTab && matchesSearch && matchesCategory && matchesPlatform;
+    });
+  }, [activeTab, searchQuery, selectedCategories, selectedPlatforms]);
 
   return (
-    // FIX: Added 'flex' here so sidebar and content sit side-by-side on laptop
-    <div className="flex min-h-screen bg-[#F8F9FD] font-sans relative">
-      {/* --- SIDEBAR --- */}
-      <aside className="hidden pt-24 lg:flex w-80 flex-col bg-white border-r border-slate-100 p-8 sticky top-0 h-screen overflow-y-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-800">Campaigns</h1>
-          <p className="text-xs text-slate-400 mt-1 font-medium uppercase tracking-wider">
-            Collaboration Hub
-          </p>
+    <div className="min-h-screen bg-[#F8F9FD] p-4 lg:p-8 lg:pt-24 font-sans relative">
+      <div className="max-w-[1440px] mx-auto space-y-8">
+        {/* Header - Mobile Only */}
+        <div className="lg:hidden flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Campaigns</h1>
+            <p className="text-xs text-slate-400 mt-1 font-medium">
+              Track and manage collaborations
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsSearchOpen(true)}
+              size="icon"
+              variant="ghost"
+              className="bg-white rounded-xl shadow-sm text-slate-400 hover:text-[#E60076]"
+            >
+              <Search size={20} />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsFiltersOpen(true)}
+              className="h-12 w-12 rounded-xl border-none bg-white shadow-sm shrink-0"
+            >
+              <SlidersHorizontal size={20} />
+            </Button>
+          </div>
         </div>
 
-        <div className="relative mb-8">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={16}
-          />
-          <input
-            type="text"
-            placeholder="Search campaigns..."
-            className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-pink-100 outline-none transition-all"
-            onClick={() => setIsSearchOpen(true)}
-          />
+        {/* Mobile Tab Switcher */}
+        <div className="lg:hidden bg-white p-1.5 rounded-2xl flex gap-1 shadow-sm border border-slate-50">
+          {["Active", "Applied", "Completed"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === tab
+                  ? "bg-[#E60076] text-white shadow-md shadow-pink-100"
+                  : "text-slate-400"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        <nav className="space-y-8">
-          <div>
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px] mb-4">
-              Status
-            </h3>
-            <div className="space-y-1">
-              {["Active", "Applied", "Completed"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`w-full cursor-pointer flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                    activeTab === tab
-                      ? "bg-gradient-to-r from-[#E60076] to-[#D500F9] text-white shadow-md shadow-pink-100"
-                      : "text-slate-500 hover:bg-slate-50"
-                  }`}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                  )}
-                </button>
-              ))}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* --- LEFT SIDEBAR (Desktop) --- */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8">
+            <div className="relative group">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E60076]"
+                size={20}
+              />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-14 bg-white border-none rounded-2xl shadow-sm text-sm font-medium"
+              />
             </div>
-          </div>
 
-          <div>
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px] mb-4">
-              Quick Filters
-            </h3>
-            <div className="space-y-1">
-              {["All", "High Budget", "Ending Soon", "New"].map((filter) => (
-                <button
-                  key={filter}
-                  className="w-full cursor-pointer text-left px-4 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-      </aside>
-
-      {/* --- MAIN CONTENT AREA --- */}
-      {/* FIX: Added 'flex-1' and 'overflow-y-auto' so this scrolls while sidebar stays fixed */}
-      <div className="flex-1 p-6 lg:p-10 lg:pt-24 overflow-y-auto">
-        <AnimatePresence>
-          {isSearchOpen && (
-            <SearchOverlay
-              onClose={() => setIsSearchOpen(false)}
-              recentSearches={RECENT_SEARCHES}
-            />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isFiltersOpen && (
-            <CampaignFilters
-              onClose={() => setIsFiltersOpen(false)}
-              filterData={CAMPAIGN_FILTER_DATA}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* FIX: Increased max-width to lg:max-w-4xl for better laptop spacing */}
-        <div className="max-w-xl lg:max-w-5xl mx-auto space-y-8">
-          <header className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-800 lg:hidden">
-                  Campaigns
-                </h1>
-                <p className="text-xs text-slate-400 mt-1 font-medium lg:hidden">
-                  Track and manage collaborations
-                </p>
-                {/* Desktop subtitle - only shows on laptop */}
-                <h2 className="hidden lg:block text-xl font-bold text-slate-800">
-                  {activeTab} Campaigns
-                </h2>
-              </div>
-              <div className="flex gap-2">
-                {/* Mobile Search - Hidden on Laptop because it's in the sidebar */}
-                <Button
-                  onClick={() => setIsSearchOpen(true)}
-                  size="icon"
-                  variant="ghost"
-                  className="lg:hidden bg-white rounded-xl shadow-sm text-slate-400 hover:text-[#E60076]"
-                >
-                  <Search size={20} />
-                </Button>
-                <Button
-                  onClick={() => setIsFiltersOpen(true)}
-                  size="icon"
-                  variant="ghost"
-                  className="bg-white rounded-xl cursor-pointer shadow-sm text-slate-400 hover:text-[#E60076] border border-slate-100"
-                >
-                  <SlidersHorizontal size={20} />
-                </Button>
+            {/* Status Tabs */}
+            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
+              <h2 className="font-black text-slate-800 text-lg mb-4">Status</h2>
+              <div className="space-y-1">
+                {["Active", "Applied", "Completed"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`w-full cursor-pointer flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      activeTab === tab
+                        ? "bg-gradient-to-r from-[#E60076] to-[#D500F9] text-white shadow-md shadow-pink-100"
+                        : "text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    {tab}
+                    {activeTab === tab && (
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            {/* Filters */}
+            <FilterSidebar
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              budgetRange={budgetRange}
+              setBudgetRange={setBudgetRange}
+              selectedPlatforms={selectedPlatforms}
+              setSelectedPlatforms={setSelectedPlatforms}
+              isVerifiedOnly={isVerifiedOnly}
+              setIsVerifiedOnly={setIsVerifiedOnly}
+              onExpand={() => setIsFiltersOpen(true)}
+            />
+          </aside>
+
+          {/* --- RIGHT CONTENT --- */}
+          <main className="lg:col-span-9 space-y-8">
+            {/* Desktop Header */}
+            <div className="hidden lg:flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-800">
+                {activeTab} Campaigns
+              </h2>
+              <span className="text-sm font-bold text-slate-400">
+                {filteredCampaigns.length} campaigns
+              </span>
+            </div>
+
+            {/* Mobile Stats */}
+            <div className="grid grid-cols-3 gap-4 lg:hidden">
               {[
                 {
                   label: "Active",
-                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Active")
-                    .length,
+                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Active").length,
                   icon: <Activity className="text-[#00BA88]" />,
                   bg: "bg-emerald-50",
                 },
                 {
                   label: "Applied",
-                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Applied")
-                    .length,
+                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Applied").length,
                   icon: <Clock className="text-blue-500" />,
                   bg: "bg-blue-50",
                 },
                 {
                   label: "Completed",
-                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Completed")
-                    .length,
+                  val: CAMPAIGNS_DATA.filter((c) => c.status === "Completed").length,
                   icon: <CheckCircle className="text-emerald-500" />,
                   bg: "bg-emerald-50",
                 },
@@ -211,52 +199,54 @@ export default function CampaignsPage() {
                   key={stat.label}
                   className="bg-white p-4 rounded-[24px] border border-slate-50 flex flex-col items-center text-center"
                 >
-                  <div
-                    className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center mb-2`}
-                  >
+                  <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center mb-2`}>
                     {stat.icon}
                   </div>
-                  <p className="text-lg font-black text-slate-800 leading-none">
-                    {stat.val}
-                  </p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">
-                    {stat.label}
-                  </p>
+                  <p className="text-lg font-black text-slate-800 leading-none">{stat.val}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Mobile Tab Switcher - Hidden on Laptop because it's in the sidebar */}
-            <div className="lg:hidden bg-white p-1.5 rounded-2xl flex gap-1 shadow-sm border border-slate-50">
-              {["Active", "Applied", "Completed"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === tab
-                      ? "bg-[#E60076] text-white shadow-md shadow-pink-100"
-                      : "text-slate-400"
-                  }`}
-                >
-                  {tab}
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {filteredCampaigns.map((campaign) => (
+                <CampaignCard key={campaign.id} campaign={campaign} matchScore={calculateCampaignMatchScore(profile, campaign)} />
               ))}
             </div>
-          </header>
-
-          <main className="space-y-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredCampaigns.map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign} />
-            ))}
 
             {filteredCampaigns.length === 0 && (
-              <div className="text-center py-10 text-slate-400 text-sm">
+              <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
                 No {activeTab.toLowerCase()} campaigns found.
               </div>
             )}
           </main>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isSearchOpen && (
+          <SearchOverlay
+            onClose={() => setIsSearchOpen(false)}
+            recentSearches={RECENT_SEARCHES}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isFiltersOpen && (
+          <FilterModal
+            onClose={() => setIsFiltersOpen(false)}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+            budgetRange={budgetRange}
+            setBudgetRange={setBudgetRange}
+            selectedPlatforms={selectedPlatforms}
+            setSelectedPlatforms={setSelectedPlatforms}
+            isVerifiedOnly={isVerifiedOnly}
+            setIsVerifiedOnly={setIsVerifiedOnly}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -726,24 +726,52 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
           {profileCard(false)}
 
           {/* Engagement Metrics */}
-          <section className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
-            <h3 className="font-black text-gray-800 text-sm flex items-center gap-2">
-              <Activity size={16} /> Engagement Metrics
+          <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+            <h3 className="font-black text-gray-800 text-base flex items-center gap-2">
+              <Activity size={18} /> Engagement Metrics
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-[10px] font-bold text-gray-600">Engagement Rate</span>
+                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500" />
+                  <span className="text-sm font-bold text-gray-600">Engagement Rate</span>
                 </div>
-                <span className="text-[10px] font-black text-blue-500">{formatCount(profile?.followers_count)}</span>
+                <span className="text-sm font-black text-blue-500">{profile?.engagement_rate ? `${profile.engagement_rate}%` : "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-purple-500" />
-                  <span className="text-[10px] font-bold text-gray-600">Followers</span>
+                  <div className="w-3.5 h-3.5 rounded-full bg-purple-500" />
+                  <span className="text-sm font-bold text-gray-600">Followers</span>
                 </div>
-                <span className="text-[10px] font-black text-purple-500">{formatCount(profile?.followers_count)}</span>
+                <span className="text-sm font-black text-purple-500">{formatCount(profile?.followers_count)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 rounded-full bg-pink-500" />
+                  <span className="text-sm font-bold text-gray-600">Avg Likes</span>
+                </div>
+                <span className="text-sm font-black text-pink-500">{profile?.avg_likes ? formatCount(profile.avg_likes) : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 rounded-full bg-green-500" />
+                  <span className="text-sm font-bold text-gray-600">Avg Comments</span>
+                </div>
+                <span className="text-sm font-black text-green-500">{profile?.avg_comments ? formatCount(profile.avg_comments) : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 rounded-full bg-amber-500" />
+                  <span className="text-sm font-bold text-gray-600">Impressions</span>
+                </div>
+                <span className="text-sm font-black text-amber-500">{profile?.total_impressions ? formatCount(profile.total_impressions) : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 rounded-full bg-cyan-500" />
+                  <span className="text-sm font-bold text-gray-600">Reach</span>
+                </div>
+                <span className="text-sm font-black text-cyan-500">{profile?.total_reach ? formatCount(profile.total_reach) : "—"}</span>
               </div>
             </div>
           </section>

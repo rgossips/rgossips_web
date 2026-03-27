@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import MediaKitLayout from "@/components/MediaKitLayout";
 import { Loader2, ExternalLink } from "lucide-react";
+import Image from "next/image";
+import logo from "@/assets/logo2.png";
 
 export default function PublicMediaKitPage() {
   const { id } = useParams();
@@ -85,8 +87,8 @@ export default function PublicMediaKitPage() {
       {/* Minimal public header */}
       <div className="bg-white border-b border-slate-100">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <a href="/" className="text-sm font-black text-slate-900 tracking-tight">
-            RGossips
+          <a href="/">
+            <Image src={logo} alt="RGossips" width={140} height={36} className="h-8 w-auto" />
           </a>
           <a
             href="/login"

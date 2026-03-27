@@ -26,10 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 
-// --- 1. The Reusable Content (Used in Sidebar & Modal) ---
+// --- 1. The Full Filter Content (Used in Modal popup) ---
 export const FilterContent = ({
-  activeCategory,
-  setActiveCategory,
+  selectedCategories,
+  setSelectedCategories,
   budgetRange,
   setBudgetRange,
   selectedPlatforms,
@@ -37,8 +37,16 @@ export const FilterContent = ({
   isVerifiedOnly,
   setIsVerifiedOnly,
 }) => {
-  const handleCategorySelect = (catLabel) => {
-    setActiveCategory(catLabel);
+  const handleCategoryToggle = (catLabel) => {
+    if (catLabel === "All") {
+      setSelectedCategories([]);
+    } else {
+      setSelectedCategories((prev) =>
+        prev.includes(catLabel)
+          ? prev.filter((c) => c !== catLabel)
+          : [...prev, catLabel]
+      );
+    }
   };
 
   const handlePlatformToggle = (platform) => {
@@ -50,35 +58,33 @@ export const FilterContent = ({
   };
 
   return (
-    <div className="space-y-8 lg:overflow-y-auto lg:max-h-[48vh] lg:pb-64">
+    <div className="space-y-8">
       {/* Category */}
       <section className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-800">Category</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">Category</h3>
+          {selectedCategories.length > 0 && (
+            <span className="text-[10px] font-bold text-[#E60076]">{selectedCategories.length} selected</span>
+          )}
+        </div>
         <div className="flex flex-wrap gap-3">
-          {[
-            "All",
-            "Beauty & Skincare",
-            "Fashion & Lifestyle",
-            "Food & Beverage",
-            "Health, Fitness & Wellness",
-            "Travel & Hospitality",
-            "Technology & Gadgets",
-            "Parenting & Family",
-            "Home & Decor",
-            "Finance & Personal Finance",
-            "Education & Career",
-            "Gaming & Entertainment",
-            "Automobile & Mobility",
-            "Entrepreneurship & Business",
-            "Sustainable & Eco-conscious Living",
-            "Pet Care & Animals",
-          ].map((cat) => {
+          <button
+            onClick={() => handleCategoryToggle("All")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+              selectedCategories.length === 0
+                ? "bg-[#E60076] text-white border border-[#E60076]"
+                : "border border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
+            }`}
+          >
+            All
+          </button>
+          {CATEGORY_LIST.map((cat) => {
             const catData = FILTER_CATEGORIES.find((c) => c.label === cat);
-            const isActive = activeCategory === cat;
+            const isActive = selectedCategories.includes(cat);
             return (
               <button
                 key={cat}
-                onClick={() => handleCategorySelect(cat)}
+                onClick={() => handleCategoryToggle(cat)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
                   isActive
                     ? "bg-[#E60076] text-white border border-[#E60076]"
@@ -173,11 +179,150 @@ export const FilterContent = ({
   );
 };
 
+// --- 2. Compact Sidebar Filter Summary (Grouped with Expand button) ---
+export const FilterSidebar = ({
+  selectedCategories,
+  setSelectedCategories,
+  budgetRange,
+  setBudgetRange,
+  selectedPlatforms,
+  setSelectedPlatforms,
+  isVerifiedOnly,
+  setIsVerifiedOnly,
+  onExpand,
+}) => {
+  const activeFiltersCount =
+    selectedCategories.length +
+    selectedPlatforms.length +
+    (isVerifiedOnly ? 1 : 0) +
+    (budgetRange.min > 0 || budgetRange.max < 10000 ? 1 : 0);
+
+  const handleReset = () => {
+    setSelectedCategories([]);
+    setBudgetRange({ min: 0, max: 10000 });
+    setSelectedPlatforms([]);
+    setIsVerifiedOnly(false);
+  };
+
+  const handleCategoryToggle = (cat) => {
+    if (cat === "All") {
+      setSelectedCategories([]);
+    } else {
+      setSelectedCategories((prev) =>
+        prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+      );
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-black text-slate-800 text-lg">Filters</h2>
+        {activeFiltersCount > 0 && (
+          <button
+            onClick={handleReset}
+            className="text-xs font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+
+      {/* Category Group */}
+      <div className="space-y-2">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Category</h3>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => handleCategoryToggle("All")}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+              selectedCategories.length === 0
+                ? "bg-[#E60076] text-white"
+                : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+            }`}
+          >
+            All
+          </button>
+          {["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].map((cat) => {
+            const isActive = selectedCategories.includes(cat);
+            return (
+              <button
+                key={cat}
+                onClick={() => handleCategoryToggle(cat)}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-[#E60076] text-white"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
+          {selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length > 0 && (
+            <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
+              +{selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length} more
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Platform Group */}
+      <div className="space-y-2">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Platform</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {PLATFORMS.slice(0, 3).map((platform) => {
+            const isSelected = selectedPlatforms.includes(platform.label);
+            return (
+              <button
+                key={platform.label}
+                onClick={() =>
+                  setSelectedPlatforms((prev) =>
+                    prev.includes(platform.label)
+                      ? prev.filter((p) => p !== platform.label)
+                      : [...prev, platform.label]
+                  )
+                }
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                  isSelected
+                    ? "bg-[#E60076] text-white"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {platform.icon}
+                {platform.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Verified Toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold text-slate-500">Verified Only</span>
+        <Switch
+          checked={isVerifiedOnly}
+          onCheckedChange={setIsVerifiedOnly}
+          className="data-[state=checked]:bg-[#E60076] scale-90"
+        />
+      </div>
+
+      {/* Expand Button */}
+      <button
+        onClick={onExpand}
+        className="w-full py-2.5 rounded-2xl text-xs font-bold text-white cursor-pointer transition-all hover:opacity-90"
+        style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+      >
+        All Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+      </button>
+    </div>
+  );
+};
+
 // --- 2. The Modal Wrapper (Desktop & Mobile) ---
 const FilterModal = ({
   onClose,
-  activeCategory,
-  setActiveCategory,
+  selectedCategories,
+  setSelectedCategories,
   budgetRange,
   setBudgetRange,
   selectedPlatforms,
@@ -186,7 +331,7 @@ const FilterModal = ({
   setIsVerifiedOnly,
 }) => {
   const handleReset = () => {
-    setActiveCategory("All");
+    setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
     setSelectedPlatforms([]);
     setIsVerifiedOnly(false);
@@ -230,8 +375,8 @@ const FilterModal = ({
           {/* Scrollable Content */}
           <div className="p-6 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
             <FilterContent
-              activeCategory={activeCategory}
-              setActiveCategory={setActiveCategory}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
               budgetRange={budgetRange}
               setBudgetRange={setBudgetRange}
               selectedPlatforms={selectedPlatforms}
@@ -286,8 +431,8 @@ const FilterModal = ({
           {/* Desktop Content */}
           <div className="p-8 flex-1 overflow-y-auto min-h-0">
             <FilterContent
-              activeCategory={activeCategory}
-              setActiveCategory={setActiveCategory}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
               budgetRange={budgetRange}
               setBudgetRange={setBudgetRange}
               selectedPlatforms={selectedPlatforms}
@@ -322,6 +467,24 @@ const FilterModal = ({
 export default FilterModal;
 
 // Data Constants
+const CATEGORY_LIST = [
+  "Beauty & Skincare",
+  "Fashion & Lifestyle",
+  "Food & Beverage",
+  "Health, Fitness & Wellness",
+  "Travel & Hospitality",
+  "Technology & Gadgets",
+  "Parenting & Family",
+  "Home & Decor",
+  "Finance & Personal Finance",
+  "Education & Career",
+  "Gaming & Entertainment",
+  "Automobile & Mobility",
+  "Entrepreneurship & Business",
+  "Sustainable & Eco-conscious Living",
+  "Pet Care & Animals",
+];
+
 const FILTER_CATEGORIES = [
   {
     label: "Beauty & Skincare",

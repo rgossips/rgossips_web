@@ -150,7 +150,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, setProfile, role, loading, signOut, refreshProfile, instagramTokenMissing, setInstagramTokenMissing }}>
+    <AuthContext.Provider value={{ user, profile, setProfile, role, loading, signOut, refreshProfile, refreshInstagram, instagramTokenMissing, setInstagramTokenMissing }}>
       {children}
     </AuthContext.Provider>
   );
