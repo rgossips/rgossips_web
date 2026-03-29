@@ -13,6 +13,7 @@ import ChangePassword from "@/components/ChangePassword";
 import TrustedDevices from "@/components/TrustedDevices";
 import DeactivateAccount from "@/components/DeactiveAccount";
 import HelpSupport from "@/components/HelpAndSupport";
+import PaymentMethods from "@/components/PaymentMethods";
 
 export default function ProfilePage() {
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
@@ -22,7 +23,7 @@ export default function ProfilePage() {
   }, [view]);
 
   return (
-    <div className="bg-[#F3F4F9] min-h-screen font-sans text-slate-900 antialiased overflow-x-hidden">
+    <div className="bg-[#F3F4F9] min-h-screen pb-20 lg:pb-0 font-sans text-slate-900 antialiased overflow-x-hidden">
       <AnimatePresence mode="wait">
         {view === "dashboard" && (
           <DashboardView
@@ -36,13 +37,13 @@ export default function ProfilePage() {
             onOpenAnalytics={() => setView("analytics")}
             onOpenInfo={() => setView("my-info")}
             onhelpSupportClick={() => setView("help&support")}
+            onPaymentClick={() => setView("payments")}
           />
         )}
         {view === "my-info" && (
           <MyInformationDetail
             key="info"
             onBack={() => setView("dashboard")}
-            onAddReel={() => setView("add-reel")}
           />
         )}
         {view === "add-reel" && (
@@ -99,6 +100,9 @@ export default function ProfilePage() {
             key="deactivate-account"
             onBack={() => setView("privacy")}
           />
+        )}
+        {view === "payments" && (
+          <PaymentMethods key="payments" onBack={() => setView("dashboard")} />
         )}
         {view === "help&support" && (
           <HelpSupport key="help-support" onBack={() => setView("dashboard")} />

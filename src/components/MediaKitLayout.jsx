@@ -12,6 +12,8 @@ import {
   Mail,
   Phone,
   Globe,
+  ExternalLink,
+  Play,
 } from "lucide-react";
 import logoIcon from "@/assets/logoIcon.png";
 import logo from "@/assets/logo2.png";
@@ -41,6 +43,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
   const avgComments = profile?.avg_comments || profile?.avgComments || 0;
   const totalImpressions = profile?.total_impressions || profile?.totalImpressions || 0;
   const totalReach = profile?.total_reach || profile?.totalReach || 0;
+  const topReels = profile?.top_reels || profile?.topReels || [];
 
   const SERVICE_LABELS = {
     reels: "Reels",
@@ -179,6 +182,12 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
                   <span>{profile.email}</span>
                 </div>
               )}
+              {(profile?.location || profile?.address) && (
+                <div className="flex items-start gap-3 text-sm text-slate-600">
+                  <MapPin size={16} className="text-pink-500 shrink-0 mt-0.5" />
+                  <span>{[profile.location, profile.address].filter(Boolean).join(", ")}</span>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -266,6 +275,21 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
               Connect more platforms to unlock detailed demographics
             </p>
           </section>
+
+          {/* Top Reels */}
+          {topReels.length > 0 && (
+            <section>
+              <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="w-6 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+                Top Content
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {topReels.map((reel, i) => (
+                  <ReelCard key={reel.id || i} reel={reel} index={i} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Previous Collaborations */}
           <section>
@@ -425,5 +449,91 @@ function DemographicCard({ label, value, sub }) {
       <p className="text-xs font-bold text-slate-700 mt-0.5">{label}</p>
       <p className="text-[10px] text-slate-400">{sub}</p>
     </div>
+  );
+}
+
+function ReelCard({ reel, index }) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef(null);
+  const isVideo = reel.mediaType === "VIDEO";
+  const mediaUrl = reel.mediaUrl || "";
+  const thumbnailUrl = reel.thumbnailUrl || reel.thumbnail || "";
+
+  const togglePlay = (e) => {
+    e.preventDefault();
+    if (!videoRef.current) return;
+    if (playing) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
+    setPlaying(!playing);
+  };
+
+  return (
+    <a
+      href={reel.permalink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group relative aspect-[9/16] rounded-2xl overflow-hidden border border-slate-100 bg-slate-900 block"
+    >
+      {isVideo && mediaUrl ? (
+        <>
+          <video
+            ref={videoRef}
+            src={mediaUrl}
+            poster={thumbnailUrl}
+            className="w-full h-full object-cover"
+            loop
+            muted
+            playsInline
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+          />
+          <button
+            onClick={togglePlay}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 hover:opacity-100" : "opacity-100"}`}
+          >
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-transform group-hover:scale-110 ${playing ? "bg-black/40 backdrop-blur-sm" : "bg-white/90"}`}>
+              {playing ? (
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-5 bg-white rounded-full" />
+                  <div className="w-1.5 h-5 bg-white rounded-full" />
+                </div>
+              ) : (
+                <Play size={22} className="text-slate-900 ml-1" fill="currentColor" />
+              )}
+            </div>
+          </button>
+        </>
+      ) : thumbnailUrl ? (
+        <img src={thumbnailUrl} alt={reel.caption || "Post"} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+          <Instagram size={32} className="text-purple-300" />
+        </div>
+      )}
+
+      {/* Bottom overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+        {reel.caption && (
+          <p className="text-[10px] text-white/80 font-semibold mb-1.5 line-clamp-2">{reel.caption}</p>
+        )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-[10px] font-black text-white">
+            <span>❤ {reel.likes?.toLocaleString() || 0}</span>
+            <span>💬 {reel.comments?.toLocaleString() || 0}</span>
+          </div>
+          <ExternalLink size={12} className="text-white/60" />
+        </div>
+      </div>
+
+      {/* Type badge */}
+      {isVideo && (
+        <div className="absolute top-2.5 left-2.5 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+          <span className="text-[8px] font-black text-white uppercase tracking-wider">Reel</span>
+        </div>
+      )}
+    </a>
   );
 }

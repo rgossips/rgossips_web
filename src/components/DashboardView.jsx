@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 const TRIAL_DAYS = 30;
 
@@ -44,12 +45,14 @@ const DashboardView = ({
   onOpenAnalytics,
   onNotificationClick,
   onPrivacyClick,
+  onPaymentClick,
   onhelpSupportClick,
 }) => {
   const router = useRouter();
   const { profile, user, signOut } = useAuth();
 
   const [showLogout, setShowLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -77,9 +80,14 @@ const DashboardView = ({
   };
 
   const handleLogout = async () => {
-    setShowLogout(false);
-    await signOut();
-    router.push("/login");
+    setLoggingOut(true);
+    try {
+      await signOut();
+      router.push("/login");
+    } finally {
+      setLoggingOut(false);
+      setShowLogout(false);
+    }
   };
 
   const handleEditPhoto = () => {
@@ -433,6 +441,7 @@ const DashboardView = ({
               />
               <SettingsItem
                 icon={CreditCard}
+                onClick={onPaymentClick}
                 title="Payment Methods"
                 sub="Manage payout accounts"
                 color="bg-[#F97316]"
@@ -728,9 +737,10 @@ const DashboardView = ({
             <button
               onClick={handleCropSave}
               disabled={uploading}
-              className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50"
+              className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}
             >
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : null}
               {uploading ? "Saving..." : "Save"}
             </button>
           </div>
@@ -782,9 +792,11 @@ const DashboardView = ({
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 font-bold text-white text-xs shadow-lg shadow-pink-200"
+                disabled={loggingOut}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 font-bold text-white text-xs shadow-lg shadow-pink-200 flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                Log out
+                {loggingOut ? <Loader2 size={14} className="animate-spin" /> : null}
+                {loggingOut ? "Logging out..." : "Log out"}
               </button>
             </div>
           </div>

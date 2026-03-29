@@ -170,12 +170,6 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           </Button>
         )}
 
-        <Button
-          variant="outline"
-          className="w-12 h-12 rounded-2xl border-slate-100 text-slate-400"
-        >
-          <ChevronRight size={20} />
-        </Button>
       </div>
     </div>
   );

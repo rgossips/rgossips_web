@@ -8,10 +8,9 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { AnimatePresence } from "framer-motion";
 import { CampaignCard } from "@/components/CampaignCard";
-import { SearchOverlay } from "@/components/SearchOverlay";
 import FilterModal, { FilterSidebar } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateCampaignMatchScore } from "@/utils/matchScore";
@@ -19,20 +18,12 @@ import { calculateCampaignMatchScore } from "@/utils/matchScore";
 export default function CampaignsPage() {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("Active");
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
-
-  const RECENT_SEARCHES = [
-    "Fashion campaigns",
-    "High budget",
-    "Tech reviews",
-    "Instagram only",
-  ];
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -62,32 +53,33 @@ export default function CampaignsPage() {
   }, [activeTab, searchQuery, selectedCategories, selectedPlatforms]);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] p-4 lg:p-8 lg:pt-24 font-sans relative">
+    <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
       <div className="max-w-[1440px] mx-auto space-y-8">
         {/* Header - Mobile Only */}
-        <div className="lg:hidden flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Campaigns</h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium">
-              Track and manage collaborations
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setIsSearchOpen(true)}
-              size="icon"
-              variant="ghost"
-              className="bg-white rounded-xl shadow-sm text-slate-400 hover:text-[#E60076]"
-            >
-              <Search size={20} />
-            </Button>
+        <div className="lg:hidden space-y-4 mb-2">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Campaigns</h1>
+              <p className="text-xs text-slate-400 mt-1 font-medium">
+                Track and manage collaborations
+              </p>
+            </div>
             <Button
               variant="outline"
               onClick={() => setIsFiltersOpen(true)}
-              className="h-12 w-12 rounded-xl border-none bg-white shadow-sm shrink-0"
+              className="h-10 w-10 rounded-xl border-none bg-white shadow-sm shrink-0"
             >
-              <SlidersHorizontal size={20} />
+              <SlidersHorizontal size={18} />
             </Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Input
+              placeholder="Search campaigns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-white border-none rounded-xl shadow-sm text-sm font-medium"
+            />
           </div>
         </div>
 
@@ -222,15 +214,6 @@ export default function CampaignsPage() {
           </main>
         </div>
       </div>
-
-      <AnimatePresence>
-        {isSearchOpen && (
-          <SearchOverlay
-            onClose={() => setIsSearchOpen(false)}
-            recentSearches={RECENT_SEARCHES}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {isFiltersOpen && (

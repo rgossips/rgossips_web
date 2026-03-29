@@ -68,8 +68,9 @@ export default function MediaKitPage() {
     }
   };
 
+  const kitSlug = profile?.username || profile?.instagram_handle || user?.id || "";
   const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/kit/${user?.id}`
+    ? `${window.location.origin}/kit/${kitSlug}`
     : "";
 
   const handleCopyLink = async () => {
@@ -114,7 +115,7 @@ export default function MediaKitPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8F7FB]">
+    <div className="min-h-screen bg-[#F8F7FB] pb-20 lg:pb-0">
 
       {/* Media Kit Preview */}
       <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 lg:py-10">

@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
     // Step 3: Fetch recent media for engagement calculation
     const mediaRes = await fetch(
-      `https://graph.instagram.com/v21.0/me/media?fields=id,media_type,like_count,comments_count,timestamp&limit=25&access_token=${encodeURIComponent(accessToken)}`
+      `https://graph.instagram.com/v21.0/me/media?fields=id,media_type,like_count,comments_count,timestamp,thumbnail_url,media_url,permalink,caption&limit=25&access_token=${encodeURIComponent(accessToken)}`
     );
     const mediaData = await mediaRes.json();
 
@@ -151,8 +151,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Build top reels: sort by engagement (likes + comments), take top 6
+    const topReels = mediaPosts
+      .map((p: any) => ({
+        id: p.id,
+        mediaType: p.media_type,
+        thumbnail: p.thumbnail_url || p.media_url || "",
+        permalink: p.permalink || "",
+        caption: (p.caption || "").slice(0, 100),
+        likes: p.like_count || 0,
+        comments: p.comments_count || 0,
+        timestamp: p.timestamp,
+      }))
+      .sort((a: any, b: any) => (b.likes + b.comments) - (a.likes + a.comments))
+      .slice(0, 6);
+
     // Step 4: Update DB with fresh data
     const updateData: Record<string, unknown> = {
+      top_reels: topReels,
+      username: igProfile.username || "",
+      instagram_handle: igProfile.username || "",
       followers_count: igProfile.followers_count || 0,
       follows_count: igProfile.follows_count || 0,
       media_count: igProfile.media_count || 0,

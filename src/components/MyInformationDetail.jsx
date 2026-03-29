@@ -15,7 +15,6 @@ import {
   Calendar,
   Hash,
   Monitor,
-  Plus,
   Camera,
   Mail,
   Phone,
@@ -35,6 +34,18 @@ import {
 import EditReelModal from "./EditReelModal";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Filler,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 // --- View Details Modal ---
 const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
@@ -47,9 +58,7 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
           <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-white/40 transition">
             <X size={20} />
           </button>
-          <div className="absolute top-4 left-4 bg-pink-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">
-            {reel.category}
-          </div>
+          <div className="absolute top-4 left-4 bg-pink-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">{reel.category}</div>
         </div>
         <div className="p-6 space-y-6">
           <div>
@@ -72,15 +81,21 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
           </div>
           <div className="space-y-3 text-xs font-bold text-gray-600">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="flex items-center gap-2 text-gray-400"><Hash size={14} /> Video Code</span>
+              <span className="flex items-center gap-2 text-gray-400">
+                <Hash size={14} /> Video Code
+              </span>
               <span>{reel.code}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="flex items-center gap-2 text-gray-400"><Monitor size={14} /> Platform</span>
+              <span className="flex items-center gap-2 text-gray-400">
+                <Monitor size={14} /> Platform
+              </span>
               <span>{reel.platform}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="flex items-center gap-2 text-gray-400"><Calendar size={14} /> Upload Date</span>
+              <span className="flex items-center gap-2 text-gray-400">
+                <Calendar size={14} /> Upload Date
+              </span>
               <span>{reel.date}</span>
             </div>
           </div>
@@ -103,8 +118,12 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
       <h3 className="text-lg font-black text-gray-900 mb-2">Delete Reel?</h3>
       <p className="text-xs text-gray-500 mb-6">This action cannot be undone.</p>
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={onCancel} className="py-3 rounded-xl border border-gray-200 font-bold text-gray-600 text-xs">Cancel</button>
-        <button onClick={onConfirm} className="py-3 rounded-xl bg-red-500 font-bold text-white text-xs shadow-lg shadow-red-200">Delete</button>
+        <button onClick={onCancel} className="py-3 rounded-xl border border-gray-200 font-bold text-gray-600 text-xs">
+          Cancel
+        </button>
+        <button onClick={onConfirm} className="py-3 rounded-xl bg-red-500 font-bold text-white text-xs shadow-lg shadow-red-200">
+          Delete
+        </button>
       </div>
     </div>
   </div>
@@ -112,11 +131,26 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
 
 // --- Category Selection Modal ---
 const CATEGORY_OPTIONS = [
-  "Fashion", "Tech", "Food", "Travel", "Gaming",
-  "Education", "Beauty", "Fitness", "Comedy",
-  "Lifestyle", "Health", "Finance", "Music",
-  "Photography", "Art", "Sports", "Parenting",
-  "DIY", "Pets", "Automotive",
+  "Fashion",
+  "Tech",
+  "Food",
+  "Travel",
+  "Gaming",
+  "Education",
+  "Beauty",
+  "Fitness",
+  "Comedy",
+  "Lifestyle",
+  "Health",
+  "Finance",
+  "Music",
+  "Photography",
+  "Art",
+  "Sports",
+  "Parenting",
+  "DIY",
+  "Pets",
+  "Automotive",
 ];
 
 const CategoryModal = ({ selected, onSave, onClose }) => {
@@ -124,14 +158,10 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
   const [search, setSearch] = useState("");
 
   const toggle = (cat) => {
-    setLocalSelected((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
+    setLocalSelected((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]));
   };
 
-  const filtered = CATEGORY_OPTIONS.filter(
-    (opt) => opt.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = CATEGORY_OPTIONS.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -165,9 +195,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
                   key={cat}
                   onClick={() => toggle(cat)}
                   className={`px-4 py-2.5 rounded-full text-xs font-black transition-all cursor-pointer border ${
-                    isSelected
-                      ? "bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-200"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-purple-200 hover:bg-purple-50"
+                    isSelected ? "bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-200" : "bg-white text-gray-600 border-gray-200 hover:border-purple-200 hover:bg-purple-50"
                   }`}
                 >
                   {isSelected && <span className="mr-1">✓</span>}
@@ -178,23 +206,19 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
           </div>
 
           {/* Selected count */}
-          {localSelected.length > 0 && (
-            <p className="text-[10px] font-bold text-gray-400 mt-4">
-              {localSelected.length} selected
-            </p>
-          )}
+          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{localSelected.length} selected</p>}
         </div>
 
         {/* Footer */}
         <div className="p-5 border-t border-gray-100 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all"
-          >
+          <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
             Cancel
           </button>
           <button
-            onClick={() => { onSave(localSelected); onClose(); }}
+            onClick={() => {
+              onSave(localSelected);
+              onClose();
+            }}
             className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
@@ -253,9 +277,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
                   key={svc.id}
                   onClick={() => toggleService(svc.id)}
                   className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-purple-500 bg-purple-50 text-purple-600"
-                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                    isSelected ? "border-purple-500 bg-purple-50 text-purple-600" : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
                   }`}
                 >
                   <div className={`mb-1.5 ${isSelected ? "text-purple-500" : "text-gray-300"}`}>{svc.icon}</div>
@@ -299,7 +321,10 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
             Cancel
           </button>
           <button
-            onClick={() => { onSave(localServices, localRates); onClose(); }}
+            onClick={() => {
+              onSave(localServices, localRates);
+              onClose();
+            }}
             className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
@@ -330,7 +355,7 @@ const InputGroup = ({ label, value, onChange, placeholder, icon, disabled }) => 
 );
 
 // --- Main Component ---
-const MyInformationDetail = ({ onBack, onAddReel }) => {
+const MyInformationDetail = ({ onBack }) => {
   const { profile, user, refreshProfile } = useAuth();
 
   // Editable fields initialized from profile
@@ -349,6 +374,7 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
   const [showServicesModal, setShowServicesModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Photo state
   const [showCropper, setShowCropper] = useState(false);
@@ -395,13 +421,17 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
   const getCroppedImg = async (src, pixelCrop) => {
     const image = new window.Image();
     image.src = src;
-    await new Promise((resolve) => { image.onload = resolve; });
+    await new Promise((resolve) => {
+      image.onload = resolve;
+    });
     const canvas = document.createElement("canvas");
     canvas.width = pixelCrop.width;
     canvas.height = pixelCrop.height;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-    return new Promise((resolve) => { canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9); });
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
+    });
   };
 
   const handleCropSave = async () => {
@@ -477,7 +507,10 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
       if (data.error) throw new Error(data.error);
       await refreshProfile();
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => {
+        setSaved(false);
+        setShowEditModal(false);
+      }, 1200);
     } catch (err) {
       console.error("Failed to save profile:", err);
       alert("Failed to save. Please try again.");
@@ -488,35 +521,105 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
 
   // Reel state
   const [reels, setReels] = useState([
-    { id: 1, title: "Day in My Life", views: "16.4K", engagement: "9.3%", code: "DEF90GH234", platform: "Instagram", date: "Dec 25, 2025", category: "Lifestyle", thumbnail: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400" },
-    { id: 2, title: "Summer Skincare", views: "8.2K", engagement: "5.1%", code: "ABF12GH456", platform: "TikTok", date: "Jan 10, 2026", category: "Skincare", thumbnail: "https://images.unsplash.com/photo-1556228720-192752815143?w=400" },
-    { id: 3, title: "Travel Vibes", views: "22.1K", engagement: "12%", code: "XYZ78KL901", platform: "YouTube", date: "Jan 15, 2026", category: "Travel", thumbnail: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400" },
-    { id: 4, title: "Grooming 101", views: "5.5K", engagement: "3.4%", code: "QWE34RT567", platform: "Instagram", date: "Feb 01, 2026", category: "Beauty", thumbnail: "https://images.unsplash.com/photo-1595867359976-52c67da4b729?w=400" },
-    { id: 5, title: "Outfit Check", views: "45K", engagement: "15%", code: "JKL56YU789", platform: "TikTok", date: "Feb 05, 2026", category: "Fashion", thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400" },
-    { id: 6, title: "Healthy Eating", views: "10K", engagement: "7.8%", code: "BNM09IO123", platform: "Instagram", date: "Feb 10, 2026", category: "Food", thumbnail: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400" },
+    {
+      id: 1,
+      title: "Day in My Life",
+      views: "16.4K",
+      engagement: "9.3%",
+      code: "DEF90GH234",
+      platform: "Instagram",
+      date: "Dec 25, 2025",
+      category: "Lifestyle",
+      thumbnail: "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400",
+    },
+    {
+      id: 2,
+      title: "Summer Skincare",
+      views: "8.2K",
+      engagement: "5.1%",
+      code: "ABF12GH456",
+      platform: "TikTok",
+      date: "Jan 10, 2026",
+      category: "Skincare",
+      thumbnail: "https://images.unsplash.com/photo-1619451427882-6aaaded0cc61?w=400",
+    },
+    {
+      id: 3,
+      title: "Travel Vibes",
+      views: "22.1K",
+      engagement: "12%",
+      code: "XYZ78KL901",
+      platform: "YouTube",
+      date: "Jan 15, 2026",
+      category: "Travel",
+      thumbnail: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400",
+    },
+    {
+      id: 4,
+      title: "Grooming 101",
+      views: "5.5K",
+      engagement: "3.4%",
+      code: "QWE34RT567",
+      platform: "Instagram",
+      date: "Feb 01, 2026",
+      category: "Beauty",
+      thumbnail: "https://images.unsplash.com/photo-1646376235675-e74224635744?w=400",
+    },
+    {
+      id: 5,
+      title: "Outfit Check",
+      views: "45K",
+      engagement: "15%",
+      code: "JKL56YU789",
+      platform: "TikTok",
+      date: "Feb 05, 2026",
+      category: "Fashion",
+      thumbnail: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400",
+    },
+    {
+      id: 6,
+      title: "Healthy Eating",
+      views: "10K",
+      engagement: "7.8%",
+      code: "BNM09IO123",
+      platform: "Instagram",
+      date: "Feb 10, 2026",
+      category: "Food",
+      thumbnail: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400",
+    },
   ]);
 
   const [selectedReel, setSelectedReel] = useState(null);
   const [viewState, setViewState] = useState("none");
 
-  const categories = ["All", "Lifestyle", "Travel", "Beauty", "Skincare"];
-
-  const openReelDetails = (reel) => { setSelectedReel(reel); setViewState("details"); };
+  const openReelDetails = (reel) => {
+    setSelectedReel(reel);
+    setViewState("details");
+  };
   const openEditMode = () => setViewState("edit");
   const openDeleteConfirm = () => setViewState("delete_confirm");
-  const handleSaveReel = (updatedReel) => { setReels(reels.map((r) => (r.id === updatedReel.id ? updatedReel : r))); setViewState("none"); setSelectedReel(null); };
-  const handleDeleteReel = () => { setReels(reels.filter((r) => r.id !== selectedReel.id)); setViewState("none"); setSelectedReel(null); };
-  const closeAll = () => { setViewState("none"); setSelectedReel(null); };
+  const handleSaveReel = (updatedReel) => {
+    setReels(reels.map((r) => (r.id === updatedReel.id ? updatedReel : r)));
+    setViewState("none");
+    setSelectedReel(null);
+  };
+  const handleDeleteReel = () => {
+    setReels(reels.filter((r) => r.id !== selectedReel.id));
+    setViewState("none");
+    setSelectedReel(null);
+  };
+  const closeAll = () => {
+    setViewState("none");
+    setSelectedReel(null);
+  };
 
   // Hidden file input
-  const fileInput = (
-    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
-  );
+  const fileInput = <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />;
 
   // Profile card (shared between desktop & mobile)
   const profileCard = (isMobile) => (
-    <section className={`rounded-2xl p-[2.5px] shadow-sm relative ${isMobile ? "rounded-[2.5rem]" : ""}`} style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}>
-      <div className={`bg-white ${isMobile ? "rounded-[2.3rem]" : "rounded-[calc(1rem-1px)]"} p-6 flex flex-col items-center`}>
+    <section className={`rounded-2xl p-[2.5px] shadow-sm relative ${isMobile ? "rounded-[2.5rem]" : "h-full"}`} style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}>
+      <div className={`bg-white ${isMobile ? "rounded-[2.3rem]" : "rounded-[calc(1rem-1px)] h-full"} p-6 flex flex-col items-center`}>
         {/* Profile Photo */}
         <div className="relative mb-4">
           {userPhoto ? (
@@ -533,7 +636,12 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
             </div>
           ) : (
             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#FF2D78] to-[#FF6BA1] flex items-center justify-center text-white text-2xl font-bold border-4 border-pink-500 p-1 shadow-lg">
-              {(name || "U").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+              {(name || "U")
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2)}
               <div onClick={handleEditPhoto} className="absolute -bottom-1 -right-1 bg-[#1A1A1A] p-2 rounded-xl border-2 border-white cursor-pointer shadow-md">
                 <Camera size={12} className="text-white" />
               </div>
@@ -541,19 +649,11 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
           )}
         </div>
 
-        <h2 className={`${isMobile ? "text-xl" : "text-lg"} font-black text-center text-gray-900 leading-tight`}>
-          {name || "Your Name"}
-        </h2>
+        <h2 className={`${isMobile ? "text-xl" : "text-lg"} font-black text-center text-gray-900 leading-tight`}>{name || "Your Name"}</h2>
 
-        {userHandle && (
-          <p className="text-xs text-gray-400 font-bold mt-1">@{userHandle}</p>
-        )}
+        {userHandle && <p className="text-xs text-gray-400 font-bold mt-1">@{userHandle}</p>}
 
-        {bio && (
-          <p className="text-[11px] font-bold text-gray-500 text-center mt-2 leading-relaxed max-w-xs">
-            {bio}
-          </p>
-        )}
+        {bio && <p className="text-[11px] font-bold text-gray-500 text-center mt-2 leading-relaxed max-w-xs">{bio}</p>}
 
         <div className="flex gap-2 mt-3 flex-wrap justify-center">
           {location && (
@@ -585,6 +685,15 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
             <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
           </div>
         </div>
+
+        {/* Edit Profile Button */}
+        <button
+          onClick={() => setShowEditModal(true)}
+          className="w-full mt-4 py-3 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+          style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+        >
+          <Edit2 size={14} /> Edit Profile
+        </button>
       </div>
     </section>
   );
@@ -616,7 +725,9 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
         <div className="space-y-2">
           <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Address</label>
           <div className="relative flex items-start">
-            <div className="absolute left-4 top-4"><Home size={16} className="text-pink-500" /></div>
+            <div className="absolute left-4 top-4">
+              <Home size={16} className="text-pink-500" />
+            </div>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -630,14 +741,7 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
       {/* Social Media */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-5`}>
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Social Media</h3>
-        <InputGroup
-          label="Instagram Handle"
-          value={userHandle ? `@${userHandle}` : ""}
-          onChange={() => {}}
-          placeholder="@username"
-          icon={<Instagram size={16} className="text-pink-500" />}
-          disabled
-        />
+        <InputGroup label="Instagram Handle" value={userHandle ? `@${userHandle}` : ""} onChange={() => {}} placeholder="@username" icon={<Instagram size={16} className="text-pink-500" />} disabled />
         <p className="text-[9px] font-bold text-gray-400 ml-1">Instagram handle is synced from your connected account</p>
         <InputGroup label="TikTok" value={tiktok} onChange={setTiktok} placeholder="https://tiktok.com/@username" icon={<Video size={16} className="text-pink-500" />} />
         <InputGroup label="YouTube" value={youtubeUrl} onChange={setYoutubeUrl} placeholder="https://youtube.com/@channel" icon={<Youtube size={16} className="text-pink-500" />} />
@@ -648,16 +752,21 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-4`}>
         <div className="flex justify-between items-center">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categories</h3>
-          <button onClick={() => setShowCategoryModal(true)} className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer">
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer"
+          >
             <Edit2 size={10} /> Edit
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {editCategories.length > 0 ? editCategories.map((tag) => (
-            <span key={tag} className="px-4 py-2 bg-purple-50 border border-purple-100 text-[10px] font-bold text-purple-700 rounded-full">
-              {tag}
-            </span>
-          )) : (
+          {editCategories.length > 0 ? (
+            editCategories.map((tag) => (
+              <span key={tag} className="px-4 py-2 bg-purple-50 border border-purple-100 text-[10px] font-bold text-purple-700 rounded-full">
+                {tag}
+              </span>
+            ))
+          ) : (
             <p className="text-xs text-gray-400 font-bold">No categories selected. Tap Edit to add.</p>
           )}
         </div>
@@ -667,7 +776,10 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-4`}>
         <div className="flex justify-between items-center">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Services & Rates</h3>
-          <button onClick={() => setShowServicesModal(true)} className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer">
+          <button
+            onClick={() => setShowServicesModal(true)}
+            className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer"
+          >
             <Edit2 size={10} /> Edit
           </button>
         </div>
@@ -711,111 +823,164 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
     </div>
   );
 
+  // Video card (reusable)
+  const videoCard = (reel, isDesktop) => (
+    <div
+      key={reel.id}
+      onClick={() => openReelDetails(reel)}
+      className={`relative overflow-hidden shadow-sm group cursor-pointer border border-gray-100 ${isDesktop ? "aspect-[3/4] rounded-2xl" : "aspect-[3/4.5] rounded-[1.8rem]"}`}
+    >
+      <img src={reel.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={reel.title} />
+      <div className="absolute top-3 left-3 bg-white/30 backdrop-blur-md border border-white/40 px-3 py-1 rounded-full text-[7px] font-black text-white uppercase tracking-wider">{reel.category}</div>
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+        <p className="text-[10px] font-bold text-white/80 mb-0.5">{reel.title}</p>
+        <div className="flex items-center gap-1 text-[9px] font-black text-white">
+          <Play size={10} fill="currentColor" /> {reel.views} views
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <main className="p-5 space-y-6 pb-24 relative lg:p-8 lg:space-y-0 lg:pb-8 min-h-screen lg:bg-gray-50 lg:pt-24">
       {fileInput}
 
       {/* Desktop Layout */}
-      <div className="hidden lg:grid grid-cols-12 gap-8 max-w-7xl mx-auto">
-        {/* Left Column: Profile Card & Edit Form */}
-        <div className="col-span-4 flex flex-col gap-6">
-          <button onClick={onBack} className="p-2 cursor-pointer bg-pink-100/50 rounded-full text-pink-500 w-fit active:scale-90 transition-transform">
+      <div className="hidden lg:block max-w-7xl mx-auto space-y-8">
+        {/* Top Row: Back + Profile Card (full width) */}
+        <div className="flex items-start gap-6">
+          <button onClick={onBack} className="p-2 cursor-pointer bg-pink-100/50 rounded-full text-pink-500 mt-1 shrink-0 active:scale-90 transition-transform">
             <ArrowLeft size={20} />
           </button>
+          <div className="flex-1">
+            <div className="grid grid-cols-12 gap-6 items-stretch">
+              {/* Profile Card */}
+              <div className="col-span-4">{profileCard(false)}</div>
 
-          {profileCard(false)}
+              {/* Engagement Metrics */}
+              <div className="col-span-4">
+                <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm h-full flex flex-col">
+                  <h3 className="font-black text-gray-800 text-base flex items-center gap-2 mb-4">
+                    <Activity size={18} /> Engagement Metrics
+                  </h3>
+                  <div className="space-y-3 flex-1 flex flex-col justify-evenly">
+                    {[
+                      { label: "Engagement Rate", value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
+                      { label: "Followers", value: formatCount(profile?.followers_count), color: "purple" },
+                      { label: "Avg Likes", value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
+                      { label: "Avg Comments", value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
+                      { label: "Impressions", value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
+                      { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "cyan" },
+                    ].map((m) => (
+                      <div key={m.label} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full bg-${m.color}-500`} />
+                          <span className="text-sm font-bold text-gray-600">{m.label}</span>
+                        </div>
+                        <span className={`text-sm font-black text-${m.color}-500`}>{m.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
 
-          {/* Engagement Metrics */}
-          <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
-            <h3 className="font-black text-gray-800 text-base flex items-center gap-2">
-              <Activity size={18} /> Engagement Metrics
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500" />
-                  <span className="text-sm font-bold text-gray-600">Engagement Rate</span>
-                </div>
-                <span className="text-sm font-black text-blue-500">{profile?.engagement_rate ? `${profile.engagement_rate}%` : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-purple-500" />
-                  <span className="text-sm font-bold text-gray-600">Followers</span>
-                </div>
-                <span className="text-sm font-black text-purple-500">{formatCount(profile?.followers_count)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-pink-500" />
-                  <span className="text-sm font-bold text-gray-600">Avg Likes</span>
-                </div>
-                <span className="text-sm font-black text-pink-500">{profile?.avg_likes ? formatCount(profile.avg_likes) : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-green-500" />
-                  <span className="text-sm font-bold text-gray-600">Avg Comments</span>
-                </div>
-                <span className="text-sm font-black text-green-500">{profile?.avg_comments ? formatCount(profile.avg_comments) : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-500" />
-                  <span className="text-sm font-bold text-gray-600">Impressions</span>
-                </div>
-                <span className="text-sm font-black text-amber-500">{profile?.total_impressions ? formatCount(profile.total_impressions) : "—"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-cyan-500" />
-                  <span className="text-sm font-bold text-gray-600">Reach</span>
-                </div>
-                <span className="text-sm font-black text-cyan-500">{profile?.total_reach ? formatCount(profile.total_reach) : "—"}</span>
+              {/* Growth Chart */}
+              <div className="col-span-4">
+                <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm h-full flex flex-col">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Activity size={18} className="text-purple-500" />
+                    <h3 className="font-black text-gray-800 text-base">Growth Overview</h3>
+                  </div>
+                  <div className="flex-1 flex items-center">
+                    <Line
+                      data={{
+                        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                        datasets: [
+                          {
+                            fill: true,
+                            label: "Followers",
+                            data: [
+                              Math.round((profile?.followers_count || 5000) * 0.6),
+                              Math.round((profile?.followers_count || 5000) * 0.7),
+                              Math.round((profile?.followers_count || 5000) * 0.78),
+                              Math.round((profile?.followers_count || 5000) * 0.85),
+                              Math.round((profile?.followers_count || 5000) * 0.93),
+                              profile?.followers_count || 5000,
+                            ],
+                            borderColor: "#9810FA",
+                            borderWidth: 2.5,
+                            backgroundColor: (context) => {
+                              const ctx = context.chart.ctx;
+                              const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+                              gradient.addColorStop(0, "rgba(152, 16, 250, 0.2)");
+                              gradient.addColorStop(1, "rgba(152, 16, 250, 0)");
+                              return gradient;
+                            },
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: "#9810FA",
+                            pointBorderColor: "#fff",
+                            pointBorderWidth: 2,
+                          },
+                          {
+                            fill: true,
+                            label: "Engagement",
+                            data: [3.2, 4.1, 3.8, 5.0, 4.6, profile?.engagement_rate || 5.2],
+                            borderColor: "#E60076",
+                            borderWidth: 2.5,
+                            backgroundColor: (context) => {
+                              const ctx = context.chart.ctx;
+                              const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+                              gradient.addColorStop(0, "rgba(230, 0, 118, 0.15)");
+                              gradient.addColorStop(1, "rgba(230, 0, 118, 0)");
+                              return gradient;
+                            },
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: "#E60076",
+                            pointBorderColor: "#fff",
+                            pointBorderWidth: 2,
+                            yAxisID: "y1",
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: "index" },
+                        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1a1a1a", titleFont: { size: 11, weight: "bold" }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 10 } },
+                        scales: {
+                          x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" }, color: "#9ca3af" } },
+                          y: { position: "left", grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 9 }, color: "#9ca3af", callback: (v) => v >= 1000 ? (v / 1000).toFixed(0) + "K" : v } },
+                          y1: { position: "right", grid: { display: false }, ticks: { font: { size: 9 }, color: "#9ca3af", callback: (v) => v + "%" }, min: 0, max: 10 },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-center gap-5 mt-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#9810FA]" />
+                      <span className="text-[10px] font-bold text-gray-500">Followers</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#E60076]" />
+                      <span className="text-[10px] font-bold text-gray-500">Engagement %</span>
+                    </div>
+                  </div>
+                </section>
               </div>
             </div>
-          </section>
-
-          {editForm(false)}
+          </div>
         </div>
 
-        {/* Right Column: Videos */}
-        <div className="col-span-8 flex flex-col gap-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
-              <h3 className="font-black text-gray-800 text-lg">Offer Videos</h3>
-            </div>
-            <button onClick={onAddReel} className="bg-[#EC4899] cursor-pointer text-white text-[10px] font-black px-5 py-2 rounded-full flex items-center gap-1 shadow-md active:scale-95 transition-transform">
-              <Plus size={14} strokeWidth={3} /> Add
-            </button>
+        {/* Full Video Grid */}
+        <div className="ml-12 space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
+            <h3 className="font-black text-gray-800 text-lg">My Work</h3>
+            <span className="text-xs font-bold text-gray-400 ml-2">{reels.length} videos</span>
           </div>
-
-          <div className="flex gap-2 no-scrollbar">
-            {categories.map((cat, idx) => (
-              <button key={cat} className={`px-4 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${idx === 0 ? "btn-purple shadow-md shadow-pink-100" : "bg-white border border-gray-100 text-gray-400 hover:border-gray-200"}`}>
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            {reels.map((reel) => (
-              <div key={reel.id} onClick={() => openReelDetails(reel)} className="relative aspect-[3/4.5] rounded-2xl overflow-hidden shadow-sm group cursor-pointer border border-gray-100">
-                <img src={reel.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={reel.title} />
-                <div className="absolute top-3 left-3 bg-white/30 backdrop-blur-md border border-white/40 px-3 py-1 rounded-full text-[7px] font-black text-white uppercase tracking-wider">{reel.category}</div>
-                <button onClick={(e) => { e.stopPropagation(); openReelDetails(reel); }} className="absolute top-3 cursor-pointer right-3 bg-white/90 p-1.5 rounded-full text-gray-800 shadow-sm hover:bg-white transition-colors">
-                  <Edit2 size={10} />
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                  <div className="bg-white/90 text-gray-800 text-[8px] font-black px-2 py-0.5 rounded-md inline-block mb-1">{reel.code}</div>
-                  <div className="flex items-center gap-1 text-[9px] font-black text-white">
-                    <Play size={10} fill="currentColor" /> {reel.views} views
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div className="grid grid-cols-4 gap-4">{reels.map((reel) => videoCard(reel, true))}</div>
         </div>
       </div>
 
@@ -827,55 +992,82 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
 
         {profileCard(true)}
 
-        {editForm(true)}
-
-        {/* Offer Videos */}
-        <section className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
-              <h3 className="font-black text-gray-800 text-lg">Offer Videos</h3>
-            </div>
-            <button onClick={onAddReel} className="bg-[#EC4899] text-white text-[10px] font-black px-5 py-2 rounded-full flex items-center gap-1 shadow-md active:scale-95 transition-transform">
-              <Plus size={14} strokeWidth={3} /> Add
-            </button>
-          </div>
-
-          <div className="grid grid-cols-5 gap-2 no-scrollbar py-1">
-            {categories.map((cat, idx) => (
-              <button key={cat} className={`px-5 py-2 rounded-full text-[10px] font-black whitespace-nowrap transition-all ${idx === 0 ? "btn-purple shadow-md shadow-pink-100" : "bg-white border border-gray-100 text-gray-400"}`}>
-                {cat}
-              </button>
-            ))}
-          </div>
-
+        {/* Engagement Metrics — Mobile */}
+        <section className="bg-white rounded-[2.5rem] border border-gray-100 p-6 shadow-sm space-y-4">
+          <h3 className="font-black text-gray-800 text-base flex items-center gap-2">
+            <Activity size={18} /> Engagement Metrics
+          </h3>
           <div className="grid grid-cols-2 gap-3">
-            {reels.map((reel) => (
-              <div key={reel.id} onClick={() => openReelDetails(reel)} className="relative aspect-[3/4.5] rounded-[1.8rem] overflow-hidden shadow-sm group cursor-pointer">
-                <img src={reel.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={reel.title} />
-                <div className="absolute top-3 left-3 bg-white/30 backdrop-blur-md border border-white/40 px-3 py-1 rounded-full text-[7px] font-black text-white uppercase tracking-wider">{reel.category}</div>
-                <button onClick={(e) => { e.stopPropagation(); openReelDetails(reel); }} className="absolute top-3 right-3 cursor-pointer bg-white/90 p-1.5 rounded-full text-gray-800 shadow-sm hover:bg-white transition-colors">
-                  <Edit2 size={10} />
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                  <div className="bg-white/90 text-gray-800 text-[8px] font-black px-2 py-0.5 rounded-md inline-block mb-1">{reel.code}</div>
-                  <div className="flex items-center gap-1 text-[9px] font-black text-white">
-                    <Play size={10} fill="currentColor" /> {reel.views} views
-                  </div>
-                </div>
+            {[
+              { label: "Engagement", value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
+              { label: "Followers", value: formatCount(profile?.followers_count), color: "purple" },
+              { label: "Avg Likes", value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
+              { label: "Avg Comments", value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
+              { label: "Impressions", value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
+              { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "cyan" },
+            ].map((m) => (
+              <div key={m.label} className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                <p className="text-[9px] font-black text-gray-400 uppercase">{m.label}</p>
+                <p className={`text-base font-black text-${m.color}-500 mt-0.5`}>{m.value}</p>
               </div>
             ))}
           </div>
         </section>
+
+        {/* My Work — Mobile */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
+            <h3 className="font-black text-gray-800 text-lg">My Work</h3>
+            <span className="text-xs font-bold text-gray-400 ml-1">{reels.length}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">{reels.map((reel) => videoCard(reel, false))}</div>
+        </section>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[90vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <h2 className="text-base lg:text-lg font-black text-gray-900">Edit Profile</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* Scrollable Form */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {editForm(false)}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Crop Modal */}
       {showCropper && imageSrc && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
           <div className="flex items-center justify-between px-5 py-4 bg-black/50">
-            <button onClick={() => { setShowCropper(false); setImageSrc(null); }} className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors">Cancel</button>
+            <button
+              onClick={() => {
+                setShowCropper(false);
+                setImageSrc(null);
+              }}
+              className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
             <h3 className="text-white text-sm font-bold">Crop Photo</h3>
-            <button onClick={handleCropSave} disabled={uploading} className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}>
+            <button
+              onClick={handleCropSave}
+              disabled={uploading}
+              className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}
+            >
               {uploading ? "Saving..." : "Save"}
             </button>
           </div>
@@ -894,7 +1086,17 @@ const MyInformationDetail = ({ onBack, onAddReel }) => {
       {viewState === "edit" && <EditReelModal reel={selectedReel} onClose={closeAll} onSave={handleSaveReel} onDeleteTrigger={openDeleteConfirm} />}
       {viewState === "delete_confirm" && <DeleteConfirmModal onCancel={() => setViewState("edit")} onConfirm={handleDeleteReel} />}
       {showCategoryModal && <CategoryModal selected={editCategories} onSave={setEditCategories} onClose={() => setShowCategoryModal(false)} />}
-      {showServicesModal && <ServicesRatesModal services={editServices} rates={serviceRates} onSave={(svcs, rates) => { setEditServices(svcs); setServiceRates(rates); }} onClose={() => setShowServicesModal(false)} />}
+      {showServicesModal && (
+        <ServicesRatesModal
+          services={editServices}
+          rates={serviceRates}
+          onSave={(svcs, rates) => {
+            setEditServices(svcs);
+            setServiceRates(rates);
+          }}
+          onClose={() => setShowServicesModal(false)}
+        />
+      )}
     </main>
   );
 };

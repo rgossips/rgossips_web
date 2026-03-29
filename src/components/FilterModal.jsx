@@ -344,7 +344,7 @@ const FilterModal = ({
   return (
     <>
       {/* Mobile Modal - Right Slide */}
-      <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:hidden mb-16">
+      <div className="fixed inset-0 z-[110] bg-black/20 backdrop-blur-sm lg:hidden">
         <motion.div
           initial={{ x: "100%", opacity: 1 }}
           animate={{
@@ -387,7 +387,7 @@ const FilterModal = ({
           </div>
 
           {/* Mobile Footer Buttons */}
-          <div className="bg-white border-t border-slate-100 p-6 flex gap-4">
+          <div className="bg-white border-t border-slate-100 p-4 pb-6 flex gap-3">
             <Button
               variant="ghost"
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100"
@@ -406,7 +406,7 @@ const FilterModal = ({
       </div>
 
       {/* Desktop Modal - Centered */}
-      <div className="hidden lg:fixed inset-0 z-50 bg-black/20 backdrop-blur-sm lg:flex items-center justify-center">
+      <div className="hidden lg:fixed inset-0 z-[110] bg-black/20 backdrop-blur-sm lg:flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{

@@ -61,18 +61,29 @@ export default function DiscoverBrands() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] p-4 lg:p-8 lg:pt-24 font-sans relative">
+    <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
       <div className="max-w-[1440px] mx-auto space-y-8">
         {/* Header - Mobile Only */}
-        <div className="lg:hidden flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Discover Brands</h1>
-          <Button
-            variant="outline"
-            onClick={() => setIsFiltersOpen(true)}
-            className="h-12 w-12 rounded-xl border-none bg-white shadow-sm shrink-0"
-          >
-            <SlidersHorizontal size={20} />
-          </Button>
+        <div className="lg:hidden space-y-4 mb-2">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-slate-800">Discover Brands</h1>
+            <Button
+              variant="outline"
+              onClick={() => setIsFiltersOpen(true)}
+              className="h-10 w-10 rounded-xl border-none bg-white shadow-sm shrink-0"
+            >
+              <SlidersHorizontal size={18} />
+            </Button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Input
+              placeholder="Search brands..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-white border-none rounded-xl shadow-sm text-sm font-medium"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

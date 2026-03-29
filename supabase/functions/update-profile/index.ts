@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     if (fields.facebookUrl !== undefined) updateData.facebook_url = fields.facebookUrl;
     if (fields.instagramAccessToken !== undefined) updateData.instagram_access_token = fields.instagramAccessToken;
     if (fields.instagramTokenExpiresAt !== undefined) updateData.instagram_token_expires_at = fields.instagramTokenExpiresAt;
+    if (fields.topReels !== undefined) updateData.top_reels = fields.topReels;
 
     const { error: dbError } = await supabaseAdmin
       .from(table)

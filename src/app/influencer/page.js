@@ -96,8 +96,11 @@ export default function HomePage() {
   // Handle Initial Global Load
   if (loading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-[#0D7753]">
-        <div className="animate-pulse text-white font-bold">Loading...</div>
+      <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-[#E60076] animate-spin" />
+          <p className="text-sm text-slate-500 font-semibold">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -109,7 +112,7 @@ export default function HomePage() {
       <Hero user={profile} />
       <HeroImage userData={profile} /> */}
 
-      <div className="relative z-20 bg-white p-2">
+      <div className="relative z-20 bg-white p-2 pb-20 lg:pb-2">
         {/* Constrained content */}
         <div className="flex flex-col gap-4 lg:gap-8 items-center max-w-[1440px] mx-auto lg:mb-10">
           {/* Mobile Header */}

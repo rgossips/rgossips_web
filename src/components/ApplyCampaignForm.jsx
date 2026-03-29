@@ -5,9 +5,11 @@ import {
   X,
   Instagram,
   Upload,
+  Loader2,
 } from "lucide-react";
 
 export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -23,10 +25,18 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const update = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = () => {
-    console.log("Applying for campaign with:", formData);
-    if (onSubmitSuccess) onSubmitSuccess();
-    else onClose();
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      console.log("Applying for campaign with:", formData);
+      // Simulate API call
+      await new Promise((r) => setTimeout(r, 1200));
+      if (onSubmitSuccess) onSubmitSuccess();
+      else onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isFormValid =
@@ -196,10 +206,11 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!isFormValid}
-            className="flex-1 h-12 rounded-xl btn-purple text-sm font-bold shadow-lg shadow-pink-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 transition-all"
+            disabled={!isFormValid || submitting}
+            className="flex-1 h-12 rounded-xl btn-purple text-sm font-bold shadow-lg shadow-pink-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            Submit Application
+            {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+            {submitting ? "Submitting..." : "Submit Application"}
           </button>
         </div>
       </motion.div>

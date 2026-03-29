@@ -28,7 +28,7 @@ export default function PublicMediaKitPage() {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({ userId: id }),
+          body: JSON.stringify({ username: id }),
         });
 
         const data = await res.json();

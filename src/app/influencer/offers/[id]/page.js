@@ -323,7 +323,7 @@ export default function CampaignDetailsPage() {
   const isCompleted = campaign.status === "Completed";
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] font-sans lg:mt-20">
+    <div className="min-h-screen bg-[#F8F9FD] pb-20 lg:pb-0 font-sans lg:mt-20">
       <AnimatePresence>
         {isApplyOpen && (
           <ApplyCampaignForm

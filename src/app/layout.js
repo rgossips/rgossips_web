@@ -4,6 +4,7 @@ import { GlobalProvider } from "@/context/GlobalContext";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Script from "next/script";
+import NavigationLoader from "@/components/NavigationLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,6 +74,7 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
+        <NavigationLoader />
         <GlobalProvider>
           <AuthProvider>
             <ProtectedRoute>{children}</ProtectedRoute>
