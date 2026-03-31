@@ -99,6 +99,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Trigger Instagram refresh to populate engagement data immediately
+    if (table === "influencer_profiles" && instagramAccessToken) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        await fetch(`${supabaseUrl}/functions/v1/refresh-instagram`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ userId }),
+        });
+      } catch (e) {
+        console.error("Background Instagram refresh failed:", e);
+        // Non-blocking — profile is still created
+      }
+    }
+
     // Claim invitations on signup
     const igUsername = instagram || "";
     if (table === "brand_profiles") {
