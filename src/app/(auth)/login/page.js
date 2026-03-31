@@ -4,8 +4,6 @@ import { useRouter } from "next/navigation";
 import { useGlobal } from "@/context/GlobalContext";
 import OnboardingCarousel from "@/components/login/OnboardingCarousel";
 import RoleSelection from "@/components/login/RoleSelection";
-import SignInPhone from "@/components/login/SignInPhone";
-import VerifyOTP from "@/components/login/VerifyOTP";
 import SignUpForm from "@/components/login/SignUpForm";
 import BrandSignUpForm from "@/components/login/BrandSignUpForm";
 import CategorySelection from "@/components/login/CategorySelection";
@@ -23,8 +21,8 @@ const Login = () => {
 
   // --- UI & FLOW STATE ---
   // flow: "onboarding" | "signin" | "signup"
-  // signin steps: 1=role, 2=phone, 3=otp
-  // signup steps: 1=role, 2=signupForm, 3=instagram, 4=categories, 5=preferences, 6=notifications, 7=success
+  // signin steps: 1=role, 2=instagram connect (auto-login)
+  // signup steps: 1=role, 2=instagram connect, 3=profile form, 4=categories, 5=preferences, 6=notifications, 7=success
   const [flow, setFlow] = useState("onboarding");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -32,20 +30,17 @@ const Login = () => {
 
   // --- AUTH STATE ---
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
   const [pendingSession, setPendingSession] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
-  const [resendSuccess, setResendSuccess] = useState(false);
+
+  // --- INSTAGRAM STATE (shared between signin/signup) ---
+  const [instaProfile, setInstaProfile] = useState(null);
 
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
     role: null,
     name: "",
     username: "",
-    niche: "",
-    location: "",
-    instagram: "",
-    youtube: "",
     categories: [],
     services: [],
     notificationsEnabled: false,
@@ -106,75 +101,56 @@ const Login = () => {
 
   const handleSignInRoleSelected = (selectedRole) => {
     setSignupData((prev) => ({ ...prev, role: selectedRole }));
-    nextStep();
+    nextStep(); // → step 2 (Instagram connect)
   };
 
-  const handleSignInSendOtp = async (phoneNumber) => {
+  const handleSignInInstagramConnect = async (profile) => {
     setLoading(true);
     setError("");
     try {
-      await sendOtp(phoneNumber);
-      nextStep();
-    } catch (err) {
-      setError(err.message || "Failed to send OTP.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      setInstaProfile(profile);
 
-  const handleSignInResendOtp = async () => {
-    if (!phone) return;
-    setLoading(true);
-    setError("");
-    setResendSuccess(false);
-    try {
-      await sendOtp(phone.replace(/\D/g, ""));
-      setResendSuccess(true);
-      setTimeout(() => setResendSuccess(false), 3000);
-    } catch (err) {
-      setError(err.message || "Failed to resend OTP.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignInVerifyOtp = async (otpCode) => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await verifyOtp(phone.replace(/\D/g, ""), otpCode);
-
-      // Check if profile exists via edge function (bypasses RLS)
-      const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
+      // Look up existing user by Instagram username
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      const checkRes = await fetch(`${supabaseUrl}/functions/v1/check-profile`, {
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/instagram-login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`,
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ userId: data.user.id, table }),
+        body: JSON.stringify({
+          instagramUsername: profile.username,
+          role: signupData.role,
+        }),
       });
-      const checkResult = await checkRes.json();
 
-      if (checkResult?.exists) {
-        // Existing user — apply session and go to dashboard
+      const data = await res.json();
+
+      if (data?.success && data?.session) {
+        // Existing user found — apply session and navigate
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
         });
         router.push(signupData.role === "brand" ? "/brands" : "/influencer");
+        return; // Keep loading state until navigation
+      }
+
+      if (data?.error === "not_found") {
+        // No account — switch to signup flow, skip to profile form (step 3)
+        setFlow("signup");
+        setStep(3);
+        setError("");
+        setLoading(false);
         return;
       }
 
-      // No profile — switch to signup flow for profile creation
-      setFlow("signup");
-      setStep(2); // Go to SignUpForm to collect name & instagram
+      throw new Error(data?.message || "Login failed");
     } catch (err) {
-      setError(err.message || "Invalid or expired OTP.");
-    } finally {
+      setError(err.message || "Failed to sign in with Instagram");
       setLoading(false);
     }
   };
@@ -185,96 +161,65 @@ const Login = () => {
 
   const handleSignUpRoleSelected = (selectedRole) => {
     setSignupData((prev) => ({ ...prev, role: selectedRole }));
-    nextStep(); // → step 2 (SignUpForm)
+    nextStep(); // → step 2 (Instagram connect)
+  };
+
+  const handleSignUpInstagramConnect = (profile) => {
+    setInstaProfile(profile);
+    nextStep(); // → step 3 (profile form)
   };
 
   const handleSignUpFormSubmit = async (formData) => {
     setSignupData((prev) => ({ ...prev, ...formData }));
-
-    if (signupData.role === "brand") {
-      // Brands: create profile and go straight to dashboard
-      setLoading(true);
-      setError("");
-      try {
-        const userId = authUserId;
-        if (!userId) throw new Error("No user found. Please verify OTP first.");
-
-        const storagePhone = phone.replace(/\D/g, "").slice(-10);
-        const { data: createResult, error: createError } = await supabase.functions.invoke(
-          "create-profile",
-          {
-            body: {
-              userId,
-              table: "brand_profiles",
-              phone: storagePhone,
-              name: formData.name,
-              gstinData: formData.gstinData || null,
-            },
-          },
-        );
-
-        if (createError) throw new Error(createError.message);
-        if (createResult?.error) throw new Error(createResult.error);
-
-        if (pendingSession) {
-          await supabase.auth.setSession({
-            access_token: pendingSession.access_token,
-            refresh_token: pendingSession.refresh_token,
-          });
-        }
-
-        router.push("/brands");
-      } catch (err) {
-        setError(err.message || "Failed to create account.");
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      nextStep(); // → step 3 (Instagram connect)
-    }
-  };
-
-  const handleInstagramConnect = async (instaProfile) => {
     setLoading(true);
     setError("");
-    try {
-      setSignupData((prev) => ({ ...prev, instaProfile }));
 
+    try {
       const userId = authUserId;
-      if (!userId) throw new Error("No user found. Please verify OTP first.");
+      if (!userId) throw new Error("No user found. Please verify your phone number.");
 
       const storagePhone = phone.replace(/\D/g, "").slice(-10);
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
 
+      const createBody = {
+        userId,
+        table,
+        phone: storagePhone,
+        name: formData.name || signupData.name,
+        gstinData: formData.gstinData || null,
+      };
+
+      // Add Instagram data if available
+      if (instaProfile) {
+        createBody.username = instaProfile.username || "";
+        createBody.instagram = instaProfile.username || "";
+        createBody.profilePictureUrl = instaProfile.profilePictureUrl || "";
+        createBody.followersCount = instaProfile.followersCount || 0;
+        createBody.followsCount = instaProfile.followsCount || 0;
+        createBody.mediaCount = instaProfile.mediaCount || 0;
+        createBody.instagramAccessToken = instaProfile.accessToken || "";
+        createBody.instagramTokenExpiresAt = instaProfile.tokenExpiresAt || "";
+      }
+
       const { data: createResult, error: createError } = await supabase.functions.invoke(
         "create-profile",
-        {
-          body: {
-            userId,
-            table,
-            phone: storagePhone,
-            name: signupData.name,
-            username: instaProfile?.username || "",
-            instagram: instaProfile?.username || "",
-            profilePictureUrl: instaProfile?.profilePictureUrl || "",
-            followersCount: instaProfile?.followersCount || 0,
-            followsCount: instaProfile?.followsCount || 0,
-            mediaCount: instaProfile?.mediaCount || 0,
-            instagramAccessToken: instaProfile?.accessToken || "",
-            instagramTokenExpiresAt: instaProfile?.tokenExpiresAt || "",
-            gstinData: signupData.gstinData || null,
-          },
-        },
+        { body: createBody },
       );
 
       if (createError) throw new Error(createError.message);
       if (createResult?.error) throw new Error(createResult.error);
 
       if (pendingSession) {
-        supabase.auth.setSession({
+        await supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
         });
+      }
+
+      if (signupData.role === "brand") {
+        // Brands go straight to dashboard
+        router.push("/brands");
+        return;
       }
 
       nextStep(); // → step 4 (categories)
@@ -302,7 +247,6 @@ const Login = () => {
 
   const handleFinish = async () => {
     setLoading(true);
-    // Save onboarding data (categories, services, notifications) to profile
     if (authUserId) {
       const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
       await supabase.functions.invoke("update-profile", {
@@ -316,7 +260,6 @@ const Login = () => {
       });
     }
 
-    // Apply session now that onboarding is complete
     if (pendingSession) {
       await supabase.auth.setSession({
         access_token: pendingSession.access_token,
@@ -331,7 +274,7 @@ const Login = () => {
     setStep(1);
     setError("");
     setPhone("");
-    setOtp("");
+    setInstaProfile(null);
   };
 
   // ========================
@@ -379,27 +322,11 @@ const Login = () => {
                     />
                   )}
                   {step === 2 && (
-                    <SignInPhone
-                      onNext={handleSignInSendOtp}
-                      loading={loading}
-                      error={error}
-                      phone={phone}
-                      setPhone={setPhone}
+                    <InstagramConnect
+                      onNext={handleSignInInstagramConnect}
                       mode="signin"
-                      role={signupData.role}
-                    />
-                  )}
-                  {step === 3 && (
-                    <VerifyOTP
-                      onNext={handleSignInVerifyOtp}
-                      onResend={handleSignInResendOtp}
                       loading={loading}
                       error={error}
-                      otp={otp}
-                      setOtp={setOtp}
-                      phoneNumber={phone}
-                      role={signupData.role}
-                      resendSuccess={resendSuccess}
                     />
                   )}
                 </>
@@ -415,7 +342,13 @@ const Login = () => {
                       onSwitchMode={switchToSignIn}
                     />
                   )}
-                  {step === 2 && signupData.role === "brand" && (
+                  {step === 2 && (
+                    <InstagramConnect
+                      onNext={handleSignUpInstagramConnect}
+                      mode="signup"
+                    />
+                  )}
+                  {step === 3 && signupData.role === "brand" && (
                     <BrandSignUpForm
                       onSubmit={handleSignUpFormSubmit}
                       onSendOtp={sendOtp}
@@ -425,9 +358,10 @@ const Login = () => {
                       error={error}
                       initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
                       otpPreVerified={!!authUserId}
+                      instagramProfile={instaProfile}
                     />
                   )}
-                  {step === 2 && signupData.role !== "brand" && (
+                  {step === 3 && signupData.role !== "brand" && (
                     <SignUpForm
                       onSubmit={handleSignUpFormSubmit}
                       onSendOtp={sendOtp}
@@ -438,10 +372,8 @@ const Login = () => {
                       role={signupData.role}
                       initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
                       otpPreVerified={!!authUserId}
+                      instagramProfile={instaProfile}
                     />
-                  )}
-                  {step === 3 && (
-                    <InstagramConnect onNext={handleInstagramConnect} />
                   )}
                   {step === 4 && (
                     <CategorySelection onNext={handleCategorySelection} />

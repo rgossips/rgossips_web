@@ -1,39 +1,94 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import logoIcon from "@/assets/logoIcon.png";
 
 const publicPaths = ["/", "/login", "/register", "/instagram-callback"];
 const publicPrefixes = ["/kit/"];
 
+const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions
+
+function BrandedLoader() {
+  return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F3F4F9] gap-5">
+      <div className="relative">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-white">
+          <Image src={logoIcon} alt="RGossips" width={40} height={40} className="rounded-lg" />
+        </div>
+        <div className="absolute -inset-2 rounded-2xl border-2 border-transparent border-t-[#9810FA] border-r-[#E60076] animate-spin" />
+      </div>
+      <div className="flex flex-col items-center gap-1.5">
+        <p className="text-sm font-bold text-slate-600">Loading your experience</p>
+        <div className="flex gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#9810FA] animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#c040c0] animate-bounce" style={{ animationDelay: "150ms" }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#E60076] animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, profile, role, loading, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [waitingForProfile, setWaitingForProfile] = useState(false);
 
   const isPublic = publicPaths.includes(pathname) || publicPrefixes.some((p) => pathname.startsWith(p));
+  const isInfluencerRoute = pathname.startsWith("/influencer");
+  const isBrandRoute = pathname.startsWith("/brands");
+
+  // Timeout: if user exists but profile never loads, redirect to login
+  useEffect(() => {
+    if (loading || isPublic || !user || profile) {
+      setWaitingForProfile(false);
+      return;
+    }
+
+    // User exists but no profile — start timeout
+    setWaitingForProfile(true);
+    const timer = setTimeout(async () => {
+      // Still no profile after timeout — stale session, sign out and redirect
+      await signOut();
+      router.replace("/login");
+    }, PROFILE_TIMEOUT);
+
+    return () => clearTimeout(timer);
+  }, [user, profile, loading, isPublic, signOut, router]);
 
   useEffect(() => {
-    if (!loading && !user && !isPublic) {
+    if (loading || isPublic) return;
+
+    // No session at all — go to login
+    if (!user) {
       router.replace("/login");
+      return;
     }
-  }, [user, loading, isPublic, router]);
+
+    // Session exists but no profile/role — wait (timeout handles redirect)
+    if (!profile || !role) return;
+
+    // Role mismatch — redirect to correct dashboard
+    if (isInfluencerRoute && role !== "influencer") {
+      router.replace(role === "brand" ? "/brands" : "/login");
+      return;
+    }
+    if (isBrandRoute && role !== "brand") {
+      router.replace(role === "influencer" ? "/influencer" : "/login");
+      return;
+    }
+  }, [user, profile, role, loading, isPublic, pathname, router, isInfluencerRoute, isBrandRoute]);
 
   if (loading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
+    return <BrandedLoader />;
   }
 
-  // Block render of protected pages until user is confirmed
-  if (!user && !isPublic) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
+  // Block render of protected pages until user + profile are confirmed
+  if (!isPublic && (!user || !profile)) {
+    return <BrandedLoader />;
   }
 
   return children;

@@ -12,11 +12,14 @@ function formatCount(n) {
   return String(n);
 }
 
-const InstagramConnect = ({ onNext }) => {
+const InstagramConnect = ({ onNext, mode = "signup", loading: externalLoading = false, error: externalError = "" }) => {
   const supabase = createClient();
   const [connecting, setConnecting] = useState(false);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
+
+  const isSignIn = mode === "signin";
+  const displayError = externalError || error;
 
   useEffect(() => {
     const handleMessage = async (event) => {
@@ -51,15 +54,17 @@ const InstagramConnect = ({ onNext }) => {
       if (funcError) throw new Error(funcError.message);
       if (data?.error) throw new Error(data.error);
 
-      // Check Instagram uniqueness
-      const { data: uniqueCheck } = await supabase.functions.invoke(
-        "check-uniqueness",
-        { body: { instagram: data.profile?.username } }
-      );
-      if (uniqueCheck?.conflicts?.includes("instagram")) {
-        setError("This Instagram account is already linked to another account.");
-        setConnecting(false);
-        return;
+      if (!isSignIn) {
+        // For signup: check Instagram uniqueness
+        const { data: uniqueCheck } = await supabase.functions.invoke(
+          "check-uniqueness",
+          { body: { instagram: data.profile?.username } }
+        );
+        if (uniqueCheck?.conflicts?.includes("instagram")) {
+          setError("This Instagram account is already linked to another account. Please sign in instead.");
+          setConnecting(false);
+          return;
+        }
       }
 
       setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
@@ -91,22 +96,30 @@ const InstagramConnect = ({ onNext }) => {
 
   const handleDisconnect = () => {
     setProfile(null);
+    setError("");
+  };
+
+  const handleContinue = () => {
+    onNext(profile);
   };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-slate-900">
-          Connect Instagram
+          {isSignIn ? "Sign In with Instagram" : "Connect Instagram"}
         </h2>
         <p className="text-slate-500 text-sm">
-          Link your Instagram to unlock brand collaborations & build your media kit
+          {isSignIn
+            ? "Connect your Instagram to sign in to your account"
+            : "Link your Instagram to unlock brand collaborations & build your media kit"
+          }
         </p>
       </div>
 
-      {error && (
+      {displayError && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -183,15 +196,22 @@ const InstagramConnect = ({ onNext }) => {
 
       <div className="space-y-3 pt-2">
         <Button
-          disabled={!profile}
-          onClick={() => onNext(profile)}
+          disabled={!profile || externalLoading}
+          onClick={handleContinue}
           className={`w-full h-[54px] rounded-2xl text-base font-semibold transition-all duration-300 ${
-            !profile
+            !profile || externalLoading
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
               : "btn-purple text-white shadow-lg shadow-purple-200"
           }`}
         >
-          Continue
+          {externalLoading ? (
+            <>
+              <Loader2 size={18} className="animate-spin mr-2" />
+              {isSignIn ? "Signing in..." : "Continue"}
+            </>
+          ) : (
+            isSignIn ? "Sign In" : "Continue"
+          )}
         </Button>
         {!profile && (
           <p className="text-center text-[11px] text-slate-400">

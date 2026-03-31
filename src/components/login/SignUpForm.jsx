@@ -22,6 +22,7 @@ const SignUpForm = ({
   role = "influencer",
   initialPhone = "",
   otpPreVerified = false,
+  instagramProfile = null,
 }) => {
   const supabase = createClient();
   const [formData, setFormData] = useState({
@@ -144,6 +145,24 @@ const SignUpForm = ({
       )}
 
       <div className="space-y-4">
+        {/* Instagram Connected Badge */}
+        {instagramProfile && (
+          <div className="p-3 rounded-xl border border-green-200 bg-green-50/50 flex items-center gap-3">
+            {instagramProfile.profilePictureUrl ? (
+              <img src={instagramProfile.profilePictureUrl} alt={instagramProfile.username} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F77737] via-[#E1306C] to-[#833AB4] flex items-center justify-center text-white font-bold text-sm">
+                {instagramProfile.username?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-slate-900 truncate">@{instagramProfile.username}</p>
+              <p className="text-[10px] text-slate-400">Instagram connected</p>
+            </div>
+            <CheckCircle2 size={18} className="text-green-500 shrink-0" />
+          </div>
+        )}
+
         {/* Full Name */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">

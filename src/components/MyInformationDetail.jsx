@@ -164,7 +164,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
   const filtered = CATEGORY_OPTIONS.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
@@ -258,7 +258,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-black text-gray-900">Services & Rates</h3>

@@ -14,10 +14,10 @@ import one from "@/assets/home1.png";
 const HomeHero = () => {
   const { setType } = useGlobal();
   const router = useRouter();
-  const { user, profile, role } = useAuth();
+  const { user, profile, role, loading } = useAuth();
 
   const dashboardPath = role === "brand" ? "/brands" : "/influencer";
-  const displayName = profile?.full_name?.split(" ")[0] || "there";
+  const displayName = (profile?.full_name || "").split(" ")[0];
 
   return (
     <section className="relative w-full min-h-[90vh] flex items-center justify-center py-20 overflow-hidden bg-[#fcfdff]">
@@ -51,7 +51,7 @@ const HomeHero = () => {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            {user ? (
+            {!loading && user && displayName ? (
               <Button
                 onClick={() => router.push(dashboardPath)}
                 className="cursor-pointer h-14 px-8 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold shadow-lg shadow-blue-200 group"

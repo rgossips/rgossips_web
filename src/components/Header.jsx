@@ -12,10 +12,10 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { setScrollTo, setType } = useGlobal();
-  const { user, profile, role } = useAuth();
+  const { user, profile, role, loading } = useAuth();
 
   const dashboardPath = role === "brand" ? "/brands" : "/influencer";
-  const displayName = (profile?.full_name || profile?.contact_name || profile?.brand_name || "").split(" ")[0] || "Dashboard";
+  const displayName = (profile?.full_name || profile?.contact_name || profile?.brand_name || "").split(" ")[0] || "";
 
   // Navigation items based on your reference images
   const navItems = [
@@ -74,7 +74,7 @@ const Header = () => {
           </div>
 
           <div className="ml-6 border-l border-slate-200 pl-8">
-            {user ? (
+            {!loading && user && displayName ? (
               <button
                 onClick={() => router.push(dashboardPath)}
                 className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
@@ -83,10 +83,10 @@ const Header = () => {
               </button>
             ) : (
               <button
-                onClick={() => router.push("/login")}
+                onClick={() => router.push(user ? dashboardPath : "/login")}
                 className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
               >
-                Login / Sign Up
+                {loading ? "..." : "Login / Sign Up"}
               </button>
             )}
           </div>
@@ -125,7 +125,7 @@ const Header = () => {
             ))}
 
             <div className="pt-4 border-t border-slate-100">
-              {user ? (
+              {!loading && user && displayName ? (
                 <button
                   onClick={() => {
                     router.push(dashboardPath);
@@ -138,12 +138,12 @@ const Header = () => {
               ) : (
                 <button
                   onClick={() => {
-                    router.push("/login");
+                    router.push(user ? dashboardPath : "/login");
                     setMenuOpen(false);
                   }}
                   className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
                 >
-                  Login / Sign Up
+                  {loading ? "..." : "Login / Sign Up"}
                 </button>
               )}
             </div>
