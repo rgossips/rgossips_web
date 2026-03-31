@@ -82,6 +82,32 @@ Deno.serve(async (req) => {
         .single();
 
       if (error || !profile) {
+        // Brand not found in brand_profiles — check brand_invitations
+        const { data: invitation } = await supabaseAdmin
+          .from("brand_invitations")
+          .select("id, brand_name, logo_url, instagram_username")
+          .ilike("instagram_username", instagramUsername)
+          .eq("status", "pending")
+          .limit(1)
+          .single();
+
+        if (invitation) {
+          // Found a pending invitation — tell frontend to complete signup
+          return new Response(
+            JSON.stringify({
+              error: "invitation_found",
+              message: "Your brand has been pre-registered. Complete your profile to get started.",
+              invitation: {
+                id: invitation.id,
+                brand_name: invitation.brand_name,
+                logo_url: invitation.logo_url,
+                instagram_username: invitation.instagram_username,
+              },
+            }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+
         return new Response(
           JSON.stringify({
             error: "not_found",

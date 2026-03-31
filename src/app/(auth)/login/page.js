@@ -36,6 +36,9 @@ const Login = () => {
   // --- INSTAGRAM STATE (shared between signin/signup) ---
   const [instaProfile, setInstaProfile] = useState(null);
 
+  // --- INVITATION STATE (admin-invited brands) ---
+  const [brandInvitation, setBrandInvitation] = useState(null);
+
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
     role: null,
@@ -139,6 +142,16 @@ const Login = () => {
         return; // Keep loading state until navigation
       }
 
+      if (data?.error === "invitation_found") {
+        // Admin pre-registered this brand — go to signup with pre-filled data
+        setBrandInvitation(data.invitation);
+        setFlow("signup");
+        setStep(3);
+        setError("");
+        setLoading(false);
+        return;
+      }
+
       if (data?.error === "not_found") {
         // No account — switch to signup flow, skip to profile form (step 3)
         setFlow("signup");
@@ -187,6 +200,7 @@ const Login = () => {
         phone: storagePhone,
         name: formData.name || signupData.name,
         gstinData: formData.gstinData || null,
+        invitationId: brandInvitation?.id || null,
       };
 
       // Add Instagram data if available
@@ -359,6 +373,7 @@ const Login = () => {
                       initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
                       otpPreVerified={!!authUserId}
                       instagramProfile={instaProfile}
+                      brandInvitation={brandInvitation}
                     />
                   )}
                   {step === 3 && signupData.role !== "brand" && (

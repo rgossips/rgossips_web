@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, invitationId } = await req.json();
 
     if (!userId || !table) {
       return new Response(
@@ -77,6 +77,18 @@ Deno.serve(async (req) => {
       };
     }
 
+    // Brands that sign up directly are verified by default
+    // (they've already verified GSTIN + phone OTP during signup)
+    if (table === "brand_profiles") {
+      row.verification_status = "verified";
+      row.is_verified = true;
+      if (invitationId) {
+        row.source = "admin_invited";
+      } else {
+        row.source = "direct_signup";
+      }
+    }
+
     const { error: dbError } = await supabaseAdmin.from(table).upsert(row);
 
     if (dbError) {
@@ -85,6 +97,20 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Failed to create profile: " + dbError.message }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // Claim the invitation if this signup came from an admin invite
+    if (table === "brand_profiles" && invitationId) {
+      await supabaseAdmin
+        .from("brand_invitations")
+        .update({
+          status: "claimed",
+          claimed_by: userId,
+          claimed_at: new Date().toISOString(),
+          brand_profile_id: userId,
+        })
+        .eq("id", invitationId)
+        .eq("status", "pending");
     }
 
     return new Response(
