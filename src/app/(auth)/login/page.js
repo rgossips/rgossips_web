@@ -372,6 +372,7 @@ const Login = () => {
                     <InstagramConnect
                       onNext={handleSignInInstagramConnect}
                       mode="signin"
+                      role={signupData.role}
                       loading={loading}
                       error={error}
                     />
@@ -393,6 +394,7 @@ const Login = () => {
                     <InstagramConnect
                       onNext={handleSignUpInstagramConnect}
                       mode="signup"
+                      role={signupData.role}
                     />
                   )}
                   {step === 3 && signupData.role === "brand" && (

@@ -12,9 +12,10 @@ function formatCount(n) {
   return String(n);
 }
 
-const InstagramConnect = ({ onNext, mode = "signup", loading: externalLoading = false, error: externalError = "" }) => {
+const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loading: externalLoading = false, error: externalError = "" }) => {
   const supabase = createClient();
   const [connecting, setConnecting] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
 
@@ -54,19 +55,6 @@ const InstagramConnect = ({ onNext, mode = "signup", loading: externalLoading = 
       if (funcError) throw new Error(funcError.message);
       if (data?.error) throw new Error(data.error);
 
-      if (!isSignIn) {
-        // For signup: check Instagram uniqueness
-        const { data: uniqueCheck } = await supabase.functions.invoke(
-          "check-uniqueness",
-          { body: { instagram: data.profile?.username } }
-        );
-        if (uniqueCheck?.conflicts?.includes("instagram")) {
-          setError("This Instagram account is already linked to another account. Please sign in instead.");
-          setConnecting(false);
-          return;
-        }
-      }
-
       setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
     } catch (err) {
       setError(err.message || "Failed to connect Instagram");
@@ -99,8 +87,47 @@ const InstagramConnect = ({ onNext, mode = "signup", loading: externalLoading = 
     setError("");
   };
 
-  const handleContinue = () => {
-    onNext(profile);
+  const handleContinue = async () => {
+    if (!profile) return;
+    setChecking(true);
+    setError("");
+
+    try {
+      // Check uniqueness across all tables
+      const { data: uniqueCheck } = await supabase.functions.invoke(
+        "check-uniqueness",
+        { body: { instagram: profile.username, role } }
+      );
+
+      if (uniqueCheck?.conflicts?.includes("instagram")) {
+        const source = uniqueCheck.instagramConflictSource;
+
+        if (isSignIn) {
+          // Signing in — the account exists but maybe in the wrong role
+          if (source && source !== role) {
+            setError(`This Instagram is registered as ${source === "brand" ? "a Brand" : "an Influencer"}. Please sign in as ${source === "brand" ? "a Brand" : "an Influencer"} instead.`);
+            setChecking(false);
+            return;
+          }
+          // Same role — proceed (instagram-login will handle the rest)
+        } else {
+          // Signing up — account already exists
+          const sourceLabel = source === "brand" ? "a Brand" : source === "influencer" ? "an Influencer" : "another account";
+          setError(`This Instagram is already registered as ${sourceLabel}. Please sign in instead.`);
+          setChecking(false);
+          return;
+        }
+      } else if (isSignIn) {
+        // Sign in but no account found anywhere — tell user to sign up
+        // Don't block here, let onNext handle the "not_found" from instagram-login
+      }
+
+      onNext(profile);
+    } catch (err) {
+      setError(err.message || "Failed to verify Instagram");
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -196,15 +223,20 @@ const InstagramConnect = ({ onNext, mode = "signup", loading: externalLoading = 
 
       <div className="space-y-3 pt-2">
         <Button
-          disabled={!profile || externalLoading}
+          disabled={!profile || checking || externalLoading}
           onClick={handleContinue}
           className={`w-full h-[54px] rounded-2xl text-base font-semibold transition-all duration-300 ${
-            !profile || externalLoading
+            !profile || checking || externalLoading
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
               : "btn-purple text-white shadow-lg shadow-purple-200"
           }`}
         >
-          {externalLoading ? (
+          {checking ? (
+            <>
+              <Loader2 size={18} className="animate-spin mr-2" />
+              Verifying...
+            </>
+          ) : externalLoading ? (
             <>
               <Loader2 size={18} className="animate-spin mr-2" />
               {isSignIn ? "Signing in..." : "Continue"}

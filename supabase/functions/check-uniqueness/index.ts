@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { phone, gstin, instagram } = await req.json();
+    const { phone, gstin, instagram, role } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
     const conflicts: string[] = [];
+    let instagramConflictSource = "";
 
     // Check phone in auth.users via RPC (uses service role, can access auth schema)
     if (phone) {
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
     // Check Instagram across all tables (profiles + invitations)
     if (instagram) {
       const handle = instagram.toLowerCase();
-      const [infInsta, brandInsta, brandInvite] = await Promise.all([
+      const [infInsta, brandInsta, brandInvite, infInvite] = await Promise.all([
         supabaseAdmin
           .from("influencer_profiles")
           .select("influencer_id")
@@ -69,15 +70,26 @@ Deno.serve(async (req) => {
           .select("id")
           .ilike("instagram_username", handle)
           .maybeSingle(),
+        supabaseAdmin
+          .from("influencer_invitations")
+          .select("id")
+          .ilike("instagram_username", handle)
+          .maybeSingle(),
       ]);
 
-      if (infInsta.data || brandInsta.data || brandInvite.data) {
+      if (infInsta.data || brandInsta.data || brandInvite.data || infInvite.data) {
         conflicts.push("instagram");
+        // Determine the source for better error messages
+        if (infInsta.data || infInvite.data) {
+          instagramConflictSource = "influencer";
+        } else {
+          instagramConflictSource = "brand";
+        }
       }
     }
 
     return new Response(
-      JSON.stringify({ conflicts }),
+      JSON.stringify({ conflicts, instagramConflictSource }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {
