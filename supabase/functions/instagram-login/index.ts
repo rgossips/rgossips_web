@@ -53,6 +53,36 @@ Deno.serve(async (req) => {
     // Step 1: Look up the user in the appropriate profile table
     let userId: string | null = null;
 
+    // Cross-check: see if this Instagram exists in the OTHER role's tables
+    if (role === "influencer") {
+      // Check if it exists as a brand or brand invitation
+      const [brandCheck, inviteCheck] = await Promise.all([
+        supabaseAdmin.from("brand_profiles").select("brand_id").ilike("instagram_username", instagramUsername).maybeSingle(),
+        supabaseAdmin.from("brand_invitations").select("id").ilike("instagram_username", instagramUsername).eq("status", "pending").maybeSingle(),
+      ]);
+      if (brandCheck.data || inviteCheck.data) {
+        return new Response(
+          JSON.stringify({
+            error: "wrong_role",
+            message: "This Instagram is registered as a Brand. Please sign in as a Brand instead.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    } else {
+      // Check if it exists as an influencer
+      const { data: infCheck } = await supabaseAdmin.from("influencer_profiles").select("influencer_id").ilike("instagram_handle", instagramUsername).maybeSingle();
+      if (infCheck) {
+        return new Response(
+          JSON.stringify({
+            error: "wrong_role",
+            message: "This Instagram is registered as an Influencer. Please sign in as an Influencer instead.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    }
+
     if (role === "influencer") {
       const { data: profile, error } = await supabaseAdmin
         .from("influencer_profiles")

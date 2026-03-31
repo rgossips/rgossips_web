@@ -11,6 +11,7 @@ import Preferences from "@/components/login/Preferences";
 import InstagramConnect from "@/components/login/InstagramConnect";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
+import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const router = useRouter();
@@ -24,6 +25,7 @@ const Login = () => {
   const [flow, setFlow] = useState("onboarding");
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
 
   // --- AUTH STATE ---
@@ -107,6 +109,7 @@ const Login = () => {
 
   const handleSignInInstagramConnect = async (profile) => {
     setLoading(true);
+    setLoadingMsg("Signing in...");
     setError("");
     try {
       setInstaProfile(profile);
@@ -132,6 +135,7 @@ const Login = () => {
 
       if (data?.success && data?.session) {
         // Existing user found — apply session and navigate
+        setLoadingMsg("Setting up your session...");
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
@@ -146,6 +150,12 @@ const Login = () => {
         setFlow("signup");
         setStep(3);
         setError("");
+        setLoading(false);
+        return;
+      }
+
+      if (data?.error === "wrong_role") {
+        setError(data.message);
         setLoading(false);
         return;
       }
@@ -183,6 +193,7 @@ const Login = () => {
   const handleSignUpFormSubmit = async (formData) => {
     setSignupData((prev) => ({ ...prev, ...formData }));
     setLoading(true);
+    setLoadingMsg("Creating your account...");
     setError("");
 
     try {
@@ -222,6 +233,7 @@ const Login = () => {
       if (createResult?.error) throw new Error(createResult.error);
 
       if (pendingSession) {
+        setLoadingMsg("Setting up your session...");
         await supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
@@ -230,6 +242,7 @@ const Login = () => {
 
       if (signupData.role === "brand") {
         // Brands go straight to dashboard
+        setLoadingMsg("Redirecting to dashboard...");
         router.push("/brands");
         return;
       }
@@ -259,6 +272,7 @@ const Login = () => {
 
   const finishSignup = async (data) => {
     setLoading(true);
+    setLoadingMsg("Saving your preferences...");
     try {
       if (authUserId) {
         const table = data.role === "brand" ? "brand_profiles" : "influencer_profiles";
@@ -273,11 +287,13 @@ const Login = () => {
       }
 
       if (pendingSession) {
+        setLoadingMsg("Setting up your session...");
         await supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
         });
       }
+      setLoadingMsg("Redirecting...");
       router.push(data.role === "brand" ? "/brands" : "/influencer");
     } catch (err) {
       setError(err.message || "Failed to complete signup");
@@ -312,7 +328,22 @@ const Login = () => {
       {/* Auth Container */}
       {flow !== "onboarding" && (
         <div className="relative z-20 w-full max-w-[500px] h-full md:h-auto md:max-h-[90vh] flex flex-col justify-end md:justify-center px-0 md:px-6">
-          <div className="auth-drawer-card bg-white w-full rounded-t-[40px] md:rounded-[40px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500">
+          <div className="auth-drawer-card bg-white w-full rounded-t-[40px] md:rounded-[40px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 relative">
+            {/* Loading overlay */}
+            {loading && (
+              <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-t-[40px] md:rounded-[40px]">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full border-4 border-slate-100" />
+                  <Loader2
+                    size={48}
+                    className="absolute inset-0 animate-spin text-[#E60076]"
+                    strokeWidth={2.5}
+                  />
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">{loadingMsg || "Loading..."}</p>
+              </div>
+            )}
+
             {/* Sticky header with close button */}
             <div className="relative flex flex-col items-center px-8 pt-6 pb-2 shrink-0">
               <div className="w-12 h-1 bg-slate-200 rounded-full mb-4 md:hidden" />
