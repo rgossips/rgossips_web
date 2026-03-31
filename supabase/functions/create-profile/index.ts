@@ -99,18 +99,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Claim the invitation if this signup came from an admin invite
-    if (table === "brand_profiles" && invitationId) {
-      await supabaseAdmin
-        .from("brand_invitations")
-        .update({
-          status: "claimed",
-          claimed_by: userId,
-          claimed_at: new Date().toISOString(),
-          brand_profile_id: userId,
-        })
-        .eq("id", invitationId)
-        .eq("status", "pending");
+    // Claim invitations on signup
+    const igUsername = instagram || "";
+    if (table === "brand_profiles") {
+      const claimData = { status: "claimed", claimed_by: userId, claimed_at: new Date().toISOString(), brand_profile_id: userId };
+      if (invitationId) {
+        await supabaseAdmin.from("brand_invitations").update(claimData).eq("id", invitationId).eq("status", "pending");
+      } else if (igUsername) {
+        await supabaseAdmin.from("brand_invitations").update(claimData).ilike("instagram_username", igUsername).eq("status", "pending");
+      }
+    } else if (table === "influencer_profiles") {
+      const claimData = { status: "claimed", claimed_by: userId, claimed_at: new Date().toISOString(), influencer_profile_id: userId };
+      if (invitationId) {
+        await supabaseAdmin.from("influencer_invitations").update(claimData).eq("id", invitationId).eq("status", "pending");
+      } else if (igUsername) {
+        await supabaseAdmin.from("influencer_invitations").update(claimData).ilike("instagram_username", igUsername).eq("status", "pending");
+      }
     }
 
     return new Response(

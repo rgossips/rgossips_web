@@ -70,9 +70,12 @@ Deno.serve(async (req) => {
         );
       }
     } else {
-      // Check if it exists as an influencer
-      const { data: infCheck } = await supabaseAdmin.from("influencer_profiles").select("influencer_id").ilike("instagram_handle", instagramUsername).maybeSingle();
-      if (infCheck) {
+      // Check if it exists as an influencer or influencer invitation
+      const [infCheck, infInviteCheck] = await Promise.all([
+        supabaseAdmin.from("influencer_profiles").select("influencer_id").ilike("instagram_handle", instagramUsername).maybeSingle(),
+        supabaseAdmin.from("influencer_invitations").select("id").ilike("instagram_username", instagramUsername).eq("status", "pending").maybeSingle(),
+      ]);
+      if (infCheck.data || infInviteCheck.data) {
         return new Response(
           JSON.stringify({
             error: "wrong_role",
@@ -92,6 +95,31 @@ Deno.serve(async (req) => {
         .single();
 
       if (error || !profile) {
+        // Influencer not found — check influencer_invitations
+        const { data: invitation } = await supabaseAdmin
+          .from("influencer_invitations")
+          .select("id, full_name, profile_photo_url, instagram_username")
+          .ilike("instagram_username", instagramUsername)
+          .eq("status", "pending")
+          .limit(1)
+          .single();
+
+        if (invitation) {
+          return new Response(
+            JSON.stringify({
+              error: "invitation_found",
+              message: "You've been pre-registered. Complete your profile to get started.",
+              invitation: {
+                id: invitation.id,
+                full_name: invitation.full_name,
+                profile_photo_url: invitation.profile_photo_url,
+                instagram_username: invitation.instagram_username,
+              },
+            }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+
         return new Response(
           JSON.stringify({
             error: "not_found",
