@@ -8,9 +8,7 @@ import SignUpForm from "@/components/login/SignUpForm";
 import BrandSignUpForm from "@/components/login/BrandSignUpForm";
 import CategorySelection from "@/components/login/CategorySelection";
 import Preferences from "@/components/login/Preferences";
-import Notifications from "@/components/login/Notifications";
 import InstagramConnect from "@/components/login/InstagramConnect";
-import SuccessScreen from "@/components/login/SuccessScreen";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
 
@@ -246,41 +244,45 @@ const Login = () => {
 
   const handleCategorySelection = (selectedCategories) => {
     setSignupData((prev) => ({ ...prev, categories: selectedCategories }));
-    nextStep();
+    nextStep(); // → step 5 (preferences/services)
   };
 
-  const handlePreferences = (preferencesData) => {
+  const handlePreferences = async (preferencesData) => {
     setSignupData((prev) => ({ ...prev, ...preferencesData }));
-    nextStep();
+    // Save and finish
+    await finishSignup({ ...signupData, ...preferencesData });
   };
 
-  const handleNotifications = (enabled) => {
-    setSignupData((prev) => ({ ...prev, notificationsEnabled: enabled }));
-    nextStep();
+  const handleSkip = async () => {
+    await finishSignup(signupData);
   };
 
-  const handleFinish = async () => {
+  const finishSignup = async (data) => {
     setLoading(true);
-    if (authUserId) {
-      const table = signupData.role === "brand" ? "brand_profiles" : "influencer_profiles";
-      await supabase.functions.invoke("update-profile", {
-        body: {
-          userId: authUserId,
-          table,
-          categories: signupData.categories || [],
-          services: signupData.services || [],
-          notificationsEnabled: signupData.notificationsEnabled || false,
-        },
-      });
-    }
+    try {
+      if (authUserId) {
+        const table = data.role === "brand" ? "brand_profiles" : "influencer_profiles";
+        await supabase.functions.invoke("update-profile", {
+          body: {
+            userId: authUserId,
+            table,
+            categories: data.categories || [],
+            services: data.services || [],
+          },
+        });
+      }
 
-    if (pendingSession) {
-      await supabase.auth.setSession({
-        access_token: pendingSession.access_token,
-        refresh_token: pendingSession.refresh_token,
-      });
+      if (pendingSession) {
+        await supabase.auth.setSession({
+          access_token: pendingSession.access_token,
+          refresh_token: pendingSession.refresh_token,
+        });
+      }
+      router.push(data.role === "brand" ? "/brands" : "/influencer");
+    } catch (err) {
+      setError(err.message || "Failed to complete signup");
+      setLoading(false);
     }
-    router.push(signupData.role === "brand" ? "/brands" : "/influencer");
   };
 
   const closeAuth = () => {
@@ -391,13 +393,9 @@ const Login = () => {
                     />
                   )}
                   {step === 4 && (
-                    <CategorySelection onNext={handleCategorySelection} />
+                    <CategorySelection onNext={handleCategorySelection} onSkip={handleSkip} />
                   )}
-                  {step === 5 && <Preferences onNext={handlePreferences} />}
-                  {step === 6 && <Notifications onNext={handleNotifications} />}
-                  {step === 7 && (
-                    <SuccessScreen onNext={handleFinish} loading={loading} />
-                  )}
+                  {step === 5 && <Preferences onNext={handlePreferences} onSkip={handleSkip} />}
                 </div>
               )}
             </div>

@@ -18,7 +18,7 @@ const services = [
   { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={24} /> },
 ];
 
-const Preferences = ({ onNext }) => {
+const Preferences = ({ onNext, onSkip }) => {
   const [selectedServices, setSelectedServices] = useState([]);
 
   const toggleService = (id) => {
@@ -60,13 +60,23 @@ const Preferences = ({ onNext }) => {
         ))}
       </div>
 
-      <Button
-        onClick={() => onNext({ services: selectedServices })}
-        disabled={selectedServices.length === 0}
-        className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
-      >
-        Continue
-      </Button>
+      <div className="space-y-3">
+        <Button
+          onClick={() => onNext({ services: selectedServices })}
+          disabled={selectedServices.length === 0}
+          className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
+        >
+          Continue
+        </Button>
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="w-full py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            Skip for now
+          </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -18,7 +18,7 @@ const categories = [
   "Vlogging",
 ];
 
-const CategorySelection = ({ onNext }) => {
+const CategorySelection = ({ onNext, onSkip }) => {
   const [selected, setSelected] = useState([]);
 
   const toggle = (cat) => {
@@ -64,10 +64,7 @@ const CategorySelection = ({ onNext }) => {
         })}
       </div>
 
-      <div className="space-y-4 pt-4">
-        <p className="text-center text-[11px] text-slate-400">
-          You can change this later
-        </p>
+      <div className="space-y-3 pt-4">
         <Button
           disabled={selected.length < 1}
           onClick={() => onNext(selected)}
@@ -79,6 +76,14 @@ const CategorySelection = ({ onNext }) => {
         >
           Continue
         </Button>
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="w-full py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            Skip for now
+          </button>
+        )}
       </div>
     </div>
   );
