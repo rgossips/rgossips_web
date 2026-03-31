@@ -50,10 +50,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check Instagram across both tables
+    // Check Instagram across all tables (profiles + invitations)
     if (instagram) {
       const handle = instagram.toLowerCase();
-      const [infInsta, brandInsta] = await Promise.all([
+      const [infInsta, brandInsta, brandInvite] = await Promise.all([
         supabaseAdmin
           .from("influencer_profiles")
           .select("influencer_id")
@@ -64,9 +64,14 @@ Deno.serve(async (req) => {
           .select("brand_id")
           .ilike("instagram_username", handle)
           .maybeSingle(),
+        supabaseAdmin
+          .from("brand_invitations")
+          .select("id")
+          .ilike("instagram_username", handle)
+          .maybeSingle(),
       ]);
 
-      if (infInsta.data || brandInsta.data) {
+      if (infInsta.data || brandInsta.data || brandInvite.data) {
         conflicts.push("instagram");
       }
     }
