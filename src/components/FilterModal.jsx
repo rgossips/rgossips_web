@@ -195,14 +195,14 @@ export const FilterSidebar = ({
 }) => {
   const activeFiltersCount =
     selectedCategories.length +
-    selectedPlatforms.length +
+    (selectedPlatforms?.length || 0) +
     (isVerifiedOnly ? 1 : 0) +
     (budgetRange.min > 0 || budgetRange.max < 10000 ? 1 : 0);
 
   const handleReset = () => {
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
-    setSelectedPlatforms([]);
+    if (setSelectedPlatforms) setSelectedPlatforms([]);
     setIsVerifiedOnly(false);
   };
 
@@ -269,34 +269,36 @@ export const FilterSidebar = ({
       </div>
 
       {/* Platform Group */}
-      <div className="space-y-2">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Platform</h3>
-        <div className="flex flex-wrap gap-1.5">
-          {PLATFORMS.slice(0, 3).map((platform) => {
-            const isSelected = selectedPlatforms.includes(platform.label);
-            return (
-              <button
-                key={platform.label}
-                onClick={() =>
-                  setSelectedPlatforms((prev) =>
-                    prev.includes(platform.label)
-                      ? prev.filter((p) => p !== platform.label)
-                      : [...prev, platform.label]
-                  )
-                }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-[#E60076] text-white"
-                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-                }`}
-              >
-                {platform.icon}
-                {platform.label}
-              </button>
-            );
-          })}
+      {selectedPlatforms && setSelectedPlatforms && (
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Platform</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {PLATFORMS.slice(0, 3).map((platform) => {
+              const isSelected = selectedPlatforms.includes(platform.label);
+              return (
+                <button
+                  key={platform.label}
+                  onClick={() =>
+                    setSelectedPlatforms((prev) =>
+                      prev.includes(platform.label)
+                        ? prev.filter((p) => p !== platform.label)
+                        : [...prev, platform.label]
+                    )
+                  }
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#E60076] text-white"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  {platform.icon}
+                  {platform.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Verified Toggle */}
       <div className="flex items-center justify-between">
