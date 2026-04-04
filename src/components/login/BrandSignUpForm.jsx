@@ -29,12 +29,12 @@ const BrandSignUpForm = ({
   initialPhone = "",
   otpPreVerified = false,
   instagramProfile = null,
-  brandInvitation = null,
+  invitation = null,
 }) => {
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
-    name: "",
+    name: invitation?.brand_name || invitation?.full_name || "",
     phone: initialPhone,
     gstin: "",
   });

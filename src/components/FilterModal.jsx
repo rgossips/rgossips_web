@@ -140,28 +140,30 @@ export const FilterContent = ({
       </section>
 
       {/* Platform */}
-      <section className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-800">Platform</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {PLATFORMS.map((platform) => {
-            const isSelected = selectedPlatforms.includes(platform.label);
-            return (
-              <button
-                key={platform.label}
-                onClick={() => handlePlatformToggle(platform.label)}
-                className={`flex items-center justify-center gap-2 h-12 rounded-2xl text-xs font-bold transition-all ${
-                  isSelected
-                    ? "bg-[#E60076] text-white border border-[#E60076]"
-                    : "border border-slate-100 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {platform.icon}
-                {platform.label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {selectedPlatforms && setSelectedPlatforms && (
+        <section className="space-y-4">
+          <h3 className="text-sm font-bold text-slate-800">Platform</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {PLATFORMS.map((platform) => {
+              const isSelected = selectedPlatforms.includes(platform.label);
+              return (
+                <button
+                  key={platform.label}
+                  onClick={() => handlePlatformToggle(platform.label)}
+                  className={`flex items-center justify-center gap-2 h-12 rounded-2xl text-xs font-bold transition-all ${
+                    isSelected
+                      ? "bg-[#E60076] text-white border border-[#E60076]"
+                      : "border border-slate-100 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {platform.icon}
+                  {platform.label}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Verified Only */}
       <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">

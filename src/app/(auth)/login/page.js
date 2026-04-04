@@ -36,8 +36,8 @@ const Login = () => {
   // --- INSTAGRAM STATE (shared between signin/signup) ---
   const [instaProfile, setInstaProfile] = useState(null);
 
-  // --- INVITATION STATE (admin-invited brands) ---
-  const [brandInvitation, setBrandInvitation] = useState(null);
+  // --- INVITATION STATE (admin-invited brands/influencers) ---
+  const [invitation, setInvitation] = useState(null);
 
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
@@ -145,8 +145,12 @@ const Login = () => {
       }
 
       if (data?.error === "invitation_found") {
-        // Admin pre-registered this brand — go to signup with pre-filled data
-        setBrandInvitation(data.invitation);
+        // Admin pre-registered — go to signup with pre-filled data
+        setInvitation(data.invitation);
+        setSignupData((prev) => ({
+          ...prev,
+          name: data.invitation.full_name || data.invitation.brand_name || "",
+        }));
         setFlow("signup");
         setStep(3);
         setError("");
@@ -209,7 +213,7 @@ const Login = () => {
         phone: storagePhone,
         name: formData.name || signupData.name,
         gstinData: formData.gstinData || null,
-        invitationId: brandInvitation?.id || null,
+        invitationId: invitation?.id || null,
       };
 
       // Add Instagram data if available
@@ -408,7 +412,7 @@ const Login = () => {
                       initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
                       otpPreVerified={!!authUserId}
                       instagramProfile={instaProfile}
-                      brandInvitation={brandInvitation}
+                      invitation={invitation}
                     />
                   )}
                   {step === 3 && signupData.role !== "brand" && (
@@ -423,6 +427,7 @@ const Login = () => {
                       initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
                       otpPreVerified={!!authUserId}
                       instagramProfile={instaProfile}
+                      initialName={signupData.name}
                     />
                   )}
                   {step === 4 && (

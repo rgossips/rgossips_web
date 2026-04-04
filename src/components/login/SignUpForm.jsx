@@ -23,10 +23,11 @@ const SignUpForm = ({
   initialPhone = "",
   otpPreVerified = false,
   instagramProfile = null,
+  initialName = "",
 }) => {
   const supabase = createClient();
   const [formData, setFormData] = useState({
-    name: "",
+    name: initialName,
     phone: initialPhone,
   });
   const [otp, setOtp] = useState("");
