@@ -32,11 +32,14 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
+import { useAuth } from "@/context/AuthContext";
 
 /* ─── Fetch campaign from DB ─── */
-function useCampaign(id) {
+function useCampaign(id, userId) {
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refetchFlag, setRefetchFlag] = useState(0);
+  const refetch = () => setRefetchFlag((f) => f + 1);
 
   useEffect(() => {
     if (!id) return;
@@ -52,7 +55,7 @@ function useCampaign(id) {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ influencerId: userId }),
         });
 
         const data = await res.json();
@@ -92,9 +95,9 @@ function useCampaign(id) {
       }
     };
     fetchCampaign();
-  }, [id]);
+  }, [id, userId, refetchFlag]);
 
-  return { campaign, loading };
+  return { campaign, loading, refetch };
 }
 
 const _REMOVED = [
@@ -355,8 +358,9 @@ export default function CampaignDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
+  const { user } = useAuth();
 
-  const { campaign, loading } = useCampaign(id);
+  const { campaign, loading, refetch } = useCampaign(id, user?.id);
 
   if (loading) {
     return (
@@ -388,7 +392,18 @@ export default function CampaignDetailsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-20 lg:pb-0 font-sans lg:mt-20">
-      <AnimatePresence>{isApplyOpen && <ApplyCampaignForm onClose={() => setIsApplyOpen(false)} campaignData={campaign} />}</AnimatePresence>
+      <AnimatePresence>
+        {isApplyOpen && (
+          <ApplyCampaignForm
+            onClose={() => setIsApplyOpen(false)}
+            campaignData={campaign}
+            onSubmitSuccess={() => {
+              setIsApplyOpen(false);
+              refetch();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Back link */}
       <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8">
@@ -460,7 +475,7 @@ export default function CampaignDetailsPage() {
         </div>
       </div>
 
-      {/* Mobile floating bar — Active only */}
+      {/* Mobile floating bar */}
       {isActive && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <button
@@ -469,6 +484,13 @@ export default function CampaignDetailsPage() {
           >
             Apply for Campaign <ChevronRight size={16} />
           </button>
+        </div>
+      )}
+      {isApplied && (
+        <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
+          <div className="w-full h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center gap-2 text-sm font-bold text-blue-600">
+            <Clock size={16} /> Application Under Review
+          </div>
         </div>
       )}
     </div>
@@ -661,18 +683,18 @@ function AppliedContent({ campaign }) {
   return (
     <div className="space-y-6">
       {/* Application Status Card */}
-      <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+      <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
             <Clock size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Application Status</h3>
-            <p className="text-[11px] text-slate-400">Submitted on {campaign.applicationDate}</p>
+            <h3 className="text-sm font-bold text-slate-800">Application Submitted</h3>
+            <p className="text-[11px] text-slate-400">Your application is being reviewed by the brand</p>
           </div>
         </div>
-        <p className="text-xs font-bold text-emerald-600 mb-2">Under Review</p>
-        <p className="text-[11px] text-slate-500 leading-relaxed">{campaign.applicationNote}</p>
+        <p className="text-xs font-bold text-blue-600 mb-2">Pending Review</p>
+        <p className="text-[11px] text-slate-500 leading-relaxed">The brand will review your profile and media kit. You&apos;ll be notified once they respond.</p>
       </div>
 
       {/* Budget & Deadline */}
@@ -718,24 +740,52 @@ function AppliedContent({ campaign }) {
 function AppliedSidebar({ campaign }) {
   return (
     <>
-      {/* Estimated Information */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-          <BarChart3 size={16} className="text-slate-400" /> Estimated Information
-        </h4>
+      {/* Application Status */}
+      <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 shadow-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+            <Clock size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-800">Application Submitted</p>
+            <p className="text-[10px] text-blue-600 font-bold">Pending Review</p>
+          </div>
+        </div>
+
+        {/* Status Timeline */}
+        <div className="relative space-y-4 pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-blue-100">
+          {[
+            { label: "Applied", done: true },
+            { label: "Under Review", done: false },
+            { label: "Shortlisted", done: false },
+            { label: "Approved", done: false },
+          ].map((step, i) => (
+            <div key={i} className="relative flex items-center gap-3">
+              <div className={`absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center z-10 ${step.done ? "bg-blue-500 text-white" : "bg-white border-2 border-blue-200"}`}>
+                {step.done && <CheckCircle size={12} />}
+              </div>
+              <p className={`text-xs font-bold ${step.done ? "text-blue-600" : "text-slate-400"}`}>{step.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Campaign Info */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+        <h4 className="text-sm font-bold text-slate-800">Campaign Details</h4>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-black text-slate-800">{campaign.estimatedReach}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Est. Reach</p>
+            <p className="text-sm font-black text-slate-800">{campaign.budget}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">Budget</p>
           </div>
-          <div className="bg-emerald-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-black text-emerald-600">{campaign.estimatedEngagement}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Engagement</p>
+          <div className="bg-slate-50 rounded-xl p-3 text-center">
+            <p className="text-sm font-black text-slate-800">{campaign.deadline}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">Deadline</p>
           </div>
         </div>
       </div>
 
-      {/* Other Notes */}
+      {/* Placeholder for old otherNotes */}
       {campaign.otherNotes && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
           <h4 className="text-sm font-bold text-slate-800">Other Notes</h4>
