@@ -27,6 +27,8 @@ import {
   MapPin,
   FileText,
   Loader2,
+  Upload,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -453,7 +455,7 @@ export default function CampaignDetailsPage() {
           {/* ── RIGHT SIDEBAR ── */}
           <div className="space-y-5">
             <div className="lg:sticky lg:top-8 space-y-5">
-              <ActiveSidebar campaign={campaign} onApply={isActive ? () => setIsApplyOpen(true) : null} appliedStatus={isApplied ? campaign.status : null} />
+              <ActiveSidebar campaign={campaign} onApply={isActive ? () => setIsApplyOpen(true) : null} appliedStatus={isApplied ? campaign.applicationStatus : null} refetch={refetch} />
 
               {/* Similar Campaigns — shared */}
               <SimilarCampaigns campaign={campaign} />
@@ -475,7 +477,7 @@ export default function CampaignDetailsPage() {
       )}
       {isApplied && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
-          <ApplicationStatusBar />
+          <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
       )}
     </div>
@@ -612,7 +614,7 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-function ActiveSidebar({ campaign, onApply, appliedStatus }) {
+function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
   return (
     <>
       {/* Apply button or Status tracker */}
@@ -628,7 +630,7 @@ function ActiveSidebar({ campaign, onApply, appliedStatus }) {
         </>
       ) : appliedStatus ? (
         <div className="hidden lg:block">
-          <ApplicationStatusBar />
+          <ApplicationStatusBar status={appliedStatus} campaign={campaign} refetch={refetch} />
         </div>
       ) : null}
 
@@ -1055,7 +1057,7 @@ function SimilarCampaigns({ campaign }) {
 }
 
 const STATUS_STEPS = [
-  { key: "applied", label: "Applied", color: "bg-blue-500" },
+  { key: "pending", label: "Applied", color: "bg-blue-500" },
   { key: "approved", label: "Approved", color: "bg-purple-500" },
   { key: "submitted", label: "Submitted", color: "bg-indigo-500" },
   { key: "accepted", label: "Accepted", color: "bg-emerald-500" },
@@ -1063,9 +1065,36 @@ const STATUS_STEPS = [
   { key: "completed", label: "Completed", color: "bg-green-600" },
 ];
 
-function ApplicationStatusBar() {
-  // For now, "Applied" is the current step (index 0)
-  const currentStep = 0;
+function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === status);
+
+  if (compact) {
+    const currentStep = STATUS_STEPS[currentStepIndex] || STATUS_STEPS[0];
+    return (
+      <div className="space-y-2">
+        <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-white ${currentStep.color}`}>
+          <Clock size={16} /> {currentStep.label}
+        </div>
+        {status === "approved" && (
+          <button
+            onClick={() => setShowSubmitModal(true)}
+            className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            <Upload size={16} /> Upload Submission
+          </button>
+        )}
+        {showSubmitModal && (
+          <SubmitDeliverablesModal
+            campaign={campaign}
+            onClose={() => setShowSubmitModal(false)}
+            onSuccess={() => { setShowSubmitModal(false); refetch?.(); }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
@@ -1073,8 +1102,8 @@ function ApplicationStatusBar() {
       <div className="relative pl-5">
         <div className="absolute left-[9px] top-1 bottom-1 w-[2px] bg-slate-100" />
         {STATUS_STEPS.map((step, i) => {
-          const isDone = i < currentStep;
-          const isCurrent = i === currentStep;
+          const isDone = i < currentStepIndex;
+          const isCurrent = i === currentStepIndex;
           return (
             <div key={step.key} className="relative flex items-center gap-3 pb-4 last:pb-0">
               <div className={`absolute -left-5 w-5 h-5 rounded-full flex items-center justify-center z-10 ${
@@ -1089,6 +1118,137 @@ function ApplicationStatusBar() {
           );
         })}
       </div>
+
+      {status === "approved" && (
+        <button
+          onClick={() => setShowSubmitModal(true)}
+          className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+          style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+        >
+          <Upload size={16} /> Upload Submission
+        </button>
+      )}
+
+      {showSubmitModal && (
+        <SubmitDeliverablesModal
+          campaign={campaign}
+          onClose={() => setShowSubmitModal(false)}
+          onSuccess={() => { setShowSubmitModal(false); refetch?.(); }}
+        />
+      )}
     </div>
+  );
+}
+
+function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
+  // Parse content_types_required: ["reels:2", "stories:3"] → [{type: "reels", count: 2}, ...]
+  const deliverables = (campaign?.contentTypesRequired || []).flatMap((item) => {
+    const [type, countStr] = item.split(":");
+    const count = parseInt(countStr) || 1;
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    return Array.from({ length: count }, (_, i) => ({
+      key: `${type}_${i + 1}`,
+      label: `${label} ${count > 1 ? i + 1 : ""}`.trim(),
+      type,
+    }));
+  });
+
+  const [links, setLinks] = useState(() => {
+    const initial = {};
+    deliverables.forEach((d) => { initial[d.key] = ""; });
+    return initial;
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
+
+  const handleSubmit = async () => {
+    if (!allFilled || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      const submissionLinks = deliverables.map((d) => ({
+        type: d.type,
+        label: d.label,
+        url: links[d.key],
+      }));
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/submit-deliverables`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ applicationId: campaign?.applicationId, submissionLinks }),
+      });
+
+      const data = await res.json();
+      if (data?.error) { setError(data.error); return; }
+      if (data?.success) onSuccess();
+    } catch (err) {
+      setError(err.message || "Failed to submit");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Upload Submissions</h2>
+            <p className="text-[11px] text-slate-400">{campaign?.title} &middot; {deliverables.length} deliverables</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
+
+          <p className="text-xs text-slate-500">Provide the link for each deliverable. All links are required before submitting.</p>
+
+          {deliverables.map((d) => (
+            <div key={d.key} className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <Instagram size={12} className="text-pink-500" />
+                {d.label}
+              </label>
+              <input
+                type="url"
+                placeholder="https://www.instagram.com/reel/..."
+                value={links[d.key]}
+                onChange={(e) => setLinks((prev) => ({ ...prev, [d.key]: e.target.value }))}
+                className="w-full py-3 px-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
+              />
+            </div>
+          ))}
+
+          {deliverables.length === 0 && (
+            <div className="text-center py-8 text-sm text-slate-400">No deliverables specified for this campaign.</div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white sticky bottom-0">
+          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+          <button
+            onClick={handleSubmit}
+            disabled={!allFilled || submitting}
+            className="flex-1 h-12 rounded-xl text-sm font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2 text-white"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+            {submitting ? "Submitting..." : `Submit ${deliverables.length} Deliverables`}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }

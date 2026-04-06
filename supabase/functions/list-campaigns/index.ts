@@ -28,15 +28,19 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: false });
 
     // Fetch applications for this influencer (if provided)
-    let applicationMap: Record<string, string> = {};
+    let applicationMap: Record<string, any> = {};
     if (influencerId) {
       const { data: applications } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status")
+        .select("campaign_id, status, submission_links, id")
         .eq("influencer_id", influencerId);
 
       for (const app of applications || []) {
-        applicationMap[app.campaign_id] = app.status;
+        applicationMap[app.campaign_id] = {
+          status: app.status,
+          applicationId: app.id,
+          submissionLinks: app.submission_links || [],
+        };
       }
     }
 
@@ -133,12 +137,23 @@ Deno.serve(async (req) => {
       }
 
       // Map status — check if influencer has applied
-      const appStatus = applicationMap[c.campaign_id];
+      const appData = applicationMap[c.campaign_id];
+      const appStatus = appData?.status;
       let status = "Active";
-      if (appStatus === "pending" || appStatus === "under_review" || appStatus === "shortlisted") {
-        status = "Applied";
-      } else if (appStatus === "approved" || appStatus === "completed") {
-        status = "Completed";
+      let applicationStatus = null;
+      let applicationId = null;
+      let submissionLinks: any[] = [];
+
+      if (appStatus) {
+        applicationStatus = appStatus;
+        applicationId = appData.applicationId;
+        submissionLinks = appData.submissionLinks || [];
+
+        if (appStatus === "completed" || appStatus === "accepted" || appStatus === "payment") {
+          status = "Completed";
+        } else {
+          status = "Applied"; // pending, approved, submitted all show in Applied tab
+        }
       } else if (c.status === "open" || c.status === "active") {
         status = "Active";
       } else if (c.status === "closed" || c.status === "completed") {
@@ -179,6 +194,10 @@ Deno.serve(async (req) => {
         campaignType: c.campaign_type || "",
         startDate: c.campaign_start_date || "",
         endDate: c.campaign_end_date || "",
+        applicationStatus,
+        applicationId,
+        submissionLinks,
+        contentTypesRequired: c.content_types_required || [],
       };
     });
 
