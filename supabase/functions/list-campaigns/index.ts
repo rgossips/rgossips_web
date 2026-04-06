@@ -30,12 +30,25 @@ Deno.serve(async (req) => {
     // Fetch applications for this influencer (if provided)
     let applicationMap: Record<string, any> = {};
     if (influencerId) {
-      const { data: applications } = await supabaseAdmin
+      // Try with submission_links first, fall back without it
+      let applications: any[] = [];
+      const { data: appsWithLinks, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, submission_links, id")
+        .select("campaign_id, status, id, submission_links")
         .eq("influencer_id", influencerId);
 
-      for (const app of applications || []) {
+      if (appErr) {
+        // Column might not exist yet — query without it
+        const { data: appsBasic } = await supabaseAdmin
+          .from("campaign_applications")
+          .select("campaign_id, status, id")
+          .eq("influencer_id", influencerId);
+        applications = appsBasic || [];
+      } else {
+        applications = appsWithLinks || [];
+      }
+
+      for (const app of applications) {
         applicationMap[app.campaign_id] = {
           status: app.status,
           applicationId: app.id,
