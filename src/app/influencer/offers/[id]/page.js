@@ -446,27 +446,14 @@ export default function CampaignDetailsPage() {
               </p>
             </div>
 
-            {/* ─── ACTIVE VIEW ─── */}
-            {isActive && <ActiveContent campaign={campaign} />}
-
-            {/* ─── APPLIED VIEW ─── */}
-            {isApplied && <AppliedContent campaign={campaign} />}
-
-            {/* ─── COMPLETED VIEW ─── */}
-            {isCompleted && <CompletedContent campaign={campaign} />}
+            {/* Always show full campaign content */}
+            <ActiveContent campaign={campaign} />
           </div>
 
           {/* ── RIGHT SIDEBAR ── */}
           <div className="space-y-5">
             <div className="lg:sticky lg:top-8 space-y-5">
-              {/* ─── Active Sidebar ─── */}
-              {isActive && <ActiveSidebar campaign={campaign} onApply={() => setIsApplyOpen(true)} />}
-
-              {/* ─── Applied Sidebar ─── */}
-              {isApplied && <AppliedSidebar campaign={campaign} />}
-
-              {/* ─── Completed Sidebar ─── */}
-              {isCompleted && <CompletedSidebar campaign={campaign} />}
+              <ActiveSidebar campaign={campaign} onApply={isActive ? () => setIsApplyOpen(true) : null} appliedStatus={isApplied ? campaign.status : null} />
 
               {/* Similar Campaigns — shared */}
               <SimilarCampaigns campaign={campaign} />
@@ -488,9 +475,7 @@ export default function CampaignDetailsPage() {
       )}
       {isApplied && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
-          <div className="w-full h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center gap-2 text-sm font-bold text-blue-600">
-            <Clock size={16} /> Application Under Review
-          </div>
+          <ApplicationStatusBar />
         </div>
       )}
     </div>
@@ -627,17 +612,25 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-function ActiveSidebar({ campaign, onApply }) {
+function ActiveSidebar({ campaign, onApply, appliedStatus }) {
   return (
     <>
-      {/* Apply button */}
-      <button
-        onClick={onApply}
-        className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
-      >
-        Apply for Campaign <ChevronRight size={16} />
-      </button>
-      <p className="hidden lg:block text-center text-[10px] text-slate-400">Or apply via an agent or partnership</p>
+      {/* Apply button or Status tracker */}
+      {onApply ? (
+        <>
+          <button
+            onClick={onApply}
+            className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+          >
+            Apply for Campaign <ChevronRight size={16} />
+          </button>
+          <p className="hidden lg:block text-center text-[10px] text-slate-400">Or apply via an agent or partnership</p>
+        </>
+      ) : appliedStatus ? (
+        <div className="hidden lg:block">
+          <ApplicationStatusBar />
+        </div>
+      ) : null}
 
       {/* About Brand */}
       <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
@@ -1056,6 +1049,45 @@ function SimilarCampaigns({ campaign }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const STATUS_STEPS = [
+  { key: "applied", label: "Applied", color: "bg-blue-500" },
+  { key: "approved", label: "Approved", color: "bg-purple-500" },
+  { key: "submitted", label: "Submitted", color: "bg-indigo-500" },
+  { key: "accepted", label: "Accepted", color: "bg-emerald-500" },
+  { key: "payment", label: "Payment in Progress", color: "bg-amber-500" },
+  { key: "completed", label: "Completed", color: "bg-green-600" },
+];
+
+function ApplicationStatusBar() {
+  // For now, "Applied" is the current step (index 0)
+  const currentStep = 0;
+
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+      <h4 className="text-sm font-bold text-slate-800">Application Status</h4>
+      <div className="relative pl-5">
+        <div className="absolute left-[9px] top-1 bottom-1 w-[2px] bg-slate-100" />
+        {STATUS_STEPS.map((step, i) => {
+          const isDone = i < currentStep;
+          const isCurrent = i === currentStep;
+          return (
+            <div key={step.key} className="relative flex items-center gap-3 pb-4 last:pb-0">
+              <div className={`absolute -left-5 w-5 h-5 rounded-full flex items-center justify-center z-10 ${
+                isDone ? "bg-emerald-500 text-white" : isCurrent ? step.color + " text-white shadow-md" : "bg-white border-2 border-slate-200"
+              }`}>
+                {isDone ? <CheckCircle size={12} /> : isCurrent ? <div className="w-2 h-2 bg-white rounded-full" /> : null}
+              </div>
+              <p className={`text-xs font-bold ${isDone ? "text-emerald-600" : isCurrent ? "text-slate-800" : "text-slate-300"}`}>
+                {step.label}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
