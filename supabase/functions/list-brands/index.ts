@@ -102,16 +102,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Count active campaigns per brand
+    // Count active campaigns per brand (via brand_id or brand_invitation_id)
     const { data: campaigns } = await supabaseAdmin
       .from("campaigns")
-      .select("brand_id, status");
+      .select("brand_id, brand_invitation_id, status");
 
     if (campaigns) {
       const campaignCounts: Record<string, number> = {};
-      for (const c of campaigns) {
+      for (const c of campaigns as any[]) {
         if (c.status === "active" || c.status === "open") {
-          campaignCounts[c.brand_id] = (campaignCounts[c.brand_id] || 0) + 1;
+          // Count by brand_invitation_id (most campaigns link this way)
+          if (c.brand_invitation_id) {
+            campaignCounts[c.brand_invitation_id] = (campaignCounts[c.brand_invitation_id] || 0) + 1;
+          }
+          // Also count by brand_id (for registered brands)
+          if (c.brand_id) {
+            campaignCounts[c.brand_id] = (campaignCounts[c.brand_id] || 0) + 1;
+          }
         }
       }
       for (const brand of brands) {

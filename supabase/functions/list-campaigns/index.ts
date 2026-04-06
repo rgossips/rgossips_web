@@ -33,12 +33,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get brand info for all campaigns
-    const brandIds = [...new Set((campaigns || []).map((c: any) => c.brand_id))];
+    // Get brand info for all campaigns (via brand_id or brand_invitation_id)
+    const brandIds = [...new Set((campaigns || []).map((c: any) => c.brand_id).filter(Boolean))];
+    const invitationIds = [...new Set((campaigns || []).map((c: any) => c.brand_invitation_id).filter(Boolean))];
     let brandMap: Record<string, any> = {};
 
+    // Look up registered brands by brand_id
     if (brandIds.length > 0) {
-      // Check registered brands
       const { data: profiles } = await supabaseAdmin
         .from("brand_profiles")
         .select("brand_id, brand_name, gstin_trade_name, logo_url, instagram_username")
@@ -51,30 +52,29 @@ Deno.serve(async (req) => {
           instagram: p.instagram_username || "",
         };
       }
+    }
 
-      // For any missing brands, check invitations
-      const missingIds = brandIds.filter((id) => !brandMap[id]);
-      if (missingIds.length > 0) {
-        const { data: invitations } = await supabaseAdmin
-          .from("brand_invitations")
-          .select("id, brand_name, logo_url, instagram_username, claimed_by")
-          .in("claimed_by", missingIds);
+    // Look up brand invitations by id
+    if (invitationIds.length > 0) {
+      const { data: invitations } = await supabaseAdmin
+        .from("brand_invitations")
+        .select("id, brand_name, logo_url, instagram_username")
+        .in("id", invitationIds);
 
-        for (const inv of invitations || []) {
-          if (inv.claimed_by && !brandMap[inv.claimed_by]) {
-            brandMap[inv.claimed_by] = {
-              name: inv.brand_name || "",
-              logo: inv.logo_url || "",
-              instagram: inv.instagram_username || "",
-            };
-          }
+      for (const inv of invitations || []) {
+        if (!brandMap[inv.id]) {
+          brandMap[inv.id] = {
+            name: inv.brand_name || "",
+            logo: inv.logo_url || "",
+            instagram: inv.instagram_username || "",
+          };
         }
       }
     }
 
     // Format campaigns for frontend
     const formatted = (campaigns || []).map((c: any) => {
-      const brand = brandMap[c.brand_id] || { name: "Unknown Brand", logo: "", instagram: "" };
+      const brand = brandMap[c.brand_invitation_id] || brandMap[c.brand_id] || { name: "Unknown Brand", logo: "", instagram: "" };
       const initials = brand.name
         .split(" ")
         .map((w: string) => w[0])

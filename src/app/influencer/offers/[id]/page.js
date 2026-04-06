@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -26,23 +26,73 @@ import {
   Calendar,
   MapPin,
   FileText,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
-import { useState } from "react";
 
-/* ─── Campaign database (mirrors campaigns page) ─── */
-const ALL_CAMPAIGNS = [
+/* ─── Fetch campaign from DB ─── */
+function useCampaign(id) {
+  const [campaign, setCampaign] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchCampaign = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({}),
+        });
+
+        const data = await res.json();
+        const found = data?.campaigns?.find((c) => c.id === id);
+        if (found) {
+          // Enrich with display fields the UI expects
+          setCampaign({
+            ...found,
+            heroImg: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80",
+            slots: found.maxInfluencers || 0,
+            about: found.description || "No description available for this campaign.",
+            requirements: [
+              { icon: "users", label: `Min Followers: ${found.tags?.length > 0 ? "1K+" : "Any"}`, sub: "Minimum requirement" },
+              { icon: "trending", label: `Category: ${found.tags?.[0] || "Any"}`, sub: "Target niche" },
+              { icon: "star", label: `Location: ${found.location}`, sub: "Target region" },
+            ],
+            payments: [
+              { type: "base", label: "Base Payment", val: found.budget, sub: "Per influencer" },
+            ],
+            brandStats: { campaigns: 0, success: "—", response: "—" },
+            deliverableIcons: found.deliverables ? found.deliverables.split(" + ").map((d) => {
+              const parts = d.split(":");
+              return { platform: "instagram", count: parts[1] || "1", label: parts[0] || d };
+            }) : [],
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch campaign:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCampaign();
+  }, [id]);
+
+  return { campaign, loading };
+}
+
+const _REMOVED = [
   {
-    id: 1,
-    initials: "SB",
-    title: "Summer Collection Launch",
-    brandName: "StyleBrand Co.",
-    status: "Active",
-    tags: ["Fashion", "Lifestyle"],
-    budget: "₹25,000 - ₹35,000",
     deadline: "Apr 15, 2026",
     daysLeft: "20d",
     deliverables: "2 Reels + 2 Stories",
@@ -316,8 +366,32 @@ export default function CampaignDetailsPage() {
   const router = useRouter();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
 
-  const campaign =
-    ALL_CAMPAIGNS.find((c) => c.id === Number(id)) || ALL_CAMPAIGNS[0];
+  const { campaign, loading } = useCampaign(id);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={28} className="animate-spin text-purple-500" />
+          <p className="text-sm font-bold text-slate-400">Loading campaign...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-bold text-slate-600">Campaign not found</p>
+          <button onClick={() => router.back()} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const isActive = campaign.status === "Active";
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";

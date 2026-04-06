@@ -117,14 +117,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Claim invitations on signup
+    // Claim invitations on signup and migrate campaigns
     const igUsername = instagram || "";
     if (table === "brand_profiles") {
       const claimData = { status: "claimed", claimed_by: userId, claimed_at: new Date().toISOString(), brand_profile_id: userId };
+      let claimedInvId: string | null = invitationId || null;
+
       if (invitationId) {
         await supabaseAdmin.from("brand_invitations").update(claimData).eq("id", invitationId).eq("status", "pending");
       } else if (igUsername) {
-        await supabaseAdmin.from("brand_invitations").update(claimData).ilike("instagram_username", igUsername).eq("status", "pending");
+        // Find and claim by username
+        const { data: inv } = await supabaseAdmin.from("brand_invitations").select("id").ilike("instagram_username", igUsername).eq("status", "pending").limit(1).single();
+        if (inv) {
+          claimedInvId = inv.id;
+          await supabaseAdmin.from("brand_invitations").update(claimData).eq("id", inv.id);
+        }
+      }
+
+      // Migrate any campaigns created for this invitation to the real brand_id
+      if (claimedInvId) {
+        await supabaseAdmin.from("campaigns").update({ brand_id: userId }).eq("brand_invitation_id", claimedInvId).is("brand_id", null);
       }
     } else if (table === "influencer_profiles") {
       const claimData = { status: "claimed", claimed_by: userId, claimed_at: new Date().toISOString(), influencer_profile_id: userId };
