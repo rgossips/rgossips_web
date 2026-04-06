@@ -56,6 +56,10 @@ export default function RecommendedCampaigns() {
     fetchCampaigns();
   }, []);
 
+  const filteredOffers = activeTab === "All"
+    ? offers
+    : offers.filter((o) => o.category.toLowerCase().includes(activeTab.toLowerCase()));
+
   return (
     <section className="w-full py-10 px-6 lg:px-12 bg-white">
       {/* Header & Tabs */}
@@ -84,9 +88,7 @@ export default function RecommendedCampaigns() {
             </button>
           ))}
           <button
-            onClick={() => {
-              router.push("/influencer/recommendedCampaigns");
-            }}
+            onClick={() => router.push("/influencer/campaigns")}
             className="text-[#D61F69] cursor-pointer text-xs font-bold px-4 hover:underline"
           >
             View All ›
@@ -96,7 +98,7 @@ export default function RecommendedCampaigns() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {offers.map((item) => (
+        {filteredOffers.map((item) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 10 }}
@@ -182,7 +184,11 @@ export default function RecommendedCampaigns() {
 
               {/* Actions */}
               <div className="flex gap-3 mt-auto">
-                <button className="flex-1 cursor-pointer bg-linear-to-r from-[#8E2DE2] to-[#F6339A] text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all">
+                <button
+                  onClick={() => router.push(`/influencer/offers/${item.id}`)}
+                  className="flex-1 cursor-pointer text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all"
+                  style={{ background: "linear-gradient(to right, #8E2DE2, #F6339A)" }}
+                >
                   Apply Now
                 </button>
               </div>

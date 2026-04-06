@@ -15,9 +15,11 @@ import { CampaignCard } from "@/components/CampaignCard";
 import FilterModal, { FilterSidebar } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateCampaignMatchScore } from "@/utils/matchScore";
+import { useSearchParams } from "next/navigation";
 
 export default function CampaignsPage() {
   const { profile } = useAuth();
+  const searchParams = useSearchParams();
 
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,10 @@ export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState("Active");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState(() => {
+    const cat = searchParams?.get("category");
+    return cat ? [cat] : [];
+  });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
