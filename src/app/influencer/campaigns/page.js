@@ -18,7 +18,7 @@ import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import { useSearchParams } from "next/navigation";
 
 export default function CampaignsPage() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const searchParams = useSearchParams();
 
   const [campaigns, setCampaigns] = useState([]);
@@ -33,7 +33,6 @@ export default function CampaignsPage() {
   });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
-  const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
 
   // --- FETCH CAMPAIGNS ---
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function CampaignsPage() {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ influencerId: user?.id }),
         });
 
         const data = await res.json();
@@ -64,14 +63,13 @@ export default function CampaignsPage() {
     };
 
     fetchCampaigns();
-  }, []);
+  }, [user?.id]);
 
   const resetFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 200000 });
     setSelectedPlatforms([]);
-    setIsVerifiedOnly(false);
   };
 
   const filteredCampaigns = useMemo(() => {
@@ -190,8 +188,6 @@ export default function CampaignsPage() {
               setBudgetRange={setBudgetRange}
               selectedPlatforms={selectedPlatforms}
               setSelectedPlatforms={setSelectedPlatforms}
-              isVerifiedOnly={isVerifiedOnly}
-              setIsVerifiedOnly={setIsVerifiedOnly}
               onExpand={() => setIsFiltersOpen(true)}
             />
           </aside>

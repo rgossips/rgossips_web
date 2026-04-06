@@ -14,6 +14,8 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
+    const { influencerId } = await req.json().catch(() => ({}));
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -24,6 +26,19 @@ Deno.serve(async (req) => {
       .from("campaigns")
       .select("*")
       .order("created_at", { ascending: false });
+
+    // Fetch applications for this influencer (if provided)
+    let applicationMap: Record<string, string> = {};
+    if (influencerId) {
+      const { data: applications } = await supabaseAdmin
+        .from("campaign_applications")
+        .select("campaign_id, status")
+        .eq("influencer_id", influencerId);
+
+      for (const app of applications || []) {
+        applicationMap[app.campaign_id] = app.status;
+      }
+    }
 
     if (campError) {
       console.error("Campaigns error:", campError.message);
@@ -117,12 +132,22 @@ Deno.serve(async (req) => {
         deliverables = c.content_types_required.join(" + ");
       }
 
-      // Map status
+      // Map status — check if influencer has applied
+      const appStatus = applicationMap[c.campaign_id];
       let status = "Active";
-      if (c.status === "open" || c.status === "active") status = "Active";
-      else if (c.status === "closed" || c.status === "completed") status = "Completed";
-      else if (c.status === "draft") status = "Active";
-      else status = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+      if (appStatus === "pending" || appStatus === "under_review" || appStatus === "shortlisted") {
+        status = "Applied";
+      } else if (appStatus === "approved" || appStatus === "completed") {
+        status = "Completed";
+      } else if (c.status === "open" || c.status === "active") {
+        status = "Active";
+      } else if (c.status === "closed" || c.status === "completed") {
+        status = "Completed";
+      } else if (c.status === "draft") {
+        status = "Active";
+      } else {
+        status = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+      }
 
       // Location
       const location = c.target_cities && c.target_cities.length > 0
