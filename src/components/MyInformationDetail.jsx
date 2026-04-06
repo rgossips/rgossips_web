@@ -130,28 +130,7 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
 );
 
 // --- Category Selection Modal ---
-const CATEGORY_OPTIONS = [
-  "Fashion",
-  "Tech",
-  "Food",
-  "Travel",
-  "Gaming",
-  "Education",
-  "Beauty",
-  "Fitness",
-  "Comedy",
-  "Lifestyle",
-  "Health",
-  "Finance",
-  "Music",
-  "Photography",
-  "Art",
-  "Sports",
-  "Parenting",
-  "DIY",
-  "Pets",
-  "Automotive",
-];
+import { CATEGORIES as CATEGORY_OPTIONS } from "@/utils/categories";
 
 const CategoryModal = ({ selected, onSave, onClose }) => {
   const [localSelected, setLocalSelected] = useState([...selected]);

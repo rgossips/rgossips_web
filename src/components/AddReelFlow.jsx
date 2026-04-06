@@ -38,14 +38,14 @@ export default function AddReelFlow({ onBack }) {
   });
 
   const categories = [
-    { name: "Lifestyle", icon: Sparkles, color: "text-amber-500" },
-    { name: "Travel", icon: Plane, color: "text-blue-500" },
-    { name: "Beauty", icon: Heart, color: "text-red-500" },
-    { name: "Skincare", icon: Smile, color: "text-pink-400" },
-    { name: "Vloggers", icon: Camera, color: "text-purple-500" },
-    { name: "Health", icon: Heart, color: "text-red-400" },
-    { name: "Fashion", icon: Shirt, color: "text-emerald-500" },
-    { name: "Food", icon: Utensils, color: "text-orange-500" },
+    { name: "Beauty & Skincare", icon: Sparkles, color: "text-pink-500" },
+    { name: "Fashion & Lifestyle", icon: Shirt, color: "text-purple-500" },
+    { name: "Food & Beverage", icon: Utensils, color: "text-orange-500" },
+    { name: "Health, Fitness & Wellness", icon: Heart, color: "text-green-500" },
+    { name: "Travel & Hospitality", icon: Plane, color: "text-blue-500" },
+    { name: "Technology & Gadgets", icon: Camera, color: "text-slate-600" },
+    { name: "Gaming & Entertainment", icon: Smile, color: "text-red-500" },
+    { name: "Education & Career", icon: Sparkles, color: "text-blue-600" },
   ];
 
   const handleNext = () => {

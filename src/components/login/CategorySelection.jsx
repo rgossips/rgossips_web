@@ -2,21 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-
-const categories = [
-  "Beauty",
-  "Fashion",
-  "Tech",
-  "Fitness",
-  "Travel",
-  "Food",
-  "Lifestyle",
-  "Finance",
-  "Gaming",
-  "Education",
-  "Photography",
-  "Vlogging",
-];
+import { CATEGORIES as categories } from "@/utils/categories";
 
 const CategorySelection = ({ onNext, onSkip }) => {
   const [selected, setSelected] = useState([]);

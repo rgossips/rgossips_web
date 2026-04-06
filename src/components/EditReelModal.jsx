@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { CATEGORIES as CATEGORIES_LIST } from "@/utils/categories";
 import {
   ArrowLeft,
   Upload,
@@ -13,16 +14,7 @@ import {
 
 const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
   const [formData, setFormData] = useState({ ...reel });
-  const categories = [
-    "Lifestyle",
-    "Travel",
-    "Beauty",
-    "Skincare",
-    "Vloggers",
-    "Health",
-    "Fashion",
-    "Food",
-  ];
+  const categories = CATEGORIES_LIST;
 
   const handleChange = (e) => {
     const { name, value } = e.target;

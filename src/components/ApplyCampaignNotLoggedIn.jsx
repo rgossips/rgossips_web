@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CATEGORIES as STANDARD_CATEGORIES } from "@/utils/categories";
 import {
   X,
   ArrowRight,
@@ -98,48 +99,7 @@ export default function CreatorOnboardingForm({ onClose }) {
     "Puducherry",
   ];
 
-  const categories = [
-    "Fashion",
-    "Travel",
-    "Lifestyle",
-    "Health and Wellness",
-    "Beauty",
-    "Skincare",
-    "Haircare",
-    "Parenting",
-    "Make up Artist",
-    "Hair dressers",
-    "Content Creator",
-    "Educational",
-    "Finance",
-    "Actor",
-    "Model",
-    "Tech",
-    "Fitness",
-    "Comedian",
-    "Culinary",
-    "Dermat",
-    "Eco - Activists",
-    "OTT",
-    "Artist",
-    "Gamers",
-    "Musician",
-    "Doctor",
-    "Nutritionist",
-    "Writer/Poet",
-    "Photography",
-    "Sports",
-    "Stylist",
-    "Food Bloggers",
-    "Couple Vloggers",
-    "Hairstyle",
-    "Entertainment",
-    "Dancer",
-    "LGBTQ",
-    "Body Positivity",
-    "Entrepreneur",
-    "UGC",
-  ];
+  const categories = STANDARD_CATEGORIES;
   const contentStyles = [
     "Talking Head",
     "Aesthetic",

@@ -6,7 +6,8 @@ import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-const CATEGORIES = ["All", "Beauty", "Travel", "Tech", "Fashion", "Food"];
+import { CATEGORIES as ALL_CATEGORIES } from "@/utils/categories";
+const CATEGORIES = ["All", ...ALL_CATEGORIES.slice(0, 5)];
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",

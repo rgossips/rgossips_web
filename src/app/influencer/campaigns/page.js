@@ -273,8 +273,6 @@ export default function CampaignsPage() {
             setBudgetRange={setBudgetRange}
             selectedPlatforms={selectedPlatforms}
             setSelectedPlatforms={setSelectedPlatforms}
-            isVerifiedOnly={isVerifiedOnly}
-            setIsVerifiedOnly={setIsVerifiedOnly}
           />
         )}
       </AnimatePresence>
