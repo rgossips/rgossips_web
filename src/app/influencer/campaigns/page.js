@@ -84,9 +84,11 @@ export default function CampaignsPage() {
         campaign.platforms.some((p) =>
           selectedPlatforms.map((sp) => sp.toLowerCase()).includes(p.toLowerCase())
         );
-      return matchesTab && matchesSearch && matchesCategory && matchesPlatform;
+      const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
+      const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
+      return matchesTab && matchesSearch && matchesCategory && matchesPlatform && matchesBudget;
     });
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms]);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms, budgetRange]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">

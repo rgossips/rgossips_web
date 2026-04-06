@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Check,
@@ -30,6 +30,27 @@ export default function CreatorWorkspace() {
   const { profile } = useAuth();
   const router = useRouter();
   const scrollRef = useRef(null);
+  const [counts, setCounts] = useState({ brands: 0, campaigns: 0 });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const headers = { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+        const [brandsRes, campaignsRes] = await Promise.all([
+          fetch(`${supabaseUrl}/functions/v1/list-brands`, { method: "POST", headers, body: "{}" }),
+          fetch(`${supabaseUrl}/functions/v1/list-campaigns`, { method: "POST", headers, body: "{}" }),
+        ]);
+        const [brandsData, campaignsData] = await Promise.all([brandsRes.json(), campaignsRes.json()]);
+        setCounts({
+          brands: brandsData?.brands?.length || 0,
+          campaigns: campaignsData?.campaigns?.filter((c) => c.status === "Active")?.length || 0,
+        });
+      } catch {}
+    };
+    fetchCounts();
+  }, []);
 
   const hasInstagram = !!profile?.instagram_handle;
 
@@ -177,13 +198,13 @@ export default function CreatorWorkspace() {
           {/* Quick Stats */}
           <div className="flex gap-3 mb-4">
             <div className="flex-1 bg-purple-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold text-purple-700">142</p>
+              <p className="text-lg font-bold text-purple-700">{counts.brands}</p>
               <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wide">
                 Brands
               </p>
             </div>
             <div className="flex-1 bg-pink-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold text-pink-700">38</p>
+              <p className="text-lg font-bold text-pink-700">{counts.campaigns}</p>
               <p className="text-[10px] font-semibold text-pink-500 uppercase tracking-wide">
                 Campaigns
               </p>

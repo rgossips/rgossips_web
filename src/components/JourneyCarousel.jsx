@@ -4,7 +4,18 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Image from "next/image";
 import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 
-const journeyData = [
+const PLACEHOLDER_IMAGES = [
+  "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800",
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+  "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800",
+  "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800",
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800",
+  "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800",
+  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
+];
+
+const _OLD_journeyData = [
   {
     id: 1,
     title: "Luxury Perfume Launch",
@@ -180,6 +191,37 @@ const journeyData = [
 
 const JourneyCarousel = () => {
   const [api, setApi] = useState(null);
+  const [journeyData, setJourneyData] = useState([]);
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (data?.campaigns) {
+          const active = data.campaigns.filter((c) => c.status === "Active").slice(0, 20);
+          setJourneyData(active.map((c, i) => ({
+            id: c.id,
+            title: c.title,
+            location: c.location || "Pan India",
+            rating: 4.5 + Math.random() * 0.5,
+            price: parseInt(c.budget?.replace(/[^\d]/g, "")) || 0,
+            duration: c.daysLeft ? `${c.daysLeft} left` : "Open",
+            image: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch campaigns:", err);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   useEffect(() => {
     if (!api) return;

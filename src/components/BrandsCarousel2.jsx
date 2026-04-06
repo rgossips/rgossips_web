@@ -14,7 +14,7 @@ export default function BrandsCarousel() {
   const [brands, setBrands] = useState([]);
   const [api, setApi] = useState(null);
 
-  const DUMMY_BRANDS = [
+  const _OLD_BRANDS = [
     {
       id: 1,
       name: "D LUXE PERFUMES",
@@ -144,7 +144,22 @@ export default function BrandsCarousel() {
   ];
 
   useEffect(() => {
-    setBrands(DUMMY_BRANDS);
+    const fetchBrands = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-brands`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (data?.brands) setBrands(data.brands);
+      } catch (err) {
+        console.error("Failed to fetch brands:", err);
+      }
+    };
+    fetchBrands();
   }, []);
 
   // Updated Auto-slide effect

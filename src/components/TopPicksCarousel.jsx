@@ -6,56 +6,55 @@ import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-const CATEGORIES = ["All", "Beauty", "Travel", "Tech"];
+const CATEGORIES = ["All", "Beauty", "Travel", "Tech", "Fashion", "Food"];
 
-const DUMMY_OFFERS = [
-  {
-    id: "camp-001",
-    imageUrl:
-      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
-    category: "Beauty",
-    badge: "Trending",
-    match: "98% Match",
-    brand: "Glow Essential",
-    title: "Summer Radiance Campaign",
-    location: "New York",
-    desc: "Showcase our new summer glow collection in your daily skincare routine.",
-    pay: "₹30k - 45k",
-    req: "20k+ Followers",
-  },
-  {
-    id: "camp-002",
-    imageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600",
-    category: "Travel",
-    badge: "High Paying",
-    match: "95% Match",
-    brand: "Blue Horizon",
-    title: "Luxury Bali Retreat",
-    location: "Bali",
-    desc: "Exclusive 3-night stay at our newest eco-luxury resort in Uluwatu.",
-    pay: "₹80k + Flights",
-    req: "Travel Niche",
-  },
-  {
-    id: "camp-003",
-    imageUrl:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600",
-    category: "Tech",
-    badge: "New",
-    match: "92% Match",
-    brand: "Sonic Audio",
-    title: "Pro Headset Review",
-    location: "Remote",
-    desc: "Test and review our flagship noise-cancelling wireless headphones.",
-    pay: "₹15k + Product",
-    req: "Tech Reviewers",
-  },
+const PLACEHOLDER_IMAGES = [
+  "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600",
+  "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600",
+  "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=600",
+  "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?q=80&w=600",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
 ];
 
 export default function RecommendedCampaigns() {
   const [activeTab, setActiveTab] = useState("All");
+  const [offers, setOffers] = useState([]);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (data?.campaigns) {
+          const active = data.campaigns.filter((c) => c.status === "Active").slice(0, 6);
+          setOffers(active.map((c, i) => ({
+            id: c.id,
+            imageUrl: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
+            category: c.tags?.[0]?.split(" ")?.[0] || "General",
+            badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? "Ending Soon" : "Active",
+            match: "",
+            brand: c.brandName,
+            title: c.title,
+            location: c.location || "Pan India",
+            desc: c.description?.slice(0, 80) || "Apply to collaborate with this brand.",
+            pay: c.budget,
+            req: c.deliverables || "Not specified",
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch campaigns:", err);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   return (
     <section className="w-full py-10 px-6 lg:px-12 bg-white">
@@ -97,7 +96,7 @@ export default function RecommendedCampaigns() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {DUMMY_OFFERS.map((item) => (
+        {offers.map((item) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 10 }}
