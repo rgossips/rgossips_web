@@ -149,10 +149,12 @@ Deno.serve(async (req) => {
         applicationId = appData.applicationId;
         submissionLinks = appData.submissionLinks || [];
 
-        if (appStatus === "completed" || appStatus === "accepted" || appStatus === "payment") {
+        if (appStatus === "completed") {
           status = "Completed";
+        } else if (appStatus === "rejected") {
+          status = "Active"; // Rejected goes back to Active (can re-apply if needed)
         } else {
-          status = "Applied"; // pending, approved, submitted all show in Applied tab
+          status = "Applied"; // pending, approved, submitted, accepted, payment all stay in Applied
         }
       } else if (c.status === "open" || c.status === "active") {
         status = "Active";

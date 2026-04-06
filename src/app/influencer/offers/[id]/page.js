@@ -455,7 +455,12 @@ export default function CampaignDetailsPage() {
           {/* ── RIGHT SIDEBAR ── */}
           <div className="space-y-5">
             <div className="lg:sticky lg:top-8 space-y-5">
-              <ActiveSidebar campaign={campaign} onApply={isActive ? () => setIsApplyOpen(true) : null} appliedStatus={isApplied ? campaign.applicationStatus : null} refetch={refetch} />
+              <ActiveSidebar
+                campaign={campaign}
+                onApply={isActive && !campaign.applicationStatus ? () => setIsApplyOpen(true) : null}
+                appliedStatus={campaign.applicationStatus || null}
+                refetch={refetch}
+              />
 
               {/* Similar Campaigns — shared */}
               <SimilarCampaigns campaign={campaign} />
@@ -465,7 +470,7 @@ export default function CampaignDetailsPage() {
       </div>
 
       {/* Mobile floating bar */}
-      {isActive && (
+      {isActive && !campaign.applicationStatus && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <button
             onClick={() => setIsApplyOpen(true)}
@@ -475,7 +480,7 @@ export default function CampaignDetailsPage() {
           </button>
         </div>
       )}
-      {isApplied && (
+      {campaign.applicationStatus && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
