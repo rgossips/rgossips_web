@@ -53,34 +53,31 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
   return (
     <div className="w-full">
       {/* ===== HEADER ===== */}
-      <div className="relative">
-        <div className="h-28 sm:h-36 lg:h-44 w-full" style={{ background: "linear-gradient(135deg, #c084fc 0%, #ec4899 50%, #f472b6 100%)" }} />
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative -mt-14 sm:-mt-16 lg:-mt-20">
-          <div className="flex items-end gap-4 sm:gap-6">
-            {/* Profile Photo */}
-            <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl shrink-0 bg-white">
-              {photo ? (
-                <Image src={photo} alt={name} width={128} height={128} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">{initials}</span>
-                </div>
-              )}
-            </div>
-            <div className="pb-2 sm:pb-3 flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 truncate">{name}</h1>
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                {primaryCategory && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] sm:text-xs font-bold text-slate-600">
-                    <Camera size={12} className="text-slate-400" /> {primaryCategory}
-                  </span>
-                )}
-                {location && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] sm:text-xs font-bold text-slate-600">
-                    <MapPin size={12} className="text-pink-500" /> {location}
-                  </span>
-                )}
+      <div className="relative" style={{ background: "linear-gradient(120deg, #9810FA 0%, #E60076 50%, #f472b6 100%)" }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex items-center gap-4 sm:gap-6">
+          {/* Profile Photo */}
+          <div className="w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl shrink-0">
+            {photo ? (
+              <Image src={photo} alt={name} width={128} height={128} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">{initials}</span>
               </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-white truncate">{name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {primaryCategory && (
+                <span className="flex items-center gap-1 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold text-slate-700">
+                  <Camera size={12} className="text-slate-500" /> {primaryCategory}
+                </span>
+              )}
+              {location && (
+                <span className="flex items-center gap-1 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-[10px] sm:text-xs font-bold text-slate-700">
+                  <MapPin size={12} className="text-pink-500" /> {location}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -369,61 +366,56 @@ function EditableTopContent({ reels, editable, onSave }) {
   const handleCancel = () => { setLinks(reels.map((r) => r.permalink || "")); setEditing(false); };
 
   return (
-    <SectionCard title="Top Content">
-      {editable && !editing && (
-        <button onClick={() => setEditing(true)} className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-lg transition-colors group" title="Edit">
-          <Pencil size={13} className="text-slate-400 group-hover:text-purple-500" />
-        </button>
-      )}
+    <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm relative">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.15em] flex items-center gap-2">
+          <div className="w-5 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+          Top Content
+        </h2>
+        {editable && !editing && (
+          <button onClick={() => { if (reels.length === 0) { setLinks([""]); } setEditing(true); }} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors group cursor-pointer" title="Edit reels">
+            <Pencil size={13} className="text-slate-400 group-hover:text-purple-500" />
+          </button>
+        )}
+      </div>
 
       {editing ? (
         <div className="space-y-3">
           {links.map((link, i) => (
             <div key={i} className="flex gap-2">
-              <input type="url" value={link} onChange={(e) => handleChange(i, e.target.value)} placeholder="https://www.instagram.com/reel/..." className="flex-1 py-2.5 px-3 bg-white border border-slate-200 focus:border-purple-300 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all" />
-              <button onClick={() => handleRemove(i)} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors shrink-0 mt-0.5"><XIcon size={14} /></button>
+              <input type="url" value={link} onChange={(e) => handleChange(i, e.target.value)} placeholder="https://www.instagram.com/reel/..." className="flex-1 py-2.5 px-3 bg-slate-50 border border-slate-200 focus:border-purple-300 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all" />
+              <button onClick={() => handleRemove(i)} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors shrink-0 mt-0.5 cursor-pointer"><XIcon size={14} /></button>
             </div>
           ))}
-          <button onClick={handleAdd} className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors">+ Add Reel Link</button>
+          <button onClick={handleAdd} className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors cursor-pointer">+ Add Reel Link</button>
           <div className="flex gap-2 pt-1">
-            <button onClick={handleCancel} className="flex-1 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-all hover:opacity-90" style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}>Save</button>
+            <button onClick={handleCancel} className="flex-1 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
+            <button onClick={handleSave} className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-all hover:opacity-90 cursor-pointer" style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}>Save</button>
           </div>
         </div>
       ) : reels.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {reels.map((reel, i) => {
             const shortcode = reel.permalink?.match(/\/(p|reel)\/([^/?]+)/)?.[2] || "";
-            const hasThumbnail = reel.thumbnailUrl || reel.thumbnail || reel.mediaUrl;
             return (
-              <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-900 group block">
-                {hasThumbnail ? (
-                  <img src={reel.thumbnailUrl || reel.thumbnail || reel.mediaUrl} alt={reel.caption || "Reel"} className="w-full aspect-[9/16] object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : shortcode ? (
-                  <div className="aspect-[9/16]">
-                    <iframe src={`https://www.instagram.com/p/${shortcode}/embed/`} className="w-full h-full border-0 pointer-events-none" loading="lazy" scrolling="no" />
+              <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden border border-slate-100 bg-white block">
+                {shortcode ? (
+                  <div className="aspect-[4/5] overflow-hidden">
+                    <iframe src={`https://www.instagram.com/p/${shortcode}/embed/`} className="w-full border-0 pointer-events-none" style={{ height: "500px", marginTop: "-50px" }} loading="lazy" scrolling="no" />
                   </div>
                 ) : (
-                  <div className="w-full aspect-[9/16] bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <Instagram size={28} className="text-purple-300" />
+                  <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col items-center justify-center gap-2 p-3">
+                    <Instagram size={24} className="text-purple-300" />
+                    <p className="text-[9px] text-slate-400 text-center truncate w-full">{reel.permalink}</p>
                   </div>
                 )}
-                {/* Caption overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                  {reel.caption && <p className="text-[9px] text-white/90 font-semibold mb-1.5 line-clamp-2 leading-snug">{reel.caption}</p>}
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-white"><Heart size={10} className="fill-white" />{reel.likes || 0}</span>
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-white"><MessageCircle size={10} />{reel.comments || 0}</span>
-                    <ExternalLink size={10} className="text-white/60 ml-auto" />
-                  </div>
-                </div>
               </a>
             );
           })}
         </div>
       ) : editable ? (
-        <button onClick={() => { setLinks([""]); setEditing(true); }} className="w-full py-6 border-2 border-dashed border-slate-200 rounded-xl text-sm font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors">+ Add your top content links</button>
+        <button onClick={() => { setLinks([""]); setEditing(true); }} className="w-full py-8 border-2 border-dashed border-slate-200 rounded-xl text-sm font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors cursor-pointer">+ Add your top content links</button>
       ) : null}
-    </SectionCard>
+    </div>
   );
 }
