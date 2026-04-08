@@ -42,9 +42,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (app.status !== "approved" && app.status !== "revision") {
+    if (app.status !== "approved" && app.status !== "revision_needed") {
       return new Response(
-        JSON.stringify({ error: "Application must be in 'approved' or 'revision' status to submit deliverables" }),
+        JSON.stringify({ error: "Application must be in 'approved' or 'revision_needed' status to submit deliverables" }),
         { status: 200, headers: jsonHeaders }
       );
     }

@@ -1072,20 +1072,20 @@ const STATUS_STEPS = [
 
 // These statuses branch off the main flow
 const SPECIAL_STATUSES = {
-  revision: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
+  revision_needed: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
   rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: "✕" },
 };
 
 function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const isSpecial = SPECIAL_STATUSES[status];
-  const isRevision = status === "revision";
+  const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
   // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
   const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
   const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
-  const canUpload = status === "approved" || status === "revision";
+  const canUpload = status === "approved" || status === "revision_needed";
 
   if (compact) {
     return (
