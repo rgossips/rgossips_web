@@ -42,6 +42,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
   const totalImpressions = profile?.total_impressions || profile?.totalImpressions || 0;
   const totalReach = profile?.total_reach || profile?.totalReach || 0;
   const topReels = profile?.top_reels || profile?.topReels || [];
+  const demographics = profile?.audience_demographics || profile?.audienceDemographics || {};
 
   const SERVICE_LABELS = { reels: "Reels", stories: "Stories", shorts: "YouTube Shorts", posts: "Static Posts", ugc: "UGC Videos" };
   const toServiceLabel = (id) => SERVICE_LABELS[id] || id;
@@ -130,19 +131,15 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
                 <div>
                   <h4 className="text-xs font-black text-slate-800 uppercase mb-3">Top Cities</h4>
                   <div className="space-y-2.5">
-                    {[
-                      { city: location || "Your City", pct: 24 },
-                      { city: "Mumbai", pct: 19 },
-                      { city: "Delhi", pct: 15 },
-                      { city: "Pune", pct: 9 },
-                      { city: "Chennai", pct: 7 },
-                    ].map((c) => (
-                      <div key={c.city} className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-slate-600 w-20 truncate">{c.city}</span>
+                    {(demographics?.topCities?.length > 0 ? demographics.topCities : [
+                      { name: location || "—", pct: 0 },
+                    ]).map((c) => (
+                      <div key={c.name} className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-slate-600 w-20 truncate">{c.name}</span>
                         <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
+                          <div className="h-full rounded-full" style={{ width: `${Math.min(c.pct, 100)}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
                         </div>
-                        <span className="text-xs font-bold text-slate-500 w-8 text-right">{c.pct}%</span>
+                        <span className="text-xs font-bold text-slate-500 w-10 text-right">{c.pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -152,31 +149,62 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
                 <div>
                   <h4 className="text-xs font-black text-slate-800 uppercase mb-3">Age + Gender</h4>
                   <div className="space-y-2.5">
-                    {[
-                      { age: "18-24", pct: 22 },
-                      { age: "25-34", pct: 51 },
-                      { age: "35-44", pct: 18 },
-                      { age: "45+", pct: 9 },
-                    ].map((a) => (
-                      <div key={a.age} className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-slate-600 w-12">{a.age}</span>
+                    {(demographics?.ageRanges?.length > 0 ? demographics.ageRanges : [
+                      { range: "18-24", pct: 0 }, { range: "25-34", pct: 0 }, { range: "35-44", pct: 0 }, { range: "45+", pct: 0 },
+                    ]).map((a) => (
+                      <div key={a.range} className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-slate-600 w-12">{a.range}</span>
                         <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${a.pct}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
+                          <div className="h-full rounded-full" style={{ width: `${Math.min(a.pct, 100)}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
                         </div>
-                        <span className="text-xs font-bold text-slate-500 w-8 text-right">{a.pct}%</span>
+                        <span className="text-xs font-bold text-slate-500 w-10 text-right">{a.pct}%</span>
                       </div>
                     ))}
                   </div>
-                  {/* Gender donut */}
-                  <div className="flex items-center gap-4 mt-4">
-                    <div className="w-16 h-16 rounded-full border-[6px] border-purple-400 border-r-pink-400 border-b-slate-200 shrink-0" />
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-purple-400" /><span className="text-[11px] font-bold text-slate-600">Female 68%</span></div>
-                      <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-pink-400" /><span className="text-[11px] font-bold text-slate-600">Male 31%</span></div>
-                      <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-[11px] font-bold text-slate-600">Other 1%</span></div>
+                  {/* Gender breakdown */}
+                  {(() => {
+                    const g = demographics?.gender || { male: 0, female: 0, other: 0 };
+                    const hasData = g.male > 0 || g.female > 0;
+                    return (
+                      <div className="flex items-center gap-4 mt-4">
+                        <div className="relative w-16 h-16 shrink-0">
+                          <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                            <circle cx="18" cy="18" r="15" fill="transparent" stroke="#e2e8f0" strokeWidth="5" />
+                            {hasData && <circle cx="18" cy="18" r="15" fill="transparent" stroke="#a855f7" strokeWidth="5" strokeDasharray={`${g.female * 0.942} ${94.2 - g.female * 0.942}`} />}
+                            {hasData && <circle cx="18" cy="18" r="15" fill="transparent" stroke="#ec4899" strokeWidth="5" strokeDasharray={`${g.male * 0.942} ${94.2 - g.male * 0.942}`} strokeDashoffset={`-${g.female * 0.942}`} />}
+                          </svg>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-purple-500" /><span className="text-[11px] font-bold text-slate-600">Female {g.female}%</span></div>
+                          <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-pink-500" /><span className="text-[11px] font-bold text-slate-600">Male {g.male}%</span></div>
+                          {g.other > 0 && <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-[11px] font-bold text-slate-600">Other {g.other}%</span></div>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Top Countries */}
+                {demographics?.topCountries?.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-black text-slate-800 uppercase mb-3">Top Countries</h4>
+                    <div className="space-y-2.5">
+                      {demographics.topCountries.map((c) => (
+                        <div key={c.name} className="flex items-center gap-3">
+                          <span className="text-xs font-semibold text-slate-600 w-12 truncate">{c.name}</span>
+                          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${Math.min(c.pct, 100)}%`, background: "linear-gradient(90deg, #8b5cf6, #ec4899)" }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-500 w-10 text-right">{c.pct}%</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
+
+                {!demographics?.topCities?.length && (
+                  <p className="text-[10px] text-slate-400 italic">Demographics data will appear after Instagram data refresh</p>
+                )}
               </div>
             </SectionCard>
 

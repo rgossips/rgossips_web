@@ -166,7 +166,93 @@ Deno.serve(async (req) => {
       .sort((a: any, b: any) => (b.likes + b.comments) - (a.likes + a.comments))
       .slice(0, 6);
 
-    // Step 4: Update DB with fresh data
+    // Step 4: Fetch audience demographics (requires Business/Creator account)
+    let audienceDemographics: Record<string, unknown> = {};
+    try {
+      // Audience city
+      const cityRes = await fetch(
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&metric_type=total_value&breakdown=city&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const cityData = await cityRes.json();
+      const cityBreakdown = cityData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
+      const topCities = cityBreakdown
+        .sort((a: any, b: any) => b.value - a.value)
+        .slice(0, 6)
+        .map((c: any) => ({ name: c.dimension_values[0], value: c.value }));
+
+      // Calculate percentages
+      const totalCityFollowers = cityBreakdown.reduce((s: number, c: any) => s + c.value, 0);
+      const topCitiesWithPct = topCities.map((c: any) => ({
+        ...c,
+        pct: totalCityFollowers > 0 ? parseFloat(((c.value / totalCityFollowers) * 100).toFixed(1)) : 0,
+      }));
+
+      // Audience age + gender
+      const ageGenderRes = await fetch(
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&metric_type=total_value&breakdown=age,gender&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const ageGenderData = await ageGenderRes.json();
+      const ageGenderBreakdown = ageGenderData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
+
+      // Aggregate by age
+      const ageMap: Record<string, number> = {};
+      let genderM = 0, genderF = 0, genderU = 0;
+      for (const item of ageGenderBreakdown) {
+        const age = item.dimension_values[0]; // e.g. "25-34"
+        const gender = item.dimension_values[1]; // "M", "F", "U"
+        const val = item.value || 0;
+        ageMap[age] = (ageMap[age] || 0) + val;
+        if (gender === "M") genderM += val;
+        else if (gender === "F") genderF += val;
+        else genderU += val;
+      }
+
+      const totalGender = genderM + genderF + genderU;
+      const genderBreakdownResult = {
+        male: totalGender > 0 ? parseFloat(((genderM / totalGender) * 100).toFixed(1)) : 0,
+        female: totalGender > 0 ? parseFloat(((genderF / totalGender) * 100).toFixed(1)) : 0,
+        other: totalGender > 0 ? parseFloat(((genderU / totalGender) * 100).toFixed(1)) : 0,
+      };
+
+      // Age ranges with percentages
+      const totalAge = Object.values(ageMap).reduce((s, v) => s + v, 0);
+      const ageRanges = Object.entries(ageMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([age, val]) => ({
+          range: age,
+          pct: totalAge > 0 ? parseFloat(((val / totalAge) * 100).toFixed(1)) : 0,
+        }));
+
+      // Audience country
+      const countryRes = await fetch(
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&metric_type=total_value&breakdown=country&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const countryData = await countryRes.json();
+      const countryBreakdown = countryData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
+      const topCountries = countryBreakdown
+        .sort((a: any, b: any) => b.value - a.value)
+        .slice(0, 5)
+        .map((c: any) => ({ name: c.dimension_values[0], value: c.value }));
+      const totalCountryFollowers = countryBreakdown.reduce((s: number, c: any) => s + c.value, 0);
+      const topCountriesWithPct = topCountries.map((c: any) => ({
+        ...c,
+        pct: totalCountryFollowers > 0 ? parseFloat(((c.value / totalCountryFollowers) * 100).toFixed(1)) : 0,
+      }));
+
+      audienceDemographics = {
+        topCities: topCitiesWithPct,
+        topCountries: topCountriesWithPct,
+        ageRanges,
+        gender: genderBreakdownResult,
+      };
+
+      console.log("Audience demographics fetched:", JSON.stringify(audienceDemographics).slice(0, 200));
+    } catch (e) {
+      console.error("Failed to fetch audience demographics:", e?.message || e);
+      // Non-blocking — continue without demographics
+    }
+
+    // Step 5: Update DB with fresh data
     const updateData: Record<string, unknown> = {
       top_reels: topReels,
       username: igProfile.username || "",
@@ -185,6 +271,11 @@ Deno.serve(async (req) => {
       total_reach: totalReach,
       updated_at: new Date().toISOString(),
     };
+
+    // Add demographics if fetched successfully
+    if (Object.keys(audienceDemographics).length > 0) {
+      updateData.audience_demographics = audienceDemographics;
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from("influencer_profiles")
