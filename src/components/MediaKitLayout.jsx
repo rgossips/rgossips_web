@@ -617,24 +617,46 @@ function EditableTopContent({ reels, editable, onSave }) {
           </div>
         </div>
       ) : reels.length > 0 ? (
-        <div className="space-y-2.5">
-          {reels.map((reel, i) => (
-            <a
-              key={reel.id || i}
-              href={reel.permalink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-pink-200 hover:bg-pink-50/30 transition-all group"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Instagram size={18} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-700 truncate">{reel.permalink}</p>
-              </div>
-              <ExternalLink size={14} className="text-slate-300 group-hover:text-pink-500 transition-colors shrink-0" />
-            </a>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {reels.map((reel, i) => {
+            const shortcode = reel.permalink?.match(/\/(p|reel)\/([^/?]+)/)?.[2] || "";
+            const hasThumbnail = reel.thumbnailUrl || reel.thumbnail || reel.mediaUrl;
+            return (
+              <a
+                key={reel.id || i}
+                href={reel.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-[9/16] rounded-xl overflow-hidden border border-slate-100 bg-slate-900 group block"
+              >
+                {hasThumbnail ? (
+                  <img
+                    src={reel.thumbnailUrl || reel.thumbnail || reel.mediaUrl}
+                    alt={reel.caption || "Reel"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : shortcode ? (
+                  <iframe
+                    src={`https://www.instagram.com/p/${shortcode}/embed/`}
+                    className="w-full h-full border-0 pointer-events-none"
+                    loading="lazy"
+                    scrolling="no"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                    <Instagram size={28} className="text-purple-300" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                  <span className="text-[8px] font-black text-white uppercase tracking-wider">Reel</span>
+                </div>
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ExternalLink size={14} className="text-white" />
+                </div>
+              </a>
+            );
+          })}
         </div>
       ) : editable ? (
         <button
