@@ -1062,35 +1062,46 @@ function SimilarCampaigns({ campaign }) {
 }
 
 const STATUS_STEPS = [
-  { key: "pending", label: "Applied", color: "bg-blue-500" },
-  { key: "approved", label: "Approved", color: "bg-purple-500" },
-  { key: "submitted", label: "Submitted", color: "bg-indigo-500" },
-  { key: "accepted", label: "Accepted", color: "bg-emerald-500" },
-  { key: "payment", label: "Payment in Progress", color: "bg-amber-500" },
-  { key: "completed", label: "Completed", color: "bg-green-600" },
+  { key: "pending", label: "Applied" },
+  { key: "approved", label: "Approved" },
+  { key: "submitted", label: "Deliverables Submitted" },
+  { key: "accepted", label: "Work Accepted" },
+  { key: "payment", label: "Payment in Progress" },
+  { key: "completed", label: "Completed" },
 ];
+
+// These statuses branch off the main flow
+const SPECIAL_STATUSES = {
+  revision: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
+  rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: "✕" },
+};
 
 function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === status);
+  const isSpecial = SPECIAL_STATUSES[status];
+  const isRevision = status === "revision";
+  const isRejected = status === "rejected";
+  // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
+  const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
+  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
+  const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
+  const canUpload = status === "approved" || status === "revision";
 
   if (compact) {
-    const currentStep = STATUS_STEPS[currentStepIndex] || STATUS_STEPS[0];
     return (
       <div className="space-y-2">
-        <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-white ${currentStep.color}`}>
-          <Clock size={16} /> {currentStep.label}
-          {campaign?.submissionLinks?.length > 0 && currentStepIndex >= 2 && (
-            <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full">{campaign.submissionLinks.length} submitted</span>
-          )}
+        <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold ${
+          isRejected ? "bg-red-500 text-white" : isRevision ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
+        }`}>
+          {isRejected ? <XIcon size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStep.label}
         </div>
-        {status === "approved" && (
+        {canUpload && (
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2"
+            className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            <Upload size={16} /> Upload Submission
+            <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : "Upload Submission"}
           </button>
         )}
         {showSubmitModal && (
@@ -1105,21 +1116,41 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   }
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-      <h4 className="text-sm font-bold text-slate-800">Application Status</h4>
-      <div className="relative pl-5">
-        <div className="absolute left-[9px] top-1 bottom-1 w-[2px] bg-slate-100" />
+    <div className="bg-[#F8F9FD] rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
+      <h4 className="text-base font-black text-slate-800">Application Status</h4>
+      <div className="relative pl-7">
+        {/* Vertical line */}
+        <div className="absolute left-[11px] top-3 bottom-3 w-[3px] rounded-full overflow-hidden">
+          <div className="w-full bg-slate-200 h-full" />
+          <div
+            className="w-full bg-emerald-500 absolute top-0 left-0 transition-all duration-500"
+            style={{ height: `${Math.max(0, currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
+          />
+        </div>
         {STATUS_STEPS.map((step, i) => {
           const isDone = i < currentStepIndex;
           const isCurrent = i === currentStepIndex;
           return (
-            <div key={step.key} className="relative flex items-center gap-3 pb-4 last:pb-0">
-              <div className={`absolute -left-5 w-5 h-5 rounded-full flex items-center justify-center z-10 ${
-                isDone ? "bg-emerald-500 text-white" : isCurrent ? step.color + " text-white shadow-md" : "bg-white border-2 border-slate-200"
+            <div key={step.key} className="relative flex items-center gap-4 pb-6 last:pb-0">
+              {/* Circle */}
+              <div className={`absolute -left-7 w-6 h-6 rounded-full flex items-center justify-center z-10 transition-all ${
+                isDone
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : isCurrent
+                    ? "bg-slate-700 text-white shadow-md ring-4 ring-slate-200"
+                    : "bg-white border-2 border-slate-200"
               }`}>
-                {isDone ? <CheckCircle size={12} /> : isCurrent ? <div className="w-2 h-2 bg-white rounded-full" /> : null}
+                {isDone && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {isCurrent && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
               </div>
-              <p className={`text-xs font-bold ${isDone ? "text-emerald-600" : isCurrent ? "text-slate-800" : "text-slate-300"}`}>
+              {/* Label */}
+              <p className={`text-sm font-bold ${
+                isDone ? "text-emerald-600" : isCurrent ? "text-slate-900" : "text-slate-400"
+              }`}>
                 {step.label}
               </p>
             </div>
@@ -1127,13 +1158,40 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
         })}
       </div>
 
-      {status === "approved" && (
+      {/* Revision requested banner */}
+      {isRevision && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm font-bold shrink-0">⟳</div>
+            <p className="text-sm font-bold text-amber-700">Revision Requested</p>
+          </div>
+          {campaign?.revisionNote && (
+            <p className="text-xs text-amber-600 leading-relaxed pl-9">{campaign.revisionNote}</p>
+          )}
+        </div>
+      )}
+
+      {/* Rejected banner */}
+      {isRejected && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-sm font-bold shrink-0">✕</div>
+            <p className="text-sm font-bold text-red-700">Application Rejected</p>
+          </div>
+          {campaign?.rejectionReason && (
+            <p className="text-xs text-red-600 leading-relaxed pl-9">{campaign.rejectionReason}</p>
+          )}
+        </div>
+      )}
+
+      {/* Upload / Resubmit button */}
+      {canUpload && (
         <button
           onClick={() => setShowSubmitModal(true)}
           className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
-          <Upload size={16} /> Upload Submission
+          <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : "Upload Submission"}
         </button>
       )}
 

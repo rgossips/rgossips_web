@@ -34,14 +34,14 @@ Deno.serve(async (req) => {
       let applications: any[] = [];
       const { data: appsWithLinks, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links")
+        .select("campaign_id, status, id, submission_links, rejection_reason, revision_note")
         .eq("influencer_id", influencerId);
 
       if (appErr) {
-        // Column might not exist yet — query without it
+        // Columns might not exist yet — query without them
         const { data: appsBasic } = await supabaseAdmin
           .from("campaign_applications")
-          .select("campaign_id, status, id")
+          .select("campaign_id, status, id, rejection_reason")
           .eq("influencer_id", influencerId);
         applications = appsBasic || [];
       } else {
@@ -53,6 +53,8 @@ Deno.serve(async (req) => {
           status: app.status,
           applicationId: app.id,
           submissionLinks: app.submission_links || [],
+          rejectionReason: app.rejection_reason || "",
+          revisionNote: app.revision_note || "",
         };
       }
     }
@@ -156,11 +158,15 @@ Deno.serve(async (req) => {
       let applicationStatus = null;
       let applicationId = null;
       let submissionLinks: any[] = [];
+      let rejectionReason = "";
+      let revisionNote = "";
 
       if (appStatus) {
         applicationStatus = appStatus;
         applicationId = appData.applicationId;
         submissionLinks = appData.submissionLinks || [];
+        rejectionReason = appData.rejectionReason || "";
+        revisionNote = appData.revisionNote || "";
 
         if (appStatus === "completed") {
           status = "Completed";
@@ -212,6 +218,8 @@ Deno.serve(async (req) => {
         applicationStatus,
         applicationId,
         submissionLinks,
+        rejectionReason,
+        revisionNote,
         contentTypesRequired: c.content_types_required || [],
       };
     });
