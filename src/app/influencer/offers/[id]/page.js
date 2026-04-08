@@ -1080,6 +1080,9 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
       <div className="space-y-2">
         <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-white ${currentStep.color}`}>
           <Clock size={16} /> {currentStep.label}
+          {campaign?.submissionLinks?.length > 0 && currentStepIndex >= 2 && (
+            <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full">{campaign.submissionLinks.length} submitted</span>
+          )}
         </div>
         {status === "approved" && (
           <button
@@ -1132,6 +1135,35 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
         >
           <Upload size={16} /> Upload Submission
         </button>
+      )}
+
+      {/* Submitted deliverables */}
+      {campaign?.submissionLinks?.length > 0 && currentStepIndex >= 2 && (
+        <div className="space-y-3 pt-1">
+          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <CheckCircle size={12} className="text-emerald-500" /> Your Submissions
+          </h4>
+          <div className="space-y-2">
+            {campaign.submissionLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-indigo-200 hover:bg-indigo-50/30 transition-all group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shrink-0">
+                  <Instagram size={14} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">{link.label || link.type}</p>
+                  <p className="text-[11px] font-bold text-slate-700 truncate">{link.url}</p>
+                </div>
+                <ExternalLink size={12} className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0" />
+              </a>
+            ))}
+          </div>
+        </div>
       )}
 
       {showSubmitModal && (
