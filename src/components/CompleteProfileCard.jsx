@@ -1,13 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, X, Video, Smartphone, Youtube, Image as ImageIcon, Clapperboard, IndianRupee } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
+const SERVICE_OPTIONS = [
+  { id: "reels", label: "Reels", icon: <Video size={20} /> },
+  { id: "stories", label: "Stories", icon: <Smartphone size={20} /> },
+  { id: "shorts", label: "YouTube Shorts", icon: <Youtube size={20} /> },
+  { id: "posts", label: "Static Posts", icon: <ImageIcon size={20} /> },
+  { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={20} /> },
+];
+
 export function CompleteProfileCard() {
-  const { profile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const router = useRouter();
+  const [showRatesModal, setShowRatesModal] = useState(false);
 
   const hasInstagram = !!profile?.instagram_handle;
   const hasMediaKit = !!profile?.media_kit_published;
@@ -47,7 +57,7 @@ export function CompleteProfileCard() {
       action: hasRates ? null : "Set Rates",
       completed: hasRates,
       active: hasMediaKit && !hasRates,
-      href: "/influencer/profile",
+      onClick: () => setShowRatesModal(true),
     },
     {
       id: 5,
@@ -183,7 +193,7 @@ export function CompleteProfileCard() {
                 {/* Action Button */}
                 {step.action && !step.completed && (
                   <button
-                    onClick={step.href ? () => router.push(step.href) : undefined}
+                    onClick={step.onClick ? step.onClick : step.href ? () => router.push(step.href) : undefined}
                     className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer
                     ${
                       step.active
@@ -204,6 +214,126 @@ export function CompleteProfileCard() {
           ))}
         </div>
       </Card>
+
+      {/* Services & Rates Modal */}
+      {showRatesModal && (
+        <SetRatesModal
+          services={profile?.services || []}
+          rates={profile?.service_rates || {}}
+          onSave={async (svcs, rates) => {
+            try {
+              const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+              const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+              await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ userId: user.id, table: "influencer_profiles", services: svcs, serviceRates: rates }),
+              });
+              await refreshProfile();
+            } catch (err) {
+              console.error("Failed to save rates:", err);
+            }
+            setShowRatesModal(false);
+          }}
+          onClose={() => setShowRatesModal(false)}
+        />
+      )}
     </div>
+  );
+}
+
+function SetRatesModal({ services, rates, onSave, onClose }) {
+  const [localServices, setLocalServices] = useState([...services]);
+  const [localRates, setLocalRates] = useState({ ...rates });
+
+  const toggleService = (id) => {
+    setLocalServices((prev) => {
+      if (prev.includes(id)) {
+        const updated = prev.filter((s) => s !== id);
+        const newRates = { ...localRates };
+        delete newRates[id];
+        setLocalRates(newRates);
+        return updated;
+      }
+      return [...prev, id];
+    });
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4">
+        <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+            <h3 className="text-lg font-black text-gray-900">Services & Rates</h3>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
+              <X size={20} className="text-gray-400" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select services you offer</p>
+            <div className="grid grid-cols-3 gap-2">
+              {SERVICE_OPTIONS.map((svc) => {
+                const isSelected = localServices.includes(svc.id);
+                return (
+                  <button
+                    key={svc.id}
+                    onClick={() => toggleService(svc.id)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all cursor-pointer ${
+                      isSelected ? "border-purple-500 bg-purple-50 text-purple-600" : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                    }`}
+                  >
+                    <div className={`mb-1.5 ${isSelected ? "text-purple-500" : "text-gray-300"}`}>{svc.icon}</div>
+                    <span className="text-[9px] font-black text-center leading-tight">{svc.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {localServices.length > 0 && (
+              <>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">Set your rates</p>
+                <div className="space-y-3">
+                  {localServices.map((svcId) => {
+                    const svc = SERVICE_OPTIONS.find((s) => s.id === svcId);
+                    if (!svc) return null;
+                    return (
+                      <div key={svcId} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <div className="text-purple-500 shrink-0">{svc.icon}</div>
+                        <span className="text-xs font-bold text-gray-700 flex-1">{svc.label}</span>
+                        <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 px-2 py-1.5">
+                          <IndianRupee size={12} className="text-gray-400" />
+                          <input
+                            type="number"
+                            value={localRates[svcId] || ""}
+                            onChange={(e) => setLocalRates({ ...localRates, [svcId]: e.target.value })}
+                            placeholder="0"
+                            className="w-20 text-sm font-bold text-gray-700 outline-none bg-transparent"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="p-5 border-t border-gray-100 flex gap-3">
+            <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all cursor-pointer">
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(localServices, localRates)}
+              className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

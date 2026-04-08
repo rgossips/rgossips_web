@@ -25,7 +25,7 @@ const formatCount = (n) => {
   return String(n);
 };
 
-export default function MediaKitLayout({ profile, isPublic = false, editable = false, onBioSave }) {
+export default function MediaKitLayout({ profile, isPublic = false, editable = false, onBioSave, onTopReelsSave }) {
   // Support both snake_case (AuthContext) and camelCase (public endpoint)
   const name = profile?.full_name || profile?.fullName || "Creator";
   const handle = profile?.username || profile?.instagram_handle || profile?.instagramHandle || "creator";
@@ -68,16 +68,16 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
       <div className="relative">
         {/* Gradient Background */}
         <div
-          className="h-48 lg:h-56 w-full"
+          className="h-36 sm:h-48 lg:h-56 w-full"
           style={{
             background: "linear-gradient(135deg, #c4b5fd 0%, #f9a8d4 50%, #93c5fd 100%)",
           }}
         />
 
         {/* Profile Photo — diamond/rotated style */}
-        <div className="absolute left-1/2 -translate-x-1/2 -bottom-16 lg:-bottom-20">
+        <div className="absolute left-1/2 -translate-x-1/2 -bottom-12 sm:-bottom-16 lg:-bottom-20">
           <div
-            className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl rotate-45 overflow-hidden border-4 border-white shadow-xl"
+            className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-3xl rotate-45 overflow-hidden border-4 border-white shadow-xl"
           >
             {photo ? (
               <Image
@@ -97,8 +97,8 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
       </div>
 
       {/* ===== NAME + NICHE ===== */}
-      <div className="pt-20 lg:pt-24 pb-6 text-center px-6">
-        <h1 className="text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-tight">
+      <div className="pt-16 sm:pt-20 lg:pt-24 pb-4 sm:pb-6 text-center px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-tight">
           {name}
         </h1>
       </div>
@@ -106,7 +106,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
       {/* ===== MAIN CONTENT: Two Column Layout ===== */}
       <div className="flex flex-col lg:flex-row gap-0">
         {/* LEFT COLUMN */}
-        <div className="lg:w-[42%] bg-slate-50 p-6 lg:p-8 space-y-8">
+        <div className="lg:w-[42%] bg-slate-50 p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* About Me */}
           <EditableAboutMe
             bio={bio}
@@ -193,7 +193,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="lg:w-[58%] p-6 lg:p-8 space-y-8">
+        <div className="lg:w-[58%] p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
           {/* Social Media Stats */}
           <section>
             <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -277,18 +277,12 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
           </section>
 
           {/* Top Reels */}
-          {topReels.length > 0 && (
-            <section>
-              <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
-                Top Content
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {topReels.map((reel, i) => (
-                  <ReelCard key={reel.id || i} reel={reel} index={i} />
-                ))}
-              </div>
-            </section>
+          {(topReels.length > 0 || editable) && (
+            <EditableTopContent
+              reels={topReels}
+              editable={editable}
+              onSave={onTopReelsSave}
+            />
           )}
 
           {/* Previous Collaborations */}
@@ -433,9 +427,9 @@ function StatBox({ icon, label, sublabel, value }) {
 
 function MetricCircle({ label, value, color }) {
   return (
-    <div className="flex flex-col items-center p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-      <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br ${color} flex items-center justify-center mb-2 shadow-lg`}>
-        <span className="text-white text-sm lg:text-base font-black">{value}</span>
+    <div className="flex flex-col items-center p-3 sm:p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+      <div className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br ${color} flex items-center justify-center mb-2 shadow-lg`}>
+        <span className="text-white text-[11px] sm:text-sm lg:text-base font-black">{value}</span>
       </div>
       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</p>
     </div>
@@ -535,5 +529,121 @@ function ReelCard({ reel, index }) {
         </div>
       )}
     </a>
+  );
+}
+
+function EditableTopContent({ reels, editable, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [links, setLinks] = useState(() =>
+    reels.map((r) => r.permalink || "")
+  );
+
+  const handleAdd = () => setLinks((prev) => [...prev, ""]);
+  const handleRemove = (i) => setLinks((prev) => prev.filter((_, idx) => idx !== i));
+  const handleChange = (i, val) => setLinks((prev) => prev.map((l, idx) => (idx === i ? val : l)));
+
+  const handleSave = () => {
+    const validLinks = links.filter((l) => l.trim());
+    const newReels = validLinks.map((url, i) => ({
+      id: `custom_${i}`,
+      permalink: url,
+      thumbnail: "",
+      mediaType: "VIDEO",
+      likes: 0,
+      comments: 0,
+      caption: "",
+    }));
+    onSave?.(newReels);
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLinks(reels.map((r) => r.permalink || ""));
+    setEditing(false);
+  };
+
+  return (
+    <section>
+      <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+        <div className="w-6 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+        Top Content
+        {editable && !editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="ml-auto p-1.5 hover:bg-slate-100 rounded-lg transition-colors group"
+            title="Edit reels"
+          >
+            <Pencil size={13} className="text-slate-400 group-hover:text-purple-500" />
+          </button>
+        )}
+      </h2>
+
+      {editing ? (
+        <div className="space-y-3">
+          {links.map((link, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                type="url"
+                value={link}
+                onChange={(e) => handleChange(i, e.target.value)}
+                placeholder="https://www.instagram.com/reel/..."
+                className="flex-1 py-2.5 px-3 bg-white border border-slate-200 focus:border-purple-300 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
+              />
+              <button
+                onClick={() => handleRemove(i)}
+                className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors shrink-0 mt-0.5"
+              >
+                <XIcon size={14} />
+              </button>
+            </div>
+          ))}
+          <button
+            onClick={handleAdd}
+            className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors"
+          >
+            + Add Reel Link
+          </button>
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleCancel} className="flex-1 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-all hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : reels.length > 0 ? (
+        <div className="space-y-2.5">
+          {reels.map((reel, i) => (
+            <a
+              key={reel.id || i}
+              href={reel.permalink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-pink-200 hover:bg-pink-50/30 transition-all group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Instagram size={18} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-700 truncate">{reel.permalink}</p>
+              </div>
+              <ExternalLink size={14} className="text-slate-300 group-hover:text-pink-500 transition-colors shrink-0" />
+            </a>
+          ))}
+        </div>
+      ) : editable ? (
+        <button
+          onClick={() => { setLinks([""]); setEditing(true); }}
+          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-xl text-sm font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors"
+        >
+          + Add your top content links
+        </button>
+      ) : null}
+    </section>
   );
 }

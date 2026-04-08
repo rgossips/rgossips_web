@@ -37,6 +37,29 @@ export default function MediaKitPage() {
     }
   }, [user]);
 
+  const handleTopReelsSave = useCallback(async (newReels) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          table: "influencer_profiles",
+          topReels: newReels,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save top reels:", err);
+    }
+  }, [user]);
+
   const handlePublish = async () => {
     if (publishing || published) return;
     setPublishing(true);
@@ -123,7 +146,7 @@ export default function MediaKitPage() {
           {/* Main Preview */}
           <div className="flex-1">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-              <MediaKitLayout profile={{ ...profile, bio }} onBioSave={handleBioSave} editable />
+              <MediaKitLayout profile={{ ...profile, bio }} onBioSave={handleBioSave} onTopReelsSave={handleTopReelsSave} editable />
             </div>
           </div>
 

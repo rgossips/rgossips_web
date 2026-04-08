@@ -262,7 +262,7 @@ const JourneyCarousel = () => {
         </button>
 
         <Carousel opts={{ align: "start", loop: true, dragFree: true }} setApi={setApi} className="w-full">
-          <CarouselContent className="-ml-3 px-6 lg:px-0">
+          <CarouselContent className="-ml-3 px-6 lg:px-0 pb-20">
             {journeyData.map((item) => (
               <CarouselItem key={item.id} className="pl-3 basis-[75%] sm:basis-1/2 lg:basis-1/4">
                 <div
