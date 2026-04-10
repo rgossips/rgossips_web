@@ -45,18 +45,26 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  // Mobile: check sessionStorage for code returned via redirect
+  // Check sessionStorage for code returned via redirect (mobile or popup fallback)
   useEffect(() => {
-    const code = sessionStorage.getItem("instagram_oauth_code");
-    const oauthError = sessionStorage.getItem("instagram_oauth_error");
+    // Small delay to ensure component is fully mounted
+    const timer = setTimeout(() => {
+      const code = sessionStorage.getItem("instagram_oauth_code");
+      const oauthError = sessionStorage.getItem("instagram_oauth_error");
 
-    if (code) {
-      sessionStorage.removeItem("instagram_oauth_code");
-      exchangeCode(code);
-    } else if (oauthError) {
-      sessionStorage.removeItem("instagram_oauth_error");
-      setError(oauthError);
-    }
+      if (code) {
+        sessionStorage.removeItem("instagram_oauth_code");
+        sessionStorage.removeItem("instagram_oauth_mode");
+        sessionStorage.removeItem("instagram_oauth_role");
+        exchangeCode(code);
+      } else if (oauthError) {
+        sessionStorage.removeItem("instagram_oauth_error");
+        sessionStorage.removeItem("instagram_oauth_mode");
+        sessionStorage.removeItem("instagram_oauth_role");
+        setError(oauthError);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const exchangeCode = async (code) => {
@@ -167,10 +175,10 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         // Don't block here, let onNext handle the "not_found" from instagram-login
       }
 
+      // Don't setChecking(false) here — onNext takes over and may unmount this component
       onNext(profile);
     } catch (err) {
       setError(err.message || "Failed to verify Instagram");
-    } finally {
       setChecking(false);
     }
   };

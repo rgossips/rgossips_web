@@ -50,13 +50,15 @@ const Login = () => {
   });
 
   // --- NAVIGATION ---
-  // Restore auth state after mobile Instagram redirect
+  // Restore auth state after Instagram redirect (mobile or popup fallback)
   useEffect(() => {
+    const hasCode = sessionStorage.getItem("instagram_oauth_code");
+    const hasError = sessionStorage.getItem("instagram_oauth_error");
     const savedMode = sessionStorage.getItem("instagram_oauth_mode");
     const savedRole = sessionStorage.getItem("instagram_oauth_role");
-    if (savedMode && savedRole) {
-      sessionStorage.removeItem("instagram_oauth_mode");
-      sessionStorage.removeItem("instagram_oauth_role");
+
+    if ((hasCode || hasError) && savedMode && savedRole) {
+      // Don't remove mode/role yet — InstagramConnect needs them to know it should process the code
       setSignupData((prev) => ({ ...prev, role: savedRole }));
       setFlow(savedMode === "signin" ? "signin" : "signup");
       setStep(2); // Instagram connect step
@@ -120,13 +122,12 @@ const Login = () => {
     nextStep(); // → step 2 (Instagram connect)
   };
 
-  const handleSignInInstagramConnect = async (profile) => {
+  const handleSignInInstagramConnect = async (igProfile) => {
+    setInstaProfile(igProfile);
     setLoading(true);
     setLoadingMsg("Signing in...");
     setError("");
     try {
-      setInstaProfile(profile);
-
       // Look up existing user by Instagram username
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -139,7 +140,7 @@ const Login = () => {
           Authorization: `Bearer ${supabaseKey}`,
         },
         body: JSON.stringify({
-          instagramUsername: profile.username,
+          instagramUsername: igProfile.username,
           role: signupData.role,
         }),
       });
