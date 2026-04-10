@@ -1,45 +1,33 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function InstagramCallback() {
-  const router = useRouter();
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     const error = params.get("error");
     const errorDescription = params.get("error_description");
 
-    if (window.opener) {
-      // Desktop popup mode — send message back to parent
-      window.opener.postMessage(
-        {
-          type: "instagram-oauth",
-          code,
-          error,
-          errorDescription: errorDescription
-            ? errorDescription.replace(/\+/g, " ")
-            : null,
-        },
-        window.location.origin
+    // Save the OAuth result to sessionStorage
+    if (code) {
+      sessionStorage.setItem("instagram_oauth_code", code);
+    } else if (error) {
+      sessionStorage.setItem(
+        "instagram_oauth_error",
+        errorDescription ? errorDescription.replace(/\+/g, " ") : error
       );
-      window.close();
-    } else {
-      // Mobile redirect mode — store code and redirect back to login
-      if (code) {
-        sessionStorage.setItem("instagram_oauth_code", code);
-      } else if (error) {
-        sessionStorage.setItem("instagram_oauth_error", errorDescription?.replace(/\+/g, " ") || error);
-      }
-      router.replace("/login");
     }
-  }, [router]);
+
+    // Redirect back to login page
+    window.location.href = "/login";
+  }, []);
 
   return (
-    <div className="flex items-center justify-center h-screen bg-[#0F0F1A]">
-      <p className="text-white text-sm">Connecting to Instagram...</p>
+    <div className="flex flex-col items-center justify-center h-screen bg-[#0F0F1A] gap-3">
+      <Loader2 size={28} className="text-pink-500 animate-spin" />
+      <p className="text-white text-sm font-medium">Connecting to Instagram...</p>
     </div>
   );
 }

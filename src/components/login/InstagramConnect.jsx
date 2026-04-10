@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
+
 function formatCount(n) {
   if (!n) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -15,56 +16,33 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
   const [checking, setChecking] = useState(false);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
+  const mountedRef = useRef(true);
 
   const isSignIn = mode === "signin";
   const displayError = externalError || error;
 
-  const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-  // Desktop: listen for postMessage from popup
   useEffect(() => {
-    const handleMessage = async (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== "instagram-oauth") return;
-
-      if (event.data.error) {
-        setError(event.data.errorDescription || "Instagram connection was denied");
-        setConnecting(false);
-        return;
-      }
-
-      if (event.data.code) {
-        // Popup succeeded — clear saved state
-        sessionStorage.removeItem("instagram_oauth_mode");
-        sessionStorage.removeItem("instagram_oauth_role");
-        await exchangeCode(event.data.code);
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
   }, []);
 
-  // Check sessionStorage for code returned via redirect (mobile or popup fallback)
+  // On mount: check if we're returning from Instagram redirect
   useEffect(() => {
-    // Small delay to ensure component is fully mounted
-    const timer = setTimeout(() => {
-      const code = sessionStorage.getItem("instagram_oauth_code");
-      const oauthError = sessionStorage.getItem("instagram_oauth_error");
+    const code = sessionStorage.getItem("instagram_oauth_code");
+    const oauthError = sessionStorage.getItem("instagram_oauth_error");
 
-      if (code) {
-        sessionStorage.removeItem("instagram_oauth_code");
-        sessionStorage.removeItem("instagram_oauth_mode");
-        sessionStorage.removeItem("instagram_oauth_role");
-        exchangeCode(code);
-      } else if (oauthError) {
-        sessionStorage.removeItem("instagram_oauth_error");
-        sessionStorage.removeItem("instagram_oauth_mode");
-        sessionStorage.removeItem("instagram_oauth_role");
-        setError(oauthError);
-      }
-    }, 100);
-    return () => clearTimeout(timer);
+    if (code) {
+      // Clear all saved state
+      sessionStorage.removeItem("instagram_oauth_code");
+      sessionStorage.removeItem("instagram_oauth_mode");
+      sessionStorage.removeItem("instagram_oauth_role");
+      exchangeCode(code);
+    } else if (oauthError) {
+      sessionStorage.removeItem("instagram_oauth_error");
+      sessionStorage.removeItem("instagram_oauth_mode");
+      sessionStorage.removeItem("instagram_oauth_role");
+      setError(oauthError);
+    }
   }, []);
 
   const exchangeCode = async (code) => {
@@ -88,11 +66,17 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       const data = await res.json();
       if (data?.error) throw new Error(data.error);
 
-      setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
+      if (mountedRef.current) {
+        setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
+      }
     } catch (err) {
-      setError(err.message || "Failed to connect Instagram");
+      if (mountedRef.current) {
+        setError(err.message || "Failed to connect Instagram");
+      }
     } finally {
-      setConnecting(false);
+      if (mountedRef.current) {
+        setConnecting(false);
+      }
     }
   };
 
@@ -103,32 +87,12 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
-    // Always save state so we can restore if popup fails or on mobile redirect
+    // Save state so we can restore after redirect
     sessionStorage.setItem("instagram_oauth_mode", mode);
     sessionStorage.setItem("instagram_oauth_role", role);
 
-    if (isMobile) {
-      // Mobile: redirect in same window (popups don't work reliably)
-      window.location.href = authUrl;
-      return;
-    }
-
-    // Desktop: try popup, falls back to redirect via callback page
-    const width = 500;
-    const height = 650;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      authUrl,
-      "instagram-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-
-    // If popup was blocked, redirect in same window
-    if (!popup || popup.closed) {
-      window.location.href = authUrl;
-    }
+    // Always redirect in same window — popups are unreliable
+    window.location.href = authUrl;
   };
 
   const handleDisconnect = () => {
@@ -156,30 +120,26 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         const source = uniqueCheck.instagramConflictSource;
 
         if (isSignIn) {
-          // Signing in — the account exists but maybe in the wrong role
           if (source && source !== role) {
             setError(`This Instagram is registered as ${source === "brand" ? "a Brand" : "an Influencer"}. Please sign in as ${source === "brand" ? "a Brand" : "an Influencer"} instead.`);
             setChecking(false);
             return;
           }
-          // Same role — proceed (instagram-login will handle the rest)
         } else {
-          // Signing up — account already exists
           const sourceLabel = source === "brand" ? "a Brand" : source === "influencer" ? "an Influencer" : "another account";
           setError(`This Instagram is already registered as ${sourceLabel}. Please sign in instead.`);
           setChecking(false);
           return;
         }
-      } else if (isSignIn) {
-        // Sign in but no account found anywhere — tell user to sign up
-        // Don't block here, let onNext handle the "not_found" from instagram-login
       }
 
-      // Don't setChecking(false) here — onNext takes over and may unmount this component
+      // Don't setChecking(false) — parent takes over
       onNext(profile);
     } catch (err) {
-      setError(err.message || "Failed to verify Instagram");
-      setChecking(false);
+      if (mountedRef.current) {
+        setError(err.message || "Failed to verify Instagram");
+        setChecking(false);
+      }
     }
   };
 
@@ -203,39 +163,34 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         </div>
       )}
 
-      {!profile ? (
+      {connecting ? (
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shadow-lg shadow-pink-200">
+            <Loader2 size={28} className="text-white animate-spin" />
+          </div>
+          <p className="text-sm font-semibold text-slate-500">Connecting to Instagram...</p>
+        </div>
+      ) : !profile ? (
         <div className="flex flex-col items-center gap-6">
-          {/* Instagram icon card */}
           <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shadow-lg shadow-pink-200">
             <Instagram size={48} className="text-white" />
           </div>
 
           <button
             onClick={handleConnect}
-            disabled={connecting}
             className="w-full h-14 rounded-2xl border-2 border-dashed border-slate-200 hover:border-[#E1306C] flex items-center justify-center gap-3 text-sm font-semibold transition-all cursor-pointer group bg-white hover:bg-gradient-to-r hover:from-[#FCAF45]/5 hover:via-[#E1306C]/5 hover:to-[#833AB4]/5"
           >
-            {connecting ? (
-              <>
-                <Loader2 size={18} className="animate-spin text-[#E1306C]" />
-                <span className="text-slate-500">Connecting...</span>
-              </>
-            ) : (
-              <>
-                <Instagram
-                  size={20}
-                  className="text-[#E1306C] group-hover:scale-110 transition-transform"
-                />
-                <span className="bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] bg-clip-text text-transparent">
-                  Connect with Instagram
-                </span>
-              </>
-            )}
+            <Instagram
+              size={20}
+              className="text-[#E1306C] group-hover:scale-110 transition-transform"
+            />
+            <span className="bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] bg-clip-text text-transparent">
+              Connect with Instagram
+            </span>
           </button>
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Connected profile card */}
           <div className="p-4 rounded-2xl border border-green-200 bg-green-50/50 flex items-center gap-4">
             {profile.profilePictureUrl ? (
               <img
@@ -284,21 +239,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
               : "btn-purple text-white shadow-lg shadow-purple-200"
           }`}
         >
-          {checking ? (
+          {checking || externalLoading ? (
             <>
               <Loader2 size={18} className="animate-spin mr-2" />
-              Verifying...
-            </>
-          ) : externalLoading ? (
-            <>
-              <Loader2 size={18} className="animate-spin mr-2" />
-              {isSignIn ? "Signing in..." : "Continue"}
+              {isSignIn ? "Signing in..." : "Verifying..."}
             </>
           ) : (
             isSignIn ? "Sign In" : "Continue"
           )}
         </Button>
-        {!profile && (
+        {!profile && !connecting && (
           <p className="text-center text-[11px] text-slate-400">
             Instagram connection is required to proceed
           </p>
