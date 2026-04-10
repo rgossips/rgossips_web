@@ -70,7 +70,7 @@ export const FilterContent = ({
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleCategoryToggle("All")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
               selectedCategories.length === 0
                 ? "bg-[#E60076] text-white border border-[#E60076]"
                 : "border border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
@@ -85,7 +85,7 @@ export const FilterContent = ({
               <button
                 key={cat}
                 onClick={() => handleCategoryToggle(cat)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
                     ? "bg-[#E60076] text-white border border-[#E60076]"
                     : "border border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
@@ -150,7 +150,7 @@ export const FilterContent = ({
                 <button
                   key={platform.label}
                   onClick={() => handlePlatformToggle(platform.label)}
-                  className={`flex items-center justify-center gap-2 h-12 rounded-2xl text-xs font-bold transition-all ${
+                  className={`flex items-center justify-center gap-2 h-12 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                     isSelected
                       ? "bg-[#E60076] text-white border border-[#E60076]"
                       : "border border-slate-100 text-slate-600 hover:bg-slate-50"
@@ -363,14 +363,14 @@ const FilterModal = ({
           <div className="flex items-center justify-between p-6 bg-white z-10 border-b border-slate-50">
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076] hover:bg-[#ffd6eb] transition-colors"
+              className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076] hover:bg-[#ffd6eb] transition-colors cursor-pointer"
             >
               <ChevronLeft size={24} />
             </button>
             <h2 className="text-lg font-bold text-slate-800">Filters</h2>
             <button
               onClick={handleReset}
-              className="text-xs font-bold text-slate-400 hover:text-slate-600"
+              className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               Reset
             </button>
@@ -394,14 +394,14 @@ const FilterModal = ({
           <div className="bg-white border-t border-slate-100 p-4 pb-6 flex gap-3">
             <Button
               variant="ghost"
-              className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100"
+              className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
               Reset
             </Button>
             <Button
               onClick={handleApply}
-              className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl"
+              className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl cursor-pointer"
             >
               Apply
             </Button>
@@ -426,7 +426,7 @@ const FilterModal = ({
             <h2 className="text-2xl font-bold text-slate-800">Filter Brands</h2>
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors"
+              className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
             >
               <X size={24} />
             </button>
@@ -450,14 +450,14 @@ const FilterModal = ({
           <div className="bg-white border-t border-slate-100 p-8 flex gap-4 rounded-b-4xl">
             <Button
               variant="ghost"
-              className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100"
+              className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
               Reset Filters
             </Button>
             <Button
               onClick={handleApply}
-              className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl"
+              className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl cursor-pointer"
             >
               Apply Filters
             </Button>
