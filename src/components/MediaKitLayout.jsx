@@ -84,10 +84,10 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
           {/* LEFT COLUMN */}
-          <div className="lg:w-[38%] space-y-6">
+          <div className="lg:w-[38%] space-y-4 sm:space-y-6">
             {/* About Me */}
             <SectionCard title="About Me">
               <EditableAboutMe bio={bio} editable={editable} onSave={onBioSave} />
@@ -111,7 +111,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
                   {services.map((svcId, i) => {
                     const rate = serviceRates[svcId];
                     return (
-                      <div key={i} className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div key={i} className="flex items-center justify-between py-2 sm:py-2.5 px-2.5 sm:px-3 bg-slate-50 rounded-lg sm:rounded-xl border border-slate-100">
                         <span className="text-sm font-semibold text-slate-700">{toServiceLabel(svcId)}</span>
                         <span className="text-sm font-black text-slate-500">{rate ? `₹${Number(rate).toLocaleString("en-IN")}` : "On request"}</span>
                       </div>
@@ -215,7 +215,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
           </div>
 
           {/* RIGHT COLUMN */}
-          <div className="lg:w-[62%] space-y-6">
+          <div className="lg:w-[62%] space-y-4 sm:space-y-6">
             {/* Social Media */}
             <SectionCard title="Social Media">
               <div className="grid grid-cols-2 gap-3">
@@ -230,24 +230,24 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
             <SectionCard title="Performance">
               <p className="text-xl sm:text-2xl font-black text-slate-900 mb-4">The <span className="text-pink-500">NUMBER</span> That Matters</p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reels and Post Views</p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900">{totalImpressions ? formatCount(totalImpressions) : formatCount(followers * 2)}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{totalImpressions ? formatCount(totalImpressions) : formatCount(followers * 2)}</p>
                   <p className="text-[10px] text-slate-400 mt-1">↑ {engagementRate}% / 30 Days</p>
                 </div>
-                <div className="rounded-2xl p-4 text-white" style={{ background: "linear-gradient(135deg, #ec4899, #a855f7)" }}>
+                <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white" style={{ background: "linear-gradient(135deg, #ec4899, #a855f7)" }}>
                   <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">Engagement Rate</p>
-                  <p className="text-2xl sm:text-3xl font-black">{engagementRate || 0}%</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black">{engagementRate || 0}%</p>
                   <p className="text-[10px] text-white/70 mt-1">vs 1.9% category avg</p>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Non-Follower Reach</p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900">{totalReach ? Math.round(totalReach / (followers || 1) * 100) : 62}%</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{totalReach ? Math.round(totalReach / (followers || 1) * 100) : 62}%</p>
                   <p className="text-[10px] text-slate-400 mt-1">organic discovery</p>
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Interactions</p>
-                  <p className="text-2xl sm:text-3xl font-black text-slate-900">{formatCount(avgLikes + avgComments)}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(avgLikes + avgComments)}</p>
                   <p className="text-[10px] text-slate-400 mt-1">{avgComments ? Math.round(avgComments / (avgLikes + avgComments || 1) * 100) : 4.7}% from ads</p>
                 </div>
               </div>
@@ -262,7 +262,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
       </div>
 
       {/* Footer */}
-      <div className="border-t border-slate-100 px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between bg-slate-50">
+      <div className="border-t border-slate-100 px-3 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between bg-slate-50">
         <div className="flex items-center gap-2">
           <Image src={logoIcon} alt="RGossips" width={20} height={20} className="rounded" />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Generated on RGossips</p>
@@ -276,7 +276,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
 /* ─── Section Card ─── */
 function SectionCard({ title, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-5 shadow-sm">
       <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
         <div className="w-5 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
         {title}
@@ -289,13 +289,13 @@ function SectionCard({ title, children }) {
 /* ─── Social Stat Box ─── */
 function SocialStat({ icon, label, sublabel, value }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
-      <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 shrink-0">{icon}</div>
+    <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-slate-50 border border-slate-100 rounded-xl">
+      <div className="p-1.5 sm:p-2 bg-white rounded-lg sm:rounded-xl shadow-sm border border-slate-100 shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] text-slate-400 font-bold uppercase">{label}</p>
-        <p className="text-[10px] text-slate-400">{sublabel}</p>
+        <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase truncate">{label}</p>
+        <p className="text-[9px] sm:text-[10px] text-slate-400">{sublabel}</p>
       </div>
-      <p className="text-lg font-black text-slate-800">{value}</p>
+      <p className="text-base sm:text-lg font-black text-slate-800 shrink-0">{value}</p>
     </div>
   );
 }
@@ -366,7 +366,7 @@ function EditableTopContent({ reels, editable, onSave }) {
   const handleCancel = () => { setLinks(reels.map((r) => r.permalink || "")); setEditing(false); };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm relative">
+    <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100 p-3.5 sm:p-5 shadow-sm relative">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.15em] flex items-center gap-2">
           <div className="w-5 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />

@@ -101,8 +101,8 @@ export default function PublicMediaKitPage() {
       </div>
 
       {/* Media Kit */}
-      <div className="max-w-4xl mx-auto px-4 py-6 lg:py-10">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+      <div className="max-w-4xl mx-auto px-0 sm:px-4 py-0 sm:py-6 lg:py-10">
+        <div className="bg-white sm:rounded-3xl shadow-xl sm:border border-slate-100 overflow-hidden">
           <MediaKitLayout profile={profile} isPublic />
         </div>
       </div>

@@ -37,6 +37,9 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       }
 
       if (event.data.code) {
+        // Popup succeeded — clear saved state
+        sessionStorage.removeItem("instagram_oauth_mode");
+        sessionStorage.removeItem("instagram_oauth_role");
         await exchangeCode(event.data.code);
       }
     };
@@ -87,26 +90,32 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
+    // Always save state so we can restore if popup fails or on mobile redirect
+    sessionStorage.setItem("instagram_oauth_mode", mode);
+    sessionStorage.setItem("instagram_oauth_role", role);
+
     if (isMobile) {
       // Mobile: redirect in same window (popups don't work reliably)
-      // Save current auth state so we can restore after redirect
-      sessionStorage.setItem("instagram_oauth_mode", mode);
-      sessionStorage.setItem("instagram_oauth_role", role);
       window.location.href = authUrl;
       return;
     }
 
-    // Desktop: open popup
+    // Desktop: try popup, falls back to redirect via callback page
     const width = 500;
     const height = 650;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
 
-    window.open(
+    const popup = window.open(
       authUrl,
       "instagram-oauth",
       `width=${width},height=${height},left=${left},top=${top}`
     );
+
+    // If popup was blocked, redirect in same window
+    if (!popup || popup.closed) {
+      window.location.href = authUrl;
+    }
   };
 
   const handleDisconnect = () => {
