@@ -85,6 +85,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user, fetchProfile]);
 
+  const checkProfileNotification = useCallback(async (userId) => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ action: "checkProfile", userId }),
+      });
+    } catch {}
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -102,6 +114,8 @@ export const AuthProvider = ({ children }) => {
           await fetchProfile(currentUser.id);
           // Background refresh Instagram data (throttled to once per hour server-side)
           refreshInstagram(currentUser.id);
+          // Check profile completion and create notification if needed
+          checkProfileNotification(currentUser.id);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);

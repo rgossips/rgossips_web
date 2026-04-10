@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Home,
   Compass,
@@ -36,7 +36,28 @@ const DESKTOP_NAV_ITEMS = [
 export const DesktopNavbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchCount = async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/notifications`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify({ action: "list", userId: user.id }),
+        });
+        const data = await res.json();
+        setUnreadCount(data?.unreadCount || 0);
+      } catch {}
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000); // Poll every 60s
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   return (
     <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
@@ -97,9 +118,14 @@ export const DesktopNavbar = () => {
         <div className="flex gap-2">
           <Link
             href="/influencer/notifications"
-            className="hidden cursor-pointer lg:flex p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:bg-slate-50 border border-slate-100 transition-colors"
+            className="hidden cursor-pointer lg:flex p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:bg-slate-50 border border-slate-100 transition-colors relative"
           >
             <Bell size={22} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E60076] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </Link>
           <Link
             href="/influencer/chats"

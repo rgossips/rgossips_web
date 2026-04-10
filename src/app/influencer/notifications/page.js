@@ -1,103 +1,155 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, FileText, CheckCircle, Users } from "lucide-react";
-import { useRouter } from "next/navigation"; // Import the router
+import { ChevronLeft, Bell, CheckCircle, Award, UserPlus, FileText, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
-const NOTIFICATIONS = [
-  {
-    id: 1,
-    title: "New Task Assigned to You!",
-    description:
-      "You have a new task for this sprint from Alicia. You can check your task 'Create Onboarding Screen' by tapping here.",
-    time: "09:10",
-    icon: <FileText className="w-6 h-6 text-[#E60076]" />,
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "Expense has been approved!",
-    description:
-      "Your expense has been approved by Jessica. View your expense report here.",
-    time: "09:10",
-    icon: <CheckCircle className="w-6 h-6 text-[#E60076]" />,
-    unread: false,
-  },
-  {
-    id: 3,
-    title: "You have invited in meeting!",
-    description:
-      "You have been invited to a meeting. Tap to find the meeting details.",
-    time: "09:10",
-    icon: <Users className="w-6 h-6 text-[#E60076]" />,
-    unread: false,
-  },
-];
+const ICON_MAP = {
+  welcome: <UserPlus className="w-5 h-5 text-purple-500" />,
+  profile_incomplete: <FileText className="w-5 h-5 text-amber-500" />,
+  campaign_applied: <Award className="w-5 h-5 text-blue-500" />,
+  campaign_status: <Bell className="w-5 h-5 text-pink-500" />,
+  campaign_approved: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+};
+
+const BG_MAP = {
+  welcome: "bg-purple-50",
+  profile_incomplete: "bg-amber-50",
+  campaign_applied: "bg-blue-50",
+  campaign_status: "bg-pink-50",
+  campaign_approved: "bg-emerald-50",
+};
 
 export default function NotificationsPage() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ action: "list", userId: user.id }),
+      });
+      const data = await res.json();
+      if (data?.notifications) setNotifications(data.notifications);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [user?.id]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ action: "markRead", userId: user.id, notificationIds: "all" }),
+      });
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {}
+  };
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr = Math.floor(diffMs / 3600000);
+    const diffDay = Math.floor(diffMs / 86400000);
+
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHr < 24) return `${diffHr}h ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  };
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] pb-10">
+    <div className="min-h-screen bg-[#F8F9FD] pb-24 lg:pb-10 lg:pt-24">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white px-6 py-5 flex items-center justify-between shadow-sm">
-        {/* Updated Back Button */}
+      <header className="sticky top-0 z-40 bg-white lg:bg-[#F8F9FD] px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm lg:shadow-none border-b border-slate-100 lg:border-none">
         <button
-          onClick={() => router.back()} // Go to -1 in history
-          className="p-2 rounded-full bg-[#FCE6F1] hover:bg-[#F9CFE3] transition-colors active:scale-90"
+          onClick={() => router.back()}
+          className="p-2 rounded-full bg-pink-50 hover:bg-pink-100 transition-colors active:scale-90 cursor-pointer"
         >
-          <ChevronLeft className="w-6 h-6 text-[#E60076]" />
+          <ChevronLeft className="w-5 h-5 text-[#E60076]" />
         </button>
-
-        <h1 className="text-xl font-bold text-slate-800">Messages</h1>
-        <div className="w-10" />
+        <h1 className="text-lg font-black text-slate-800">Notifications</h1>
+        {unreadCount > 0 ? (
+          <button onClick={handleMarkAllRead} className="text-[10px] font-bold text-[#E60076] cursor-pointer hover:underline">
+            Mark all read
+          </button>
+        ) : (
+          <div className="w-16" />
+        )}
       </header>
 
       {/* Notification List */}
-      <main className="max-w-2xl lg:max-w-[80%] mx-auto mt-4 px-4 space-y-3">
-        {NOTIFICATIONS.map((item, index) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className={`relative flex items-start gap-4 p-5 rounded-2xl border transition-all cursor-pointer ${
-              item.unread
-                ? "bg-white border-slate-100 shadow-md"
-                : "bg-white/60 border-transparent opacity-80"
-            }`}
-          >
-            <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#FCE6F1] flex items-center justify-center">
-              {item.icon}
-            </div>
-
-            <div className="flex-grow space-y-1">
-              <div className="flex justify-between items-start">
-                <h3 className="font-bold text-slate-800 text-sm md:text-base leading-tight">
-                  {item.title}
-                </h3>
-                <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap ml-2">
-                  {item.time}
-                </span>
+      <main className="max-w-2xl mx-auto mt-4 px-4 space-y-2.5">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 size={24} className="animate-spin text-purple-500" />
+            <p className="text-sm font-bold text-slate-400">Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-20">
+            <Bell size={40} className="text-slate-200 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-400">No notifications yet</p>
+            <p className="text-xs text-slate-300 mt-1">You'll be notified about campaign updates and more</p>
+          </div>
+        ) : (
+          notifications.map((item, index) => (
+            <motion.div
+              key={item.created_at + index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all ${
+                item.is_read
+                  ? "bg-white/60 border-transparent"
+                  : "bg-white border-slate-100 shadow-sm"
+              }`}
+            >
+              <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${BG_MAP[item.type] || "bg-slate-50"} flex items-center justify-center`}>
+                {ICON_MAP[item.type] || <Bell className="w-5 h-5 text-slate-400" />}
               </div>
-              <p className="text-xs md:text-sm text-slate-500 leading-relaxed">
-                {item.description}
-              </p>
-            </div>
 
-            {item.unread && (
-              <div className="absolute top-5 right-2 w-2 h-2 bg-[#E60076] rounded-full" />
-            )}
-          </motion.div>
-        ))}
+              <div className="flex-grow min-w-0 space-y-0.5">
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className={`text-sm font-bold leading-tight ${item.is_read ? "text-slate-500" : "text-slate-800"}`}>
+                    {item.title}
+                  </h3>
+                  <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap shrink-0">
+                    {formatTime(item.created_at)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">{item.body}</p>
+              </div>
+
+              {!item.is_read && (
+                <div className="absolute top-4 right-3 w-2 h-2 bg-[#E60076] rounded-full" />
+              )}
+            </motion.div>
+          ))
+        )}
       </main>
-
-      <div className="mt-10 text-center">
-        <button className="text-[#E60076] text-sm font-bold uppercase tracking-widest hover:underline">
-          Mark all as read
-        </button>
-      </div>
     </div>
   );
 }

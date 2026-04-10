@@ -147,6 +147,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Send welcome notification
+    try {
+      await supabaseAdmin.from("notifications").insert({
+        user_id: userId,
+        type: "welcome",
+        title: "Welcome to RGossips! 🎉",
+        body: `Hey ${name || "there"}! Your account is ready. Complete your profile to start getting brand deals.`,
+        is_read: false,
+      });
+    } catch (e) {
+      console.error("Failed to send welcome notification:", e);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: jsonHeaders }

@@ -64,6 +64,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get campaign title for notification
+    try {
+      const { data: campaign } = await supabaseAdmin
+        .from("campaigns")
+        .select("title")
+        .eq("campaign_id", campaignId)
+        .single();
+
+      await supabaseAdmin.from("notifications").insert({
+        user_id: influencerId,
+        type: "campaign_applied",
+        title: "Application submitted",
+        body: `Your application for "${campaign?.title || "a campaign"}" has been submitted. We'll notify you when the brand responds.`,
+        is_read: false,
+      });
+    } catch {}
+
     return new Response(
       JSON.stringify({ success: true, application }),
       { status: 200, headers: jsonHeaders }
