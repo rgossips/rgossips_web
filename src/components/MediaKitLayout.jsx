@@ -381,16 +381,22 @@ function EditableTopContent({ reels, editable, onSave }) {
 
       {editing ? (
         <div className="space-y-3">
-          {links.map((link, i) => (
-            <div key={i} className="flex gap-2">
-              <input type="url" value={link} onChange={(e) => handleChange(i, e.target.value)} placeholder="https://www.instagram.com/reel/..." className="flex-1 py-2.5 px-3 bg-slate-50 border border-slate-200 focus:border-purple-300 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all" />
-              <button onClick={() => handleRemove(i)} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors shrink-0 mt-0.5 cursor-pointer"><XIcon size={14} /></button>
-            </div>
-          ))}
+          {links.map((link, i) => {
+            const isValid = !link.trim() || /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\//.test(link.trim());
+            return (
+              <div key={i}>
+                <div className="flex gap-2">
+                  <input type="url" value={link} onChange={(e) => handleChange(i, e.target.value)} placeholder="https://www.instagram.com/reel/..." className={`flex-1 py-2.5 px-3 bg-slate-50 border focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${!isValid ? "border-red-300 focus:border-red-400" : "border-slate-200 focus:border-purple-300"}`} />
+                  <button onClick={() => handleRemove(i)} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition-colors shrink-0 mt-0.5 cursor-pointer"><XIcon size={14} /></button>
+                </div>
+                {!isValid && <p className="text-[10px] text-red-500 mt-1 ml-1">Only Instagram post/reel links are allowed</p>}
+              </div>
+            );
+          })}
           <button onClick={handleAdd} className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 transition-colors cursor-pointer">+ Add Reel Link</button>
           <div className="flex gap-2 pt-1">
             <button onClick={handleCancel} className="flex-1 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
-            <button onClick={handleSave} className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-all hover:opacity-90 cursor-pointer" style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}>Save</button>
+            <button onClick={handleSave} disabled={links.some(l => l.trim() && !/^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\//.test(l.trim()))} className="flex-1 py-2 text-xs font-bold text-white rounded-lg transition-all hover:opacity-90 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}>Save</button>
           </div>
         </div>
       ) : reels.length > 0 ? (
