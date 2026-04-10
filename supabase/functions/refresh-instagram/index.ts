@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     try {
       // Audience city
       const cityRes = await fetch(
-        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=city&access_token=${encodeURIComponent(accessToken)}`
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=city&access_token=${encodeURIComponent(accessToken)}`
       );
       const cityData = await cityRes.json();
       const cityBreakdown = cityData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
 
       // Audience age + gender
       const ageGenderRes = await fetch(
-        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=age,gender&access_token=${encodeURIComponent(accessToken)}`
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=age,gender&access_token=${encodeURIComponent(accessToken)}`
       );
       const ageGenderData = await ageGenderRes.json();
       const ageGenderBreakdown = ageGenderData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
 
       // Audience country
       const countryRes = await fetch(
-        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=lifetime&metric_type=total_value&breakdown=country&access_token=${encodeURIComponent(accessToken)}`
+        `https://graph.instagram.com/v21.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=country&access_token=${encodeURIComponent(accessToken)}`
       );
       const countryData = await countryRes.json();
       const countryBreakdown = countryData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
