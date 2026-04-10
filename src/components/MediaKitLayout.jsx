@@ -232,7 +232,7 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reels and Post Views</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{totalImpressions ? formatCount(totalImpressions) : formatCount(followers * 2)}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(totalImpressions)}</p>
                   <p className="text-[10px] text-slate-400 mt-1">↑ {engagementRate}% / 30 Days</p>
                 </div>
                 <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white" style={{ background: "linear-gradient(135deg, #ec4899, #a855f7)" }}>
@@ -242,13 +242,13 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Non-Follower Reach</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{totalReach ? Math.round(totalReach / (followers || 1) * 100) : 62}%</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{totalReach && followers ? Math.round(totalReach / followers * 100) : 0}%</p>
                   <p className="text-[10px] text-slate-400 mt-1">organic discovery</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Interactions</p>
                   <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(avgLikes + avgComments)}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{avgComments ? Math.round(avgComments / (avgLikes + avgComments || 1) * 100) : 4.7}% from ads</p>
+                  <p className="text-[10px] text-slate-400 mt-1">avg per post</p>
                 </div>
               </div>
             </SectionCard>

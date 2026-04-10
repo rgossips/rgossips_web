@@ -119,26 +119,6 @@ Deno.serve(async (req) => {
       let totalLikes = 0;
       let totalComments = 0;
 
-      // Fetch insights for each media item
-      const insightPromises = mediaPosts.map(async (media: { id: string }) => {
-        try {
-          const insightRes = await fetch(
-            `https://graph.instagram.com/v21.0/${media.id}/insights?metric=impressions,reach&access_token=${encodeURIComponent(accessToken)}`
-          );
-          const insightData = await insightRes.json();
-          if (insightData?.data) {
-            for (const metric of insightData.data) {
-              if (metric.name === "impressions") totalImpressions += metric.values?.[0]?.value || 0;
-              if (metric.name === "reach") totalReach += metric.values?.[0]?.value || 0;
-            }
-          }
-        } catch {
-          // Insights may not be available for all media types
-        }
-      });
-
-      await Promise.all(insightPromises);
-
       for (const post of mediaPosts) {
         totalLikes += post.like_count || 0;
         totalComments += post.comments_count || 0;
@@ -149,6 +129,26 @@ Deno.serve(async (req) => {
       engagementRate = parseFloat(
         (((totalLikes + totalComments) / mediaPosts.length / igProfile.followers_count) * 100).toFixed(2)
       );
+    }
+
+    // Fetch account-level insights (views & reach for last 30 days)
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+      const accountInsightsRes = await fetch(
+        `https://graph.instagram.com/v21.0/me/insights?metric=impressions,reach&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const accountInsights = await accountInsightsRes.json();
+      if (accountInsights?.data) {
+        for (const metric of accountInsights.data) {
+          const values = metric.values || [];
+          const sum = values.reduce((s: number, v: any) => s + (v.value || 0), 0);
+          if (metric.name === "impressions") totalImpressions = sum;
+          if (metric.name === "reach") totalReach = sum;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch account insights:", e);
     }
 
     // Build top reels: sort by engagement (likes + comments), take top 6
