@@ -41,18 +41,35 @@ export default function MediaKitPage() {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const headers = { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+
+      // Resolve thumbnails from Instagram API
+      const links = newReels.map((r) => r.permalink).filter(Boolean);
+      let resolvedReels = newReels;
+
+      if (links.length > 0) {
+        try {
+          const resolveRes = await fetch(`${supabaseUrl}/functions/v1/resolve-reel-thumbnails`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ userId: user.id, reelLinks: links }),
+          });
+          const resolveData = await resolveRes.json();
+          if (resolveData?.reels) {
+            resolvedReels = resolveData.reels;
+          }
+        } catch (e) {
+          console.error("Failed to resolve thumbnails:", e);
+        }
+      }
 
       await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
+        headers,
         body: JSON.stringify({
           userId: user.id,
           table: "influencer_profiles",
-          topReels: newReels,
+          topReels: resolvedReels,
         }),
       });
     } catch (err) {

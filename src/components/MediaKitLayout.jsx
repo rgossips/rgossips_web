@@ -396,19 +396,25 @@ function EditableTopContent({ reels, editable, onSave }) {
       ) : reels.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {reels.map((reel, i) => {
-            const shortcode = reel.permalink?.match(/\/(p|reel)\/([^/?]+)/)?.[2] || "";
+            const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
             return (
-              <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden border border-slate-100 bg-white block">
-                {shortcode ? (
-                  <div className="aspect-[4/5] overflow-hidden">
-                    <iframe src={`https://www.instagram.com/p/${shortcode}/embed/`} className="w-full border-0 pointer-events-none" style={{ height: "500px", marginTop: "-50px" }} loading="lazy" scrolling="no" />
-                  </div>
+              <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden border border-slate-100 bg-slate-900 block group">
+                {thumb ? (
+                  <img src={thumb} alt={reel.caption || "Reel"} className="w-full aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                  <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col items-center justify-center gap-2 p-3">
-                    <Instagram size={24} className="text-purple-300" />
-                    <p className="text-[9px] text-slate-400 text-center truncate w-full">{reel.permalink}</p>
+                  <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-100 to-pink-100 flex flex-col items-center justify-center gap-2">
+                    <Instagram size={28} className="text-purple-300" />
                   </div>
                 )}
+                {/* Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                  {reel.caption && <p className="text-[8px] sm:text-[9px] text-white/90 font-semibold mb-1 line-clamp-2 leading-snug">{reel.caption}</p>}
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold text-white"><Heart size={9} className="fill-white" />{reel.likes || 0}</span>
+                    <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold text-white"><MessageCircle size={9} />{reel.comments || 0}</span>
+                    <ExternalLink size={9} className="text-white/50 ml-auto" />
+                  </div>
+                </div>
               </a>
             );
           })}
