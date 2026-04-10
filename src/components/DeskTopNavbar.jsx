@@ -38,24 +38,27 @@ export const DesktopNavbar = () => {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadChats, setUnreadChats] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
-    const fetchCount = async () => {
+    const fetchCounts = async () => {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-        const res = await fetch(`${supabaseUrl}/functions/v1/notifications`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-          body: JSON.stringify({ action: "list", userId: user.id }),
-        });
-        const data = await res.json();
-        setUnreadCount(data?.unreadCount || 0);
+        const h = { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+        const [notifRes, chatRes] = await Promise.all([
+          fetch(`${supabaseUrl}/functions/v1/notifications`, { method: "POST", headers: h, body: JSON.stringify({ action: "list", userId: user.id }) }),
+          fetch(`${supabaseUrl}/functions/v1/chat`, { method: "POST", headers: h, body: JSON.stringify({ action: "listConversations", userId: user.id }) }),
+        ]);
+        const notifData = await notifRes.json();
+        setUnreadCount(notifData?.unreadCount || 0);
+        const chatData = await chatRes.json();
+        setUnreadChats((chatData?.conversations || []).reduce((s, c) => s + (c.unread || 0), 0));
       } catch {}
     };
-    fetchCount();
-    const interval = setInterval(fetchCount, 60000); // Poll every 60s
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
@@ -129,9 +132,14 @@ export const DesktopNavbar = () => {
           </Link>
           <Link
             href="/influencer/chats"
-            className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
+            className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100 relative"
           >
             <MessageSquare size={22} />
+            {unreadChats > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E60076] text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                {unreadChats > 9 ? "9+" : unreadChats}
+              </span>
+            )}
           </Link>
           <button
             onClick={async () => { await signOut(); router.push("/login"); }}
