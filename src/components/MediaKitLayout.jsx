@@ -231,9 +231,9 @@ export default function MediaKitLayout({ profile, isPublic = false, editable = f
               <p className="text-xl sm:text-2xl font-black text-slate-900 mb-4">The <span className="text-pink-500">NUMBER</span> That Matters</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Reels and Post Views</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(totalImpressions)}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">↑ {engagementRate}% / 30 Days</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Accounts Reached</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(totalReach || totalImpressions)}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Last 30 days</p>
                 </div>
                 <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white" style={{ background: "linear-gradient(135deg, #ec4899, #a855f7)" }}>
                   <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">Engagement Rate</p>

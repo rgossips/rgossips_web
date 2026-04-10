@@ -131,20 +131,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch account-level insights (views & reach for last 30 days)
+    // Fetch account-level insights (reach for last 30 days)
     try {
       const now = Math.floor(Date.now() / 1000);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
       const accountInsightsRes = await fetch(
-        `https://graph.instagram.com/v21.0/me/insights?metric=impressions,reach&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${encodeURIComponent(accessToken)}`
+        `https://graph.instagram.com/v21.0/me/insights?metric=reach,follower_count&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${encodeURIComponent(accessToken)}`
       );
       const accountInsights = await accountInsightsRes.json();
       if (accountInsights?.data) {
         for (const metric of accountInsights.data) {
           const values = metric.values || [];
           const sum = values.reduce((s: number, v: any) => s + (v.value || 0), 0);
-          if (metric.name === "impressions") totalImpressions = sum;
-          if (metric.name === "reach") totalReach = sum;
+          if (metric.name === "reach") {
+            totalReach = sum;
+            totalImpressions = sum; // Use reach as the views proxy
+          }
         }
       }
     } catch (e) {
