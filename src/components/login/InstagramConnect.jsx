@@ -22,6 +22,9 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
   const isSignIn = mode === "signin";
   const displayError = externalError || error;
 
+  const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  // Desktop: listen for postMessage from popup
   useEffect(() => {
     const handleMessage = async (event) => {
       if (event.origin !== window.location.origin) return;
@@ -40,6 +43,20 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  // Mobile: check sessionStorage for code returned via redirect
+  useEffect(() => {
+    const code = sessionStorage.getItem("instagram_oauth_code");
+    const oauthError = sessionStorage.getItem("instagram_oauth_error");
+
+    if (code) {
+      sessionStorage.removeItem("instagram_oauth_code");
+      exchangeCode(code);
+    } else if (oauthError) {
+      sessionStorage.removeItem("instagram_oauth_error");
+      setError(oauthError);
+    }
   }, []);
 
   const exchangeCode = async (code) => {
@@ -70,6 +87,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
+    if (isMobile) {
+      // Mobile: redirect in same window (popups don't work reliably)
+      // Save current auth state so we can restore after redirect
+      sessionStorage.setItem("instagram_oauth_mode", mode);
+      sessionStorage.setItem("instagram_oauth_role", role);
+      window.location.href = authUrl;
+      return;
+    }
+
+    // Desktop: open popup
     const width = 500;
     const height = 650;
     const left = window.screenX + (window.outerWidth - width) / 2;

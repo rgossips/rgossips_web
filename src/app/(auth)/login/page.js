@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGlobal } from "@/context/GlobalContext";
 import OnboardingCarousel from "@/components/login/OnboardingCarousel";
@@ -50,6 +50,19 @@ const Login = () => {
   });
 
   // --- NAVIGATION ---
+  // Restore auth state after mobile Instagram redirect
+  useEffect(() => {
+    const savedMode = sessionStorage.getItem("instagram_oauth_mode");
+    const savedRole = sessionStorage.getItem("instagram_oauth_role");
+    if (savedMode && savedRole) {
+      sessionStorage.removeItem("instagram_oauth_mode");
+      sessionStorage.removeItem("instagram_oauth_role");
+      setSignupData((prev) => ({ ...prev, role: savedRole }));
+      setFlow(savedMode === "signin" ? "signin" : "signup");
+      setStep(2); // Instagram connect step
+    }
+  }, []);
+
   const switchToSignIn = () => {
     setFlow("signin");
     setStep(1);
