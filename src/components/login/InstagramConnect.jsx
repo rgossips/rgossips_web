@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-
 function formatCount(n) {
   if (!n) return "0";
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -13,7 +11,6 @@ function formatCount(n) {
 }
 
 const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loading: externalLoading = false, error: externalError = "" }) => {
-  const supabase = createClient();
   const [connecting, setConnecting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -66,13 +63,21 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     setConnecting(true);
     setError("");
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
       const redirectUri = `${window.location.origin}/instagram-callback`;
-      const { data, error: funcError } = await supabase.functions.invoke(
-        "instagram-connect",
-        { body: { code, redirectUri } }
-      );
 
-      if (funcError) throw new Error(funcError.message);
+      const res = await fetch(`${supabaseUrl}/functions/v1/instagram-connect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ code, redirectUri }),
+      });
+
+      const data = await res.json();
       if (data?.error) throw new Error(data.error);
 
       setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
@@ -130,10 +135,14 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     try {
       // Check uniqueness across all tables
-      const { data: uniqueCheck } = await supabase.functions.invoke(
-        "check-uniqueness",
-        { body: { instagram: profile.username, role } }
-      );
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const uniqueRes = await fetch(`${supabaseUrl}/functions/v1/check-uniqueness`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ instagram: profile.username, role }),
+      });
+      const uniqueCheck = await uniqueRes.json();
 
       if (uniqueCheck?.conflicts?.includes("instagram")) {
         const source = uniqueCheck.instagramConflictSource;

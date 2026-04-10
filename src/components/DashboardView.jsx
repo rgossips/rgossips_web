@@ -678,7 +678,7 @@ const DashboardView = ({
         <PlanCard profile={profile} />
 
         {/* Support & Logout */}
-        <section className="space-y-4 pt-2 pb-6">
+        <section className="space-y-4 pt-2 pb-24 lg:pb-6">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-2">
             Support
           </h3>
