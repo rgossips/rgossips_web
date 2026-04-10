@@ -46,11 +46,18 @@ Deno.serve(async (req) => {
 
     if (!tokenData.access_token) {
       console.error("Token exchange failed:", JSON.stringify(tokenData));
+
+      const errDetail = tokenData.error_message || tokenData.error?.message || "";
+      if (errDetail.includes("code has been used") || errDetail.includes("expired")) {
+        return new Response(
+          JSON.stringify({ error: "Instagram authorization expired. Please try connecting again." }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error:
-            "Token exchange failed: " +
-            (tokenData.error_message || JSON.stringify(tokenData)),
+          error: "Failed to connect Instagram. Please try again.",
         }),
         { status: 200, headers: jsonHeaders }
       );
@@ -75,9 +82,21 @@ Deno.serve(async (req) => {
 
     if (profile.error) {
       console.error("Profile fetch error:", JSON.stringify(profile.error));
+
+      // Check for common errors
+      const errMsg = profile.error.message || "";
+      if (errMsg.includes("does not exist") || profile.error.code === 100) {
+        return new Response(
+          JSON.stringify({
+            error: "Your Instagram account must be a Professional account (Business or Creator). Please switch your account type in Instagram Settings > Account > Switch to Professional Account, then try again.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error: "Failed to fetch profile: " + profile.error.message,
+          error: "Failed to fetch profile: " + errMsg,
         }),
         { status: 200, headers: jsonHeaders }
       );
