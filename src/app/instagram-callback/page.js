@@ -10,11 +10,11 @@ export default function InstagramCallback() {
     const error = params.get("error");
     const errorDescription = params.get("error_description");
 
-    // Save the OAuth result to sessionStorage
+    // Save the OAuth result to localStorage
     if (code) {
-      sessionStorage.setItem("instagram_oauth_code", code);
+      localStorage.setItem("instagram_oauth_code", code);
     } else if (error) {
-      sessionStorage.setItem(
+      localStorage.setItem(
         "instagram_oauth_error",
         errorDescription ? errorDescription.replace(/\+/g, " ") : error
       );

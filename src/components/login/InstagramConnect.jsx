@@ -28,19 +28,19 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
   // On mount: check if we're returning from Instagram redirect
   useEffect(() => {
-    const code = sessionStorage.getItem("instagram_oauth_code");
-    const oauthError = sessionStorage.getItem("instagram_oauth_error");
+    const code = localStorage.getItem("instagram_oauth_code");
+    const oauthError = localStorage.getItem("instagram_oauth_error");
 
     if (code) {
       // Clear all saved state
-      sessionStorage.removeItem("instagram_oauth_code");
-      sessionStorage.removeItem("instagram_oauth_mode");
-      sessionStorage.removeItem("instagram_oauth_role");
+      localStorage.removeItem("instagram_oauth_code");
+      localStorage.removeItem("instagram_oauth_mode");
+      localStorage.removeItem("instagram_oauth_role");
       exchangeCode(code);
     } else if (oauthError) {
-      sessionStorage.removeItem("instagram_oauth_error");
-      sessionStorage.removeItem("instagram_oauth_mode");
-      sessionStorage.removeItem("instagram_oauth_role");
+      localStorage.removeItem("instagram_oauth_error");
+      localStorage.removeItem("instagram_oauth_mode");
+      localStorage.removeItem("instagram_oauth_role");
       setError(oauthError);
     }
   }, []);
@@ -88,8 +88,8 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
     // Save state so we can restore after redirect
-    sessionStorage.setItem("instagram_oauth_mode", mode);
-    sessionStorage.setItem("instagram_oauth_role", role);
+    localStorage.setItem("instagram_oauth_mode", mode);
+    localStorage.setItem("instagram_oauth_role", role);
 
     // Always redirect in same window — popups are unreliable
     window.location.href = authUrl;

@@ -52,10 +52,10 @@ const Login = () => {
   // --- NAVIGATION ---
   // Restore auth state after Instagram redirect (mobile or popup fallback)
   useEffect(() => {
-    const hasCode = sessionStorage.getItem("instagram_oauth_code");
-    const hasError = sessionStorage.getItem("instagram_oauth_error");
-    const savedMode = sessionStorage.getItem("instagram_oauth_mode");
-    const savedRole = sessionStorage.getItem("instagram_oauth_role");
+    const hasCode = localStorage.getItem("instagram_oauth_code");
+    const hasError = localStorage.getItem("instagram_oauth_error");
+    const savedMode = localStorage.getItem("instagram_oauth_mode");
+    const savedRole = localStorage.getItem("instagram_oauth_role");
 
     if ((hasCode || hasError) && savedMode && savedRole) {
       // Don't remove mode/role yet — InstagramConnect needs them to know it should process the code
