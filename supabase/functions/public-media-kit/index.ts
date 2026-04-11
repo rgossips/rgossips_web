@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       if (accessToken && enrichedReels.length > 0) {
         try {
           const mediaRes = await fetch(
-            `https://graph.instagram.com/v21.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,like_count,comments_count&limit=25&access_token=${encodeURIComponent(accessToken)}`
+            `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,like_count,comments_count&limit=25&access_token=${encodeURIComponent(accessToken)}`
           );
           const mediaData = await mediaRes.json();
           const igMedia = mediaData?.data || [];

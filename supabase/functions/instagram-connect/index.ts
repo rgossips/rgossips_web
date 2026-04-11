@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
     // Step 3: Fetch user profile
     const profileRes = await fetch(
-      `https://graph.instagram.com/v21.0/me?fields=user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count&access_token=${encodeURIComponent(
+      `https://graph.instagram.com/v22.0/me?fields=user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count&access_token=${encodeURIComponent(
         accessToken
       )}`
     );
