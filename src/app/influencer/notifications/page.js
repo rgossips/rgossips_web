@@ -14,6 +14,14 @@ const ICON_MAP = {
   campaign_approved: <CheckCircle className="w-5 h-5 text-emerald-500" />,
 };
 
+const LINK_MAP = {
+  welcome: "/influencer/profile",
+  profile_incomplete: "/influencer/profile",
+  campaign_applied: "/influencer/campaigns",
+  campaign_status: "/influencer/campaigns",
+  campaign_approved: "/influencer/campaigns",
+};
+
 const BG_MAP = {
   welcome: "bg-purple-50",
   profile_incomplete: "bg-amber-50",
@@ -121,7 +129,8 @@ export default function NotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all ${
+              onClick={() => router.push(LINK_MAP[item.type] || "/influencer")}
+              className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"
                   : "bg-white border-slate-100 shadow-sm"

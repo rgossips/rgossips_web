@@ -71,21 +71,23 @@ Deno.serve(async (req) => {
     if (action === "checkProfile") {
       const { data: profile } = await supabaseAdmin
         .from("influencer_profiles")
-        .select("full_name, instagram_handle, media_kit_published, services, service_rates, categories")
+        .select("full_name, instagram_handle, media_kit_published, services, service_rates, categories, bio, location, email")
         .eq("influencer_id", userId)
         .single();
 
       if (!profile) return new Response(JSON.stringify({ success: true }), { status: 200, headers: jsonHeaders });
 
-      // Calculate completion
-      let score = 0;
-      if (profile.full_name) score += 20;
-      if (profile.instagram_handle) score += 20;
-      if (profile.media_kit_published) score += 20;
+      // Calculate completion (out of 100)
+      let score = 10; // account created
+      if (profile.full_name) score += 10;
+      if (profile.instagram_handle) score += 15;
+      if (profile.bio) score += 10;
+      if (profile.location) score += 5;
+      if (profile.email) score += 5;
+      if (profile.media_kit_published) score += 15;
       if (profile.services?.length > 0) score += 10;
       if (profile.service_rates && Object.values(profile.service_rates).some((v: any) => v && Number(v) > 0)) score += 10;
       if (profile.categories?.length > 0) score += 10;
-      score += 10; // account created
 
       if (score < 90) {
         // Check if we already sent this today
