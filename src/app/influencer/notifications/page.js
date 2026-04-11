@@ -9,17 +9,29 @@ import { useAuth } from "@/context/AuthContext";
 const ICON_MAP = {
   welcome: <UserPlus className="w-5 h-5 text-purple-500" />,
   profile_incomplete: <FileText className="w-5 h-5 text-amber-500" />,
-  campaign_applied: <Award className="w-5 h-5 text-blue-500" />,
   campaign_status: <Bell className="w-5 h-5 text-pink-500" />,
   campaign_approved: <CheckCircle className="w-5 h-5 text-emerald-500" />,
 };
 
-const LINK_MAP = {
-  welcome: "/influencer/profile",
-  profile_incomplete: "/influencer/profile",
-  campaign_applied: "/influencer/campaigns",
-  campaign_status: "/influencer/campaigns",
-  campaign_approved: "/influencer/campaigns",
+const getNotifLink = (notif) => {
+  if (notif.type === "welcome") return "/influencer";
+  if (notif.type === "profile_incomplete") return "/influencer/profile";
+  if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
+    try {
+      const data = JSON.parse(notif.body);
+      if (data.campaignId) return `/influencer/offers/${data.campaignId}`;
+    } catch {}
+    return "/influencer/campaigns";
+  }
+  return "/influencer";
+};
+
+const getNotifText = (notif) => {
+  try {
+    const data = JSON.parse(notif.body);
+    return data.text || notif.body;
+  } catch {}
+  return notif.body;
 };
 
 const BG_MAP = {
@@ -129,7 +141,7 @@ export default function NotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => router.push(LINK_MAP[item.type] || "/influencer")}
+              onClick={() => router.push(getNotifLink(item))}
               className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"
@@ -149,7 +161,7 @@ export default function NotificationsPage() {
                     {formatTime(item.created_at)}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{item.body}</p>
+                <p className="text-xs text-slate-400 leading-relaxed">{getNotifText(item)}</p>
               </div>
 
               {!item.is_read && (

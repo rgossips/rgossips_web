@@ -32,7 +32,6 @@ const DESKTOP_NAV_ITEMS = [
 const NOTIF_ICON = {
   welcome: <UserPlus size={16} className="text-purple-500" />,
   profile_incomplete: <FileText size={16} className="text-amber-500" />,
-  campaign_applied: <Award size={16} className="text-blue-500" />,
   campaign_status: <Bell size={16} className="text-pink-500" />,
   campaign_approved: <CheckCircle size={16} className="text-emerald-500" />,
 };
@@ -40,17 +39,30 @@ const NOTIF_ICON = {
 const NOTIF_BG = {
   welcome: "bg-purple-50",
   profile_incomplete: "bg-amber-50",
-  campaign_applied: "bg-blue-50",
   campaign_status: "bg-pink-50",
   campaign_approved: "bg-emerald-50",
 };
 
-const NOTIF_LINK = {
-  welcome: "/influencer/profile",
-  profile_incomplete: "/influencer/profile",
-  campaign_applied: "/influencer/campaigns",
-  campaign_status: "/influencer/campaigns",
-  campaign_approved: "/influencer/campaigns",
+const getNotifLink = (notif) => {
+  if (notif.type === "welcome") return "/influencer";
+  if (notif.type === "profile_incomplete") return "/influencer/profile";
+  // Campaign notifications: parse campaignId from body JSON
+  if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
+    try {
+      const data = JSON.parse(notif.body);
+      if (data.campaignId) return `/influencer/offers/${data.campaignId}`;
+    } catch {}
+    return "/influencer/campaigns";
+  }
+  return "/influencer";
+};
+
+const getNotifText = (notif) => {
+  try {
+    const data = JSON.parse(notif.body);
+    return data.text || notif.body;
+  } catch {}
+  return notif.body;
 };
 
 const apiCall = async (fn, body) => {
@@ -112,8 +124,7 @@ export const DesktopNavbar = () => {
 
   const handleNotifClick = (notif) => {
     setShowPopover(false);
-    const link = NOTIF_LINK[notif.type] || "/influencer/notifications";
-    router.push(link);
+    router.push(getNotifLink(notif));
   };
 
   const formatTime = (dateStr) => {
@@ -207,7 +218,7 @@ export const DesktopNavbar = () => {
                             <p className={`text-xs font-bold leading-tight ${!n.is_read ? "text-slate-800" : "text-slate-500"}`}>{n.title}</p>
                             <span className="text-[9px] text-slate-400 font-medium shrink-0">{formatTime(n.created_at)}</span>
                           </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{n.body}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{getNotifText(n)}</p>
                         </div>
                         {!n.is_read && <div className="w-2 h-2 bg-[#E60076] rounded-full shrink-0 mt-2" />}
                       </div>
