@@ -1221,8 +1221,8 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
         </button>
       )}
 
-      {/* Submitted deliverables */}
-      {campaign?.submissionLinks?.length > 0 && currentStepIndex >= 2 && (
+      {/* Submitted deliverables — always visible when links exist */}
+      {campaign?.submissionLinks?.length > 0 && (
         <div className="space-y-3 pt-1">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
             <CheckCircle size={12} className="text-emerald-500" /> Your Submissions
@@ -1293,12 +1293,17 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     const initial = {};
     const existingLinks = campaign?.submissionLinks || [];
     deliverables.forEach((d, i) => {
-      if (isRevision && existingLinks[i]?.url && !d.needsRevision) {
-        initial[d.key] = existingLinks[i].url;
-      } else if (isRevision && existingLinks[i]?.url && d.needsRevision) {
+      // Try to match by label first, then by index
+      const matchByLabel = existingLinks.find((el) => el.label === d.label);
+      const matchByIndex = existingLinks[i];
+      const existing = matchByLabel || matchByIndex;
+
+      if (isRevision && d.needsRevision) {
         initial[d.key] = ""; // Clear for re-entry
+      } else if (existing?.url) {
+        initial[d.key] = existing.url; // Prefill with existing URL
       } else {
-        initial[d.key] = existingLinks[i]?.url || "";
+        initial[d.key] = "";
       }
     });
     return initial;
@@ -1306,6 +1311,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // All deliverables must have links — non-revision ones are prefilled so they pass
   const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
 
   const handleSubmit = async () => {
