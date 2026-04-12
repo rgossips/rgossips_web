@@ -27,17 +27,22 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
   }, []);
 
   // On mount: check if we're returning from Instagram redirect
+  const processedRef = useRef(false);
   useEffect(() => {
+    if (processedRef.current) return; // Prevent double execution in strict mode
+
     const code = localStorage.getItem("instagram_oauth_code");
     const oauthError = localStorage.getItem("instagram_oauth_error");
 
     if (code) {
-      // Clear all saved state
+      processedRef.current = true;
+      // Clear immediately to prevent any re-use
       localStorage.removeItem("instagram_oauth_code");
       localStorage.removeItem("instagram_oauth_mode");
       localStorage.removeItem("instagram_oauth_role");
       exchangeCode(code);
     } else if (oauthError) {
+      processedRef.current = true;
       localStorage.removeItem("instagram_oauth_error");
       localStorage.removeItem("instagram_oauth_mode");
       localStorage.removeItem("instagram_oauth_role");

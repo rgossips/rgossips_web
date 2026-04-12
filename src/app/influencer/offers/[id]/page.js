@@ -1159,30 +1159,56 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
       </div>
 
       {/* Revision requested banner */}
-      {isRevision && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm font-bold shrink-0">⟳</div>
-            <p className="text-sm font-bold text-amber-700">Revision Requested</p>
+      {isRevision && (() => {
+        let note = "";
+        let revisionLinks = [];
+        try {
+          const parsed = typeof campaign?.rejectionReason === "string" ? JSON.parse(campaign.rejectionReason) : campaign?.rejectionReason;
+          note = parsed?.note || "";
+          revisionLinks = parsed?.links || [];
+        } catch {
+          note = campaign?.rejectionReason || "";
+        }
+        return (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm font-bold shrink-0">⟳</div>
+              <p className="text-sm font-bold text-amber-700">Revision Requested</p>
+            </div>
+            {note && <p className="text-xs text-amber-700 leading-relaxed pl-9">{note}</p>}
+            {revisionLinks.length > 0 && (
+              <div className="pl-9 space-y-1.5">
+                <p className="text-[10px] font-bold text-amber-600 uppercase">Deliverables to revise:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {revisionLinks.map((link, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{link}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          {campaign?.revisionNote && (
-            <p className="text-xs text-amber-600 leading-relaxed pl-9">{campaign.revisionNote}</p>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Rejected banner */}
-      {isRejected && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-sm font-bold shrink-0">✕</div>
-            <p className="text-sm font-bold text-red-700">Application Rejected</p>
+      {isRejected && (() => {
+        let reason = "";
+        try {
+          const parsed = typeof campaign?.rejectionReason === "string" ? JSON.parse(campaign.rejectionReason) : campaign?.rejectionReason;
+          reason = parsed?.note || parsed?.reason || (typeof campaign?.rejectionReason === "string" ? campaign.rejectionReason : "");
+        } catch {
+          reason = campaign?.rejectionReason || "";
+        }
+        return (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-sm font-bold shrink-0">✕</div>
+              <p className="text-sm font-bold text-red-700">Application Rejected</p>
+            </div>
+            {reason && <p className="text-xs text-red-600 leading-relaxed pl-9">{reason}</p>}
           </div>
-          {campaign?.rejectionReason && (
-            <p className="text-xs text-red-600 leading-relaxed pl-9">{campaign.rejectionReason}</p>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Upload / Resubmit button */}
       {canUpload && (
@@ -1236,6 +1262,19 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
 }
 
 function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
+  const isRevision = campaign?.applicationStatus === "revision_needed";
+
+  // Parse revision info
+  let revisionNote = "";
+  let revisionRequested = [];
+  if (isRevision && campaign?.rejectionReason) {
+    try {
+      const parsed = typeof campaign.rejectionReason === "string" ? JSON.parse(campaign.rejectionReason) : campaign.rejectionReason;
+      revisionNote = parsed?.note || "";
+      revisionRequested = (parsed?.links || []).map((l) => l.toLowerCase());
+    } catch {}
+  }
+
   // Parse content_types_required: ["reels:2", "stories:3"] → [{type: "reels", count: 2}, ...]
   const deliverables = (campaign?.contentTypesRequired || []).flatMap((item) => {
     const [type, countStr] = item.split(":");
@@ -1245,12 +1284,23 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
       key: `${type}_${i + 1}`,
       label: `${label} ${count > 1 ? i + 1 : ""}`.trim(),
       type,
+      needsRevision: !isRevision || revisionRequested.length === 0 || revisionRequested.some((r) => type.toLowerCase().includes(r.toLowerCase()) || label.toLowerCase().includes(r.toLowerCase())),
     }));
   });
 
+  // Prefill with existing submission links if revising
   const [links, setLinks] = useState(() => {
     const initial = {};
-    deliverables.forEach((d) => { initial[d.key] = ""; });
+    const existingLinks = campaign?.submissionLinks || [];
+    deliverables.forEach((d, i) => {
+      if (isRevision && existingLinks[i]?.url && !d.needsRevision) {
+        initial[d.key] = existingLinks[i].url;
+      } else if (isRevision && existingLinks[i]?.url && d.needsRevision) {
+        initial[d.key] = ""; // Clear for re-entry
+      } else {
+        initial[d.key] = existingLinks[i]?.url || "";
+      }
+    });
     return initial;
   });
   const [submitting, setSubmitting] = useState(false);
@@ -1307,20 +1357,40 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
-          <p className="text-xs text-slate-500">Provide the link for each deliverable. All links are required before submitting.</p>
+          {isRevision && revisionNote && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Revision Note</p>
+              <p className="text-xs text-amber-700">{revisionNote}</p>
+            </div>
+          )}
+
+          <p className="text-xs text-slate-500">
+            {isRevision
+              ? "Update the highlighted deliverables below and resubmit."
+              : "Provide the link for each deliverable. All links are required before submitting."}
+          </p>
 
           {deliverables.map((d) => (
-            <div key={d.key} className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <div key={d.key} className={`space-y-1.5 ${isRevision && d.needsRevision ? "p-3 -mx-3 bg-amber-50/50 rounded-xl border border-amber-100" : ""}`}>
+              <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
                 <Instagram size={12} className="text-pink-500" />
-                {d.label}
+                <span className={isRevision && d.needsRevision ? "text-amber-700" : "text-slate-500"}>{d.label}</span>
+                {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">REVISE</span>}
+                {isRevision && !d.needsRevision && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black">OK</span>}
               </label>
               <input
                 type="url"
                 placeholder="https://www.instagram.com/reel/..."
                 value={links[d.key]}
                 onChange={(e) => setLinks((prev) => ({ ...prev, [d.key]: e.target.value }))}
-                className="w-full py-3 px-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
+                disabled={isRevision && !d.needsRevision}
+                className={`w-full py-3 px-4 border rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${
+                  isRevision && !d.needsRevision
+                    ? "bg-slate-100 border-slate-100 opacity-60 cursor-not-allowed"
+                    : isRevision && d.needsRevision
+                      ? "bg-white border-amber-200 focus:border-amber-400"
+                      : "bg-slate-50 border-slate-100 focus:border-pink-200 focus:bg-white"
+                }`}
               />
             </div>
           ))}

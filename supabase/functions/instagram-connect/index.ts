@@ -48,7 +48,8 @@ Deno.serve(async (req) => {
       console.error("Token exchange failed:", JSON.stringify(tokenData));
 
       const errDetail = tokenData.error_message || tokenData.error?.message || "";
-      if (errDetail.includes("code has been used") || errDetail.includes("expired")) {
+      console.error("Token exchange error detail:", errDetail, "Full response:", JSON.stringify(tokenData));
+      if (errDetail.includes("code has been used") || errDetail.includes("expired") || errDetail.includes("authorization code")) {
         return new Response(
           JSON.stringify({ error: "Instagram authorization expired. Please try connecting again." }),
           { status: 200, headers: jsonHeaders }
@@ -83,9 +84,12 @@ Deno.serve(async (req) => {
     if (profile.error) {
       console.error("Profile fetch error:", JSON.stringify(profile.error));
 
-      // Check for common errors
       const errMsg = profile.error.message || "";
-      if (errMsg.includes("does not exist") || profile.error.code === 100) {
+      const errCode = profile.error.code;
+      const errSubcode = profile.error.error_subcode;
+
+      // "does not exist" specifically means non-professional account
+      if (errMsg.includes("does not exist")) {
         return new Response(
           JSON.stringify({
             error: "Your Instagram account must be a Professional account (Business or Creator). Please switch your account type in Instagram Settings > Account > Switch to Professional Account, then try again.",
@@ -94,9 +98,19 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Token expired or invalid
+      if (errCode === 190 || errMsg.includes("expired") || errMsg.includes("Invalid")) {
+        return new Response(
+          JSON.stringify({
+            error: "Instagram session expired. Please try connecting again.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
       return new Response(
         JSON.stringify({
-          error: "Failed to fetch profile: " + errMsg,
+          error: "Failed to fetch Instagram profile. Please try again. (" + errMsg + ")",
         }),
         { status: 200, headers: jsonHeaders }
       );
