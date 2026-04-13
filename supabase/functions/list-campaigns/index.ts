@@ -32,20 +32,20 @@ Deno.serve(async (req) => {
     if (influencerId) {
       // Try with submission_links first, fall back without it
       let applications: any[] = [];
-      const { data: appsWithLinks, error: appErr } = await supabaseAdmin
+      const { data: appsData, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links, rejection_reason, revision_note")
+        .select("campaign_id, status, id, submission_links, rejection_reason")
         .eq("influencer_id", influencerId);
 
       if (appErr) {
-        // Columns might not exist yet — query without them
+        console.error("Applications query error:", appErr.message);
         const { data: appsBasic } = await supabaseAdmin
           .from("campaign_applications")
-          .select("campaign_id, status, id, rejection_reason")
+          .select("campaign_id, status, id")
           .eq("influencer_id", influencerId);
         applications = appsBasic || [];
       } else {
-        applications = appsWithLinks || [];
+        applications = appsData || [];
       }
 
       for (const app of applications) {
@@ -54,7 +54,6 @@ Deno.serve(async (req) => {
           applicationId: app.id,
           submissionLinks: app.submission_links || [],
           rejectionReason: app.rejection_reason || "",
-          revisionNote: app.revision_note || "",
         };
       }
     }
@@ -159,14 +158,12 @@ Deno.serve(async (req) => {
       let applicationId = null;
       let submissionLinks: any[] = [];
       let rejectionReason = "";
-      let revisionNote = "";
 
       if (appStatus) {
         applicationStatus = appStatus;
         applicationId = appData.applicationId;
         submissionLinks = appData.submissionLinks || [];
         rejectionReason = appData.rejectionReason || "";
-        revisionNote = appData.revisionNote || "";
 
         if (appStatus === "completed") {
           status = "Completed";
@@ -219,7 +216,6 @@ Deno.serve(async (req) => {
         applicationId,
         submissionLinks,
         rejectionReason,
-        revisionNote,
         contentTypesRequired: c.content_types_required || [],
       };
     });
