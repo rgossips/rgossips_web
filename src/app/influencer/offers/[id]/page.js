@@ -1416,7 +1416,9 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            {submitting ? "Submitting..." : `Submit ${deliverables.length} Deliverables`}
+            {submitting ? "Submitting..." : isRevision
+              ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Deliverable${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
+              : `Submit ${deliverables.length} Deliverable${deliverables.length !== 1 ? "s" : ""}`}
           </button>
         </div>
       </div>

@@ -73,26 +73,31 @@ Deno.serve(async (req) => {
     const longData = await longRes.json();
     const accessToken = longData.access_token || tokenData.access_token;
 
-    // Step 3: Fetch user profile
-    const profileRes = await fetch(
-      `https://graph.instagram.com/v22.0/me?fields=user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count&access_token=${encodeURIComponent(
-        accessToken
-      )}`
-    );
-    const profile = await profileRes.json();
+    // Step 3: Fetch user profile — try with full fields first, then minimal
+    let profile: any = null;
+    const fullFields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
+    const minimalFields = "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count";
+
+    for (const fields of [fullFields, minimalFields]) {
+      const profileRes = await fetch(
+        `https://graph.instagram.com/v21.0/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`
+      );
+      profile = await profileRes.json();
+      if (!profile.error) break;
+      console.error(`Profile fetch with fields [${fields}] failed:`, JSON.stringify(profile.error));
+    }
 
     if (profile.error) {
-      console.error("Profile fetch error:", JSON.stringify(profile.error));
+      console.error("All profile fetch attempts failed:", JSON.stringify(profile.error));
 
       const errMsg = profile.error.message || "";
       const errCode = profile.error.code;
-      const errSubcode = profile.error.error_subcode;
 
       // "does not exist" specifically means non-professional account
       if (errMsg.includes("does not exist")) {
         return new Response(
           JSON.stringify({
-            error: "Your Instagram account must be a Professional account (Business or Creator). Please switch your account type in Instagram Settings > Account > Switch to Professional Account, then try again.",
+            error: "Your Instagram account must be a Professional account (Business or Creator). Go to Instagram > Settings > Account > Switch to Professional Account, wait a few minutes, then try again.",
           }),
           { status: 200, headers: jsonHeaders }
         );
