@@ -19,7 +19,7 @@ const Header = () => {
 
   // Navigation items based on your reference images
   const navItems = [
-    { name: "Features", id: "features" },
+    { name: "Featuress", id: "features" },
     { name: "For Brands", id: "brands-influencers-section", type: "brands" },
     {
       name: "For Influencers",
@@ -35,17 +35,8 @@ const Header = () => {
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Logo Section */}
-        <div
-          className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80"
-          onClick={() => router.push("/")}
-        >
-          <Image
-            src={logo}
-            alt="Recent Gossip"
-            width={160}
-            height={40}
-            className="h-9 w-auto object-contain"
-          />
+        <div className="flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" onClick={() => router.push("/")}>
+          <Image src={logo} alt="Recent Gossip" width={160} height={40} className="h-9 w-auto object-contain" />
         </div>
 
         {/* Desktop Menu */}
@@ -93,10 +84,7 @@ const Header = () => {
         </nav>
 
         {/* Mobile Menu Button */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="lg:hidden p-2 text-slate-600 focus:outline-none cursor-pointer"
-        >
+        <button onClick={() => setMenuOpen(!menuOpen)} className="lg:hidden p-2 text-slate-600 focus:outline-none cursor-pointer">
           {menuOpen ? <HiX size={28} /> : <HiMenu size={28} />}
         </button>
       </div>
