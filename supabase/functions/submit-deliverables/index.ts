@@ -42,19 +42,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (app.status !== "approved" && app.status !== "revision_needed") {
+    const allowedStatuses = ["approved", "revision_needed", "accepted"];
+    if (!allowedStatuses.includes(app.status)) {
       return new Response(
-        JSON.stringify({ error: "Application must be in 'approved' or 'revision_needed' status to submit deliverables" }),
+        JSON.stringify({ error: "Cannot submit deliverables in current status" }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
-    // Update with submission links and change status to "submitted"
+    // Determine next status: accepted → live_submitted, otherwise → submitted
+    const nextStatus = app.status === "accepted" ? "live_submitted" : "submitted";
+
     const { error: updateErr } = await supabaseAdmin
       .from("campaign_applications")
       .update({
         submission_links: submissionLinks,
-        status: "submitted",
+        status: nextStatus,
         updated_at: new Date().toISOString(),
       })
       .eq("id", applicationId);

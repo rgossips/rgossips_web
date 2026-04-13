@@ -1066,6 +1066,7 @@ const STATUS_STEPS = [
   { key: "approved", label: "Approved" },
   { key: "submitted", label: "Deliverables Submitted" },
   { key: "accepted", label: "Work Accepted" },
+  { key: "live_submitted", label: "Live Links Submitted" },
   { key: "payment", label: "Payment in Progress" },
   { key: "completed", label: "Completed" },
 ];
@@ -1085,7 +1086,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
   const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
-  const canUpload = status === "approved" || status === "revision_needed";
+  const canUpload = status === "approved" || status === "revision_needed" || status === "accepted";
 
   if (compact) {
     return (
@@ -1101,7 +1102,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
             className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : "Upload Submission"}
+            <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : status === "accepted" ? "Submit Live Links" : "Upload Submission"}
           </button>
         )}
         {showSubmitModal && (
@@ -1217,7 +1218,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
-          <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : "Upload Submission"}
+          <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : status === "accepted" ? "Submit Live Links" : "Upload Submission"}
         </button>
       )}
 
@@ -1351,8 +1352,11 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Upload Submissions</h2>
+            <h2 className="text-base font-bold text-slate-900">{campaign?.applicationStatus === "accepted" ? "Submit Live Links" : "Upload Submissions"}</h2>
             <p className="text-[11px] text-slate-400">{campaign?.title} &middot; {deliverables.length} deliverables</p>
+            {campaign?.applicationStatus === "accepted" && (
+              <p className="text-[10px] text-emerald-600 font-semibold mt-1">Post your content on Instagram, then paste the live post links below.</p>
+            )}
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer">
             <X size={16} />
