@@ -423,16 +423,14 @@ export default function CampaignDetailsPage() {
               <img src={campaign.heroImg} alt={campaign.title} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-              {/* Action buttons on image */}
-              <div className="absolute top-4 right-4 flex gap-2">
-                {isCompleted && <span className="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">Completed</span>}
-                <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-                  <Share2 size={16} />
-                </button>
-                <button className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-                  <Heart size={16} />
-                </button>
-              </div>
+              {/* Status badge on image */}
+              {isCompleted && (
+                <div className="absolute top-4 right-4">
+                  <span className="bg-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-1.5">
+                    <CheckCircle size={12} /> Completed
+                  </span>
+                </div>
+              )}
 
               {/* Initials badge */}
               <div className="absolute bottom-4 left-4 w-14 h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-xl lg:text-2xl font-bold shadow-lg border-2 border-white/20">
