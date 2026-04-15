@@ -90,8 +90,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     const redirectUri = `${window.location.origin}/instagram-callback`;
     const scope = "instagram_business_basic,instagram_business_manage_insights";
 
-    // Use api.instagram.com to prevent iOS Safari from opening the Instagram app
-    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
     // Save state so we can restore after redirect
     localStorage.setItem("instagram_oauth_mode", mode);
@@ -255,9 +254,17 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
           )}
         </Button>
         {!profile && !connecting && (
-          <p className="text-center text-[11px] text-slate-400">
-            Instagram connection is required to proceed
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-[11px] text-slate-400">
+              Instagram connection is required to proceed
+            </p>
+            <div className="text-[10px] text-slate-400 bg-slate-50 rounded-xl p-3 text-left space-y-1">
+              <p className="font-bold text-slate-500">Requirements:</p>
+              <p>• Your Instagram must be a <span className="font-semibold text-slate-600">Professional account</span> (Business or Creator)</p>
+              <p>• Make sure you're logged into the <span className="font-semibold text-slate-600">correct Instagram account</span> in your browser</p>
+              <p>• If you see "profile doesn't exist", log out of Instagram in your browser and log in with your Professional account</p>
+            </div>
+          </div>
         )}
       </div>
     </div>

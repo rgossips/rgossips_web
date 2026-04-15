@@ -100,11 +100,10 @@ Deno.serve(async (req) => {
       const errMsg = profile.error.message || "";
       const errCode = profile.error.code;
 
-      // "does not exist" specifically means non-professional account
       if (errMsg.includes("does not exist")) {
         return new Response(
           JSON.stringify({
-            error: "Your Instagram account must be a Professional account (Business or Creator). Go to Instagram > Settings > Account > Switch to Professional Account, wait a few minutes, then try again.",
+            error: "Could not access this Instagram profile. This usually means: (1) The account is not a Professional account — switch to Business or Creator in Instagram Settings, (2) You're logged into a different Instagram account in your browser, or (3) The account was recently switched and Instagram needs a few hours to update. Please log out of Instagram in your browser, log back in with your Professional account, and try again.",
           }),
           { status: 200, headers: jsonHeaders }
         );
