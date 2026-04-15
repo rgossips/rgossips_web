@@ -9,6 +9,13 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (req.method === "GET") {
+    return new Response(
+      JSON.stringify({ error: "Use POST method with { code, redirectUri } body" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {

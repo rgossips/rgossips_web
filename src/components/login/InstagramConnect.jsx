@@ -90,7 +90,8 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     const redirectUri = `${window.location.origin}/instagram-callback`;
     const scope = "instagram_business_basic,instagram_business_manage_insights";
 
-    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+    // Use api.instagram.com to prevent iOS Safari from opening the Instagram app
+    const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
 
     // Save state so we can restore after redirect
     localStorage.setItem("instagram_oauth_mode", mode);
