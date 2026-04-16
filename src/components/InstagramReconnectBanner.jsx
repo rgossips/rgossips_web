@@ -77,11 +77,9 @@ export default function InstagramReconnectBanner() {
 
   const handleReconnect = () => {
     setError("");
-    const appId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID;
-    const redirectUri = `${window.location.origin}/instagram-callback`;
-    const scope = "instagram_business_basic,instagram_business_manage_insights";
 
-    const authUrl = `https://www.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
+    // Use intermediate route to prevent mobile deep linking to Instagram app
+    const reconnectUrl = `/api/auth/instagram?mode=reconnect&popup=1`;
 
     const width = 500;
     const height = 650;
@@ -89,7 +87,7 @@ export default function InstagramReconnectBanner() {
     const top = window.screenY + (window.outerHeight - height) / 2;
 
     window.open(
-      authUrl,
+      reconnectUrl,
       "instagram-oauth",
       `width=${width},height=${height},left=${left},top=${top}`
     );

@@ -10,7 +10,25 @@ export default function InstagramCallback() {
     const error = params.get("error");
     const errorDescription = params.get("error_description");
 
-    // Save the OAuth result to localStorage
+    // If opened as a popup (reconnect flow), post message back to opener
+    if (window.opener) {
+      window.opener.postMessage(
+        {
+          type: "instagram-oauth",
+          code: code || null,
+          error: error
+            ? errorDescription
+              ? errorDescription.replace(/\+/g, " ")
+              : error
+            : null,
+        },
+        window.location.origin
+      );
+      window.close();
+      return;
+    }
+
+    // Otherwise, save to localStorage and redirect (signup/signin flow)
     if (code) {
       localStorage.setItem("instagram_oauth_code", code);
     } else if (error) {
@@ -20,7 +38,6 @@ export default function InstagramCallback() {
       );
     }
 
-    // Redirect back to login page
     window.location.href = "/login";
   }, []);
 
