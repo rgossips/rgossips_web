@@ -96,7 +96,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     localStorage.setItem("instagram_oauth_mode", mode);
     localStorage.setItem("instagram_oauth_role", role);
 
-    // Always redirect in same window — popups are unreliable
+    // Always redirect in same window
     window.location.href = authUrl;
   };
 
