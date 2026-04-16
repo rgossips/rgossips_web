@@ -1,20 +1,15 @@
 export async function GET(request) {
   const url = new URL(request.url);
-  const origin = url.origin;
   const mode = url.searchParams.get("mode") || "signup";
   const role = url.searchParams.get("role") || "influencer";
-  const popup = url.searchParams.get("popup") === "1";
 
   const appId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID;
-  const redirectUri = `${origin}/instagram-callback`;
   const scope =
     "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish,instagram_business_manage_insights";
 
-  const authUrl = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
-
-  // Return an HTML page that uses JavaScript to redirect.
-  // JS-initiated navigations do NOT trigger Universal Links / deep links
-  // on mobile, so Instagram opens in the browser instead of the app.
+  // Build the OAuth URL on the CLIENT side using window.location.origin
+  // so the redirect_uri always matches the actual domain the user is on.
+  // The JS redirect also prevents mobile deep linking to the Instagram app.
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -33,9 +28,7 @@ export async function GET(request) {
       color: white;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .loader {
-      text-align: center;
-    }
+    .loader { text-align: center; }
     .spinner {
       width: 28px;
       height: 28px;
@@ -55,10 +48,20 @@ export async function GET(request) {
     <p>Opening Instagram...</p>
   </div>
   <script>
+    var appId = ${JSON.stringify(appId)};
+    var scope = ${JSON.stringify(scope)};
+    var redirectUri = window.location.origin + "/instagram-callback";
+    var authUrl = "https://www.instagram.com/oauth/authorize"
+      + "?force_reauth=true"
+      + "&client_id=" + encodeURIComponent(appId)
+      + "&redirect_uri=" + encodeURIComponent(redirectUri)
+      + "&scope=" + encodeURIComponent(scope)
+      + "&response_type=code";
+
     // Small delay ensures the page renders first, then JS redirect
     // prevents mobile OS from intercepting with deep link / Universal Link
     setTimeout(function() {
-      window.location.replace(${JSON.stringify(authUrl)});
+      window.location.replace(authUrl);
     }, 100);
   </script>
 </body>
