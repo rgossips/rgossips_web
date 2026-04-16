@@ -80,18 +80,30 @@ Deno.serve(async (req) => {
     const longData = await longRes.json();
     const accessToken = longData.access_token || tokenData.access_token;
 
-    // Step 3: Fetch user profile — try with full fields first, then minimal
+    // Step 3: Fetch user profile — try multiple field sets and API versions
     let profile: any = null;
-    const fullFields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
-    const minimalFields = "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count";
+    const fieldSets = [
+      "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count",
+      "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count",
+      "username,name,profile_picture_url,followers_count,follows_count,media_count",
+    ];
+    // Try without version prefix first (uses default), then explicit versions
+    const baseUrls = [
+      "https://graph.instagram.com/me",
+      "https://graph.instagram.com/v20.0/me",
+      "https://graph.instagram.com/v21.0/me",
+    ];
 
-    for (const fields of [fullFields, minimalFields]) {
-      const profileRes = await fetch(
-        `https://graph.instagram.com/v21.0/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`
-      );
-      profile = await profileRes.json();
-      if (!profile.error) break;
-      console.error(`Profile fetch with fields [${fields}] failed:`, JSON.stringify(profile.error));
+    outer:
+    for (const baseUrl of baseUrls) {
+      for (const fields of fieldSets) {
+        const profileRes = await fetch(
+          `${baseUrl}?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`
+        );
+        profile = await profileRes.json();
+        if (!profile.error) break outer;
+        console.error(`Profile fetch [${baseUrl}] fields [${fields}] failed:`, JSON.stringify(profile.error));
+      }
     }
 
     if (profile.error) {
