@@ -69,7 +69,11 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       });
 
       const data = await res.json();
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+        // Temporarily show debug info to diagnose Instagram API issues
+        const debugInfo = data.debug ? "\n\nDebug:\n" + data.debug.join("\n") : "";
+        throw new Error(data.error + debugInfo);
+      }
 
       if (mountedRef.current) {
         setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
@@ -159,7 +163,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       </div>
 
       {displayError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 max-h-60 overflow-y-auto whitespace-pre-wrap break-all">
           {displayError}
         </div>
       )}

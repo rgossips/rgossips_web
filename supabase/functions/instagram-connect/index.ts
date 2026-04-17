@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
   }
 
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+  const debug: string[] = [];
 
   try {
     const { code, redirectUri } = await req.json();
@@ -33,6 +34,7 @@ Deno.serve(async (req) => {
 
     // Strip trailing #_ that Instagram sometimes appends
     const cleanCode = code.replace(/#_$/, "").replace(/#$/, "");
+    debug.push(`code length: ${cleanCode.length}, redirectUri: ${redirectUri}`);
 
     // Step 1: Exchange code for short-lived token
     const tokenRes = await fetch(
@@ -49,27 +51,36 @@ Deno.serve(async (req) => {
       }
     );
 
-    const tokenData = await tokenRes.json();
+    const tokenText = await tokenRes.text();
+    debug.push(`token response status: ${tokenRes.status}`);
+    debug.push(`token response: ${tokenText.substring(0, 500)}`);
+
+    let tokenData: any;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid token response from Instagram", debug }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     if (!tokenData.access_token) {
-      console.error("Token exchange failed:", JSON.stringify(tokenData));
-
       const errDetail = tokenData.error_message || tokenData.error?.message || "";
-      console.error("Token exchange error detail:", errDetail, "Full response:", JSON.stringify(tokenData));
       if (errDetail.includes("code has been used") || errDetail.includes("expired") || errDetail.includes("authorization code")) {
         return new Response(
-          JSON.stringify({ error: "Instagram authorization expired. Please try connecting again." }),
+          JSON.stringify({ error: "Instagram authorization expired. Please try connecting again.", debug }),
           { status: 200, headers: jsonHeaders }
         );
       }
 
       return new Response(
-        JSON.stringify({
-          error: "Failed to connect Instagram. Please try again.",
-        }),
+        JSON.stringify({ error: "Failed to connect Instagram. Please try again.", debug }),
         { status: 200, headers: jsonHeaders }
       );
     }
+
+    debug.push(`short-lived token obtained, user_id: ${tokenData.user_id}`);
 
     // Step 2: Exchange for long-lived token (60 days)
     const longRes = await fetch(
@@ -77,70 +88,67 @@ Deno.serve(async (req) => {
         INSTAGRAM_APP_SECRET
       )}&access_token=${encodeURIComponent(tokenData.access_token)}`
     );
-    const longData = await longRes.json();
+
+    const longText = await longRes.text();
+    debug.push(`long-lived token response status: ${longRes.status}`);
+    debug.push(`long-lived token response: ${longText.substring(0, 500)}`);
+
+    let longData: any;
+    try {
+      longData = JSON.parse(longText);
+    } catch {
+      longData = {};
+    }
     const accessToken = longData.access_token || tokenData.access_token;
+    debug.push(`using ${longData.access_token ? "long-lived" : "short-lived"} token`);
 
-    // Step 3: Fetch user profile — try multiple field sets and API versions
+    // Step 3: Fetch user profile
+    // Try multiple API versions and field combinations
     let profile: any = null;
-    const fieldSets = [
-      "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count",
-      "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count",
-      "username,name,profile_picture_url,followers_count,follows_count,media_count",
-    ];
-    // Try without version prefix first (uses default), then explicit versions
-    const baseUrls = [
-      "https://graph.instagram.com/me",
-      "https://graph.instagram.com/v20.0/me",
-      "https://graph.instagram.com/v21.0/me",
+    const attempts = [
+      { url: "https://graph.instagram.com/v22.0/me", fields: "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count" },
+      { url: "https://graph.instagram.com/v22.0/me", fields: "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count" },
+      { url: "https://graph.instagram.com/v20.0/me", fields: "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count" },
+      { url: "https://graph.instagram.com/v20.0/me", fields: "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count" },
+      { url: "https://graph.instagram.com/me", fields: "username,name,profile_picture_url,followers_count,follows_count,media_count" },
     ];
 
-    outer:
-    for (const baseUrl of baseUrls) {
-      for (const fields of fieldSets) {
-        const profileRes = await fetch(
-          `${baseUrl}?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`
-        );
-        profile = await profileRes.json();
-        if (!profile.error) break outer;
-        console.error(`Profile fetch [${baseUrl}] fields [${fields}] failed:`, JSON.stringify(profile.error));
+    for (const attempt of attempts) {
+      const profileUrl = `${attempt.url}?fields=${attempt.fields}&access_token=${encodeURIComponent(accessToken)}`;
+      debug.push(`trying: ${attempt.url} with fields: ${attempt.fields}`);
+
+      const profileRes = await fetch(profileUrl);
+      const profileText = await profileRes.text();
+      debug.push(`response ${profileRes.status}: ${profileText.substring(0, 300)}`);
+
+      try {
+        profile = JSON.parse(profileText);
+      } catch {
+        debug.push("failed to parse response");
+        continue;
       }
+
+      if (!profile.error) {
+        debug.push("SUCCESS - profile fetched");
+        break;
+      }
+
+      debug.push(`error: ${profile.error?.message || JSON.stringify(profile.error)}`);
     }
 
-    if (profile.error) {
-      console.error("All profile fetch attempts failed:", JSON.stringify(profile.error));
-
-      const errMsg = profile.error.message || "";
-      const errCode = profile.error.code;
-
-      if (errMsg.includes("does not exist")) {
-        return new Response(
-          JSON.stringify({
-            error: "Could not access this Instagram profile. This usually means: (1) The account is not a Professional account — switch to Business or Creator in Instagram Settings, (2) You're logged into a different Instagram account in your browser, or (3) The account was recently switched and Instagram needs a few hours to update. Please log out of Instagram in your browser, log back in with your Professional account, and try again.",
-          }),
-          { status: 200, headers: jsonHeaders }
-        );
-      }
-
-      // Token expired or invalid
-      if (errCode === 190 || errMsg.includes("expired") || errMsg.includes("Invalid")) {
-        return new Response(
-          JSON.stringify({
-            error: "Instagram session expired. Please try connecting again.",
-          }),
-          { status: 200, headers: jsonHeaders }
-        );
-      }
-
+    if (!profile || profile.error) {
+      const errMsg = profile?.error?.message || "Unknown error";
       return new Response(
         JSON.stringify({
-          error: "Failed to fetch Instagram profile. Please try again. (" + errMsg + ")",
+          error: "Failed to fetch Instagram profile: " + errMsg,
+          debug,
         }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
     // Calculate token expiry (long-lived tokens last 60 days)
-    const expiresIn = longData.expires_in || 5184000; // default 60 days in seconds
+    const expiresIn = longData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     return new Response(
@@ -163,10 +171,10 @@ Deno.serve(async (req) => {
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {
-    console.error("Unexpected error:", err?.message || err);
     return new Response(
       JSON.stringify({
         error: "Internal server error: " + (err?.message || String(err)),
+        debug,
       }),
       { status: 200, headers: jsonHeaders }
     );
