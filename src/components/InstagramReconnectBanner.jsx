@@ -46,24 +46,19 @@ export default function InstagramReconnectBanner() {
       if (data?.error) throw new Error(data.error);
 
       // Save the token to the profile
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      const updateRes = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          table: "influencer_profiles",
-          instagramAccessToken: data.accessToken,
-          instagramTokenExpiresAt: data.tokenExpiresAt,
-        }),
-      });
-      const updateData = await updateRes.json();
-      if (updateData.error) throw new Error(updateData.error);
+      const { data: updateData, error: updateError } = await supabase.functions.invoke(
+        "update-profile",
+        {
+          body: {
+            userId: user.id,
+            table: "influencer_profiles",
+            instagramAccessToken: data.accessToken,
+            instagramTokenExpiresAt: data.tokenExpiresAt,
+          },
+        }
+      );
+      if (updateError) throw new Error(updateError.message);
+      if (updateData?.error) throw new Error(updateData.error);
 
       setInstagramTokenMissing(false);
       // Trigger Instagram data + analytics refresh, then reload profile

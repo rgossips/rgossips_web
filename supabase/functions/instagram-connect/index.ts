@@ -20,8 +20,6 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Use POST method with { code, redirectUri } body" });
   }
 
-  const debug: string[] = [];
-
   try {
     const { code, redirectUri } = await req.json();
 
@@ -32,8 +30,8 @@ Deno.serve(async (req) => {
     const INSTAGRAM_APP_ID = Deno.env.get("INSTAGRAM_APP_ID")!;
     const INSTAGRAM_APP_SECRET = Deno.env.get("INSTAGRAM_APP_SECRET")!;
 
+    // Strip trailing #_ that Instagram sometimes appends
     const cleanCode = code.replace(/#_$/, "").replace(/#$/, "");
-    debug.push(`redirectUri: ${redirectUri}`);
 
     // Step 1: Exchange code for short-lived token
     const tokenRes = await fetch(
@@ -52,118 +50,55 @@ Deno.serve(async (req) => {
 
     let tokenData: any;
     try {
-      const tokenText = await tokenRes.text();
-      debug.push(`token status: ${tokenRes.status}`);
-      tokenData = JSON.parse(tokenText);
+      tokenData = await tokenRes.json();
     } catch {
-      return jsonResponse({ error: "Invalid token response from Instagram", debug });
+      return jsonResponse({ error: "Invalid token response from Instagram" });
     }
 
     if (!tokenData.access_token) {
       const errDetail = tokenData.error_message || tokenData.error?.message || "unknown";
-      return jsonResponse({ error: "Failed to get Instagram token: " + errDetail, debug });
+      if (errDetail.includes("code has been used") || errDetail.includes("expired") || errDetail.includes("authorization code")) {
+        return jsonResponse({ error: "Instagram authorization expired. Please try connecting again." });
+      }
+      return jsonResponse({ error: "Failed to get Instagram token: " + errDetail });
     }
 
-    // Parse user_id as string to avoid JS number precision issues
-    const userId = String(tokenData.user_id);
     const shortToken = tokenData.access_token;
-    debug.push(`short-lived token OK, user_id: ${userId}`);
+    const userId = String(tokenData.user_id);
 
-    // Step 2: Try long-lived token exchange
+    // Step 2: Try to exchange for long-lived token (60 days)
+    // This is a server-to-server call that requires the app secret
     let accessToken = shortToken;
     let expiresIn = 3600;
 
-    // Try via graph.facebook.com first, then graph.instagram.com
-    const longLivedUrls = [
-      `https://graph.facebook.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(INSTAGRAM_APP_SECRET)}&access_token=${encodeURIComponent(shortToken)}`,
-      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(INSTAGRAM_APP_SECRET)}&access_token=${encodeURIComponent(shortToken)}`,
-    ];
-
-    for (const llUrl of longLivedUrls) {
-      try {
-        const domain = new URL(llUrl).hostname;
-        debug.push(`long-lived GET via ${domain}`);
-        const res = await fetch(llUrl);
-        const text = await res.text();
-        debug.push(`${domain} status: ${res.status}, body: ${text.substring(0, 200)}`);
-        const data = JSON.parse(text);
-        if (data.access_token) {
-          accessToken = data.access_token;
-          expiresIn = data.expires_in || 5184000;
-          debug.push(`long-lived token OK via ${domain}`);
-          break;
-        }
-      } catch (e) {
-        debug.push(`error: ${e?.message}`);
+    try {
+      const longRes = await fetch(
+        `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(
+          INSTAGRAM_APP_SECRET
+        )}&access_token=${encodeURIComponent(shortToken)}`
+      );
+      const longData = await longRes.json();
+      if (longData.access_token) {
+        accessToken = longData.access_token;
+        expiresIn = longData.expires_in || 5184000;
       }
-    }
-
-    // Step 3: Fetch user profile — try every combination of domain, endpoint, version
-    let profile: any = null;
-    const fullFields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
-    const minFields = "username,name,profile_picture_url,followers_count,follows_count,media_count";
-
-    const profileAttempts = [
-      // graph.facebook.com attempts
-      `https://graph.facebook.com/v22.0/me?fields=${fullFields}&access_token=${encodeURIComponent(accessToken)}`,
-      `https://graph.facebook.com/v22.0/${userId}?fields=${fullFields}&access_token=${encodeURIComponent(accessToken)}`,
-      `https://graph.facebook.com/v20.0/me?fields=${minFields}&access_token=${encodeURIComponent(accessToken)}`,
-      `https://graph.facebook.com/me?fields=${minFields}&access_token=${encodeURIComponent(accessToken)}`,
-      // graph.facebook.com no fields (default)
-      `https://graph.facebook.com/v22.0/me?access_token=${encodeURIComponent(accessToken)}`,
-      // graph.instagram.com attempts
-      `https://graph.instagram.com/v22.0/me?fields=${minFields}&access_token=${encodeURIComponent(accessToken)}`,
-      `https://graph.instagram.com/me?access_token=${encodeURIComponent(accessToken)}`,
-    ];
-
-    for (const url of profileAttempts) {
-      try {
-        const short = url.replace(/access_token=[^&]+/, "access_token=***").substring(0, 120);
-        debug.push(`try: ${short}`);
-        const res = await fetch(url);
-        const text = await res.text();
-        debug.push(`status: ${res.status}, body: ${text.substring(0, 300)}`);
-        const parsed = JSON.parse(text);
-        if (!parsed.error && (parsed.username || parsed.id)) {
-          profile = parsed;
-          debug.push("SUCCESS");
-          break;
-        }
-        debug.push(`failed: ${parsed.error?.message || "no data"}`);
-      } catch (e) {
-        debug.push(`error: ${e?.message}`);
-      }
-    }
-
-    if (!profile) {
-      return jsonResponse({
-        error: "Failed to fetch Instagram profile after all attempts.",
-        debug,
-      });
+    } catch {
+      // Long-lived token exchange failed, use short-lived token
     }
 
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
+    // Return token to client — profile will be fetched from browser
+    // (Meta blocks Graph API calls from server environments like Deno Deploy)
     return jsonResponse({
       success: true,
-      profile: {
-        username: profile.username || "",
-        name: profile.name || "",
-        profilePictureUrl: profile.profile_picture_url || "",
-        biography: profile.biography || "",
-        followersCount: profile.followers_count || 0,
-        followsCount: profile.follows_count || 0,
-        mediaCount: profile.media_count || 0,
-        accountType: profile.account_type || "",
-        igUserId: profile.user_id || userId || "",
-      },
       accessToken,
       tokenExpiresAt,
+      userId,
     });
   } catch (err) {
     return jsonResponse({
       error: "Internal server error: " + (err?.message || String(err)),
-      debug,
     });
   }
 });

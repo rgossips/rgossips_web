@@ -51,6 +51,27 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     }
   }, []);
 
+  const fetchProfileFromBrowser = async (accessToken) => {
+    // Fetch profile directly from the browser — Meta blocks server-side calls
+    // from Supabase/Deno Deploy, but allows browser-based requests.
+    const fields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
+    const urls = [
+      `https://graph.instagram.com/v22.0/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`,
+      `https://graph.instagram.com/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`,
+    ];
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.error && data.username) return data;
+      } catch {
+        continue;
+      }
+    }
+    throw new Error("Failed to fetch Instagram profile. Make sure your account is a Professional (Business or Creator) account.");
+  };
+
   const exchangeCode = async (code) => {
     setConnecting(true);
     setError("");
@@ -58,19 +79,37 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       const supabase = createClient();
       const redirectUri = `${window.location.origin}/instagram-callback`;
 
+      // Step 1: Exchange code for token via edge function (needs app secret)
       const { data, error: funcError } = await supabase.functions.invoke(
         "instagram-connect",
         { body: { code, redirectUri } }
       );
 
       if (funcError) throw new Error(funcError.message);
-      if (data?.error) {
-        const debugInfo = data.debug ? "\n\nDebug:\n" + data.debug.join("\n") : "";
-        throw new Error(data.error + debugInfo);
-      }
+      if (data?.error) throw new Error(data.error);
+
+      const accessToken = data.accessToken;
+      const tokenExpiresAt = data.tokenExpiresAt;
+
+      if (!accessToken) throw new Error("No access token received from Instagram");
+
+      // Step 2: Fetch profile from browser (Meta blocks server-side calls)
+      const igProfile = await fetchProfileFromBrowser(accessToken);
 
       if (mountedRef.current) {
-        setProfile({ ...data.profile, accessToken: data.accessToken, tokenExpiresAt: data.tokenExpiresAt });
+        setProfile({
+          username: igProfile.username || "",
+          name: igProfile.name || "",
+          profilePictureUrl: igProfile.profile_picture_url || "",
+          biography: igProfile.biography || "",
+          followersCount: igProfile.followers_count || 0,
+          followsCount: igProfile.follows_count || 0,
+          mediaCount: igProfile.media_count || 0,
+          accountType: igProfile.account_type || "",
+          igUserId: igProfile.user_id || "",
+          accessToken,
+          tokenExpiresAt,
+        });
       }
     } catch (err) {
       if (mountedRef.current) {
