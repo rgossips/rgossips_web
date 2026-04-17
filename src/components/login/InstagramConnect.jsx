@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 
 function formatCount(n) {
   if (!n) return "0";
@@ -54,23 +55,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     setConnecting(true);
     setError("");
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const supabase = createClient();
       const redirectUri = `${window.location.origin}/instagram-callback`;
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/instagram-connect`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({ code, redirectUri }),
-      });
+      const { data, error: funcError } = await supabase.functions.invoke(
+        "instagram-connect",
+        { body: { code, redirectUri } }
+      );
 
-      const data = await res.json();
+      if (funcError) throw new Error(funcError.message);
       if (data?.error) {
-        // Temporarily show debug info to diagnose Instagram API issues
         const debugInfo = data.debug ? "\n\nDebug:\n" + data.debug.join("\n") : "";
         throw new Error(data.error + debugInfo);
       }
@@ -112,14 +106,12 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
     try {
       // Check uniqueness across all tables
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      const uniqueRes = await fetch(`${supabaseUrl}/functions/v1/check-uniqueness`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        body: JSON.stringify({ instagram: profile.username, role }),
-      });
-      const uniqueCheck = await uniqueRes.json();
+      const supabase = createClient();
+      const { data: uniqueCheck, error: uniqueError } = await supabase.functions.invoke(
+        "check-uniqueness",
+        { body: { instagram: profile.username, role } }
+      );
+      if (uniqueError) throw new Error(uniqueError.message);
 
       if (uniqueCheck?.conflicts?.includes("instagram")) {
         const source = uniqueCheck.instagramConflictSource;
