@@ -1,8 +1,15 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -10,23 +17,16 @@ Deno.serve(async (req) => {
   }
 
   if (req.method === "GET") {
-    return new Response(
-      JSON.stringify({ error: "Use POST method with { code, redirectUri } body" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ error: "Use POST method with { code, redirectUri } body" });
   }
 
-  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
   const debug: string[] = [];
 
   try {
     const { code, redirectUri } = await req.json();
 
     if (!code || !redirectUri) {
-      return new Response(
-        JSON.stringify({ error: "code and redirectUri are required" }),
-        { status: 200, headers: jsonHeaders }
-      );
+      return jsonResponse({ error: "code and redirectUri are required" });
     }
 
     const INSTAGRAM_APP_ID = Deno.env.get("INSTAGRAM_APP_ID")!;
@@ -51,132 +51,111 @@ Deno.serve(async (req) => {
       }
     );
 
-    const tokenText = await tokenRes.text();
-    debug.push(`token response status: ${tokenRes.status}`);
-    debug.push(`token response: ${tokenText.substring(0, 500)}`);
-
     let tokenData: any;
     try {
+      const tokenText = await tokenRes.text();
+      debug.push(`token status: ${tokenRes.status}, body: ${tokenText.substring(0, 300)}`);
       tokenData = JSON.parse(tokenText);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid token response from Instagram", debug }),
-        { status: 200, headers: jsonHeaders }
-      );
+    } catch (e) {
+      return jsonResponse({ error: "Invalid token response from Instagram", debug });
     }
 
     if (!tokenData.access_token) {
-      const errDetail = tokenData.error_message || tokenData.error?.message || "";
-      if (errDetail.includes("code has been used") || errDetail.includes("expired") || errDetail.includes("authorization code")) {
-        return new Response(
-          JSON.stringify({ error: "Instagram authorization expired. Please try connecting again.", debug }),
-          { status: 200, headers: jsonHeaders }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ error: "Failed to connect Instagram. Please try again.", debug }),
-        { status: 200, headers: jsonHeaders }
-      );
+      const errDetail = tokenData.error_message || tokenData.error?.message || "unknown";
+      debug.push(`token error: ${errDetail}`);
+      return jsonResponse({ error: "Failed to get Instagram token: " + errDetail, debug });
     }
 
-    debug.push(`short-lived token obtained, user_id: ${tokenData.user_id}`);
+    debug.push(`short-lived token OK, user_id: ${tokenData.user_id}`);
 
     // Step 2: Exchange for long-lived token (60 days)
-    const longRes = await fetch(
-      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(
-        INSTAGRAM_APP_SECRET
-      )}&access_token=${encodeURIComponent(tokenData.access_token)}`
-    );
-
-    const longText = await longRes.text();
-    debug.push(`long-lived token response status: ${longRes.status}`);
-    debug.push(`long-lived token response: ${longText.substring(0, 500)}`);
-
-    let longData: any;
+    let longData: any = {};
     try {
+      const longRes = await fetch(
+        `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(
+          INSTAGRAM_APP_SECRET
+        )}&access_token=${encodeURIComponent(tokenData.access_token)}`
+      );
+      const longText = await longRes.text();
+      debug.push(`long-lived status: ${longRes.status}, body: ${longText.substring(0, 300)}`);
       longData = JSON.parse(longText);
-    } catch {
-      longData = {};
+    } catch (e) {
+      debug.push(`long-lived token exchange failed: ${e?.message}`);
     }
+
     const accessToken = longData.access_token || tokenData.access_token;
     debug.push(`using ${longData.access_token ? "long-lived" : "short-lived"} token`);
 
-    // Step 3: Fetch user profile
-    // Try multiple API versions and field combinations
-    let profile: any = null;
-    const attempts = [
-      { url: "https://graph.instagram.com/v22.0/me", fields: "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count" },
-      { url: "https://graph.instagram.com/v22.0/me", fields: "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count" },
-      { url: "https://graph.instagram.com/v20.0/me", fields: "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count" },
-      { url: "https://graph.instagram.com/v20.0/me", fields: "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count" },
-      { url: "https://graph.instagram.com/me", fields: "username,name,profile_picture_url,followers_count,follows_count,media_count" },
-    ];
+    // Step 3: Fetch user profile — single attempt with v22.0
+    const profileFields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
+    const profileUrl = `https://graph.instagram.com/v22.0/me?fields=${profileFields}&access_token=${encodeURIComponent(accessToken)}`;
+    debug.push(`fetching profile: v22.0 with full fields`);
 
-    for (const attempt of attempts) {
-      const profileUrl = `${attempt.url}?fields=${attempt.fields}&access_token=${encodeURIComponent(accessToken)}`;
-      debug.push(`trying: ${attempt.url} with fields: ${attempt.fields}`);
-
-      const profileRes = await fetch(profileUrl);
+    const profileRes = await fetch(profileUrl);
+    let profile: any;
+    try {
       const profileText = await profileRes.text();
-      debug.push(`response ${profileRes.status}: ${profileText.substring(0, 300)}`);
-
-      try {
-        profile = JSON.parse(profileText);
-      } catch {
-        debug.push("failed to parse response");
-        continue;
-      }
-
-      if (!profile.error) {
-        debug.push("SUCCESS - profile fetched");
-        break;
-      }
-
-      debug.push(`error: ${profile.error?.message || JSON.stringify(profile.error)}`);
+      debug.push(`profile status: ${profileRes.status}, body: ${profileText.substring(0, 500)}`);
+      profile = JSON.parse(profileText);
+    } catch (e) {
+      return jsonResponse({ error: "Invalid profile response from Instagram", debug });
     }
 
-    if (!profile || profile.error) {
-      const errMsg = profile?.error?.message || "Unknown error";
-      return new Response(
-        JSON.stringify({
-          error: "Failed to fetch Instagram profile: " + errMsg,
+    // If v22.0 fails, try one fallback with minimal fields
+    if (profile.error) {
+      debug.push(`v22.0 failed: ${profile.error.message || JSON.stringify(profile.error)}`);
+      const fallbackFields = "username,name,account_type,profile_picture_url,followers_count,follows_count,media_count";
+      const fallbackUrl = `https://graph.instagram.com/v20.0/me?fields=${fallbackFields}&access_token=${encodeURIComponent(accessToken)}`;
+      debug.push(`trying fallback: v20.0`);
+
+      const fallbackRes = await fetch(fallbackUrl);
+      try {
+        const fallbackText = await fallbackRes.text();
+        debug.push(`fallback status: ${fallbackRes.status}, body: ${fallbackText.substring(0, 500)}`);
+        profile = JSON.parse(fallbackText);
+      } catch (e) {
+        return jsonResponse({ error: "Invalid fallback profile response", debug });
+      }
+    }
+
+    if (profile.error) {
+      const errMsg = profile.error.message || "Unknown error";
+
+      if (errMsg.includes("does not exist")) {
+        return jsonResponse({
+          error: "Could not access this Instagram profile. Make sure your account is a Professional account (Business or Creator) in Instagram Settings.",
           debug,
-        }),
-        { status: 200, headers: jsonHeaders }
-      );
+        });
+      }
+
+      return jsonResponse({ error: "Failed to fetch Instagram profile: " + errMsg, debug });
     }
 
     // Calculate token expiry (long-lived tokens last 60 days)
     const expiresIn = longData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        profile: {
-          username: profile.username || "",
-          name: profile.name || "",
-          profilePictureUrl: profile.profile_picture_url || "",
-          biography: profile.biography || "",
-          followersCount: profile.followers_count || 0,
-          followsCount: profile.follows_count || 0,
-          mediaCount: profile.media_count || 0,
-          accountType: profile.account_type || "",
-          igUserId: profile.user_id || "",
-        },
-        accessToken: accessToken,
-        tokenExpiresAt,
-      }),
-      { status: 200, headers: jsonHeaders }
-    );
+    return jsonResponse({
+      success: true,
+      profile: {
+        username: profile.username || "",
+        name: profile.name || "",
+        profilePictureUrl: profile.profile_picture_url || "",
+        biography: profile.biography || "",
+        followersCount: profile.followers_count || 0,
+        followsCount: profile.follows_count || 0,
+        mediaCount: profile.media_count || 0,
+        accountType: profile.account_type || "",
+        igUserId: profile.user_id || "",
+      },
+      accessToken: accessToken,
+      tokenExpiresAt,
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({
-        error: "Internal server error: " + (err?.message || String(err)),
-        debug,
-      }),
-      { status: 200, headers: jsonHeaders }
-    );
+    // Always return CORS headers even on crash
+    return jsonResponse({
+      error: "Internal server error: " + (err?.message || String(err)),
+      debug,
+    });
   }
 });
