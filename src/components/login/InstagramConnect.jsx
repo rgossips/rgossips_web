@@ -51,27 +51,6 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     }
   }, []);
 
-  const fetchProfileFromBrowser = async (accessToken) => {
-    // Fetch profile directly from the browser — Meta blocks server-side calls
-    // from Supabase/Deno Deploy, but allows browser-based requests.
-    const fields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
-    const urls = [
-      `https://graph.instagram.com/v22.0/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`,
-      `https://graph.instagram.com/me?fields=${fields}&access_token=${encodeURIComponent(accessToken)}`,
-    ];
-
-    for (const url of urls) {
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (!data.error && data.username) return data;
-      } catch {
-        continue;
-      }
-    }
-    throw new Error("Failed to fetch Instagram profile. Make sure your account is a Professional (Business or Creator) account.");
-  };
-
   const exchangeCode = async (code) => {
     setConnecting(true);
     setError("");
@@ -93,8 +72,22 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
       if (!accessToken) throw new Error("No access token received from Instagram");
 
-      // Step 2: Fetch profile from browser (Meta blocks server-side calls)
-      const igProfile = await fetchProfileFromBrowser(accessToken);
+      // Step 2: Fetch profile via Next.js API route (runs on Vercel,
+      // not Supabase — Meta blocks Supabase/Deno servers, and browser
+      // fetch is blocked by CORS)
+      const profileRes = await fetch("/api/instagram-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
+      });
+      const profileData = await profileRes.json();
+
+      if (profileData.error) {
+        // DEBUG: show token so user can test it manually in browser
+        throw new Error(profileData.error + "\n\nDEBUG TOKEN (test in browser):\nhttps://graph.instagram.com/me?fields=username&access_token=" + accessToken);
+      }
+
+      const igProfile = profileData.profile;
 
       if (mountedRef.current) {
         setProfile({
