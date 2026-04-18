@@ -55,53 +55,24 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     setConnecting(true);
     setError("");
     try {
-      const supabase = createClient();
       const redirectUri = `${window.location.origin}/instagram-callback`;
 
-      // Step 1: Exchange code for token via edge function (needs app secret)
-      const { data, error: funcError } = await supabase.functions.invoke(
-        "instagram-connect",
-        { body: { code, redirectUri } }
-      );
-
-      if (funcError) throw new Error(funcError.message);
-      if (data?.error) throw new Error(data.error);
-
-      const accessToken = data.accessToken;
-      const tokenExpiresAt = data.tokenExpiresAt;
-
-      if (!accessToken) throw new Error("No access token received from Instagram");
-
-      // Step 2: Fetch profile via Next.js API route (runs on Vercel,
-      // not Supabase — Meta blocks Supabase/Deno servers, and browser
-      // fetch is blocked by CORS)
-      const profileRes = await fetch("/api/instagram-profile", {
+      // Full flow via Next.js API route (Vercel server):
+      // code exchange + long-lived token + profile fetch
+      const res = await fetch("/api/instagram-connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ code, redirectUri }),
       });
-      const profileData = await profileRes.json();
+      const data = await res.json();
 
-      if (profileData.error) {
-        // DEBUG: show token so user can test it manually in browser
-        throw new Error(profileData.error + "\n\nDEBUG TOKEN (test in browser):\nhttps://graph.instagram.com/me?fields=username&access_token=" + accessToken);
-      }
-
-      const igProfile = profileData.profile;
+      if (data.error) throw new Error(data.error);
 
       if (mountedRef.current) {
         setProfile({
-          username: igProfile.username || "",
-          name: igProfile.name || "",
-          profilePictureUrl: igProfile.profile_picture_url || "",
-          biography: igProfile.biography || "",
-          followersCount: igProfile.followers_count || 0,
-          followsCount: igProfile.follows_count || 0,
-          mediaCount: igProfile.media_count || 0,
-          accountType: igProfile.account_type || "",
-          igUserId: igProfile.user_id || "",
-          accessToken,
-          tokenExpiresAt,
+          ...data.profile,
+          accessToken: data.accessToken,
+          tokenExpiresAt: data.tokenExpiresAt,
         });
       }
     } catch (err) {
