@@ -4,8 +4,7 @@ export async function GET(request) {
   const role = url.searchParams.get("role") || "influencer";
 
   const appId = process.env.NEXT_PUBLIC_INSTAGRAM_APP_ID;
-  const scope =
-    "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish,instagram_business_manage_insights";
+  const scope = "instagram_business_basic,instagram_business_manage_insights";
 
   // Build the OAuth URL on the CLIENT side using window.location.origin
   // so the redirect_uri always matches the actual domain the user is on.
