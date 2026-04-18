@@ -201,27 +201,27 @@ const BrandSignUpForm = ({
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-1">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-slate-900">
-          {brandInvitation ? "Complete Your Profile" : "Register Brand"}
+          {invitation ? "Complete Your Profile" : "Register Brand"}
         </h2>
         <p className="text-sm text-slate-500">
-          {brandInvitation
+          {invitation
             ? "Your brand has been pre-registered. Verify your details to get started."
             : "Verify your business to start collaborating"}
         </p>
       </div>
 
       {/* Admin Invitation Banner */}
-      {brandInvitation && (
+      {invitation && (
         <div className="p-4 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center gap-3">
-          {brandInvitation.logo_url ? (
-            <img src={brandInvitation.logo_url} alt={brandInvitation.brand_name} className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm" />
+          {invitation.logo_url ? (
+            <img src={invitation.logo_url} alt={invitation.brand_name} className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm" />
           ) : (
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#9810FA] to-[#E60076] flex items-center justify-center text-white font-bold text-lg shadow-sm">
-              {brandInvitation.brand_name?.charAt(0)?.toUpperCase() || "?"}
+              {invitation.brand_name?.charAt(0)?.toUpperCase() || "?"}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-slate-900">{brandInvitation.brand_name}</p>
+            <p className="text-sm font-bold text-slate-900">{invitation.brand_name}</p>
             <p className="text-[11px] text-purple-600 font-medium">Pre-registered by RecentGossips</p>
           </div>
           <BadgeCheck size={20} className="text-purple-500 shrink-0" />
