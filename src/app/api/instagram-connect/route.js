@@ -52,6 +52,15 @@ export async function POST(request) {
       expiresIn = longData.expires_in || 5184000;
     }
 
+    // Debug: inspect what the token actually has access to
+    const debugRes = await fetch(
+      `https://graph.facebook.com/debug_token?input_token=${encodeURIComponent(accessToken)}&access_token=${encodeURIComponent(appId + "|" + appSecret)}`
+    );
+    let debugInfo = null;
+    try {
+      debugInfo = await debugRes.json();
+    } catch {}
+
     // Step 3: Fetch user profile
     const fields = "user_id,username,name,account_type,profile_picture_url,biography,followers_count,follows_count,media_count";
     const profileRes = await fetch(
@@ -71,8 +80,8 @@ export async function POST(request) {
     if (profile.error) {
       return Response.json({
         error: "Failed to fetch profile: " + (profile.error.message || "Unknown error"),
-        // Return token so client can debug
         debugToken: accessToken,
+        tokenDebug: debugInfo,
       });
     }
 

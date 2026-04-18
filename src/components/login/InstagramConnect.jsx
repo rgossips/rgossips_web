@@ -66,7 +66,10 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       });
       const data = await res.json();
 
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        const debugStr = data.tokenDebug ? "\n\nToken Debug:\n" + JSON.stringify(data.tokenDebug, null, 2) : "";
+        throw new Error(data.error + debugStr);
+      }
 
       if (mountedRef.current) {
         setProfile({
