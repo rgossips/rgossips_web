@@ -35,6 +35,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Download Instagram profile picture and store in Supabase Storage (they expire otherwise)
+    let storedProfilePictureUrl = profilePictureUrl || "";
+    if (profilePictureUrl && (profilePictureUrl.includes("cdninstagram.com") || profilePictureUrl.includes("fbcdn.net"))) {
+      try {
+        const bucket = table === "influencer_profiles" ? "influencer-photos" : "brand-icons";
+        await supabaseAdmin.storage.createBucket(bucket, { public: true, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"] });
+
+        const imgRes = await fetch(profilePictureUrl);
+        if (imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+          const buffer = new Uint8Array(await imgRes.arrayBuffer());
+          const path = `profiles/${userId}.jpg`;
+          const { error: uploadErr } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, { contentType, upsert: true });
+          if (!uploadErr) {
+            const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
+            storedProfilePictureUrl = data.publicUrl;
+          }
+        }
+      } catch (e) {
+        console.error("Profile picture migration failed:", e);
+        // Keep the original URL as fallback
+      }
+    }
+
     // Build the row based on table schema
     let row: Record<string, unknown>;
 
@@ -44,7 +68,7 @@ Deno.serve(async (req) => {
         full_name: name || "",
         username: username || instagram || "",
         instagram_handle: instagram || "",
-        profile_photo_url: profilePictureUrl || "",
+        profile_photo_url: storedProfilePictureUrl,
         followers_count: followersCount || 0,
         follows_count: followsCount || 0,
         media_count: mediaCount || 0,
@@ -62,7 +86,7 @@ Deno.serve(async (req) => {
         contact_email: "",
         contact_phone: phone || "",
         instagram_username: instagram || "",
-        logo_url: profilePictureUrl || "",
+        logo_url: storedProfilePictureUrl,
         gstin: gstinData?.gstin || "",
         gstin_legal_name: gstinData?.legalName || "",
         gstin_trade_name: gstinData?.tradeName || "",
