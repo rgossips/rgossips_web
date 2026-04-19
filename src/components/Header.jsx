@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { HiMenu, HiX } from "react-icons/hi";
@@ -16,6 +16,11 @@ const Header = () => {
 
   const dashboardPath = role === "brand" ? "/brands" : "/influencer";
   const displayName = (profile?.full_name || profile?.contact_name || profile?.brand_name || "").split(" ")[0] || "";
+
+  // Prefetch login route so click is instant
+  useEffect(() => {
+    if (!user) router.prefetch("/login");
+  }, [user, router]);
 
   // Navigation items based on your reference images
   const navItems = [
@@ -75,6 +80,7 @@ const Header = () => {
             ) : (
               <button
                 onClick={() => router.push(user ? dashboardPath : "/login")}
+                onMouseEnter={() => !user && router.prefetch("/login")}
                 className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
               >
                 {loading ? "..." : "Login / Sign Up"}

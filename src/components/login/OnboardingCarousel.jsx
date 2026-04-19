@@ -53,8 +53,8 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
       <div className="absolute top-0 left-0 w-full h-[60%] pointer-events-none bg-linear-to-b from-[#FA288A] to-[#FFFFFF]" />
 
       {/* 2. Top Content (Image/Cards) */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full pt-20">
-        <div className="relative h-[320px] w-full px-10">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full pt-8 sm:pt-20 flex-1 min-h-0">
+        <div className="relative h-[220px] sm:h-[320px] w-full px-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={current}
@@ -79,19 +79,19 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
       </div>
 
       {/* 3. Bottom Content (Text & UI) */}
-      <div className="relative z-10 flex flex-col items-center text-center px-8 pb-12 w-full max-w-md">
+      <div className="relative z-10 flex flex-col items-center text-center px-8 pb-6 sm:pb-12 w-full max-w-md shrink-0">
         {/* Text Section */}
-        <div className="mb-6 space-y-3">
-          <h2 className="text-[26px] font-bold text-[#0F172A] leading-tight">
+        <div className="mb-4 sm:mb-6 space-y-2 sm:space-y-3">
+          <h2 className="text-[22px] sm:text-[26px] font-bold text-[#0F172A] leading-tight">
             {slides[current].title}
           </h2>
-          <p className="text-slate-500 text-[15px] leading-relaxed px-4">
+          <p className="text-slate-500 text-[14px] sm:text-[15px] leading-relaxed px-4">
             {slides[current].description}
           </p>
         </div>
 
         {/* Progress Indicators (Pill shape) */}
-        <div className="flex gap-1.5 mb-10">
+        <div className="flex gap-1.5 mb-5 sm:mb-10">
           {slides.map((_, i) => (
             <div
               key={i}
@@ -108,14 +108,14 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
             <>
               <Button
                 onClick={nextSlide}
-                className="w-full cursor-pointer btn-purple h-[58px] text-lg font-semibold rounded-[20px] shadow-lg shadow-purple-100 transition-all active:scale-[0.98]"
+                className="w-full cursor-pointer btn-purple h-[50px] sm:h-[58px] text-lg font-semibold rounded-[20px] shadow-lg shadow-purple-100 transition-all active:scale-[0.98]"
               >
                 Next
               </Button>
               <Button
                 variant="outline"
                 onClick={skipToLast}
-                className="w-full cursor-pointer border-[#FA288A] text-[#FA288A] hover:bg-purple-50 h-[58px] text-lg font-semibold rounded-[20px] border-[1.5px]"
+                className="w-full cursor-pointer border-[#FA288A] text-[#FA288A] hover:bg-purple-50 h-[50px] sm:h-[58px] text-lg font-semibold rounded-[20px] border-[1.5px]"
               >
                 Skip
               </Button>
@@ -129,14 +129,14 @@ const OnboardingCarousel = ({ onLoginClick, onSignUpClick }) => {
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={onLoginClick}
-                  className="w-full cursor-pointer btn-purple h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
+                  className="w-full cursor-pointer btn-purple h-[50px] sm:h-[58px] rounded-[20px] text-lg font-semibold shadow-lg shadow-purple-100"
                 >
                   Sign In
                 </Button>
                 <Button
                   onClick={onSignUpClick}
                   variant="outline"
-                  className="w-full cursor-pointer border-[#FA288A] h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#FA288A]"
+                  className="w-full cursor-pointer border-[#FA288A] h-[50px] sm:h-[58px] rounded-[20px] text-lg font-semibold border-[1.5px] text-[#FA288A]"
                 >
                   Sign Up
                 </Button>

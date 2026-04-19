@@ -1,17 +1,26 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useGlobal } from "@/context/GlobalContext";
 import OnboardingCarousel from "@/components/login/OnboardingCarousel";
 import RoleSelection from "@/components/login/RoleSelection";
-import SignUpForm from "@/components/login/SignUpForm";
-import BrandSignUpForm from "@/components/login/BrandSignUpForm";
-import CategorySelection from "@/components/login/CategorySelection";
-import Preferences from "@/components/login/Preferences";
-import InstagramConnect from "@/components/login/InstagramConnect";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
 import { Loader2 } from "lucide-react";
+
+// Lazy-load heavy components — only loaded when user reaches that step
+const loadingFallback = () => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 size={24} className="animate-spin text-purple-500" />
+  </div>
+);
+
+const InstagramConnect = dynamic(() => import("@/components/login/InstagramConnect"), { loading: loadingFallback });
+const SignUpForm = dynamic(() => import("@/components/login/SignUpForm"), { loading: loadingFallback });
+const BrandSignUpForm = dynamic(() => import("@/components/login/BrandSignUpForm"), { loading: loadingFallback });
+const CategorySelection = dynamic(() => import("@/components/login/CategorySelection"), { loading: loadingFallback });
+const Preferences = dynamic(() => import("@/components/login/Preferences"), { loading: loadingFallback });
 
 const Login = () => {
   const router = useRouter();
