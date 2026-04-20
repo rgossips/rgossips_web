@@ -191,6 +191,19 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
               Connect with Instagram
             </span>
           </button>
+
+          {/* Permissions disclaimer */}
+          <div className="w-full text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-left">
+            <p className="font-bold text-slate-600">We'll access:</p>
+            <p>• Your profile info — username, name, bio, profile picture</p>
+            <p>• Audience stats — followers, following, post count</p>
+            <p>• Reels & media insights — reach, impressions, engagement</p>
+            <p className="pt-1.5 text-slate-400">
+              This info will be shown to brands on your media kit to help them
+              evaluate collaborations. We never post, comment, or message on
+              your behalf.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
