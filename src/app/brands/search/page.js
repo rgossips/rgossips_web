@@ -102,20 +102,17 @@ const InfluencerDirectory = () => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("influencer_profiles")
-        .select(
-          "influencer_id, full_name, username, instagram_handle, profile_photo_url, followers_count, follows_count, media_count, categories, city, status"
-        )
-        .eq("status", "active")
-        .limit(200);
+      // Use edge function (service role) so RLS doesn't hide influencers from brand users.
+      const { data, error } = await supabase.functions.invoke("list-influencers", {
+        body: {},
+      });
 
       if (!cancelled) {
-        if (error) {
-          console.error("Failed to load influencers:", error);
+        if (error || data?.error) {
+          console.error("Failed to load influencers:", error || data?.error);
           setInfluencers([]);
         } else {
-          setInfluencers(data || []);
+          setInfluencers(data?.influencers || []);
         }
         setLoading(false);
       }

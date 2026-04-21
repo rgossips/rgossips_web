@@ -161,8 +161,8 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   };
 
   const content = (
-    <form onSubmit={handleSubmit} className="flex flex-col max-h-[85vh]">
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
             {error}
@@ -500,7 +500,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       </div>
 
       {/* Footer */}
-      <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100 bg-white">
+      <div className="shrink-0 grid grid-cols-2 gap-3 p-4 border-t border-gray-100 bg-white">
         <button
           type="button"
           onClick={() => onOpenChange(false)}
@@ -554,7 +554,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="sm:max-w-[680px] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl"
+          className="sm:max-w-[680px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl"
         >
           {header}
           {content}
@@ -567,7 +567,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerPortal>
         <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
-        <DrawerContent className="fixed inset-x-0 bottom-0 z-50 max-h-[92vh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none">
+        <DrawerContent className="fixed inset-x-0 bottom-0 z-50 h-[92vh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
           {header}
           {content}
         </DrawerContent>
