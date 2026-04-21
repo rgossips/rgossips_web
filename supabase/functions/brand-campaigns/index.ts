@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
         target_follower_max: campaign.target_follower_max ? Number(campaign.target_follower_max) : 1000000,
         target_influencer_tier: campaign.target_influencer_tier || "all",
         target_cities: cities.length > 0 ? cities : ["All India"],
-        status: "draft",
+        status: campaign.status === "active" ? "active" : "draft",
       };
 
       const { data: created, error } = await supabase

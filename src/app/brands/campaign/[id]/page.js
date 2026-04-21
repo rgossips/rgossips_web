@@ -169,7 +169,9 @@ const CampaignDetailPage = () => {
         </span>
       </nav>
 
-      <div className="px-6 pt-5 space-y-5 max-w-3xl mx-auto">
+      <div className="px-6 pt-5 pb-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
+        {/* ─── LEFT: Campaign details ─── */}
+        <div className="space-y-5 min-w-0">
         {/* Banner */}
         {campaign.bannerImage && (
           <div className="rounded-2xl overflow-hidden aspect-[16/9] bg-gray-100">
@@ -332,21 +334,38 @@ const CampaignDetailPage = () => {
             </div>
           </Section>
         )}
+        </div>
 
-        {/* Applications */}
-        <Section title={`Applications (${applications.length})`}>
-          {applications.length === 0 ? (
-            <p className="text-xs text-gray-400 py-4 text-center">
-              No applications yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {applications.map((a) => (
-                <ApplicationRow key={a.id} app={a} />
-              ))}
+        {/* ─── RIGHT: Applications ─── */}
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+          <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">
+                Applications
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-[#5851DB]">
+                {applications.length}
+              </span>
             </div>
-          )}
-        </Section>
+            {applications.length === 0 ? (
+              <div className="py-10 text-center">
+                <Users size={24} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-xs text-gray-400">
+                  No applications yet.
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Creators will appear here once they apply.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {applications.map((a) => (
+                  <ApplicationRow key={a.id} app={a} />
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );

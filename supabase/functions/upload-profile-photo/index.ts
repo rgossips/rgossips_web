@@ -17,10 +17,17 @@ Deno.serve(async (req) => {
     const formData = await req.formData();
     const userId = formData.get("userId") as string;
     const file = formData.get("file") as File;
+    const table = (formData.get("table") as string) || "influencer_profiles";
 
     if (!userId || !file) {
       return new Response(
         JSON.stringify({ error: "userId and file are required" }),
+        { status: 400, headers: jsonHeaders }
+      );
+    }
+    if (table !== "influencer_profiles" && table !== "brand_profiles") {
+      return new Response(
+        JSON.stringify({ error: "Invalid table" }),
         { status: 400, headers: jsonHeaders }
       );
     }
@@ -55,14 +62,17 @@ Deno.serve(async (req) => {
 
     const publicUrl = urlData.publicUrl;
 
-    // Update profile
+    // Update profile — different column per table
+    const updatePayload =
+      table === "brand_profiles"
+        ? { logo_url: publicUrl, updated_at: new Date().toISOString() }
+        : { custom_profile_photo_url: publicUrl, updated_at: new Date().toISOString() };
+    const idCol = table === "brand_profiles" ? "brand_id" : "influencer_id";
+
     const { error: dbError } = await supabaseAdmin
-      .from("influencer_profiles")
-      .update({
-        custom_profile_photo_url: publicUrl,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("influencer_id", userId);
+      .from(table)
+      .update(updatePayload)
+      .eq(idCol, userId);
 
     if (dbError) {
       console.error("DB error:", dbError);

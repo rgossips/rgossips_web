@@ -1,222 +1,393 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import {
-  ChevronLeft,
-  CheckCircle2,
   ChevronRight,
-  Globe,
   MapPin,
   Briefcase,
   User,
   Phone,
   Mail,
   Instagram,
-  Youtube,
-  Twitter,
-  Facebook,
   FileText,
-  Lock,
-  Bell,
-  Settings,
   LogOut,
-  ExternalLink,
+  Pencil,
+  Camera,
+  Loader2,
+  X,
+  Check,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
+
+const CATEGORIES = [
+  "Beauty & Skincare",
+  "Fashion & Lifestyle",
+  "Food & Beverage",
+  "Health, Fitness & Wellness",
+  "Travel & Hospitality",
+  "Technology & Gadgets",
+  "Parenting & Family",
+  "Home & Decor",
+  "Finance & Personal Finance",
+  "Education & Career",
+  "Gaming & Entertainment",
+  "Automobile & Mobility",
+  "Entrepreneurship & Business",
+  "Sustainable & Eco-conscious Living",
+  "Pet Care & Animals",
+];
 
 const BrandProfile = () => {
   const router = useRouter();
+  const { user, profile, signOut, refreshProfile } = useAuth();
+  const supabase = createClient();
+  const fileInputRef = useRef(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FE] flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-[#5851DB]" />
+      </div>
+    );
+  }
+
+  const brandName =
+    profile.gstin_trade_name ||
+    profile.brand_name ||
+    profile.contact_name ||
+    "Brand";
+  const displayName = profile.gstin_trade_name || profile.brand_name || brandName;
+  const logoUrl = profile.logo_url;
+  const initials = displayName.charAt(0).toUpperCase();
+  const categories = Array.isArray(profile.categories) ? profile.categories : [];
+
+  const handleLogoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    setUploadError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("userId", user.id);
+      fd.append("file", file, file.name);
+      fd.append("table", "brand_profiles");
+      const { data, error } = await supabase.functions.invoke("upload-profile-photo", {
+        body: fd,
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      await refreshProfile();
+    } catch (err) {
+      setUploadError(err.message || "Failed to upload logo");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const saveCategories = async (next) => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("update-profile", {
+        body: {
+          userId: user.id,
+          table: "brand_profiles",
+          categories: next,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      await refreshProfile();
+    } catch (err) {
+      alert("Failed to update categories: " + err.message);
+    }
+  };
 
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
-      {/* 1. Header Section - No overlap with the card below */}
       <div className="bg-linear-to-b from-[#4C75BE] to-[#4A3996] pt-12 pb-8 px-6 rounded-b-4xl mb-20">
-        <div className="flex items-center text-white mb-4">
-          <h1 className="text-2xl font-bold">My Profile</h1>
-          <div className="w-8" />
-        </div>
+        <h1 className="text-2xl font-bold text-white">My Profile</h1>
       </div>
 
-      {/* 2. Main Profile Card - Now positioned completely outside/below the blue header */}
+      {/* Main card */}
       <div className="px-6 -mt-4 mb-8">
         <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
-          {/* Avatar positioned relatively within the card flow */}
           <div className="flex flex-col items-center -mt-16">
             <div className="relative">
-              <div className="w-24 h-24 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl">
-                N
+              <div className="w-24 h-24 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl overflow-hidden">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
+                {uploading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <Loader2 size={20} className="text-white animate-spin" />
+                  </div>
+                )}
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md">
-                <div className="bg-blue-600 p-1.5 rounded-full text-white">
-                  <Instagram size={12} />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
+                title="Change logo"
+              >
+                <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
+                  <Camera size={12} />
                 </div>
-              </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoChange}
+              />
             </div>
+
+            {uploadError && (
+              <p className="mt-2 text-[11px] text-red-500">{uploadError}</p>
+            )}
 
             <div className="text-center mt-4">
-              <h2 className="text-xl font-extrabold text-gray-900 flex items-center justify-center gap-1.5">
-                Nike India
-                <CheckCircle2
-                  size={18}
-                  className="text-blue-500 fill-blue-500/10"
-                />
+              <h2 className="text-xl font-extrabold text-gray-900">
+                {displayName}
               </h2>
-              <p className="text-[11px] text-gray-400 font-semibold mt-1">
-                @nikeindia • ID: NK-I30452
-              </p>
+              {profile.instagram_username && (
+                <p className="text-[11px] text-gray-400 font-semibold mt-1">
+                  @{profile.instagram_username}
+                </p>
+              )}
             </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 mt-8">
-            <StatBox label="Campaigns" value="58" color="text-blue-600" />
-            <StatBox label="Rating" value="4.8★" color="text-green-500" />
-            <StatBox label="Paid Out" value="₹4.2Cr" color="text-orange-500" />
           </div>
         </div>
       </div>
 
-      {/* 3. Information Sections */}
       <div className="px-6 space-y-8">
         {/* Brand Info */}
         <Section title="Brand Information">
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
             <InfoRow
               icon={<Briefcase />}
-              iconColor="text-blue-400"
-              bgColor="bg-blue-50"
-              label="Nike India Pvt. Ltd."
-              sub="Brand / Company Name"
-            />
-            <InfoRow
-              icon={<Globe />}
               iconColor="text-blue-500"
               bgColor="bg-blue-50"
-              label="nikeindia.com"
-              sub="Website"
-              isLink
+              label={profile.gstin_legal_name || profile.brand_name || "—"}
+              sub="Legal Name"
             />
-            <InfoRow
-              icon={<MapPin />}
-              iconColor="text-blue-300"
-              bgColor="bg-blue-50"
-              label="Mumbai, Maharashtra"
-              sub="Headquarters"
-            />
-            <InfoRow
-              icon={<Briefcase />}
-              iconColor="text-blue-400"
-              bgColor="bg-blue-50"
-              label="Sportswear • Fitness • Lifestyle"
-              sub="Brand Categories"
-              last
-            />
+            {profile.gstin_trade_name &&
+              profile.gstin_trade_name !== profile.gstin_legal_name && (
+                <InfoRow
+                  icon={<Briefcase />}
+                  iconColor="text-blue-400"
+                  bgColor="bg-blue-50"
+                  label={profile.gstin_trade_name}
+                  sub="Trade Name"
+                />
+              )}
+            {profile.gstin_business_type && (
+              <InfoRow
+                icon={<Briefcase />}
+                iconColor="text-blue-400"
+                bgColor="bg-blue-50"
+                label={profile.gstin_business_type}
+                sub="Business Type"
+              />
+            )}
+            {(profile.gstin_address || profile.gstin_state) && (
+              <InfoRow
+                icon={<MapPin />}
+                iconColor="text-blue-400"
+                bgColor="bg-blue-50"
+                label={
+                  profile.gstin_address ||
+                  `${profile.gstin_state || ""} ${profile.gstin_pincode || ""}`.trim()
+                }
+                sub="Registered Address"
+                last
+              />
+            )}
+          </div>
+        </Section>
+
+        {/* Categories */}
+        <Section
+          title="Categories"
+          action={
+            <button
+              onClick={() => setCategoriesOpen(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
+            >
+              <Pencil size={11} /> Edit
+            </button>
+          }
+        >
+          <div className="bg-white rounded-3xl p-5 border border-gray-100/50">
+            {categories.length === 0 ? (
+              <button
+                onClick={() => setCategoriesOpen(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold text-[#5851DB] border-2 border-dashed border-purple-200 rounded-2xl hover:bg-purple-50 cursor-pointer"
+              >
+                <Plus size={14} /> Add categories
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {categories.map((c) => (
+                  <span
+                    key={c}
+                    className="px-3 py-1.5 bg-[#EBE9FE] text-[#5851DB] rounded-full text-[11px] font-semibold"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </Section>
 
         {/* Contact Details */}
         <Section title="Contact Details">
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
-            <InfoRow
-              icon={<User />}
-              iconColor="text-green-400"
-              bgColor="bg-green-50"
-              label="Nishant Mehta"
-              sub="Brand Manager"
-            />
-            <InfoRow
-              icon={<Phone />}
-              iconColor="text-green-500"
-              bgColor="bg-green-50"
-              label="+91 91001 10001"
-              sub="Business Mobile"
-              isVerified
-            />
-            <InfoRow
-              icon={<Mail />}
-              iconColor="text-red-400"
-              bgColor="bg-red-50"
-              label="collaboration@nikeindia.com"
-              sub="Partnership Email"
-              isVerified
-              last
-            />
+            {profile.contact_name && (
+              <InfoRow
+                icon={<User />}
+                iconColor="text-green-500"
+                bgColor="bg-green-50"
+                label={profile.contact_name}
+                sub="Brand Manager"
+              />
+            )}
+            {profile.contact_phone && (
+              <InfoRow
+                icon={<Phone />}
+                iconColor="text-green-500"
+                bgColor="bg-green-50"
+                label={profile.contact_phone}
+                sub="Business Mobile"
+                isVerified
+              />
+            )}
+            {profile.contact_email && (
+              <InfoRow
+                icon={<Mail />}
+                iconColor="text-red-400"
+                bgColor="bg-red-50"
+                label={profile.contact_email}
+                sub="Email"
+                last
+              />
+            )}
+            {!profile.contact_name && !profile.contact_phone && !profile.contact_email && (
+              <div className="p-5 text-center">
+                <p className="text-[11px] text-gray-400">No contact details yet.</p>
+              </div>
+            )}
           </div>
         </Section>
 
-        {/* Social Media */}
-        <Section title="Social Media">
-          <div className="grid grid-cols-2 gap-3">
-            <SocialCard
-              icon={<Instagram className="text-white" />}
-              iconBg="bg-pink-500"
-              label="Instagram"
-              handle="@nikeindia"
-            />
-            <SocialCard
-              icon={<Youtube className="text-white" />}
-              iconBg="bg-red-600"
-              label="YouTube"
-              handle="@nikeindia"
-            />
-            <SocialCard
-              icon={<Twitter className="text-white" />}
-              iconBg="bg-black"
-              label="X (Twitter)"
-              handle="@nikeindia"
-            />
-            <SocialCard
-              icon={<Facebook className="text-white" />}
-              iconBg="bg-blue-600"
-              label="Facebook"
-              handle="Nike India"
-            />
-          </div>
-        </Section>
+        {/* Social */}
+        {profile.instagram_username && (
+          <Section title="Social">
+            <a
+              href={`https://instagram.com/${profile.instagram_username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white p-4 rounded-2xl border border-gray-100/50 flex items-center gap-3 cursor-pointer"
+            >
+              <div className="p-2 bg-pink-500 rounded-lg">
+                <Instagram size={16} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] text-gray-400 font-extrabold uppercase">
+                  Instagram
+                </p>
+                <p className="text-[11px] font-bold text-gray-900 truncate">
+                  @{profile.instagram_username}
+                </p>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </a>
+          </Section>
+        )}
 
-        {/* Docs */}
-        <Section title="Tax & Legal Documents">
-          <DocCard
-            type="GST Registration"
-            status="Active"
-            id="27AAACN0611Q1Z4"
-            details={[
-              { label: "Business Type", val: "Pvt. Ltd." },
-              { label: "State Code", val: "27 - Maharashtra" },
-              { label: "Reg. Date", val: "01 Jul 2017" },
-              { label: "Filing Cycle", val: "Monthly" },
-            ]}
-          />
-        </Section>
+        {/* GSTIN */}
+        {profile.gstin && (
+          <Section title="Tax & Legal Documents">
+            <div className="bg-white rounded-[32px] p-6 border border-gray-100/50 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-400" />
+              <div className="flex justify-between items-start mb-5">
+                <div className="flex gap-3">
+                  <div className="p-2.5 bg-orange-50 rounded-xl text-orange-500">
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-extrabold text-gray-900">
+                      GST Registration
+                    </h4>
+                    <p className="text-[9px] text-gray-400 font-semibold">
+                      Goods & Services Tax
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`text-[9px] font-bold px-3 py-1 rounded-lg uppercase tracking-wider ${
+                    profile.gstin_status === "Active"
+                      ? "bg-green-50 text-green-500"
+                      : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {profile.gstin_status || "—"}
+                </span>
+              </div>
 
-        {/* Account & Logout */}
+              <div className="mb-4">
+                <p className="text-[8px] text-gray-400 font-extrabold uppercase mb-1">
+                  GSTIN Number
+                </p>
+                <p className="text-[13px] font-extrabold text-gray-900 tracking-wider">
+                  {profile.gstin}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-4">
+                {profile.gstin_business_type && (
+                  <Detail label="Business Type" value={profile.gstin_business_type} />
+                )}
+                {profile.gstin_state && (
+                  <Detail label="State" value={profile.gstin_state} />
+                )}
+                {profile.gstin_registration_date && (
+                  <Detail
+                    label="Reg. Date"
+                    value={profile.gstin_registration_date}
+                  />
+                )}
+                {profile.gstin_pincode && (
+                  <Detail label="Pincode" value={profile.gstin_pincode} />
+                )}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* Logout */}
         <Section title="Account">
-          <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50 mb-4">
-            <ControlRow
-              icon={<Lock />}
-              iconColor="text-blue-500"
-              bgColor="bg-blue-50"
-              label="Change Password"
-            />
-            <ControlRow
-              icon={<Bell />}
-              iconColor="text-blue-400"
-              bgColor="bg-blue-50"
-              label="Notification Preferences"
-            />
-            <ControlRow
-              icon={<Settings />}
-              iconColor="text-orange-400"
-              bgColor="bg-orange-50"
-              label="Account Settings"
-              last
-            />
-          </div>
           <button
-            onClick={() => {
+            onClick={async () => {
+              await signOut();
               router.push("/login");
             }}
-            className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform"
+            className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform cursor-pointer"
           >
             <div className="p-2 bg-red-50 rounded-xl">
               <LogOut size={18} />
@@ -225,133 +396,136 @@ const BrandProfile = () => {
           </button>
         </Section>
       </div>
+
+      {categoriesOpen && (
+        <CategoriesModal
+          initial={categories}
+          onClose={() => setCategoriesOpen(false)}
+          onSave={async (next) => {
+            await saveCategories(next);
+            setCategoriesOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
 
 /* --- Helpers --- */
 
-const Section = ({ title, children }) => (
+const Section = ({ title, children, action }) => (
   <div className="space-y-3">
-    <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-[0.15em] px-2">
-      {title}
-    </h3>
+    <div className="flex items-center justify-between px-2">
+      <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-[0.15em]">
+        {title}
+      </h3>
+      {action}
+    </div>
     {children}
   </div>
 );
 
-const StatBox = ({ label, value, color }) => (
-  <div className="bg-[#F8F9FE] py-3 px-1 rounded-2xl text-center border border-gray-50">
-    <p className={`text-[13px] font-extrabold ${color}`}>{value}</p>
-    <p className="text-[8px] text-gray-400 font-bold uppercase mt-0.5 tracking-tight">
-      {label}
-    </p>
-  </div>
-);
-
-const InfoRow = ({
-  icon,
-  iconColor,
-  bgColor,
-  label,
-  sub,
-  last,
-  isLink,
-  isVerified,
-}) => (
+const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified }) => (
   <div
     className={`flex items-center gap-4 p-5 ${!last ? "border-b border-gray-50" : ""}`}
   >
     <div className={`p-2.5 ${bgColor} ${iconColor} rounded-xl`}>
       {React.cloneElement(icon, { size: 18 })}
     </div>
-    <div className="flex-1">
-      <p className="text-[11px] font-bold text-gray-900 leading-tight">
+    <div className="flex-1 min-w-0">
+      <p className="text-[11px] font-bold text-gray-900 leading-tight truncate">
         {label}
       </p>
       <p className="text-[9px] text-gray-400 font-semibold mt-0.5">{sub}</p>
     </div>
-    <div className="flex items-center gap-2">
-      {isVerified && (
-        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-      )}
-      {isLink ? (
-        <ExternalLink size={14} className="text-gray-300" />
-      ) : (
-        <ChevronRight size={16} className="text-gray-300" />
-      )}
-    </div>
+    {isVerified && (
+      <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+    )}
   </div>
 );
 
-const SocialCard = ({ icon, iconBg, label, handle }) => (
-  <div className="bg-white p-4 rounded-2xl border border-gray-50 flex items-center gap-3">
-    <div className={`p-2 ${iconBg} rounded-lg`}>
-      {React.cloneElement(icon, { size: 16 })}
-    </div>
-    <div className="overflow-hidden">
-      <p className="text-[8px] text-gray-400 font-extrabold uppercase leading-none">
-        {label}
-      </p>
-      <p className="text-[10px] font-bold text-gray-900 mt-1 truncate">
-        {handle}
-      </p>
-    </div>
+const Detail = ({ label, value }) => (
+  <div>
+    <p className="text-[8px] text-gray-400 font-extrabold uppercase mb-0.5">
+      {label}
+    </p>
+    <p className="text-[10px] font-bold text-gray-900">{value}</p>
   </div>
 );
 
-const DocCard = ({ type, status, id, details }) => (
-  <div className="bg-white rounded-[32px] p-6 border border-gray-100/50 relative overflow-hidden">
-    <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-400" />
-    <div className="flex justify-between items-start mb-6">
-      <div className="flex gap-3">
-        <div className="p-2.5 bg-orange-50 rounded-xl text-orange-500">
-          <FileText size={20} />
+const CategoriesModal = ({ initial, onClose, onSave }) => {
+  const [selected, setSelected] = useState(initial || []);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (c) =>
+    setSelected((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
+    );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center lg:justify-center bg-black/40">
+      <div className="w-full lg:max-w-md bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Edit Categories</h3>
+            <p className="text-[11px] text-gray-400">
+              {selected.length} selected
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 cursor-pointer"
+            disabled={saving}
+          >
+            <X size={20} className="text-gray-400" />
+          </button>
         </div>
-        <div>
-          <h4 className="text-[11px] font-extrabold text-gray-900">{type}</h4>
-          <p className="text-[9px] text-gray-400 font-semibold">
-            Goods & Services Tax
-          </p>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => {
+              const on = selected.includes(c);
+              return (
+                <button
+                  key={c}
+                  onClick={() => toggle(c)}
+                  className={`px-3 py-2 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    on
+                      ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
+                      : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {on && <Check size={12} />}
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              setSaving(true);
+              await onSave(selected);
+              setSaving(false);
+            }}
+            disabled={saving}
+            className="py-3.5 rounded-2xl font-bold text-sm text-white bg-[#5851DB] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : "Save"}
+          </button>
         </div>
       </div>
-      <span className="text-[9px] font-bold px-3 py-1 bg-green-50 text-green-500 rounded-lg uppercase tracking-wider">
-        {status}
-      </span>
     </div>
-
-    <div className="mb-5">
-      <p className="text-[8px] text-gray-400 font-extrabold uppercase mb-1">
-        GSTIN Number
-      </p>
-      <p className="text-[13px] font-extrabold text-gray-900 tracking-wider">
-        {id}
-      </p>
-    </div>
-
-    <div className="grid grid-cols-2 gap-y-4">
-      {details.map((d, i) => (
-        <div key={i}>
-          <p className="text-[8px] text-gray-400 font-extrabold uppercase mb-0.5">
-            {d.label}
-          </p>
-          <p className="text-[10px] font-bold text-gray-900">{d.val}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const ControlRow = ({ icon, iconColor, bgColor, label, last }) => (
-  <div
-    className={`flex items-center gap-4 p-5 ${!last ? "border-b border-gray-50" : ""}`}
-  >
-    <div className={`p-2.5 ${bgColor} ${iconColor} rounded-xl`}>
-      {React.cloneElement(icon, { size: 18 })}
-    </div>
-    <span className="flex-1 text-[11px] font-bold text-gray-700">{label}</span>
-    <ChevronRight size={16} className="text-gray-300" />
-  </div>
-);
+  );
+};
 
 export default BrandProfile;

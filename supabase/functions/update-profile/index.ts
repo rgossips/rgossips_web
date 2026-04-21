@@ -70,6 +70,22 @@ Deno.serve(async (req) => {
     if (fields.instagramTokenExpiresAt !== undefined) updateData.instagram_token_expires_at = fields.instagramTokenExpiresAt;
     if (fields.topReels !== undefined) updateData.top_reels = fields.topReels;
 
+    // Brand-specific columns
+    if (table === "brand_profiles") {
+      if (fields.brandName !== undefined) updateData.brand_name = fields.brandName;
+      if (fields.contactName !== undefined) updateData.contact_name = fields.contactName;
+      if (fields.contactEmail !== undefined) updateData.contact_email = fields.contactEmail;
+      if (fields.contactPhone !== undefined) updateData.contact_phone = fields.contactPhone;
+      if (fields.website !== undefined) updateData.website = fields.website;
+      if (fields.instagramUsername !== undefined) updateData.instagram_username = fields.instagramUsername;
+      if (fields.logoUrl !== undefined) updateData.logo_url = fields.logoUrl || null;
+      // `name` prop maps to brand_name for brands (frontend uses the same key)
+      if (fields.name !== undefined) {
+        updateData.brand_name = fields.name;
+        delete updateData.full_name;
+      }
+    }
+
     const { error: dbError } = await supabaseAdmin
       .from(table)
       .update(updateData)

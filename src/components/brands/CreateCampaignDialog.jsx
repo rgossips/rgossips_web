@@ -102,8 +102,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     return data.url;
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault?.();
+  const submitForm = async (publish) => {
     setError("");
 
     if (!brandId) {
@@ -132,7 +131,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         }
       }
 
-      setStage("Saving campaign...");
+      setStage(publish ? "Publishing campaign..." : "Saving draft...");
       const { data, error: err } = await supabase.functions.invoke(
         "brand-campaigns",
         {
@@ -144,6 +143,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               target_categories: categories,
               banner_image_url: bannerUrl,
               gallery_image_urls: galleryUrls,
+              status: publish ? "active" : "draft",
             },
           },
         }
@@ -158,6 +158,12 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       setSubmitting(false);
       setStage("");
     }
+  };
+
+  const handleSubmit = (e) => {
+    // Default form submit (e.g. Enter key) acts as "Save as Draft"
+    e?.preventDefault?.();
+    submitForm(false);
   };
 
   const content = (
@@ -500,28 +506,36 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 grid grid-cols-2 gap-3 p-4 border-t border-gray-100 bg-white">
+      <div className="shrink-0 grid grid-cols-3 gap-2 p-4 border-t border-gray-100 bg-white">
         <button
           type="button"
           onClick={() => onOpenChange(false)}
           disabled={submitting}
-          className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
         >
           Cancel
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={() => submitForm(false)}
           disabled={submitting}
-          className="py-3.5 rounded-2xl font-bold text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              {stage || "Creating..."}
-            </>
-          ) : (
-            "Create Campaign"
-          )}
+          {submitting && stage.startsWith("Saving draft") ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : null}
+          Save Draft
+        </button>
+        <button
+          type="button"
+          onClick={() => submitForm(true)}
+          disabled={submitting}
+          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting && !stage.startsWith("Saving draft") ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : null}
+          {submitting && stage ? stage.split(" ")[0] : "Publish"}
         </button>
       </div>
     </form>
