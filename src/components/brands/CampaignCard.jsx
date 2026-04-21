@@ -1,90 +1,126 @@
-import {
-  CheckCircle2,
-  MessageCircle,
-  PhoneCall,
-  ArrowUpRight,
-} from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Calendar, Users, IndianRupee, Briefcase } from "lucide-react";
+
+const statusStyles = {
+  draft: "bg-gray-100 text-gray-600",
+  active: "bg-emerald-100 text-emerald-700",
+  paused: "bg-yellow-100 text-yellow-700",
+  completed: "bg-blue-100 text-blue-700",
+};
+
+const statusLabel = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "Draft");
+
+const formatBudget = (n) => {
+  if (!n) return "—";
+  return "₹" + Number(n).toLocaleString("en-IN");
+};
+
+const formatDate = (d) => {
+  if (!d) return "—";
+  try {
+    return new Date(d).toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return d;
+  }
+};
 
 export const CampaignCard = ({
-  name = "Shivakant Pandey",
-  role = "Marketing Manager @ Birga Global Pvt",
-  lookingFor = "Marketing Specialists",
-  tags = ["Photography", "Videography"],
-  avatar = "https://i.pravatar.cc/150?u=shiva",
+  id,
+  title,
+  description,
+  status = "draft",
+  campaignType,
+  maxInfluencers,
+  budgetTotal,
+  budgetPerInfluencer,
+  applicationDeadline,
+  applicationsTotal = 0,
+  applicationsPending = 0,
+  categories = [],
+  bannerImage,
 }) => {
   return (
-    <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-      {/* Profile Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <img
-              src={avatar}
-              alt={name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-            <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-0.5">
-              <CheckCircle2
-                size={16}
-                className="text-[#5851DB] fill-[#5851DB]/10"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1">
-              {name}{" "}
-              <span className="text-[#5851DB] text-[10px]">Verified</span>
-            </h3>
-            <p className="text-[10px] text-gray-400 font-medium">{role}</p>
-          </div>
+    <Link
+      href={`/brands/campaign/${id}`}
+      className="block bg-white rounded-[28px] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+    >
+      {bannerImage && (
+        <div className="relative w-full h-32 rounded-2xl overflow-hidden mb-4 bg-gray-100">
+          <img src={bannerImage} alt={title} className="w-full h-full object-cover" />
         </div>
+      )}
 
-        {/* Action Icons */}
-        <div className="flex gap-2">
-          <button className="p-2.5 rounded-full bg-blue-50 text-[#5851DB] hover:bg-blue-100 transition-colors">
-            <MessageCircle size={18} />
-          </button>
-          <button className="p-2.5 rounded-full bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
-            <PhoneCall size={18} />
-          </button>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                statusStyles[status] || statusStyles.draft
+              }`}
+            >
+              {statusLabel(status)}
+            </span>
+            {campaignType && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-[#5851DB] capitalize">
+                {campaignType}
+              </span>
+            )}
+          </div>
+          <h3 className="text-[15px] font-extrabold text-gray-900 leading-tight line-clamp-2">
+            {title || "Untitled Campaign"}
+          </h3>
+          {description && (
+            <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
+              {description}
+            </p>
+          )}
         </div>
-      </div>
-
-      {/* Campaign Details */}
-      <div className="space-y-1">
-        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-          Looking For
-        </p>
-        <h4 className="text-[15px] font-extrabold text-gray-900 leading-tight">
-          {lookingFor}
-        </h4>
-        <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
-          Looking for product reviewers, budget can be discussed. please drop a
-          note with your portfolio...
-        </p>
-      </div>
-
-      {/* Skill Tags */}
-      <div className="flex flex-wrap gap-2">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="px-4 py-2 bg-[#F8F9FE] text-gray-600 rounded-xl text-[10px] font-bold border border-gray-50"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-
-      {/* Bottom CTA */}
-      <div className="pt-2 border-t border-gray-50 flex items-center justify-between mt-1">
-        <button className="text-[12px] font-bold text-[#5851DB] hover:underline">
-          Be first to apply
-        </button>
-        <button className="p-2 bg-[#F1F0FF] rounded-full text-[#5851DB]">
+        <button className="p-2 bg-[#F1F0FF] rounded-full text-[#5851DB] shrink-0">
           <ArrowUpRight size={16} />
         </button>
       </div>
-    </div>
+
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {categories.slice(0, 3).map((c) => (
+            <span
+              key={c}
+              className="px-2.5 py-1 bg-[#F8F9FE] text-gray-600 rounded-lg text-[10px] font-semibold border border-gray-100"
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-50">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+          <IndianRupee size={12} className="text-gray-400" />
+          <span className="font-semibold">
+            {formatBudget(budgetPerInfluencer || budgetTotal)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+          <Users size={12} className="text-gray-400" />
+          <span className="font-semibold">
+            {applicationsTotal}/{maxInfluencers} applied
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+          <Calendar size={12} className="text-gray-400" />
+          <span className="font-semibold">{formatDate(applicationDeadline)}</span>
+        </div>
+        {applicationsPending > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-amber-600">
+            <Briefcase size={12} />
+            <span className="font-bold">{applicationsPending} pending</span>
+          </div>
+        )}
+      </div>
+    </Link>
   );
 };
