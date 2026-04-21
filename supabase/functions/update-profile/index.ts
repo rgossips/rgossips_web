@@ -36,6 +36,48 @@ Deno.serve(async (req) => {
 
     const idCol = table === "brand_profiles" ? "brand_id" : "influencer_id";
 
+    // Special action: restore the original Instagram-derived brand logo.
+    // create-profile stores the IG picture at brand-icons/profiles/{userId}.jpg
+    // during signup — we check whether that file still exists and, if so,
+    // set logo_url back to its public URL.
+    if (table === "brand_profiles" && fields.revertBrandLogo === true) {
+      const { data: list } = await supabaseAdmin.storage
+        .from("brand-icons")
+        .list("profiles", { search: `${userId}.jpg` });
+
+      const hasOriginal = Array.isArray(list) && list.some((f: any) => f?.name === `${userId}.jpg`);
+
+      if (!hasOriginal) {
+        return new Response(
+          JSON.stringify({ error: "No original logo available to revert to." }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
+      const { data: urlData } = supabaseAdmin.storage
+        .from("brand-icons")
+        .getPublicUrl(`profiles/${userId}.jpg`);
+      // Cache-bust so the browser refreshes even when the URL matches
+      const logoUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const { error: revertErr } = await supabaseAdmin
+        .from("brand_profiles")
+        .update({ logo_url: logoUrl, updated_at: new Date().toISOString() })
+        .eq("brand_id", userId);
+
+      if (revertErr) {
+        return new Response(
+          JSON.stringify({ error: "Failed to revert: " + revertErr.message }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, logoUrl }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+
     // Build update object from provided fields
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),

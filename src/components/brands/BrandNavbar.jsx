@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Zap, ChevronDown, LogOut } from "lucide-react";
+import { Search, Zap, ChevronDown, LogOut, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
 import { useAuth } from "@/context/AuthContext";
@@ -66,6 +66,15 @@ export function BrandNavbar() {
           <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
             {brandName}
           </span>
+        </button>
+
+        {/* Refresh */}
+        <button
+          onClick={() => window.location.reload()}
+          className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+          title="Refresh"
+        >
+          <RefreshCw size={18} />
         </button>
 
         {/* Logout */}

@@ -138,12 +138,12 @@ const BrandProfile = () => {
     }
   };
 
-  // Revert to the original (Instagram-derived) logo by clearing logo_url.
-  // The app's fallback shows brand initials when logo_url is empty, which is
-  // what "original" means here — before the user uploaded a custom logo.
+  // Revert to the original Instagram-derived logo. Edge function looks up the
+  // file create-profile saved at brand-icons/profiles/{userId}.jpg during
+  // signup and restores logo_url to point at it.
   const handleRevertLogo = async () => {
     if (!user?.id) return;
-    if (!window.confirm("Revert to the default logo? Your custom upload will be removed.")) return;
+    if (!window.confirm("Revert to your Instagram profile picture? Your custom upload will be replaced.")) return;
     setUploading(true);
     setUploadError("");
     try {
@@ -151,7 +151,7 @@ const BrandProfile = () => {
         body: {
           userId: user.id,
           table: "brand_profiles",
-          logoUrl: "",
+          revertBrandLogo: true,
         },
       });
       if (error) throw new Error(error.message);

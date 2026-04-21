@@ -1212,7 +1212,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
         <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold ${
           isRejected ? "bg-red-500 text-white" : isRevision ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
         }`}>
-          {isRejected ? <XIcon size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStep.label}
+          {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStep.label}
         </div>
         {canUpload && (
           <button

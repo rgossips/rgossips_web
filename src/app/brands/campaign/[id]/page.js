@@ -5,15 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
+  Check,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   IndianRupee,
   Loader2,
   MapPin,
   Package,
   Pause,
   Play,
+  RefreshCw,
+  RotateCcw,
   Target,
   TrendingUp,
   Users,
@@ -163,13 +168,23 @@ const CampaignDetailPage = () => {
         >
           <ArrowLeft size={22} />
         </button>
-        <span
-          className={`px-3 py-1 rounded-full text-[11px] font-bold border ${
-            statusStyles[campaign.status] || statusStyles.draft
-          }`}
-        >
-          {(campaign.status || "draft").toUpperCase()}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-3 py-1 rounded-full text-[11px] font-bold border ${
+              statusStyles[campaign.status] || statusStyles.draft
+            }`}
+          >
+            {(campaign.status || "draft").toUpperCase()}
+          </span>
+          <button
+            onClick={load}
+            disabled={loading}
+            className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 cursor-pointer disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
       </nav>
 
       <div className="px-6 pt-5 pb-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
@@ -352,9 +367,15 @@ const CampaignDetailPage = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {applications.map((a) => (
-                  <ApplicationRow key={a.id} app={a} />
+                  <ApplicationRow
+                    key={a.id}
+                    app={a}
+                    brandId={user?.id}
+                    defaultRate={campaign.budgetPerInfluencer || 0}
+                    onRefresh={load}
+                  />
                 ))}
               </div>
             )}
@@ -546,35 +567,381 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
   </div>
 );
 
-const ApplicationRow = ({ app }) => {
+const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
+  const supabase = createClient();
+  const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState(null); // "approve" | "reject" | "revision" | null
+  const [payAmount, setPayAmount] = useState(
+    String(app.proposed_rate || defaultRate || 0)
+  );
+  const [reason, setReason] = useState("");
+  const [revisionNote, setRevisionNote] = useState("");
+  const [revisionIndexes, setRevisionIndexes] = useState([]);
+
   const inf = app.influencer_profiles || {};
   const st = appStatusConfig[app.status] || appStatusConfig.pending;
   const displayName = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+  const links = Array.isArray(app.submission_links) ? app.submission_links : [];
+
+  const updateStatus = async (newStatus, extra = {}) => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke(
+      "update-application-status",
+      {
+        body: {
+          applicationId: app.id,
+          brandId,
+          status: newStatus,
+          ...extra,
+        },
+      }
+    );
+    setLoading(false);
+    if (error || data?.error) {
+      alert(error?.message || data?.error || "Failed to update");
+      return;
+    }
+    setMode(null);
+    setReason("");
+    setRevisionNote("");
+    setRevisionIndexes([]);
+    onRefresh?.();
+  };
+
+  const handleApprove = () => {
+    const rate = parseInt(payAmount || "0", 10);
+    if (!rate || rate <= 0) return alert("Enter an agreed rate first");
+    updateStatus("approved", { agreedRate: rate });
+  };
+
+  const handleReject = () => {
+    updateStatus("rejected", { rejectionReason: reason || undefined });
+  };
+
+  const handleRevision = () => {
+    if (revisionIndexes.length === 0) {
+      return alert("Select at least one deliverable that needs revision");
+    }
+    const selectedLabels = revisionIndexes.map(
+      (i) => links[i]?.label || links[i]?.type || `Deliverable ${i + 1}`
+    );
+    updateStatus("revision_needed", {
+      revisionNote,
+      revisionLinks: selectedLabels,
+    });
+  };
+
+  const toggleRevisionIndex = (i) =>
+    setRevisionIndexes((prev) =>
+      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+    );
+
+  const btn =
+    "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border";
+
+  const hasActions =
+    app.status === "pending" ||
+    app.status === "approved" ||
+    app.status === "submitted" ||
+    app.status === "revision_needed" ||
+    app.status === "live_submitted" ||
+    app.status === "payment";
+
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
-        {inf.profile_photo_url ? (
-          <img
-            src={inf.profile_photo_url}
-            alt={displayName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          displayName.charAt(0).toUpperCase()
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
-        <p className="text-[11px] text-gray-400 truncate">
-          {inf.instagram_handle && <>@{inf.instagram_handle} · </>}
-          {formatCount(inf.followers_count)} followers
-        </p>
-      </div>
-      <span
-        className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}
+    <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+      {/* Summary row — clickable */}
+      <button
+        type="button"
+        onClick={() => hasActions && setExpanded((e) => !e)}
+        className={`w-full flex items-center gap-3 p-3 text-left ${
+          hasActions ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"
+        }`}
       >
-        {st.label}
-      </span>
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
+          {inf.profile_photo_url ? (
+            <img
+              src={inf.profile_photo_url}
+              alt={displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            displayName.charAt(0).toUpperCase()
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
+          <p className="text-[11px] text-gray-400 truncate">
+            {inf.instagram_handle && <>@{inf.instagram_handle} · </>}
+            {formatCount(inf.followers_count)} followers
+            {app.proposed_rate != null && (
+              <> · <span className="text-[#5851DB] font-semibold">₹{Number(app.proposed_rate).toLocaleString("en-IN")}</span></>
+            )}
+          </p>
+        </div>
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}
+        >
+          {st.label}
+        </span>
+        {hasActions && (
+          <ChevronDown
+            size={14}
+            className={`text-gray-400 shrink-0 transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </button>
+
+      {/* Expanded actions */}
+      {expanded && hasActions && (
+        <div className="px-3 pb-3 border-t border-gray-50">
+          {/* Submission links (when present) */}
+          {links.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                Submissions
+              </p>
+              {links.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2 bg-[#F8F9FE] hover:bg-gray-100 rounded-lg transition-colors group"
+                >
+                  <ExternalLink size={12} className="text-[#5851DB] shrink-0" />
+                  <p className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">
+                    {item.label || item.type || `Deliverable ${i + 1}`}
+                  </p>
+                  <span className="text-[9px] uppercase font-bold text-gray-400 shrink-0">
+                    {item.type}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* Default actions per status */}
+          {mode === null && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {app.status === "pending" && (
+                <>
+                  <button
+                    onClick={() => setMode("approve")}
+                    className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}
+                  >
+                    <Check size={12} /> Approve
+                  </button>
+                  <button
+                    onClick={() => setMode("reject")}
+                    className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}
+                  >
+                    <X size={12} /> Reject
+                  </button>
+                </>
+              )}
+              {app.status === "approved" && (
+                <>
+                  <span className="text-[11px] text-gray-400 italic px-1 py-1">
+                    Waiting for submission…
+                  </span>
+                  <button
+                    onClick={() => setMode("reject")}
+                    className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}
+                  >
+                    <X size={12} /> Reject
+                  </button>
+                </>
+              )}
+              {app.status === "submitted" && (
+                <>
+                  <button
+                    onClick={() => updateStatus("accepted")}
+                    disabled={loading}
+                    className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}
+                  >
+                    {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => setMode("revision")}
+                    className={`${btn} bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}
+                  >
+                    <RotateCcw size={12} /> Revision
+                  </button>
+                  <button
+                    onClick={() => setMode("reject")}
+                    className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}
+                  >
+                    <X size={12} /> Reject
+                  </button>
+                </>
+              )}
+              {app.status === "revision_needed" && (
+                <span className="text-[11px] text-gray-400 italic px-1 py-1">
+                  Waiting for creator to re-submit…
+                </span>
+              )}
+              {app.status === "live_submitted" && (
+                <>
+                  <button
+                    onClick={() => updateStatus("payment")}
+                    disabled={loading}
+                    className={`${btn} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100`}
+                  >
+                    {loading ? <Loader2 size={12} className="animate-spin" /> : <IndianRupee size={12} />}
+                    Release Payment
+                  </button>
+                  <button
+                    onClick={() => setMode("revision")}
+                    className={`${btn} bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}
+                  >
+                    <RotateCcw size={12} /> Revision
+                  </button>
+                </>
+              )}
+              {app.status === "payment" && (
+                <button
+                  onClick={() => updateStatus("completed")}
+                  disabled={loading}
+                  className={`${btn} bg-green-50 text-green-700 border-green-200 hover:bg-green-100`}
+                >
+                  {loading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                  Mark Completed
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Approve form */}
+          {mode === "approve" && (
+            <div className="mt-3 space-y-2 p-3 bg-emerald-50/40 rounded-lg border border-emerald-100">
+              <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                Agreed Rate (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-white border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleApprove}
+                  disabled={loading}
+                  className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}
+                >
+                  {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  Approve
+                </button>
+                <button
+                  onClick={() => setMode(null)}
+                  className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Reject form */}
+          {mode === "reject" && (
+            <div className="mt-3 space-y-2 p-3 bg-red-50/40 rounded-lg border border-red-100">
+              <label className="text-[10px] font-bold text-red-700 uppercase tracking-wider">
+                Reason (optional)
+              </label>
+              <textarea
+                rows={2}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Briefly explain why..."
+                className="w-full px-3 py-2 rounded-lg bg-white border border-red-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReject}
+                  disabled={loading}
+                  className={`${btn} bg-red-600 text-white border-red-600 hover:bg-red-500`}
+                >
+                  {loading ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                  Confirm Reject
+                </button>
+                <button
+                  onClick={() => setMode(null)}
+                  className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Revision form */}
+          {mode === "revision" && (
+            <div className="mt-3 space-y-2 p-3 bg-orange-50/40 rounded-lg border border-orange-100">
+              <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">
+                Select deliverables needing revision
+              </p>
+              <div className="space-y-1">
+                {links.map((item, i) => {
+                  const selected = revisionIndexes.includes(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleRevisionIndex(i)}
+                      className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-colors cursor-pointer ${
+                        selected
+                          ? "bg-orange-100 border-orange-300"
+                          : "bg-white border-gray-200 hover:border-orange-200"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                          selected
+                            ? "bg-orange-500 border-orange-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {selected && <Check size={10} className="text-white" />}
+                      </div>
+                      <span className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">
+                        {item.label || item.type || `Deliverable ${i + 1}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <textarea
+                rows={2}
+                value={revisionNote}
+                onChange={(e) => setRevisionNote(e.target.value)}
+                placeholder="What needs to change?"
+                className="w-full px-3 py-2 rounded-lg bg-white border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRevision}
+                  disabled={loading || revisionIndexes.length === 0}
+                  className={`${btn} bg-orange-600 text-white border-orange-600 hover:bg-orange-500`}
+                >
+                  {loading ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                  Send for Revision
+                </button>
+                <button
+                  onClick={() => setMode(null)}
+                  className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

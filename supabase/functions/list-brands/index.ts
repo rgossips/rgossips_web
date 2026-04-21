@@ -19,17 +19,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch registered brand profiles
+    // Fetch registered brand profiles — use * to avoid missing-column failures
     const { data: profiles, error: profError } = await supabaseAdmin
       .from("brand_profiles")
-      .select("brand_id, brand_name, contact_name, logo_url, instagram_username, categories, gstin_trade_name, is_verified, status, created_at");
+      .select("*");
 
     if (profError) console.error("Brand profiles error:", profError.message);
 
     // Fetch brand invitations (pending + claimed)
     const { data: invitations, error: invError } = await supabaseAdmin
       .from("brand_invitations")
-      .select("id, brand_name, instagram_username, logo_url, notes, status, created_at, claimed_by, brand_profile_id");
+      .select("*");
 
     if (invError) console.error("Brand invitations error:", invError.message);
 
@@ -136,7 +136,15 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ brands }),
+      JSON.stringify({
+        brands,
+        _debug: {
+          profilesCount: profiles?.length || 0,
+          invitationsCount: invitations?.length || 0,
+          profileError: profError?.message || null,
+          inviteError: invError?.message || null,
+        },
+      }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {
