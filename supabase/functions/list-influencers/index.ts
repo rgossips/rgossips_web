@@ -20,23 +20,28 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Try selecting all columns — schema may or may not include `city`, so
-    // use `*` to avoid the whole query failing if a column is missing.
-    const { data, error } = await supabase
+    // Registered influencers
+    const profilesRes = await supabase
       .from("influencer_profiles")
       .select("*")
       .order("followers_count", { ascending: false })
       .limit(500);
 
-    if (error) {
+    if (profilesRes.error) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: profilesRes.error.message }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
-    // Normalize shape for the frontend
-    const influencers = (data || []).map((r: any) => ({
+    // Admin-invited (not yet registered) influencers
+    const invitesRes = await supabase
+      .from("influencer_invitations")
+      .select("*")
+      .eq("status", "pending")
+      .limit(500);
+
+    const profiles = (profilesRes.data || []).map((r: any) => ({
       influencer_id: r.influencer_id,
       full_name: r.full_name || "",
       username: r.username || "",
@@ -47,11 +52,37 @@ Deno.serve(async (req) => {
       media_count: r.media_count || 0,
       categories: r.categories || [],
       city: r.city || r.location || "",
-      status: r.status || "active",
     }));
 
+    const invites = (invitesRes.data || []).map((r: any) => ({
+      // Prefix invitation IDs to avoid collisions with registered profiles
+      influencer_id: `inv_${r.id}`,
+      full_name: r.full_name || "",
+      username: r.instagram_username || "",
+      instagram_handle: r.instagram_username || "",
+      profile_photo_url: r.profile_photo_url || "",
+      followers_count: r.followers_count || 0,
+      follows_count: r.follows_count || 0,
+      media_count: r.media_count || 0,
+      categories: r.categories || [],
+      city: r.city || "",
+    }));
+
+    // Merge, de-dupe by instagram_handle (registered wins)
+    const seen = new Set<string>();
+    const merged: any[] = [];
+    for (const row of [...profiles, ...invites]) {
+      const key = (row.instagram_handle || row.username || row.influencer_id).toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(row);
+    }
+
+    // Sort by followers desc
+    merged.sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
+
     return new Response(
-      JSON.stringify({ influencers }),
+      JSON.stringify({ influencers: merged }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

@@ -4,10 +4,7 @@ import {
   LayoutGrid,
   Search,
   Megaphone,
-  MessageSquare,
   User,
-  Filter,
-  MapPin,
   Settings,
   HelpCircle,
   Plus,
@@ -26,18 +23,7 @@ export default function Sidebar() {
       badge: "LIVE",
       url: "/brands/campaigns",
     },
-    {
-      name: "Message",
-      icon: MessageSquare,
-      url: "/brands/chats",
-    },
     { name: "Profile", icon: User, url: "/brands/profile" },
-  ];
-
-  const discoveryMenu = [
-    { name: "Find Creators", icon: Search },
-    { name: "Advanced Filters", icon: Filter },
-    { name: "Local Network", icon: MapPin },
   ];
 
   const accountMenu = [
@@ -84,27 +70,6 @@ export default function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Discovery Section */}
-        <div className="mt-6">
-          <p className="px-5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Discovery
-          </p>
-          <nav className="px-3 space-y-1">
-            {discoveryMenu.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={i}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition"
-                >
-                  <Icon size={18} />
-                  <span>{item.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
 
         {/* Account Section */}
         <div className="mt-6">

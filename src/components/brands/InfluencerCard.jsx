@@ -1,4 +1,4 @@
-import { MessageCircle, UserPlus, Instagram, Users } from "lucide-react";
+import { Instagram, Users, FileText } from "lucide-react";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -15,11 +15,15 @@ export const InfluencerCard = ({
   followers_count,
   categories,
 }) => {
-  const displayName = full_name || username || instagram_handle || "Unknown";
+  const handle = instagram_handle || username || "";
+  const displayName = full_name || handle || "Unknown";
   const categoryLabel = Array.isArray(categories)
     ? categories.slice(0, 2).join(", ")
     : categories || "";
   const initial = displayName.charAt(0).toUpperCase();
+
+  const instagramUrl = handle ? `https://instagram.com/${handle}` : null;
+  const mediaKitUrl = handle ? `/kit/${handle}` : null;
 
   return (
     <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 last:border-0">
@@ -44,11 +48,11 @@ export const InfluencerCard = ({
         )}
 
         <div className="flex items-center gap-3">
-          {instagram_handle && (
+          {handle && (
             <div className="flex items-center gap-1">
               <Instagram size={12} className="text-pink-600" />
               <span className="text-[10px] font-bold text-gray-700">
-                @{instagram_handle}
+                @{handle}
               </span>
             </div>
           )}
@@ -62,13 +66,29 @@ export const InfluencerCard = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-pointer">
-          <MessageCircle size={20} strokeWidth={1.5} />
-        </button>
-        <button className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors cursor-pointer">
-          <UserPlus size={20} strokeWidth={1.5} />
-        </button>
+      <div className="flex gap-2 shrink-0">
+        {instagramUrl && (
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-full transition-colors cursor-pointer"
+            title="Open Instagram"
+          >
+            <Instagram size={18} strokeWidth={1.75} />
+          </a>
+        )}
+        {mediaKitUrl && (
+          <a
+            href={mediaKitUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 text-[#5851DB] bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
+            title="Open Media Kit"
+          >
+            <FileText size={18} strokeWidth={1.75} />
+          </a>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useGlobal } from "@/context/GlobalContext";
+import { useAuth } from "@/context/AuthContext";
 import OnboardingCarousel from "@/components/login/OnboardingCarousel";
 import RoleSelection from "@/components/login/RoleSelection";
 import { createClient } from "@/utils/supabase/client";
@@ -26,6 +27,21 @@ const Login = () => {
   const router = useRouter();
   const supabase = createClient();
   const { setType } = useGlobal();
+  const { user, role, loading: authLoading } = useAuth();
+
+  // If already signed in, send to the right dashboard — don't show login UI
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+    // Check for an in-flight Instagram OAuth redirect — don't interrupt that flow
+    if (typeof window !== "undefined") {
+      const oauthInProgress =
+        localStorage.getItem("instagram_oauth_code") ||
+        localStorage.getItem("instagram_oauth_error");
+      if (oauthInProgress) return;
+    }
+    router.replace(role === "brand" ? "/brands" : "/influencer");
+  }, [authLoading, user, role, router]);
 
   // --- UI & FLOW STATE ---
   // flow: "onboarding" | "signin" | "signup"
@@ -339,6 +355,23 @@ const Login = () => {
   // ========================
   // RENDER
   // ========================
+
+  // While we resolve auth or redirect an authenticated user, show a minimal
+  // splash so the login UI doesn't flash.
+  const redirectingAuthed =
+    !authLoading &&
+    user &&
+    !(typeof window !== "undefined" &&
+      (localStorage.getItem("instagram_oauth_code") ||
+        localStorage.getItem("instagram_oauth_error")));
+
+  if (authLoading || redirectingAuthed) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#0F0F1A]">
+        <Loader2 size={28} className="animate-spin text-pink-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">

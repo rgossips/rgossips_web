@@ -44,14 +44,12 @@ export function BrandNavbar() {
           Trust Score: 10%
         </div>
 
-        {/* Invite Button */}
-        <button className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition">
-          Invite & Earn ₹2500
-          <span className="text-lg leading-none">+</span>
-        </button>
-
-        {/* Avatar & Name */}
-        <div className="flex items-center gap-2 cursor-pointer">
+        {/* Avatar & Name — opens profile */}
+        <button
+          onClick={() => router.push("/brands/profile")}
+          className="flex items-center gap-2 cursor-pointer rounded-lg hover:bg-gray-50 px-2 py-1 transition-colors"
+          title="View profile"
+        >
           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center">
             {logoUrl ? (
               <Image
@@ -68,7 +66,7 @@ export function BrandNavbar() {
           <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
             {brandName}
           </span>
-        </div>
+        </button>
 
         {/* Logout */}
         <button

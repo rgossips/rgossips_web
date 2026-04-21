@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, Search, Briefcase, User, Bell } from "lucide-react";
+import { Home, Search, Briefcase, User } from "lucide-react";
 
 const BottomNavBrands = () => {
   const router = useRouter();
@@ -13,7 +13,6 @@ const BottomNavBrands = () => {
     { label: "Home", icon: Home, path: "/brands" },
     { label: "Search", icon: Search, path: "/brands/search" },
     { label: "Campaigns", icon: Briefcase, path: "/brands/campaigns" },
-    { label: "Messages", icon: Bell, path: "/brands/chats" },
     { label: "Profile", icon: User, path: "/brands/profile" },
   ];
 
