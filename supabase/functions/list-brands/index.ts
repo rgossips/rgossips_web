@@ -33,13 +33,6 @@ Deno.serve(async (req) => {
 
     if (invError) console.error("Brand invitations error:", invError.message);
 
-    // Build a set of claimed invitation IDs to avoid duplicates
-    const claimedProfileIds = new Set(
-      (invitations || [])
-        .filter((inv: any) => inv.brand_profile_id)
-        .map((inv: any) => inv.brand_profile_id)
-    );
-
     const brands: any[] = [];
 
     // Add registered brand profiles
@@ -62,18 +55,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Add brand invitations that are NOT already claimed by a registered profile
+    // Build a set of brand_ids we actually loaded from brand_profiles
+    const registeredBrandIds = new Set(brands.map((b) => b.id));
+    // Normalized Instagram handles of registered brands (ignore empty)
+    const registeredInstagrams = new Set(
+      brands
+        .map((b) => (b.instagram || "").toLowerCase())
+        .filter((h) => h.length > 0)
+    );
+
+    // Add brand invitations that are NOT represented by a registered profile
     for (const inv of invitations || []) {
-      // Skip if this invitation's brand already exists as a registered profile
-      if (inv.brand_profile_id && claimedProfileIds.has(inv.brand_profile_id)) {
+      // Skip only if the invitation links to a profile we actually loaded.
+      // (A dangling brand_profile_id should NOT hide the invitation.)
+      if (inv.brand_profile_id && registeredBrandIds.has(inv.brand_profile_id)) {
         continue;
       }
-      // Also skip if a registered brand has the same instagram
+      // Skip if a registered brand has the same Instagram handle
+      // (only applies when both sides have a non-empty handle)
       const igLower = (inv.instagram_username || "").toLowerCase();
-      const alreadyRegistered = brands.some(
-        (b) => b.instagram && b.instagram.toLowerCase() === igLower
-      );
-      if (alreadyRegistered) continue;
+      if (igLower && registeredInstagrams.has(igLower)) {
+        continue;
+      }
 
       // Parse notes for category and verification
       let category = "General";

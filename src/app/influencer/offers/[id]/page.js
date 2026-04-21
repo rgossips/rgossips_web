@@ -72,7 +72,10 @@ function useCampaign(id, userId) {
           // Enrich with display fields the UI expects
           setCampaign({
             ...found,
-            heroImg: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80",
+            // Use the campaign's banner when set, otherwise fall back to a stock image
+            heroImg:
+              found.bannerImage ||
+              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80",
             slots: found.maxInfluencers || 0,
             about: found.description || "No description available for this campaign.",
             requirements: [
@@ -432,9 +435,19 @@ export default function CampaignDetailsPage() {
                 </div>
               )}
 
-              {/* Initials badge */}
-              <div className="absolute bottom-4 left-4 w-14 h-14 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-xl lg:text-2xl font-bold shadow-lg border-2 border-white/20">
-                {campaign.initials}
+              {/* Brand logo badge */}
+              <div className="absolute bottom-4 left-4 w-14 h-14 lg:w-16 lg:h-16 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border-2 border-white/20">
+                {campaign.brandLogo ? (
+                  <img
+                    src={campaign.brandLogo}
+                    alt={campaign.brandName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl lg:text-2xl font-bold">
+                    {campaign.initials}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -545,8 +558,32 @@ function ActiveContent({ campaign }) {
       {/* About Campaign */}
       <div className="space-y-3">
         <h3 className="text-base font-bold text-slate-800">About Campaign</h3>
-        <p className="text-sm text-slate-500 leading-relaxed">{campaign.about}</p>
+        <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{campaign.about}</p>
       </div>
+
+      {/* Gallery */}
+      {campaign.galleryImages?.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-base font-bold text-slate-800">Gallery</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {campaign.galleryImages.map((src, i) => (
+              <a
+                key={i}
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="aspect-square rounded-2xl overflow-hidden bg-slate-100 block group"
+              >
+                <img
+                  src={src}
+                  alt={`Gallery ${i + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Requirements */}
       {campaign.requirements && (

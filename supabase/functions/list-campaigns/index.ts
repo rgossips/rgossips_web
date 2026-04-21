@@ -6,6 +6,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Extract metadata stored after the `---` separator in description field.
+function unpackDescription(raw: string | null) {
+  if (!raw) return { body: "", meta: {} as Record<string, unknown> };
+  const idx = raw.indexOf("\n\n---\n");
+  if (idx < 0) return { body: raw, meta: {} };
+  const body = raw.slice(0, idx);
+  const metaRaw = raw.slice(idx + 6);
+  try {
+    return { body, meta: JSON.parse(metaRaw) };
+  } catch {
+    return { body: raw, meta: {} };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -193,6 +207,13 @@ Deno.serve(async (req) => {
       // Platforms (default to instagram)
       const platforms = ["instagram"];
 
+      // Unpack banner/gallery from description metadata
+      const { body: descBody, meta } = unpackDescription(c.description);
+      const bannerImage = (meta as any).banner_image || "";
+      const galleryImages = Array.isArray((meta as any).gallery_images)
+        ? (meta as any).gallery_images
+        : [];
+
       return {
         id: c.campaign_id,
         initials,
@@ -207,7 +228,9 @@ Deno.serve(async (req) => {
         deliverables,
         location,
         platforms,
-        description: c.description || "",
+        description: descBody || "",
+        bannerImage,
+        galleryImages,
         maxInfluencers: c.max_influencers || 0,
         campaignType: c.campaign_type || "",
         startDate: c.campaign_start_date || "",
