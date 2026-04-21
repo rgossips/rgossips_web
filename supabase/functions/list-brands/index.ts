@@ -39,7 +39,11 @@ Deno.serve(async (req) => {
     for (const p of profiles || []) {
       brands.push({
         id: p.brand_id,
-        name: p.gstin_trade_name || p.brand_name || p.contact_name || "",
+        name:
+          p.gstin_trade_name ||
+          p.brand_name ||
+          p.contact_name ||
+          (p.instagram_username ? `@${p.instagram_username}` : "Unnamed Brand"),
         category: (p.categories && p.categories.length > 0) ? p.categories[0] : "General",
         categories: p.categories || [],
         logo: p.logo_url || "",
@@ -89,7 +93,9 @@ Deno.serve(async (req) => {
 
       brands.push({
         id: inv.id,
-        name: inv.brand_name || "",
+        // Fall back to Instagram handle if brand_name is missing — otherwise
+        // the card renders as blank and looks "missing" to the user.
+        name: inv.brand_name || (inv.instagram_username ? `@${inv.instagram_username}` : "Unnamed Brand"),
         category,
         categories: [category],
         logo: inv.logo_url || "",

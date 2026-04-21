@@ -56,31 +56,33 @@ export default function DiscoverBrands() {
 
   // --- FILTER ENGINE ---
   const filteredBrands = useMemo(() => {
+    const q = (searchQuery || "").trim().toLowerCase();
     return brands.filter((brand) => {
-      const matchesSearch = brand.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+      const name = (brand.name || "").toLowerCase();
+      const ig = (brand.instagram || "").toLowerCase();
+      const cats = Array.isArray(brand.categories) ? brand.categories : [];
+
+      // Match against name OR @handle
+      const matchesSearch =
+        q === "" || name.includes(q) || ig.includes(q.replace(/^@/, ""));
+
+      // Match if selected category is in any of the brand's categories
       const matchesCategory =
-        selectedCategories.length === 0 || selectedCategories.includes(brand.category);
+        selectedCategories.length === 0 ||
+        selectedCategories.some(
+          (c) => cats.includes(c) || brand.category === c
+        );
+
+      // Budget filter — skip when brand has no budget info (minBudget = 0)
       const matchesBudget =
-        brand.minBudget >= budgetRange.min &&
-        brand.minBudget <= budgetRange.max;
+        !brand.minBudget ||
+        (brand.minBudget >= budgetRange.min && brand.minBudget <= budgetRange.max);
+
       const matchesVerified = isVerifiedOnly ? brand.isVerified : true;
 
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesBudget &&
-        matchesVerified
-      );
+      return matchesSearch && matchesCategory && matchesBudget && matchesVerified;
     });
-  }, [
-    brands,
-    searchQuery,
-    selectedCategories,
-    budgetRange,
-    isVerifiedOnly,
-  ]);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
 
   const resetFilters = () => {
     setSearchQuery("");

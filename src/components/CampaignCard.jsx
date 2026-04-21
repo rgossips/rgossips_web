@@ -31,46 +31,69 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
   };
 
   return (
-    <div className="bg-white p-5 rounded-[32px] shadow-sm border border-slate-50 space-y-5">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-lg overflow-hidden">
-            {/* Initials or Logo placeholder */}
-            <span className="bg-gradient-to-br from-blue-400 to-indigo-600 w-full h-full flex items-center justify-center text-white text-sm">
-              {campaign.initials}
-            </span>
-          </div>
-          <div>
-            <div className="flex items-center gap-1">
-              <h4 className="font-bold text-slate-800 truncate max-w-[160px]">
-                {campaign.title}
-              </h4>
-              <Award size={14} className="text-amber-500 fill-amber-100" />
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium">
-              {campaign.brandName}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="bg-white rounded-[32px] shadow-sm border border-slate-50 overflow-hidden">
+      {/* Banner */}
+      <div className="relative h-32 bg-gradient-to-br from-slate-100 to-slate-200">
+        {campaign.bannerImage ? (
+          <img
+            src={campaign.bannerImage}
+            alt={campaign.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#E60076]/10 via-[#9810FA]/10 to-[#4E82EE]/10" />
+        )}
+        {/* Dark gradient overlay for badges */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+        {/* Status + match score over banner */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
           {matchScore > 0 && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
-              matchScore >= 80 ? "text-emerald-500 bg-emerald-50" :
-              matchScore >= 60 ? "text-amber-500 bg-amber-50" :
-              "text-slate-400 bg-slate-50"
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-sm ${
+              matchScore >= 80 ? "text-emerald-600 bg-emerald-50/90" :
+              matchScore >= 60 ? "text-amber-600 bg-amber-50/90" :
+              "text-slate-500 bg-white/90"
             }`}>
               <Zap size={10} />
               <span className="text-[10px] font-black">{matchScore}%</span>
             </div>
           )}
           <span
-            className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider ${statusStyles[campaign.status]}`}
+            className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm ${statusStyles[campaign.status]}`}
           >
             {campaign.status}
           </span>
         </div>
       </div>
+
+      <div className="p-5 pt-0 space-y-5">
+        {/* Header — brand logo overlaps the banner */}
+        <div className="flex items-start gap-3 -mt-7">
+          <div className="w-14 h-14 rounded-2xl bg-white border-4 border-white shadow-md overflow-hidden shrink-0">
+            {campaign.brandLogo ? (
+              <img
+                src={campaign.brandLogo}
+                alt={campaign.brandName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                {campaign.initials}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 pt-7">
+            <div className="flex items-center gap-1">
+              <h4 className="font-bold text-slate-800 truncate">
+                {campaign.title}
+              </h4>
+              <Award size={14} className="text-amber-500 fill-amber-100 shrink-0" />
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium truncate">
+              {campaign.brandName}
+            </p>
+          </div>
+        </div>
 
       {/* Info Rows */}
       <div className="flex items-center justify-between">
@@ -170,6 +193,7 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           </Button>
         )}
 
+        </div>
       </div>
     </div>
   );

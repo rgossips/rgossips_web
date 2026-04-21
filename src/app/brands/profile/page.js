@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ChevronRight,
   MapPin,
@@ -17,10 +18,14 @@ import {
   X,
   Check,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+
+// Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
+const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
 
 const CATEGORIES = [
   "Beauty & Skincare",
@@ -50,6 +55,13 @@ const BrandProfile = () => {
   const [uploadError, setUploadError] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
 
+  // Cropper state for new logo upload
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const onCropComplete = useCallback((_, px) => setCroppedAreaPixels(px), []);
+
   if (!profile) {
     return (
       <div className="min-h-screen bg-[#F8F9FE] flex items-center justify-center">
@@ -68,15 +80,49 @@ const BrandProfile = () => {
   const initials = displayName.charAt(0).toUpperCase();
   const categories = Array.isArray(profile.categories) ? profile.categories : [];
 
-  const handleLogoChange = async (e) => {
+  const handleLogoPick = (e) => {
     const file = e.target.files?.[0];
-    if (!file || !user?.id) return;
+    if (!file) return;
     setUploadError("");
+    const reader = new FileReader();
+    reader.onload = () => setImageSrc(reader.result);
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const getCroppedBlob = async (src, pixelCrop) => {
+    const img = new window.Image();
+    img.src = src;
+    await new Promise((r) => (img.onload = r));
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(
+      img,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+    return new Promise((resolve) =>
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.92)
+    );
+  };
+
+  const handleCropSave = async () => {
+    if (!croppedAreaPixels || !imageSrc || !user?.id) return;
     setUploading(true);
+    setUploadError("");
     try {
+      const blob = await getCroppedBlob(imageSrc, croppedAreaPixels);
       const fd = new FormData();
       fd.append("userId", user.id);
-      fd.append("file", file, file.name);
+      fd.append("file", blob, "logo.jpg");
       fd.append("table", "brand_profiles");
       const { data, error } = await supabase.functions.invoke("upload-profile-photo", {
         body: fd,
@@ -84,11 +130,37 @@ const BrandProfile = () => {
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
+      setImageSrc(null);
     } catch (err) {
       setUploadError(err.message || "Failed to upload logo");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Revert to the original (Instagram-derived) logo by clearing logo_url.
+  // The app's fallback shows brand initials when logo_url is empty, which is
+  // what "original" means here — before the user uploaded a custom logo.
+  const handleRevertLogo = async () => {
+    if (!user?.id) return;
+    if (!window.confirm("Revert to the default logo? Your custom upload will be removed.")) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const { data, error } = await supabase.functions.invoke("update-profile", {
+        body: {
+          userId: user.id,
+          table: "brand_profiles",
+          logoUrl: "",
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      await refreshProfile();
+    } catch (err) {
+      setUploadError(err.message || "Failed to revert");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -113,11 +185,13 @@ const BrandProfile = () => {
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
       <div className="bg-linear-to-b from-[#4C75BE] to-[#4A3996] pt-12 pb-8 px-6 rounded-b-4xl mb-20">
-        <h1 className="text-2xl font-bold text-white">My Profile</h1>
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-2xl font-bold text-white">My Profile</h1>
+        </div>
       </div>
 
       {/* Main card */}
-      <div className="px-6 -mt-4 mb-8">
+      <div className="max-w-3xl mx-auto px-6 -mt-4 mb-8">
         <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
           <div className="flex flex-col items-center -mt-16">
             <div className="relative">
@@ -152,9 +226,20 @@ const BrandProfile = () => {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handleLogoChange}
+                onChange={handleLogoPick}
               />
             </div>
+
+            {/* Revert to default — only shown if a custom logo is set */}
+            {logoUrl && (
+              <button
+                onClick={handleRevertLogo}
+                disabled={uploading}
+                className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
+              >
+                <RotateCcw size={12} /> Revert to default
+              </button>
+            )}
 
             {uploadError && (
               <p className="mt-2 text-[11px] text-red-500">{uploadError}</p>
@@ -174,7 +259,7 @@ const BrandProfile = () => {
         </div>
       </div>
 
-      <div className="px-6 space-y-8">
+      <div className="max-w-3xl mx-auto px-6 space-y-8">
         {/* Brand Info */}
         <Section title="Brand Information">
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
@@ -396,6 +481,58 @@ const BrandProfile = () => {
           </button>
         </Section>
       </div>
+
+      {/* Crop logo modal */}
+      {imageSrc && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col">
+          <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+            <button
+              onClick={() => {
+                setImageSrc(null);
+                setCroppedAreaPixels(null);
+                setZoom(1);
+                setCrop({ x: 0, y: 0 });
+              }}
+              disabled={uploading}
+              className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <h3 className="text-white text-sm font-bold">Crop Logo</h3>
+            <button
+              onClick={handleCropSave}
+              disabled={uploading || !croppedAreaPixels}
+              className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50 bg-[#5851DB] text-white"
+            >
+              {uploading ? "Saving..." : "Save"}
+            </button>
+          </div>
+          <div className="flex-1 relative">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="rect"
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+            />
+          </div>
+          <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+            <span className="text-white/60 text-xs font-bold shrink-0">Zoom</span>
+            <input
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="flex-1 accent-purple-500"
+            />
+          </div>
+        </div>
+      )}
 
       {categoriesOpen && (
         <CategoriesModal

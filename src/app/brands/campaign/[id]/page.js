@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   IndianRupee,
   Loader2,
   MapPin,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   Users,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -322,16 +325,7 @@ const CampaignDetailPage = () => {
         {/* Gallery */}
         {campaign.galleryImages?.length > 0 && (
           <Section title="Gallery">
-            <div className="grid grid-cols-3 gap-2">
-              {campaign.galleryImages.map((src, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl overflow-hidden bg-gray-100"
-                >
-                  <img src={src} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
+            <BrandGallery images={campaign.galleryImages} />
           </Section>
         )}
         </div>
@@ -419,6 +413,101 @@ const StatusActions = ({ status, onChange, loading }) => {
         <span className="text-xs text-gray-400 italic">
           This campaign is completed.
         </span>
+      )}
+    </>
+  );
+};
+
+const BrandGallery = ({ images }) => {
+  const [index, setIndex] = useState(-1);
+  const close = () => setIndex(-1);
+  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
+  const next = () => setIndex((i) => (i + 1) % images.length);
+
+  useEffect(() => {
+    if (index < 0) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "ArrowRight") next();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [index, images.length]);
+
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-2">
+        {images.map((src, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setIndex(i)}
+            className="aspect-square rounded-xl overflow-hidden bg-gray-100 block group cursor-pointer"
+          >
+            <img
+              src={src}
+              alt={`Gallery ${i + 1}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </button>
+        ))}
+      </div>
+      {index >= 0 && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center"
+          onClick={close}
+        >
+          <button
+            type="button"
+            onClick={close}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
+                className="absolute left-4 md:left-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                aria-label="Previous"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
+                className="absolute right-4 md:right-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                aria-label="Next"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </>
+          )}
+          <img
+            src={images[index]}
+            alt={`Gallery ${index + 1}`}
+            className="max-w-[90vw] max-h-[85vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold">
+              {index + 1} / {images.length}
+            </div>
+          )}
+        </div>
       )}
     </>
   );
