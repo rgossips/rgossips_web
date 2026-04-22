@@ -1398,13 +1398,33 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const deliverables = (campaign?.contentTypesRequired || []).flatMap((item) => {
     const [type, countStr] = item.split(":");
     const count = parseInt(countStr) || 1;
-    const label = type.charAt(0).toUpperCase() + type.slice(1);
-    return Array.from({ length: count }, (_, i) => ({
-      key: `${type}_${i + 1}`,
-      label: `${label} ${count > 1 ? i + 1 : ""}`.trim(),
-      type,
-      needsRevision: !isRevision || revisionRequested.length === 0 || revisionRequested.some((r) => type.toLowerCase().includes(r.toLowerCase()) || label.toLowerCase().includes(r.toLowerCase())),
-    }));
+    const baseLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    return Array.from({ length: count }, (_, i) => {
+      const itemLabel = `${baseLabel} ${count > 1 ? i + 1 : ""}`.trim();
+      const itemLabelLc = itemLabel.toLowerCase();
+      const typeLc = type.toLowerCase();
+      // needsRevision is true when:
+      //  - we aren't revising at all (normal submission flow), OR
+      //  - the brand requested a blanket revision (no specific items), OR
+      //  - the revision labels include this specific item (compare the full
+      //    "Reels 2"-style label, not just the base "Reels")
+      const needsRevision =
+        !isRevision ||
+        revisionRequested.length === 0 ||
+        revisionRequested.some(
+          (r) =>
+            itemLabelLc === r ||
+            itemLabelLc.includes(r) ||
+            r.includes(itemLabelLc) ||
+            typeLc === r
+        );
+      return {
+        key: `${type}_${i + 1}`,
+        label: itemLabel,
+        type,
+        needsRevision,
+      };
+    });
   });
 
   // Prefill with existing submission links if revising
