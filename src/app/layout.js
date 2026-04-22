@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { LoadingProvider } from "@/context/LoadingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Script from "next/script";
 import NavigationLoader from "@/components/NavigationLoader";
@@ -75,11 +76,13 @@ export default function RootLayout({ children }) {
         </Script>
 
         <NavigationLoader />
-        <GlobalProvider>
-          <AuthProvider>
-            <ProtectedRoute>{children}</ProtectedRoute>
-          </AuthProvider>
-        </GlobalProvider>
+        <LoadingProvider>
+          <GlobalProvider>
+            <AuthProvider>
+              <ProtectedRoute>{children}</ProtectedRoute>
+            </AuthProvider>
+          </GlobalProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

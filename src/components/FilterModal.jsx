@@ -36,7 +36,16 @@ export const FilterContent = ({
   setSelectedPlatforms,
   isVerifiedOnly,
   setIsVerifiedOnly,
+  brands,
+  selectedBrands,
+  setSelectedBrands,
 }) => {
+  const handleBrandToggle = (name) => {
+    if (!setSelectedBrands) return;
+    setSelectedBrands((prev) =>
+      prev.includes(name) ? prev.filter((b) => b !== name) : [...prev, name]
+    );
+  };
   const handleCategoryToggle = (catLabel) => {
     if (catLabel === "All") {
       setSelectedCategories([]);
@@ -165,6 +174,41 @@ export const FilterContent = ({
         </section>
       )}
 
+      {/* Brand */}
+      {brands && setSelectedBrands && brands.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-800">Brand</h3>
+            {selectedBrands?.length > 0 && (
+              <button
+                onClick={() => setSelectedBrands([])}
+                className="text-[11px] font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+            {brands.map((name) => {
+              const isSelected = selectedBrands?.includes(name);
+              return (
+                <button
+                  key={name}
+                  onClick={() => handleBrandToggle(name)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#E60076] text-white border border-[#E60076]"
+                      : "border border-slate-100 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Verified Only */}
       <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
         <div>
@@ -192,10 +236,14 @@ export const FilterSidebar = ({
   isVerifiedOnly,
   setIsVerifiedOnly,
   onExpand,
+  brands,
+  selectedBrands,
+  setSelectedBrands,
 }) => {
   const activeFiltersCount =
     selectedCategories.length +
     (selectedPlatforms?.length || 0) +
+    (selectedBrands?.length || 0) +
     (isVerifiedOnly ? 1 : 0) +
     (budgetRange.min > 0 || budgetRange.max < 10000 ? 1 : 0);
 
@@ -203,6 +251,7 @@ export const FilterSidebar = ({
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
     if (setSelectedPlatforms) setSelectedPlatforms([]);
+    if (setSelectedBrands) setSelectedBrands([]);
     setIsVerifiedOnly(false);
   };
 
@@ -300,6 +349,40 @@ export const FilterSidebar = ({
         </div>
       )}
 
+      {/* Brand Group */}
+      {brands && setSelectedBrands && brands.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Brand</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {brands.slice(0, 4).map((name) => {
+              const isSelected = selectedBrands?.includes(name);
+              return (
+                <button
+                  key={name}
+                  onClick={() =>
+                    setSelectedBrands((prev) =>
+                      prev.includes(name) ? prev.filter((b) => b !== name) : [...prev, name]
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#E60076] text-white"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+            {brands.length > 4 && (
+              <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
+                +{brands.length - 4} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Verified Toggle */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold text-slate-500">Verified Only</span>
@@ -333,11 +416,15 @@ const FilterModal = ({
   setSelectedPlatforms,
   isVerifiedOnly,
   setIsVerifiedOnly,
+  brands,
+  selectedBrands,
+  setSelectedBrands,
 }) => {
   const handleReset = () => {
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
-    setSelectedPlatforms([]);
+    if (setSelectedPlatforms) setSelectedPlatforms([]);
+    if (setSelectedBrands) setSelectedBrands([]);
     setIsVerifiedOnly(false);
   };
 
@@ -387,6 +474,9 @@ const FilterModal = ({
               setSelectedPlatforms={setSelectedPlatforms}
               isVerifiedOnly={isVerifiedOnly}
               setIsVerifiedOnly={setIsVerifiedOnly}
+              brands={brands}
+              selectedBrands={selectedBrands}
+              setSelectedBrands={setSelectedBrands}
             />
           </div>
 
@@ -443,6 +533,9 @@ const FilterModal = ({
               setSelectedPlatforms={setSelectedPlatforms}
               isVerifiedOnly={isVerifiedOnly}
               setIsVerifiedOnly={setIsVerifiedOnly}
+              brands={brands}
+              selectedBrands={selectedBrands}
+              setSelectedBrands={setSelectedBrands}
             />
           </div>
 

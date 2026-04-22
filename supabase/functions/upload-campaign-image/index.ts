@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
         { status: 400, headers: jsonHeaders }
       );
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       return new Response(
-        JSON.stringify({ error: "File must be under 5MB" }),
+        JSON.stringify({ error: "File must be under 10MB" }),
         { status: 400, headers: jsonHeaders }
       );
     }
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     try {
       await supabaseAdmin.storage.createBucket("campaign-images", {
         public: true,
-        fileSizeLimit: 5 * 1024 * 1024,
+        fileSizeLimit: 10 * 1024 * 1024,
         allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
       });
     } catch {}

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { X, Upload, Loader2, Trash2, Image as ImageIcon, Plus } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useGlobalLoading } from "@/context/LoadingContext";
 
 const CATEGORIES = [
   "Beauty & Skincare",
@@ -75,6 +76,7 @@ function useIsDesktop() {
 export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated }) {
   const supabase = createClient();
   const isDesktop = useIsDesktop();
+  const { startLoading, stopLoading } = useGlobalLoading();
   const [form, setForm] = useState(emptyForm);
   const [categories, setCategories] = useState([]);
   const [bannerFile, setBannerFile] = useState(null);
@@ -89,9 +91,38 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const toggleCategory = (c) =>
     setCategories((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
 
+  // Client-side image compression so huge phone photos upload cleanly.
+  // Targets a max 1920px long edge + JPEG 85%. Falls back to the original
+  // file if compression isn't possible (e.g. decode failure).
+  const compressImage = async (file, maxEdge = 1920, quality = 0.85) => {
+    if (!file.type.startsWith("image/")) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+      if (scale >= 1 && file.size <= 5 * 1024 * 1024) return file; // already small enough
+      const w = Math.round(bitmap.width * scale);
+      const h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/jpeg", quality)
+      );
+      bitmap.close?.();
+      if (!blob) return file;
+      // If compression actually made it bigger, keep the original
+      return blob.size < file.size ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+    } catch {
+      return file;
+    }
+  };
+
   const uploadOne = async (file, folder) => {
+    const compressed = await compressImage(file);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", compressed);
     fd.append("folder", folder);
     const { data, error: err } = await supabase.functions.invoke(
       "upload-campaign-image",
@@ -115,6 +146,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     if (!form.application_deadline) return setError("Application deadline is required");
 
     setSubmitting(true);
+    startLoading(publish ? "Publishing campaign..." : "Saving draft...");
     try {
       let bannerUrl = "";
       const galleryUrls = [];
@@ -157,6 +189,8 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       setError(e.message || "Failed to create campaign");
       setSubmitting(false);
       setStage("");
+    } finally {
+      stopLoading();
     }
   };
 

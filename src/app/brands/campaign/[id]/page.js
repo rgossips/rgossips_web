@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useGlobalLoading } from "@/context/LoadingContext";
 
 const statusStyles = {
   draft: "bg-gray-100 text-gray-700 border-gray-200",
@@ -73,6 +74,7 @@ const CampaignDetailPage = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
+  const { startLoading, stopLoading } = useGlobalLoading();
 
   const [campaign, setCampaign] = useState(null);
   const [applications, setApplications] = useState([]);
@@ -105,23 +107,28 @@ const CampaignDetailPage = () => {
   const updateStatus = async (newStatus) => {
     if (!user?.id || !campaign?.id) return;
     setStatusUpdating(true);
-    const { data, error: err } = await supabase.functions.invoke(
-      "brand-campaigns",
-      {
-        body: {
-          action: "updateStatus",
-          campaignId: campaign.id,
-          brandId: user.id,
-          status: newStatus,
-        },
+    startLoading(`Updating status to ${newStatus}…`);
+    try {
+      const { data, error: err } = await supabase.functions.invoke(
+        "brand-campaigns",
+        {
+          body: {
+            action: "updateStatus",
+            campaignId: campaign.id,
+            brandId: user.id,
+            status: newStatus,
+          },
+        }
+      );
+      if (err || data?.error) {
+        alert(err?.message || data?.error || "Failed to update status");
+        return;
       }
-    );
-    setStatusUpdating(false);
-    if (err || data?.error) {
-      alert(err?.message || data?.error || "Failed to update status");
-      return;
+      setCampaign((prev) => ({ ...prev, status: newStatus }));
+    } finally {
+      setStatusUpdating(false);
+      stopLoading();
     }
-    setCampaign((prev) => ({ ...prev, status: newStatus }));
   };
 
   const parsedContent = useMemo(() => {
@@ -569,6 +576,7 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
 
 const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
   const supabase = createClient();
+  const { startLoading, stopLoading } = useGlobalLoading();
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState(null); // "approve" | "reject" | "revision" | null
@@ -586,27 +594,32 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
 
   const updateStatus = async (newStatus, extra = {}) => {
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke(
-      "update-application-status",
-      {
-        body: {
-          applicationId: app.id,
-          brandId,
-          status: newStatus,
-          ...extra,
-        },
+    startLoading("Updating application…");
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "update-application-status",
+        {
+          body: {
+            applicationId: app.id,
+            brandId,
+            status: newStatus,
+            ...extra,
+          },
+        }
+      );
+      if (error || data?.error) {
+        alert(error?.message || data?.error || "Failed to update");
+        return;
       }
-    );
-    setLoading(false);
-    if (error || data?.error) {
-      alert(error?.message || data?.error || "Failed to update");
-      return;
+      setMode(null);
+      setReason("");
+      setRevisionNote("");
+      setRevisionIndexes([]);
+      onRefresh?.();
+    } finally {
+      setLoading(false);
+      stopLoading();
     }
-    setMode(null);
-    setReason("");
-    setRevisionNote("");
-    setRevisionIndexes([]);
-    onRefresh?.();
   };
 
   const handleApprove = () => {

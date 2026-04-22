@@ -23,6 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { useGlobalLoading } from "@/context/LoadingContext";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
 const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
@@ -49,6 +50,7 @@ const BrandProfile = () => {
   const router = useRouter();
   const { user, profile, signOut, refreshProfile } = useAuth();
   const supabase = createClient();
+  const { startLoading, stopLoading } = useGlobalLoading();
   const fileInputRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
@@ -118,6 +120,7 @@ const BrandProfile = () => {
     if (!croppedAreaPixels || !imageSrc || !user?.id) return;
     setUploading(true);
     setUploadError("");
+    startLoading("Uploading logo…");
     try {
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels);
       const fd = new FormData();
@@ -135,6 +138,7 @@ const BrandProfile = () => {
       setUploadError(err.message || "Failed to upload logo");
     } finally {
       setUploading(false);
+      stopLoading();
     }
   };
 
@@ -146,6 +150,7 @@ const BrandProfile = () => {
     if (!window.confirm("Revert to your Instagram profile picture? Your custom upload will be replaced.")) return;
     setUploading(true);
     setUploadError("");
+    startLoading("Reverting logo…");
     try {
       const { data, error } = await supabase.functions.invoke("update-profile", {
         body: {
@@ -161,11 +166,13 @@ const BrandProfile = () => {
       setUploadError(err.message || "Failed to revert");
     } finally {
       setUploading(false);
+      stopLoading();
     }
   };
 
   const saveCategories = async (next) => {
     if (!user?.id) return;
+    startLoading("Saving categories…");
     try {
       const { data, error } = await supabase.functions.invoke("update-profile", {
         body: {
@@ -179,87 +186,96 @@ const BrandProfile = () => {
       await refreshProfile();
     } catch (err) {
       alert("Failed to update categories: " + err.message);
+    } finally {
+      stopLoading();
     }
   };
 
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
       <div className="bg-linear-to-b from-[#4C75BE] to-[#4A3996] pt-12 pb-8 px-6 rounded-b-4xl mb-20">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold text-white">My Profile</h1>
         </div>
       </div>
 
-      {/* Main card */}
-      <div className="max-w-3xl mx-auto px-6 -mt-4 mb-8">
-        <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
-          <div className="flex flex-col items-center -mt-16">
-            <div className="relative">
-              <div className="w-24 h-24 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl overflow-hidden">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt={displayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Loader2 size={20} className="text-white animate-spin" />
+      {/* Two-column layout: avatar card (left) + info sections (right) on lg+ */}
+      <div className="max-w-6xl mx-auto px-6 -mt-4 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8">
+        {/* LEFT: Avatar card — sticky on desktop so it stays visible while scrolling */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
+            <div className="flex flex-col items-center -mt-16">
+              <div className="relative">
+                <div className="w-24 h-24 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl overflow-hidden">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <Loader2 size={20} className="text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
+                  title="Change logo"
+                >
+                  <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
+                    <Camera size={12} />
                   </div>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoPick}
+                />
+              </div>
+
+              {logoUrl && (
+                <button
+                  onClick={handleRevertLogo}
+                  disabled={uploading}
+                  className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw size={12} /> Revert to default
+                </button>
+              )}
+
+              {uploadError && (
+                <p className="mt-2 text-[11px] text-red-500 text-center">{uploadError}</p>
+              )}
+
+              <div className="text-center mt-4">
+                <h2 className="text-xl font-extrabold text-gray-900 break-words">
+                  {displayName}
+                </h2>
+                {profile.instagram_username && (
+                  <a
+                    href={`https://instagram.com/${profile.instagram_username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-gray-400 font-semibold mt-1 hover:text-[#E1306C] cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Instagram size={11} />@{profile.instagram_username}
+                  </a>
                 )}
               </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
-                title="Change logo"
-              >
-                <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
-                  <Camera size={12} />
-                </div>
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleLogoPick}
-              />
-            </div>
-
-            {/* Revert to default — only shown if a custom logo is set */}
-            {logoUrl && (
-              <button
-                onClick={handleRevertLogo}
-                disabled={uploading}
-                className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
-              >
-                <RotateCcw size={12} /> Revert to default
-              </button>
-            )}
-
-            {uploadError && (
-              <p className="mt-2 text-[11px] text-red-500">{uploadError}</p>
-            )}
-
-            <div className="text-center mt-4">
-              <h2 className="text-xl font-extrabold text-gray-900">
-                {displayName}
-              </h2>
-              {profile.instagram_username && (
-                <p className="text-[11px] text-gray-400 font-semibold mt-1">
-                  @{profile.instagram_username}
-                </p>
-              )}
             </div>
           </div>
-        </div>
-      </div>
+        </aside>
 
-      <div className="max-w-3xl mx-auto px-6 space-y-8">
+        {/* RIGHT: Info sections */}
+        <div className="space-y-8 min-w-0">
         {/* Brand Info */}
         <Section title="Brand Information">
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
@@ -480,6 +496,7 @@ const BrandProfile = () => {
             <span>Log Out</span>
           </button>
         </Section>
+        </div>
       </div>
 
       {/* Crop logo modal */}

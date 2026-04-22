@@ -33,6 +33,7 @@ export default function CampaignsPage() {
   });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
 
   // --- FETCH CAMPAIGNS ---
   useEffect(() => {
@@ -65,12 +66,14 @@ export default function CampaignsPage() {
     fetchCampaigns();
   }, [user?.id]);
 
-  const resetFilters = () => {
-    setSearchQuery("");
-    setSelectedCategories([]);
-    setBudgetRange({ min: 0, max: 200000 });
-    setSelectedPlatforms([]);
-  };
+  // Unique brand names across all campaigns — sorted alphabetically
+  const brandNames = useMemo(() => {
+    const set = new Set();
+    for (const c of campaigns) {
+      if (c.brandName) set.add(c.brandName);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [campaigns]);
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
@@ -87,11 +90,13 @@ export default function CampaignsPage() {
         campaign.platforms.some((p) =>
           selectedPlatforms.map((sp) => sp.toLowerCase()).includes(p.toLowerCase())
         );
+      const matchesBrand =
+        selectedBrands.length === 0 || selectedBrands.includes(campaign.brandName);
       const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
       const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-      return matchesTab && matchesSearch && matchesCategory && matchesPlatform && matchesBudget;
+      return matchesTab && matchesSearch && matchesCategory && matchesPlatform && matchesBrand && matchesBudget;
     });
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms, budgetRange]);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms, selectedBrands, budgetRange]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
@@ -188,6 +193,9 @@ export default function CampaignsPage() {
               setBudgetRange={setBudgetRange}
               selectedPlatforms={selectedPlatforms}
               setSelectedPlatforms={setSelectedPlatforms}
+              brands={brandNames}
+              selectedBrands={selectedBrands}
+              setSelectedBrands={setSelectedBrands}
               onExpand={() => setIsFiltersOpen(true)}
             />
           </aside>
@@ -273,6 +281,9 @@ export default function CampaignsPage() {
             setBudgetRange={setBudgetRange}
             selectedPlatforms={selectedPlatforms}
             setSelectedPlatforms={setSelectedPlatforms}
+            brands={brandNames}
+            selectedBrands={selectedBrands}
+            setSelectedBrands={setSelectedBrands}
           />
         )}
       </AnimatePresence>
