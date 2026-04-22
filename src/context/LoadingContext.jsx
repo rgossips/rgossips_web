@@ -4,10 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 
 const LoadingContext = createContext(null);
@@ -74,13 +76,45 @@ export function LoadingProvider({ children }) {
 }
 
 function GlobalLoaderOverlay({ loading, message }) {
-  if (!loading) return null;
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll + swallow keyboard shortcuts while loading
+  useEffect(() => {
+    if (!loading) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const swallow = (e) => {
+      // Block Enter/Space/Esc shortcuts that might trigger underlying forms
+      if (["Enter", " ", "Escape"].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", swallow, true);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", swallow, true);
+    };
+  }, [loading]);
+
+  if (!loading || !mounted) return null;
+
+  const overlay = (
     <div
-      // z-index high enough to cover dialogs/drawers (z-50) and modals (z-100).
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-3 bg-black/40 backdrop-blur-sm"
+      // Portal'd to <body> and sitting at the highest z-index we use.
+      // pointer-events on the overlay catches every click before it reaches
+      // anything underneath (dialogs, drawers, buttons).
+      style={{ zIndex: 2147483647 }}
+      className="fixed inset-0 flex flex-col items-center justify-center gap-3 bg-black/50 backdrop-blur-sm cursor-wait"
       aria-live="polite"
       aria-busy="true"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl bg-white shadow-2xl">
         <Loader2 size={28} className="text-[#5851DB] animate-spin" />
@@ -92,6 +126,8 @@ function GlobalLoaderOverlay({ loading, message }) {
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
 
 export function useGlobalLoading() {

@@ -577,7 +577,12 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
 const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
-  const [expanded, setExpanded] = useState(false);
+  // Auto-expand actionable statuses so the brand can review immediately
+  const autoExpand =
+    app.status === "pending" ||
+    app.status === "submitted" ||
+    app.status === "live_submitted";
+  const [expanded, setExpanded] = useState(autoExpand);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState(null); // "approve" | "reject" | "revision" | null
   const [payAmount, setPayAmount] = useState(

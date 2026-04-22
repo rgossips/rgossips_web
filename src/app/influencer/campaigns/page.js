@@ -33,7 +33,10 @@ export default function CampaignsPage() {
   });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
-  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState(() => {
+    const b = searchParams?.get("brand");
+    return b ? [b] : [];
+  });
 
   // --- FETCH CAMPAIGNS ---
   useEffect(() => {

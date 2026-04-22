@@ -1,14 +1,24 @@
 import { Star, Users, Zap } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const BrandCard = ({ brand, matchScore }) => {
+  const router = useRouter();
   const scoreColor =
     matchScore >= 80 ? "text-emerald-500 bg-emerald-50" :
     matchScore >= 60 ? "text-amber-500 bg-amber-50" :
     "text-slate-400 bg-slate-50";
 
+  const handleOpen = () => {
+    // Open the campaigns list filtered by this brand
+    router.push(`/influencer/campaigns?brand=${encodeURIComponent(brand.name || "")}`);
+  };
+
   return (
-    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 hover:shadow-lg hover:border-[#E60076]/10 transition-all relative group cursor-pointer">
+    <div
+      onClick={handleOpen}
+      className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 hover:shadow-lg hover:border-[#E60076]/10 transition-all relative group cursor-pointer"
+    >
       {matchScore > 0 && (
         <div className={`absolute top-6 right-6 z-10 flex items-center gap-1 px-2.5 py-1 rounded-lg ${scoreColor}`}>
           <Zap size={12} />

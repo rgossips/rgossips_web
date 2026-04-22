@@ -93,7 +93,7 @@ export default function DiscoverBrands() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1440px] mx-auto">
         {/* Mobile header */}
         <div className="lg:hidden space-y-4 mb-2">
           <div className="flex justify-between items-center">

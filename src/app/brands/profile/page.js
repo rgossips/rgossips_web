@@ -199,82 +199,97 @@ const BrandProfile = () => {
         </div>
       </div>
 
-      {/* Two-column layout: avatar card (left) + info sections (right) on lg+ */}
-      <div className="max-w-6xl mx-auto px-6 -mt-4 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8">
-        {/* LEFT: Avatar card — sticky on desktop so it stays visible while scrolling */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="bg-white rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
-            <div className="flex flex-col items-center -mt-16">
-              <div className="relative">
-                <div className="w-24 h-24 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl overflow-hidden">
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
-                  {uploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Loader2 size={20} className="text-white animate-spin" />
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
-                  title="Change logo"
-                >
-                  <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
-                    <Camera size={12} />
-                  </div>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoPick}
+      {/* Hero card — logo + name + handle in a horizontal layout */}
+      <div className="max-w-6xl mx-auto px-6 -mt-4 mb-8">
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
+          {/* Avatar */}
+          <div className="relative shrink-0 -mt-16 sm:-mt-20">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-[#2563eb] rounded-[28px] flex items-center justify-center text-white text-3xl font-bold shadow-xl overflow-hidden">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
                 />
-              </div>
-
-              {logoUrl && (
-                <button
-                  onClick={handleRevertLogo}
-                  disabled={uploading}
-                  className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
-                >
-                  <RotateCcw size={12} /> Revert to default
-                </button>
+              ) : (
+                initials
               )}
-
-              {uploadError && (
-                <p className="mt-2 text-[11px] text-red-500 text-center">{uploadError}</p>
+              {uploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 size={20} className="text-white animate-spin" />
+                </div>
               )}
-
-              <div className="text-center mt-4">
-                <h2 className="text-xl font-extrabold text-gray-900 break-words">
-                  {displayName}
-                </h2>
-                {profile.instagram_username && (
-                  <a
-                    href={`https://instagram.com/${profile.instagram_username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-gray-400 font-semibold mt-1 hover:text-[#E1306C] cursor-pointer inline-flex items-center gap-1"
-                  >
-                    <Instagram size={11} />@{profile.instagram_username}
-                  </a>
-                )}
-              </div>
             </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
+              title="Change logo"
+            >
+              <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
+                <Camera size={12} />
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoPick}
+            />
           </div>
-        </aside>
 
-        {/* RIGHT: Info sections */}
+          {/* Name + meta */}
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <h2 className="text-2xl font-extrabold text-gray-900 break-words">
+              {displayName}
+            </h2>
+            <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              {profile.instagram_username && (
+                <a
+                  href={`https://instagram.com/${profile.instagram_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#E1306C] bg-pink-50 px-3 py-1.5 rounded-full hover:bg-pink-100 cursor-pointer"
+                >
+                  <Instagram size={12} />@{profile.instagram_username}
+                </a>
+              )}
+              {profile.gstin_status && (
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full ${
+                    profile.gstin_status === "Active"
+                      ? "text-emerald-700 bg-emerald-50"
+                      : "text-gray-600 bg-gray-100"
+                  }`}
+                >
+                  GST {profile.gstin_status}
+                </span>
+              )}
+              {(profile.categories?.length || 0) > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5851DB] bg-[#EBE9FE] px-3 py-1.5 rounded-full">
+                  {profile.categories.length} categor{profile.categories.length === 1 ? "y" : "ies"}
+                </span>
+              )}
+            </div>
+            {logoUrl && (
+              <button
+                onClick={handleRevertLogo}
+                disabled={uploading}
+                className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
+              >
+                <RotateCcw size={12} /> Revert logo to default
+              </button>
+            )}
+            {uploadError && (
+              <p className="mt-2 text-[11px] text-red-500">{uploadError}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Balanced two-column grid below */}
+      <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         <div className="space-y-8 min-w-0">
         {/* Brand Info */}
         <Section title="Brand Information">
@@ -395,7 +410,10 @@ const BrandProfile = () => {
             )}
           </div>
         </Section>
+        </div>
 
+        {/* Right column */}
+        <div className="space-y-8 min-w-0">
         {/* Social */}
         {profile.instagram_username && (
           <Section title="Social">
