@@ -897,10 +897,10 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
                   <button
                     onClick={() => updateStatus("payment")}
                     disabled={loading}
-                    className={`${btn} bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100`}
+                    className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}
                   >
-                    {loading ? <Loader2 size={12} className="animate-spin" /> : <IndianRupee size={12} />}
-                    Release Payment
+                    {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                    Approve & Release Payment
                   </button>
                   <button
                     onClick={() => setMode("revision")}
@@ -911,14 +911,9 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
                 </>
               )}
               {app.status === "payment" && (
-                <button
-                  onClick={() => updateStatus("completed")}
-                  disabled={loading}
-                  className={`${btn} bg-green-50 text-green-700 border-green-200 hover:bg-green-100`}
-                >
-                  {loading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                  Mark Completed
-                </button>
+                <span className="text-[11px] text-gray-500 italic px-1 py-1">
+                  Payment released. Waiting for admin to mark this complete.
+                </span>
               )}
             </div>
           )}

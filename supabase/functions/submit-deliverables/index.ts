@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     // Verify the application exists and is in "approved" status
     const { data: app, error: fetchErr } = await supabaseAdmin
       .from("campaign_applications")
-      .select("id, status")
+      .select("id, status, campaign_id, influencer_id")
       .eq("id", applicationId)
       .single();
 
@@ -68,6 +68,45 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Failed to submit: " + updateErr.message }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // Best-effort notification to the brand
+    try {
+      const { data: campaign } = await supabaseAdmin
+        .from("campaigns")
+        .select("brand_id, title")
+        .eq("campaign_id", app.campaign_id)
+        .single();
+
+      if (campaign?.brand_id) {
+        const { data: influencer } = await supabaseAdmin
+          .from("influencer_profiles")
+          .select("full_name, username, instagram_handle")
+          .eq("influencer_id", app.influencer_id)
+          .single();
+        const displayName =
+          influencer?.full_name ||
+          influencer?.username ||
+          (influencer?.instagram_handle ? `@${influencer.instagram_handle}` : "An influencer");
+        const text =
+          nextStatus === "live_submitted"
+            ? `${displayName} posted live links for "${campaign.title || "your campaign"}"`
+            : `${displayName} submitted deliverables for "${campaign.title || "your campaign"}"`;
+        await supabaseAdmin.from("notifications").insert({
+          user_id: campaign.brand_id,
+          type: nextStatus === "live_submitted" ? "live_submitted" : "deliverables_submitted",
+          title: nextStatus === "live_submitted" ? "Live links submitted" : "Deliverables submitted",
+          body: JSON.stringify({
+            text,
+            link: `/brands/campaign/${app.campaign_id}`,
+            campaignId: app.campaign_id,
+            applicationId: app.id,
+          }),
+          is_read: false,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to create brand notification:", e);
     }
 
     return new Response(

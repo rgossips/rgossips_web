@@ -98,6 +98,53 @@ Deno.serve(async (req) => {
 
     if (updateErr) return ok({ error: "Failed to update: " + updateErr.message });
 
+    // Notify the brand when the status change is NOT initiated by them.
+    // (brandId is passed only from brand UI — admin won't pass it, so a
+    // missing brandId means "external" change that the brand should know about.)
+    // Also notify on `completed` so the brand always learns when deals wrap up.
+    try {
+      const { data: campApp } = await supabase
+        .from("campaign_applications")
+        .select("id, campaign_id, influencer_id, campaigns(brand_id, title)")
+        .eq("id", applicationId)
+        .single();
+
+      const brandOwnerId = (campApp as any)?.campaigns?.brand_id;
+      const campaignTitle = (campApp as any)?.campaigns?.title || "your campaign";
+      const campaignId = (campApp as any)?.campaign_id;
+
+      // Only notify when the status change originates outside the brand
+      // (i.e. no brandId in payload, or brandId doesn't match) AND there's
+      // a brand to notify.
+      if (brandOwnerId && brandOwnerId !== brandId) {
+        const { data: influencer } = await supabase
+          .from("influencer_profiles")
+          .select("full_name, username, instagram_handle")
+          .eq("influencer_id", (campApp as any)?.influencer_id)
+          .single();
+        const displayName =
+          influencer?.full_name ||
+          influencer?.username ||
+          (influencer?.instagram_handle ? `@${influencer.instagram_handle}` : "an influencer");
+        const statusLabel =
+          status === "completed" ? "marked completed" : `updated to ${status.replace("_", " ")}`;
+        await supabase.from("notifications").insert({
+          user_id: brandOwnerId,
+          type: `app_${status}`,
+          title: `Application ${statusLabel}`,
+          body: JSON.stringify({
+            text: `${displayName}'s application for "${campaignTitle}" was ${statusLabel}.`,
+            link: `/brands/campaign/${campaignId}`,
+            campaignId,
+            applicationId,
+          }),
+          is_read: false,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to create brand notification:", e);
+    }
+
     return ok({ success: true });
   } catch (err) {
     return ok({

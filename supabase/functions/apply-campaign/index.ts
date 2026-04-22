@@ -64,6 +64,41 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Notify the brand owning this campaign (best-effort — never fail the apply)
+    try {
+      const { data: campaign } = await supabaseAdmin
+        .from("campaigns")
+        .select("brand_id, title")
+        .eq("campaign_id", campaignId)
+        .single();
+
+      if (campaign?.brand_id) {
+        const { data: influencer } = await supabaseAdmin
+          .from("influencer_profiles")
+          .select("full_name, username, instagram_handle")
+          .eq("influencer_id", influencerId)
+          .single();
+        const displayName =
+          influencer?.full_name ||
+          influencer?.username ||
+          (influencer?.instagram_handle ? `@${influencer.instagram_handle}` : "An influencer");
+        await supabaseAdmin.from("notifications").insert({
+          user_id: campaign.brand_id,
+          type: "new_application",
+          title: "New campaign application",
+          body: JSON.stringify({
+            text: `${displayName} applied to "${campaign.title || "your campaign"}"`,
+            link: `/brands/campaign/${campaignId}`,
+            campaignId,
+            applicationId: application.id,
+          }),
+          is_read: false,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to create brand notification:", e);
+    }
+
     return new Response(
       JSON.stringify({ success: true, application }),
       { status: 200, headers: jsonHeaders }

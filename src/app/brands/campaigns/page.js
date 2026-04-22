@@ -169,7 +169,7 @@ const CampaignsPage = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
+          <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-6">
             {filtered.map((c) => (
               <CampaignCard key={c.id} {...c} />
             ))}

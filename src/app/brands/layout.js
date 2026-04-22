@@ -21,8 +21,8 @@ export default function BrandsLayout({ children }) {
             <Sidebar />
           </div>
 
-          {/* Page Content */}
-          <div className="flex-1 lg:ml-[220px] overflow-y-auto">{children}</div>
+          {/* Page Content — pb-20 on mobile so content isn't hidden behind the fixed bottom nav */}
+          <div className="flex-1 lg:ml-[220px] overflow-y-auto pb-20 lg:pb-0">{children}</div>
         </div>
 
         <ScrollToTop />
@@ -31,7 +31,7 @@ export default function BrandsLayout({ children }) {
       {/* Mobile Bottom Nav */}
       <BottomNavBrands />
 
-      <div className="mb-16 lg:mb-0 lg:ml-[220px]">
+      <div className="mb-20 lg:mb-0 lg:ml-[220px]">
         <Footer />
       </div>
     </>

@@ -1,14 +1,40 @@
 "use client";
 
-import { Search, Zap, ChevronDown, LogOut, RefreshCw } from "lucide-react";
+import { Search, Zap, ChevronDown, LogOut, RefreshCw, Bell } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 export function BrandNavbar() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
+  const [unread, setUnread] = useState(0);
+
+  // Poll for unread notification count
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await supabase.functions.invoke("notifications", {
+          body: { action: "list", userId: user.id },
+        });
+        if (!cancelled && typeof data?.unreadCount === "number") {
+          setUnread(data.unreadCount);
+        }
+      } catch {}
+    };
+    load();
+    const interval = setInterval(load, 60_000); // refresh every minute
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user?.id, supabase]);
 
   const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
   const logoUrl = profile?.logo_url;
@@ -66,6 +92,20 @@ export function BrandNavbar() {
           <span className="text-sm font-semibold text-gray-700 max-w-[120px] truncate">
             {brandName}
           </span>
+        </button>
+
+        {/* Notifications */}
+        <button
+          onClick={() => router.push("/brands/notifications")}
+          className="relative p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+          title="Notifications"
+        >
+          <Bell size={18} />
+          {unread > 0 && (
+            <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-[#E60076] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </button>
 
         {/* Refresh */}
