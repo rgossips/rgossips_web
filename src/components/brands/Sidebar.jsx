@@ -36,7 +36,7 @@ export default function Sidebar() {
         </div>
 
         {/* Main Menu */}
-        <nav className="px-3 space-y-1 mt-20">
+        <nav className="px-3 space-y-1 mt-10">
           {mainMenu.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -74,9 +74,12 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Bottom CTA */}
+      {/* Bottom CTA — navigates to campaigns list with ?new=1 which auto-opens the create dialog */}
       <div className="p-4">
-        <button className="flex items-center justify-center gap-2 w-full bg-purple-600 text-white text-sm py-2.5 rounded-xl hover:bg-purple-700 transition font-medium">
+        <button
+          onClick={() => router.push("/brands/campaigns?new=1")}
+          className="flex cursor-pointer items-center justify-center gap-2 w-full bg-purple-600 text-white text-sm py-2.5 rounded-xl hover:bg-purple-700 transition font-medium"
+        >
           <Plus size={16} />
           Post Requirement
         </button>

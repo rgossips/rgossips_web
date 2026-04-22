@@ -171,13 +171,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Send welcome notification
+    // Send welcome notification — tailored per role
     try {
+      const isBrand = table === "brand_profiles";
+      const greeting = name ? `Hey ${name}!` : "Welcome!";
+      const welcomeText = isBrand
+        ? `${greeting} Get bunch of influencers to promote your brand — post your first campaign to get started.`
+        : `${greeting} Your account is ready. Complete your profile to start getting brand deals.`;
+      const welcomeLink = isBrand ? "/brands/campaigns" : "/influencer";
+
       await supabaseAdmin.from("notifications").insert({
         user_id: userId,
         type: "welcome",
         title: "Welcome to RGossips! 🎉",
-        body: `Hey ${name || "there"}! Your account is ready. Complete your profile to start getting brand deals.`,
+        body: JSON.stringify({ text: welcomeText, link: welcomeLink }),
         is_read: false,
       });
     } catch (e) {

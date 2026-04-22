@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CampaignCard } from "@/components/brands/CampaignCard";
 import {
   Search,
@@ -30,12 +31,23 @@ const STATUS_TABS = [
 const CampaignsPage = () => {
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState("all");
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(() => searchParams?.get("new") === "1");
   const loadRef = useRef(0);
+
+  // Auto-open create dialog when arriving with ?new=1 (e.g. from sidebar CTA)
+  useEffect(() => {
+    if (searchParams?.get("new") === "1") {
+      setCreateOpen(true);
+      // Clean the query string so refreshing doesn't re-open the dialog
+      router.replace("/brands/campaigns", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const loadCampaigns = async () => {
     if (!user?.id) return;
