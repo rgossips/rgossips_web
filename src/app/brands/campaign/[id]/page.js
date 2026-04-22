@@ -715,6 +715,96 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
       {/* Expanded actions */}
       {expanded && hasActions && (
         <div className="px-3 pb-3 border-t border-gray-50">
+          {/* Creator details — review before approving */}
+          <div className="mt-3 p-3 bg-[#F8F9FE] rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                Creator Details
+              </p>
+              {inf.instagram_handle && inf.media_kit_published && (
+                <a
+                  href={`/kit/${inf.instagram_handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[#5851DB] hover:underline"
+                >
+                  <ExternalLink size={10} /> Media Kit
+                </a>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              <Fact label="Full Name" value={inf.full_name || "—"} />
+              <Fact
+                label="Instagram"
+                value={inf.instagram_handle ? `@${inf.instagram_handle}` : "—"}
+                href={inf.instagram_handle ? `https://instagram.com/${inf.instagram_handle}` : null}
+              />
+              <Fact label="Followers" value={formatCount(inf.followers_count)} />
+              <Fact
+                label="Engagement"
+                value={inf.engagement_rate != null ? `${inf.engagement_rate}%` : "—"}
+              />
+              <Fact label="Posts" value={formatCount(inf.media_count)} />
+              <Fact label="Location" value={inf.location || "—"} />
+              {inf.email && <Fact label="Email" value={inf.email} />}
+              {app.proposed_rate != null && (
+                <Fact
+                  label="Proposed Rate"
+                  value={`₹${Number(app.proposed_rate).toLocaleString("en-IN")}`}
+                  highlight
+                />
+              )}
+              {app.final_agreed_rate != null && (
+                <Fact
+                  label="Agreed Rate"
+                  value={`₹${Number(app.final_agreed_rate).toLocaleString("en-IN")}`}
+                  highlight
+                />
+              )}
+            </div>
+
+            {inf.bio && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">
+                  Bio
+                </p>
+                <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {inf.bio}
+                </p>
+              </div>
+            )}
+
+            {Array.isArray(inf.categories) && inf.categories.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1.5">
+                  Categories
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {inf.categories.map((c) => (
+                    <span
+                      key={c}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white text-gray-600 border border-gray-200"
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {app.status === "rejected" && app.rejection_reason && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider mb-1">
+                  Rejection Reason
+                </p>
+                <p className="text-[11px] text-gray-700">
+                  {app.rejection_reason}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Submission links (when present) */}
           {links.length > 0 && (
             <div className="mt-3 space-y-1.5">
@@ -962,6 +1052,36 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
       )}
     </div>
   );
+};
+
+const Fact = ({ label, value, highlight, href }) => {
+  const content = (
+    <>
+      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+        {label}
+      </p>
+      <p
+        className={`text-[11px] font-semibold truncate ${
+          highlight ? "text-[#5851DB]" : "text-gray-900"
+        } ${href ? "group-hover:underline" : ""}`}
+      >
+        {value}
+      </p>
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="min-w-0 group"
+      >
+        {content}
+      </a>
+    );
+  }
+  return <div className="min-w-0">{content}</div>;
 };
 
 export default CampaignDetailPage;
