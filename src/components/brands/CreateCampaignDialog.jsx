@@ -57,7 +57,6 @@ const emptyForm = {
   target_cities: "",
   campaign_start_date: "",
   campaign_end_date: "",
-  application_deadline: "",
 };
 
 const desktopQuery = "(min-width: 1024px)";
@@ -142,8 +141,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     }
     if (!form.title.trim()) return setError("Title is required");
     if (!form.campaign_start_date) return setError("Start date is required");
-    if (!form.campaign_end_date) return setError("End date is required");
-    if (!form.application_deadline) return setError("Application deadline is required");
+    if (!form.campaign_end_date) return setError("Deadline is required");
 
     setSubmitting(true);
     startLoading(publish ? "Publishing campaign..." : "Saving draft...");
@@ -493,7 +491,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
             Schedule
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Start Date" required>
               <input
                 type="date"
@@ -502,7 +500,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 className="input"
               />
             </Field>
-            <Field label="End Date" required>
+            <Field label="Deadline" required>
               <input
                 type="date"
                 value={form.campaign_end_date}
@@ -510,15 +508,10 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 className="input"
               />
             </Field>
-            <Field label="Application Deadline" required>
-              <input
-                type="date"
-                value={form.application_deadline}
-                onChange={(e) => update("application_deadline", e.target.value)}
-                className="input"
-              />
-            </Field>
           </div>
+          <p className="text-[10px] text-gray-400">
+            One deadline — applications close and the campaign ends on this date.
+          </p>
         </section>
 
         <style jsx>{`

@@ -201,11 +201,17 @@ export default function BrandsCarousel() {
             {brands.map((b) => (
               <CarouselItem
                 key={b.id}
-                // basis-1/2 (mobile), lg:basis-1/4 (laptop)
                 className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/4"
               >
-                <div className="flex flex-col items-center w-full group">
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-md border-2 border-transparent group-hover:border-pink-500 transition-all">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("section-for-you");
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="flex flex-col items-center w-full group cursor-pointer"
+                >
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-md border-2 border-transparent group-hover:border-pink-500 transition-all bg-white">
                     <Image
                       src={b.logo}
                       alt={b.name}
@@ -216,7 +222,7 @@ export default function BrandsCarousel() {
                   <p className="text-sm font-bold mt-3 text-center text-slate-700">
                     {b.name}
                   </p>
-                </div>
+                </button>
               </CarouselItem>
             ))}
           </CarouselContent>

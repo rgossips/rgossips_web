@@ -334,13 +334,8 @@ const CampaignDetailPage = () => {
           />
           <DetailRow
             icon={<Calendar size={16} />}
-            label="End"
-            value={formatDate(campaign.endDate)}
-          />
-          <DetailRow
-            icon={<Calendar size={16} />}
-            label="Application Deadline"
-            value={formatDate(campaign.applicationDeadline)}
+            label="Deadline"
+            value={formatDate(campaign.endDate || campaign.applicationDeadline)}
           />
         </Section>
 

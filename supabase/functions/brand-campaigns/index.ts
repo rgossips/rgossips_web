@@ -173,8 +173,10 @@ Deno.serve(async (req) => {
       if (!brandId) return ok({ error: "brandId is required" });
       if (!campaign?.title) return ok({ error: "Title is required" });
       if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
-      if (!campaign?.campaign_end_date) return ok({ error: "End date is required" });
-      if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
+      if (!campaign?.campaign_end_date) return ok({ error: "Deadline is required" });
+      // Single deadline — both DB columns get the same value for compat with
+      // any code path still reading application_deadline.
+      const deadline = campaign.application_deadline || campaign.campaign_end_date;
 
       const contentTypes = buildContentTypes(campaign);
       const meta: Record<string, unknown> = {};
@@ -205,7 +207,7 @@ Deno.serve(async (req) => {
         max_influencers: campaign.max_influencers ? Number(campaign.max_influencers) : 10,
         campaign_start_date: campaign.campaign_start_date,
         campaign_end_date: campaign.campaign_end_date,
-        application_deadline: campaign.application_deadline,
+        application_deadline: deadline,
         content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
         budget_total: campaign.budget_total ? Number(campaign.budget_total) : 0,
         budget_per_influencer: campaign.budget_per_influencer ? Number(campaign.budget_per_influencer) : 0,
