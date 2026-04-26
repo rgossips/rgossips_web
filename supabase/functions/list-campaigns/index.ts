@@ -129,15 +129,20 @@ Deno.serve(async (req) => {
         .toUpperCase()
         .slice(0, 2) || "??";
 
-      // Calculate days left
+      // Calculate days left + expired flag (uses end_date with deadline fallback)
       let daysLeft = "";
-      if (c.application_deadline) {
+      let isExpired = false;
+      const deadlineSource = c.campaign_end_date || c.application_deadline;
+      if (deadlineSource) {
         const diff = Math.ceil(
-          (new Date(c.application_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          (new Date(deadlineSource).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         );
         if (diff > 0) daysLeft = `${diff}d`;
         else if (diff === 0) daysLeft = "Today";
-        else daysLeft = "Expired";
+        else {
+          daysLeft = "Expired";
+          isExpired = true;
+        }
       }
 
       // Format deadline
@@ -240,11 +245,17 @@ Deno.serve(async (req) => {
         submissionLinks,
         rejectionReason,
         contentTypesRequired: c.content_types_required || [],
+        isExpired,
       };
     });
 
+    // Hide expired campaigns from the influencer list, but keep them when
+    // the influencer has already applied (so they can still see status,
+    // submit deliverables, etc.).
+    const visible = formatted.filter((c: any) => !c.isExpired || c.applicationStatus);
+
     return new Response(
-      JSON.stringify({ campaigns: formatted }),
+      JSON.stringify({ campaigns: visible }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

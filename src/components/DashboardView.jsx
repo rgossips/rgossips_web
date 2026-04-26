@@ -26,6 +26,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
+import { useProfileCompletion } from "./CompleteProfileCard";
 
 const TRIAL_DAYS = 30;
 
@@ -50,6 +51,7 @@ const DashboardView = ({
 }) => {
   const router = useRouter();
   const { profile, user, signOut } = useAuth();
+  const completion = useProfileCompletion(profile);
 
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -291,6 +293,9 @@ const DashboardView = ({
               </div>
             </div>
           </section>
+
+          {/* Profile Completion */}
+          <ProfileCompletionCard completion={completion} />
 
           {/* Current Plan Card */}
           <PlanCard profile={profile} />
@@ -550,6 +555,10 @@ const DashboardView = ({
             </div>
           </div>
         </section>
+
+        {/* Profile Completion */}
+        <ProfileCompletionCard completion={completion} />
+
         {/* Stats Grid */}
         <section className="grid grid-cols-2 gap-4">
           <StatCard
@@ -895,5 +904,80 @@ const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
     <ChevronRight size={18} className="text-gray-300" />
   </div>
 );
+
+function ProfileCompletionCard({ completion }) {
+  const { percent, completed, total, hasInstagram, hasMediaKit, hasRates } = completion;
+  const isDone = percent === 100;
+
+  return (
+    <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="relative w-14 h-14 shrink-0">
+          <svg className="w-full h-full -rotate-90">
+            <circle cx="28" cy="28" r="24" fill="transparent" stroke="currentColor" strokeWidth="5" className="text-slate-100" />
+            <circle
+              cx="28"
+              cy="28"
+              r="24"
+              fill="transparent"
+              stroke="url(#completionGradient)"
+              strokeWidth="5"
+              strokeDasharray="150.8"
+              strokeDashoffset={150.8 - 150.8 * (percent / 100)}
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="completionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#9810fa" />
+                <stop offset="100%" stopColor="#e60076" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-black text-slate-800">{percent}%</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-extrabold text-[#1A1A1A]">
+            {isDone ? "Profile complete!" : "Profile completion"}
+          </h3>
+          <p className="text-[11px] font-semibold text-gray-400 mt-0.5">
+            {isDone
+              ? "You're discoverable to brands."
+              : `${completed}/${total} steps done — keep going!`}
+          </p>
+        </div>
+      </div>
+
+      {!isDone && (
+        <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] font-semibold">
+          <ChecklistItem done label="Account created" />
+          <ChecklistItem done={hasInstagram} label="Instagram connected" />
+          <ChecklistItem done={hasMediaKit} label="Media kit published" />
+          <ChecklistItem done={hasRates} label="Rate card set" />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ChecklistItem({ done, label }) {
+  return (
+    <div
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${
+        done ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-500"
+      }`}
+    >
+      <span
+        className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${
+          done ? "bg-emerald-500 text-white" : "border-2 border-gray-300"
+        }`}
+      >
+        {done && <CheckCircle2 size={10} className="fill-emerald-500 text-white" />}
+      </span>
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
 
 export default DashboardView;

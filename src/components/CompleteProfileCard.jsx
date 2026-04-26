@@ -6,6 +6,35 @@ import { Check, X, Video, Smartphone, Youtube, Image as ImageIcon, Clapperboard,
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
+/**
+ * Returns the influencer's onboarding completion as a percentage (0-100).
+ * Mirrors the steps shown on the homepage's "Get Your First Brand Deal" card.
+ * Step 5 (apply to first campaign) auto-completes once step 4 (rate card) is done.
+ */
+export function useProfileCompletion(profile) {
+  const hasInstagram = !!profile?.instagram_handle;
+  const hasMediaKit = !!profile?.media_kit_published;
+  const serviceRates = profile?.service_rates || profile?.serviceRates || {};
+  const hasRates = Object.values(serviceRates).some((v) => v && Number(v) > 0);
+
+  const completed =
+    1 + // step 1: account created
+    (hasInstagram ? 1 : 0) +
+    (hasMediaKit ? 1 : 0) +
+    (hasRates ? 1 : 0) +
+    (hasRates ? 1 : 0); // step 5 mirrors step 4
+
+  const total = 5;
+  return {
+    completed,
+    total,
+    percent: Math.round((completed / total) * 100),
+    hasInstagram,
+    hasMediaKit,
+    hasRates,
+  };
+}
+
 const SERVICE_OPTIONS = [
   { id: "reels", label: "Reels", icon: <Video size={20} /> },
   { id: "stories", label: "Stories", icon: <Smartphone size={20} /> },
@@ -62,9 +91,12 @@ export function CompleteProfileCard() {
     {
       id: 5,
       title: "Apply to first campaign",
-      subtitle: "Land your first deal",
-      action: "Browse",
-      active: hasRates,
+      // Auto-complete once the rate card is set — the user has done everything
+      // needed for brands to find them, so we treat the funnel as 100%.
+      subtitle: hasRates ? "You're discoverable to brands!" : "Land your first deal",
+      action: hasRates ? null : "Browse",
+      completed: hasRates,
+      active: false,
       href: "/influencer/campaigns",
     },
   ];

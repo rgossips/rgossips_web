@@ -34,15 +34,7 @@ import {
 import EditReelModal from "./EditReelModal";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Filler,
-} from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler } from "chart.js";
 import { Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
@@ -849,7 +841,7 @@ const MyInformationDetail = ({ onBack }) => {
                       { label: "Avg Likes", value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
                       { label: "Avg Comments", value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
                       { label: "Impressions", value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
-                      { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "cyan" },
+                      { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "red" },
                     ].map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -927,10 +919,13 @@ const MyInformationDetail = ({ onBack }) => {
                         responsive: true,
                         maintainAspectRatio: false,
                         interaction: { intersect: false, mode: "index" },
-                        plugins: { legend: { display: false }, tooltip: { backgroundColor: "#1a1a1a", titleFont: { size: 11, weight: "bold" }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 10 } },
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: { backgroundColor: "#1a1a1a", titleFont: { size: 11, weight: "bold" }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 10 },
+                        },
                         scales: {
                           x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" }, color: "#9ca3af" } },
-                          y: { position: "left", grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 9 }, color: "#9ca3af", callback: (v) => v >= 1000 ? (v / 1000).toFixed(0) + "K" : v } },
+                          y: { position: "left", grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 9 }, color: "#9ca3af", callback: (v) => (v >= 1000 ? (v / 1000).toFixed(0) + "K" : v) } },
                           y1: { position: "right", grid: { display: false }, ticks: { font: { size: 9 }, color: "#9ca3af", callback: (v) => v + "%" }, min: 0, max: 10 },
                         },
                       }}
@@ -1020,9 +1015,7 @@ const MyInformationDetail = ({ onBack }) => {
               </button>
             </div>
             {/* Scrollable Form */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {editForm(false)}
-            </div>
+            <div className="flex-1 overflow-y-auto p-6">{editForm(false)}</div>
           </div>
         </>
       )}
