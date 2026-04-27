@@ -33,6 +33,10 @@ const Login = () => {
   useEffect(() => {
     if (authLoading) return;
     if (!user) return;
+    // Wait until the role has actually been fetched — otherwise we'd default
+    // to /influencer and cause a brief flash for brand users (which then
+    // gets corrected to /brands by ProtectedRoute).
+    if (!role) return;
     // Check for an in-flight Instagram OAuth redirect — don't interrupt that flow
     if (typeof window !== "undefined") {
       const oauthInProgress =

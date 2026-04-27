@@ -28,10 +28,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify the application exists and is in "approved" status
+    // Verify the application exists and is in an allowed status
     const { data: app, error: fetchErr } = await supabaseAdmin
       .from("campaign_applications")
-      .select("id, status, campaign_id, influencer_id")
+      .select("id, status, campaign_id, influencer_id, rejection_reason")
       .eq("id", applicationId)
       .single();
 
@@ -50,14 +50,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine next status: accepted → live_submitted, otherwise → submitted
-    const nextStatus = app.status === "accepted" ? "live_submitted" : "submitted";
+    // Determine next status:
+    //  - accepted → live_submitted (initial live links submission)
+    //  - approved → submitted (initial deliverables submission)
+    //  - revision_needed → submitted OR live_submitted, depending on which
+    //    stage we were in before. The `from` field is set by
+    //    update-application-status when the brand requests a revision.
+    let nextStatus: "submitted" | "live_submitted" = "submitted";
+    if (app.status === "accepted") {
+      nextStatus = "live_submitted";
+    } else if (app.status === "revision_needed") {
+      try {
+        const reason = typeof app.rejection_reason === "string"
+          ? JSON.parse(app.rejection_reason)
+          : app.rejection_reason;
+        if (reason?.from === "live_submitted") {
+          nextStatus = "live_submitted";
+        }
+      } catch {
+        // Legacy reason without `from` — default to "submitted"
+      }
+    }
 
     const { error: updateErr } = await supabaseAdmin
       .from("campaign_applications")
       .update({
         submission_links: submissionLinks,
         status: nextStatus,
+        rejection_reason: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", applicationId);

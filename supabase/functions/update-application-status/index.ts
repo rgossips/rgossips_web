@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
       .select("id, campaign_id, status")
       .eq("id", applicationId)
       .single();
+    const previousStatus = app?.status;
 
     if (appErr || !app) return ok({ error: "Application not found" });
 
@@ -88,6 +89,10 @@ Deno.serve(async (req) => {
       updates.rejection_reason = JSON.stringify({
         note: revisionNote || "",
         links: Array.isArray(revisionLinks) ? revisionLinks : [],
+        // Track the stage we're returning from so the next submit can route
+        // back to the same stage (live_submitted vs submitted) instead of
+        // defaulting to "submitted".
+        from: previousStatus || "",
       });
     }
 

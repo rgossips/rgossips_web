@@ -27,7 +27,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[220px] bg-white border-r border-gray-200 flex flex-col justify-between z-40">
+    // Sidebar fills its parent container in the layout — no `fixed` here
+    // (the parent is already fixed) and no extra `border-r` (the parent
+    // already has one) so we don't get a double-border / black line.
+    <aside className="h-full w-full bg-white flex flex-col justify-between">
       {/* Logo */}
       <div className="overflow-y-auto">
         <div className="flex items-center gap-2 px-5 py-5">

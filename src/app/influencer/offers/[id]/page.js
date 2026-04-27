@@ -1386,13 +1386,23 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   // Parse revision info
   let revisionNote = "";
   let revisionRequested = [];
+  let revisionFrom = "";
   if (isRevision && campaign?.rejectionReason) {
     try {
       const parsed = typeof campaign.rejectionReason === "string" ? JSON.parse(campaign.rejectionReason) : campaign.rejectionReason;
       revisionNote = parsed?.note || "";
       revisionRequested = (parsed?.links || []).map((l) => l.toLowerCase());
+      revisionFrom = parsed?.from || "";
     } catch {}
   }
+
+  // True when the user is submitting live links — either initial accepted
+  // state OR a revision after live_submitted. We never prefill the URL
+  // fields in this flow; they should always start empty so the user pastes
+  // fresh post URLs.
+  const isLiveLinksFlow =
+    campaign?.applicationStatus === "accepted" ||
+    (isRevision && revisionFrom === "live_submitted");
 
   // Parse content_types_required: ["reels:2", "stories:3"] → [{type: "reels", count: 2}, ...]
   const deliverables = (campaign?.contentTypesRequired || []).flatMap((item) => {
@@ -1427,20 +1437,22 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     });
   });
 
-  // Prefill with existing submission links if revising
+  // Prefill with existing submission links if revising deliverables.
+  // Live-links flow always starts empty — `submission_links` from a prior
+  // "submitted" stage are deliverable URLs, not live post URLs, so we
+  // shouldn't carry them over.
   const [links, setLinks] = useState(() => {
     const initial = {};
-    const existingLinks = campaign?.submissionLinks || [];
+    const existingLinks = isLiveLinksFlow ? [] : (campaign?.submissionLinks || []);
     deliverables.forEach((d, i) => {
-      // Try to match by label first, then by index
       const matchByLabel = existingLinks.find((el) => el.label === d.label);
       const matchByIndex = existingLinks[i];
       const existing = matchByLabel || matchByIndex;
 
       if (isRevision && d.needsRevision) {
-        initial[d.key] = ""; // Clear for re-entry
-      } else if (existing?.url) {
-        initial[d.key] = existing.url; // Prefill with existing URL
+        initial[d.key] = "";
+      } else if (existing?.url && !isLiveLinksFlow) {
+        initial[d.key] = existing.url;
       } else {
         initial[d.key] = "";
       }
@@ -1483,21 +1495,29 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     }
   };
 
+  const isLiveSubmit = isLiveLinksFlow;
+  const heading = isLiveSubmit ? "Submit Live Links" : "Upload Submissions";
+
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">{campaign?.applicationStatus === "accepted" ? "Submit Live Links" : "Upload Submissions"}</h2>
-            <p className="text-[11px] text-slate-400">{campaign?.title} &middot; {deliverables.length} deliverables</p>
-            {campaign?.applicationStatus === "accepted" && (
-              <p className="text-[10px] text-emerald-600 font-semibold mt-1">Post your content on Instagram, then paste the live post links below.</p>
+      <div className="fixed inset-0 z-[150] bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="fixed inset-0 z-[151] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        {/* Header — shrink-0 so it doesn't get pushed by the form */}
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white">
+          <div className="flex-1 min-w-0 pr-3">
+            <h2 className="text-base font-bold text-slate-900 truncate">{heading}</h2>
+            <p className="text-[11px] text-slate-400 truncate">{campaign?.title} &middot; {deliverables.length} deliverables</p>
+            {isLiveSubmit && (
+              <p className="text-[10px] text-emerald-600 font-semibold mt-1 leading-tight">
+                Post your content on Instagram, then paste the live post links below.
+              </p>
             )}
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer">
-            <X size={16} />
+          <button onClick={onClose} className="shrink-0 w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors cursor-pointer">
+            <X size={18} />
           </button>
         </div>
 
@@ -1548,8 +1568,11 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white sticky bottom-0">
+        {/* Footer — shrink-0 so it stays anchored at the bottom */}
+        <div
+          className="shrink-0 flex gap-3 px-5 py-4 border-t border-slate-100 bg-white"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
           <button
             onClick={handleSubmit}
@@ -1558,9 +1581,15 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            {submitting ? "Submitting..." : isRevision
-              ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Deliverable${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
-              : `Submit ${deliverables.length} Deliverable${deliverables.length !== 1 ? "s" : ""}`}
+            {submitting
+              ? "Submitting..."
+              : isLiveSubmit && isRevision
+                ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Live Link${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
+                : isLiveSubmit
+                  ? `Submit ${deliverables.length} Live Link${deliverables.length !== 1 ? "s" : ""}`
+                  : isRevision
+                    ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Deliverable${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
+                    : `Submit ${deliverables.length} Deliverable${deliverables.length !== 1 ? "s" : ""}`}
           </button>
         </div>
       </div>

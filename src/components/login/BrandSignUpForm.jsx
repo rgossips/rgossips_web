@@ -89,16 +89,35 @@ const BrandSignUpForm = ({
     setGstinLoading(true);
     setGstinError("");
     try {
-      // TESTING: auto-verify without calling the API
-      setGstinData({
-        gstin: formData.gstin,
-        gstStatus: "Active",
-        tradeName: formData.name || "Test Brand",
-        legalName: formData.name || "Test Brand",
-        address: "Test Address",
-        businessType: "Private Limited Company",
-        registrationDate: "2020-01-01",
-      });
+      const { data, error: funcError } = await supabase.functions.invoke(
+        "verify-gstin",
+        { body: { gstin: formData.gstin } }
+      );
+
+      if (funcError) throw new Error(funcError.message);
+      if (data?.error) throw new Error(data.error);
+
+      if (!data?.verified) {
+        setGstinError("GSTIN not found or inactive");
+        return;
+      }
+
+      if (data.data.gstStatus !== "Active") {
+        setGstinError(`GSTIN status: ${data.data.gstStatus}. Only active GSTINs are allowed.`);
+        return;
+      }
+
+      // Check GSTIN uniqueness
+      const { data: uniqueCheck } = await supabase.functions.invoke(
+        "check-uniqueness",
+        { body: { gstin: formData.gstin } }
+      );
+      if (uniqueCheck?.conflicts?.includes("gstin")) {
+        setGstinError("This GSTIN is already registered with another account.");
+        return;
+      }
+
+      setGstinData(data.data);
     } catch (err) {
       setGstinError(err.message || "Failed to verify GSTIN");
     } finally {

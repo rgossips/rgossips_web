@@ -17,7 +17,7 @@ export default function BrandsLayout({ children }) {
         {/* Main Layout */}
         <div className="flex flex-1">
           {/* Desktop Sidebar */}
-          <div className="hidden lg:block fixed left-0 top-[72px] h-[calc(100vh-72px)] w-[220px] border-r bg-[#f5f6f8]">
+          <div className="hidden lg:block fixed left-0 top-[72px] h-[calc(100vh-72px)] w-[220px] border-r border-gray-200 bg-[#f5f6f8]">
             <Sidebar />
           </div>
 
