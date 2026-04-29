@@ -844,7 +844,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           )}
         </Section>
 
-        {/* Schedule */}
+        {/* Schedule — labels kept short so all 3 inputs line up across columns */}
         <Section title="Schedule">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Start Date" required>
@@ -855,11 +855,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 className="input"
               />
             </Field>
-            <Field
-              label="Application Deadline"
-              required
-              hint="Last day to apply"
-            >
+            <Field label="Application Deadline" required>
               <input
                 type="date"
                 value={form.application_deadline}
@@ -867,11 +863,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 className="input"
               />
             </Field>
-            <Field
-              label="Campaign End Date"
-              required
-              hint="All content delivered by"
-            >
+            <Field label="Campaign End Date" required>
               <input
                 type="date"
                 value={form.campaign_end_date}
@@ -881,7 +873,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             </Field>
           </div>
           <p className="text-[10px] text-gray-400">
-            Application deadline is when influencers stop applying. Campaign end date is when all content must be delivered.
+            Application deadline is the last day to apply. Campaign end date is when all content must be delivered.
           </p>
         </Section>
 
@@ -1005,11 +997,15 @@ function Section({ title, required, right, children }) {
 
 function Field({ label, required, hint, children }) {
   return (
-    <div>
-      <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
+    <div className="flex flex-col">
+      <label className="block text-[11px] font-bold text-gray-700">
         {label} {required && <span className="text-red-400">*</span>}
-        {hint && <span className="ml-2 text-[10px] font-medium text-gray-400">{hint}</span>}
       </label>
+      {hint ? (
+        <p className="text-[10px] font-medium text-gray-400 mt-0.5 mb-1.5 leading-tight">{hint}</p>
+      ) : (
+        <div className="mb-1.5" />
+      )}
       {children}
     </div>
   );
