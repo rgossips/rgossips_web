@@ -1,0 +1,308 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.sec{margin-bottom:2rem;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.sec-h{padding:10px 16px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+.sec-h.opt{background:#EAF3DE;color:#27500A}
+.sec-h.add{background:#E6F1FB;color:#0C447C}
+.sec-body{padding:16px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:8px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);align-items:start}
+.item:last-child{border-bottom:none}
+.fl{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.fd{font-size:12px;color:var(--color-text-secondary);margin-top:2px;line-height:1.5}
+.badge{font-size:11px;padding:2px 8px;border-radius:var(--border-radius-md);display:inline-block;white-space:nowrap;font-weight:500;margin-top:4px}
+.b-green{background:#EAF3DE;color:#27500A}
+.b-blue{background:#E6F1FB;color:#0C447C}
+.b-amber{background:#FAEEDA;color:#633806}
+.b-red{background:#FCEBEB;color:#791F1F}
+.b-purple{background:#EEEDFE;color:#3C3489}
+.tag-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.pri{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;border-radius:var(--border-radius-md);padding:2px 8px;width:auto}
+.p-high{background:#FCEBEB;color:#791F1F}
+.p-med{background:#FAEEDA;color:#633806}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:1.5rem;font-size:12px;color:var(--color-text-secondary)}
+.legend span{display:flex;align-items:center;gap:4px}
+.ldot{width:10px;height:10px;border-radius:2px}
+</style>
+
+<h2 class="sr-only">Campaign form audit with optimizations and new field suggestions</h2>
+
+<div class="legend">
+  <span><span class="ldot" style="background:#97C459"></span> Optimize existing field</span>
+  <span><span class="ldot" style="background:#85B7EB"></span> Add new field</span>
+  <span><span class="badge b-red" style="margin:0">High</span> Priority</span>
+  <span><span class="badge b-amber" style="margin:0">Medium</span> Priority</span>
+</div>
+
+<div class="sec">
+<div class="sec-h opt">Section 1 — Basic info (optimizations)</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Campaign type → controls field visibility</div>
+<div class="fd">When brand selects "Barter", hide Budget (Total) and Budget/Influencer. Show a new field "Product value (approx.)" instead. When "Paid" is selected, show budget fields. When "Hybrid" is selected, show both product value and budget fields. This prevents confusion — right now a barter campaign shows ₹50,000 which misleads influencers.</div>
+<div class="tag-row"><span class="badge b-green">Automation</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Budget/Influencer → auto-calculate</div>
+<div class="fd">Don't let brands type this manually. Auto-compute: Budget (Total) / Slots = Budget per Influencer. Show it as read-only with a grey background. Prevents mismatches where total says ₹50K but per-influencer says ₹10K.</div>
+<div class="tag-row"><span class="badge b-green">Automation</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Description → add structured placeholder</div>
+<div class="fd">Replace generic "Describe goals..." with a guided template: "What is this campaign about? / What do you want the influencer to highlight? / Any specific messaging or hashtags?" This produces better briefs. Many brands leave the description vague which wastes influencer time.</div>
+<div class="tag-row"><span class="badge b-green">UX improvement</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h opt">Section 2 — Media & deliverables (optimizations)</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Content deliverables → add total count indicator</div>
+<div class="fd">Show a live counter below: "Total deliverables: 5 pieces". Also, make at least 1 deliverable required before publishing — right now a brand can publish with all zeros, which makes no sense.</div>
+<div class="tag-row"><span class="badge b-green">Validation</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Content deliverables → add "Blogs" option</div>
+<div class="fd">You have Reels, Posts, Stories, Videos — but missing Blog Posts. Some brands need written content for SEO. Add a fifth counter for "Blogs" and optionally "Tweets/X posts" for Twitter campaigns.</div>
+<div class="tag-row"><span class="badge b-green">Missing option</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h opt">Section 3 — Influencer requirements (optimizations)</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Location → change from free-text to multi-select dropdown</div>
+<div class="fd">Right now it's a comma-separated text field. This will cause data nightmares: "Mumbai" vs "mumbai" vs "Bombay". Replace with a searchable multi-select dropdown pulling from your cities master table. Also add an "All India" / "Pan India" toggle at the top that auto-selects all.</div>
+<div class="tag-row"><span class="badge b-green">Data quality</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Categories → make selectable (toggle chips)</div>
+<div class="fd">The chips currently look like static labels. Make them toggleable — tap to select (fills with purple), tap again to deselect. Show selected count: "3 of 15 selected". Also require at least 1 category to be selected before publishing.</div>
+<div class="tag-row"><span class="badge b-green">UX improvement</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Influencer Tier + Min/Max Followers → auto-sync</div>
+<div class="fd">When "Micro" tier is selected, auto-fill Min: 10K, Max: 100K. When "Nano" is selected, auto-fill Min: 1K, Max: 10K. The brand can still override, but it saves time and prevents illogical combos like selecting "Nano" tier but setting Min Followers to 500K.</div>
+<div class="tag-row"><span class="badge b-green">Automation</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h opt">Section 4 — Schedule (optimizations)</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Split "Deadline" into 2 separate dates</div>
+<div class="fd">Your current note says "applications close and campaign ends on this date" — but these are usually different. Split into: (1) Application deadline — when influencers can stop applying, (2) Campaign end date — when all content must be delivered. A campaign might stop accepting applications on May 15 but content delivery runs until June 15.</div>
+<div class="tag-row"><span class="badge b-green">Critical fix</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h add">New fields — Brand & product context</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Platform(s) *</div>
+<div class="fd">Multi-select: Instagram, YouTube, TikTok, LinkedIn, X (Twitter), Blog. Determines which social handles the influencer needs. A brand might want Reels on Instagram AND Shorts on YouTube from the same campaign.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Product / service to be promoted</div>
+<div class="fd">Short text field: "What exactly are you promoting?" e.g., "Moisturizing cream - 50ml tube" or "Weekend stay at our Mussoorie resort." This is the single most important thing an influencer needs to know before applying. Currently missing entirely.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Will product be shipped to influencer?</div>
+<div class="fd">Toggle: Yes / No / Pickup required. If "Yes", show sub-field: "Shipping timeline (days)". This sets clear expectations — influencers need to know if they'll receive the product before content creation deadline.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Compensation details (for barter)</div>
+<div class="fd">For barter campaigns: describe what the influencer gets. e.g., "Free 2-night stay + meals" or "Full skincare kit worth ₹3,500". Influencers reject vague barter offers — being specific increases application rate.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h add">New fields — Content guidelines</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Do's and don'ts</div>
+<div class="fd">Two text areas: "Must include" (e.g., "Show the product packaging, mention the discount code") and "Must avoid" (e.g., "Don't show competitor products, don't use background music with copyright"). This eliminates 80% of revision cycles.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Hashtags to use</div>
+<div class="fd">Text field with auto-# prefix. e.g., "#RGossips #SkincareThatWorks #Ad". Pre-populate #Ad or #Paidpartnership for ASCI compliance (mandatory in India for paid collaborations).</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Brand handles to tag</div>
+<div class="fd">Auto-filled from brand profile's Instagram/YouTube handle. Brand just confirms. e.g., "@rgossips_official". Saves time and ensures correct handle is tagged every time.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Reference content / mood board</div>
+<div class="fd">Upload area for 2-3 reference images or video links (Instagram/YouTube URLs). "Show influencers the style you're looking for." Brands that share references get 3x better first drafts from creators.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Content approval required?</div>
+<div class="fd">Toggle: Yes (draft review before posting) / No (influencer posts directly). If Yes, show: "Review turnaround time: 24hrs / 48hrs / 72hrs". Sets clear expectations on both sides.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h add">New fields — Influencer targeting</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Preferred gender</div>
+<div class="fd">Multi-select: Male / Female / Any. A men's grooming brand only wants male creators. A bridal jewellery brand wants female creators. Currently no way to specify this.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Preferred language(s)</div>
+<div class="fd">Multi-select from languages master: Hindi, English, Tamil, Telugu, Marathi, Kannada, Bengali, etc. Critical for India where regional content drives higher engagement in Tier-2/3 cities.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Target audience age group</div>
+<div class="fd">Multi-select: 13-17, 18-24, 25-34, 35-44, 45+. Helps match with influencers whose audience demographics align. e.g., An EdTech brand targeting 18-24 shouldn't get matched with a parenting influencer whose audience is 30-40.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>
+
+<div class="sec">
+<div class="sec-h add">New fields — Terms & logistics</div>
+<div class="sec-body">
+
+<div class="item">
+<div>
+<div class="fl">Content usage rights</div>
+<div class="fd">Dropdown: "Influencer's page only" / "Brand can repost" / "Brand can use in paid ads" / "Full rights transfer". This is legally critical and most platforms ignore it. Influencers charge more for ad usage rights — being upfront prevents disputes.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-red">High</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Content keep-up duration</div>
+<div class="fd">How long must the post stay live? Dropdown: 24 hours (stories) / 7 days / 30 days / Permanent. Some brands want permanent posts, others just need a 24hr story. Influencers need this clarity upfront.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Exclusivity clause</div>
+<div class="fd">Toggle: Yes / No. If Yes: "Influencer cannot promote competing brands for ___ days" (dropdown: 7 / 15 / 30 / 60 / 90 days). A skincare brand paying ₹20K doesn't want the influencer promoting a competitor the next day.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+<div class="item">
+<div>
+<div class="fl">Payment timeline</div>
+<div class="fd">For paid campaigns: "When will the influencer be paid?" Dropdown: Advance / On content approval / Within 7 days of posting / Within 30 days. Biggest pain point for influencers — setting this upfront builds trust on your platform.</div>
+<div class="tag-row"><span class="badge b-blue">New field</span><span class="badge b-amber">Medium</span></div>
+</div>
+<div></div>
+</div>
+
+</div></div>

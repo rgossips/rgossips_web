@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId } = await req.json();
+    const { userId, force } = await req.json();
 
     if (!userId) {
       return new Response(
@@ -50,8 +50,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Throttle: skip if refreshed within the last hour
-    if (profile.instagram_refreshed_at) {
+    // Throttle: skip if refreshed within the last hour, unless force=true
+    if (!force && profile.instagram_refreshed_at) {
       const lastRefresh = new Date(profile.instagram_refreshed_at).getTime();
       const oneHour = 60 * 60 * 1000;
       if (Date.now() - lastRefresh < oneHour) {
@@ -102,8 +102,10 @@ Deno.serve(async (req) => {
     }
 
     // Step 3: Fetch recent media for engagement calculation
+    // Bumped limit from 25 → 100 so the "top reels" ranking sees a wider
+    // window and more closely matches Instagram's in-app "Top posts" view.
     const mediaRes = await fetch(
-      `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,like_count,comments_count,timestamp,thumbnail_url,media_url,permalink,caption&limit=25&access_token=${encodeURIComponent(accessToken)}`
+      `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,like_count,comments_count,timestamp,thumbnail_url,media_url,permalink,caption&limit=100&access_token=${encodeURIComponent(accessToken)}`
     );
     const mediaData = await mediaRes.json();
 
@@ -112,6 +114,8 @@ Deno.serve(async (req) => {
     let avgComments = 0;
     let totalImpressions = 0;
     let totalReach = 0;
+    let totalInteractions = 0;
+    let accountsEngaged = 0;
 
     const mediaPosts = mediaData?.data || [];
 
@@ -120,8 +124,12 @@ Deno.serve(async (req) => {
       let totalComments = 0;
 
       for (const post of mediaPosts) {
-        totalLikes += post.like_count || 0;
-        totalComments += post.comments_count || 0;
+        // Coerce null/undefined to 0 (Instagram returns null for some
+        // fresh posts before metrics propagate)
+        const likes = Number(post.like_count) || 0;
+        const comments = Number(post.comments_count) || 0;
+        totalLikes += likes;
+        totalComments += comments;
       }
 
       avgLikes = Math.round(totalLikes / mediaPosts.length);
@@ -131,29 +139,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch account-level insights (reach for last 30 days)
+    // Account-level insights — use the dedup'd `days_28` window instead of
+    // summing daily values (which double-counts users seen on multiple days).
+    // Pull `views` (Instagram's new headline metric, replaces impressions),
+    // unique `reach`, `total_interactions`, and `accounts_engaged`.
     try {
-      const now = Math.floor(Date.now() / 1000);
-      const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
-      const accountInsightsRes = await fetch(
-        `https://graph.instagram.com/v22.0/me/insights?metric=reach,follower_count&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${encodeURIComponent(accessToken)}`
+      const insightsRes = await fetch(
+        `https://graph.instagram.com/v22.0/me/insights?metric=reach,views,total_interactions,accounts_engaged&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
       );
-      const accountInsights = await accountInsightsRes.json();
-      if (accountInsights?.data) {
-        for (const metric of accountInsights.data) {
-          const values = metric.values || [];
-          const sum = values.reduce((s: number, v: any) => s + (v.value || 0), 0);
-          if (metric.name === "reach") {
-            totalReach = sum;
-            totalImpressions = sum; // Use reach as the views proxy
-          }
+      const insights = await insightsRes.json();
+      if (insights?.data) {
+        for (const metric of insights.data) {
+          const value = metric?.total_value?.value ?? 0;
+          if (metric.name === "reach") totalReach = value;
+          else if (metric.name === "views") totalImpressions = value;
+          else if (metric.name === "total_interactions") totalInteractions = value;
+          else if (metric.name === "accounts_engaged") accountsEngaged = value;
         }
+      } else if (insights?.error) {
+        console.error("Insights error:", insights.error);
       }
+
+      // Fallback: if the new `views` metric isn't available yet for this
+      // account/region, use reach as the impression proxy.
+      if (!totalImpressions) totalImpressions = totalReach;
     } catch (e) {
       console.error("Failed to fetch account insights:", e);
     }
 
     // Build top reels: sort by engagement (likes + comments), take top 6
+    // Now ranking across up to 100 recent posts (was 25) — much more likely
+    // to surface a creator's actual best-performing content.
     const topReels = mediaPosts
       .map((p: any) => ({
         id: p.id,
@@ -161,8 +177,8 @@ Deno.serve(async (req) => {
         thumbnail: p.thumbnail_url || p.media_url || "",
         permalink: p.permalink || "",
         caption: (p.caption || "").slice(0, 100),
-        likes: p.like_count || 0,
-        comments: p.comments_count || 0,
+        likes: Number(p.like_count) || 0,
+        comments: Number(p.comments_count) || 0,
         timestamp: p.timestamp,
       }))
       .sort((a: any, b: any) => (b.likes + b.comments) - (a.likes + a.comments))
@@ -271,6 +287,8 @@ Deno.serve(async (req) => {
       avg_comments: avgComments,
       total_impressions: totalImpressions,
       total_reach: totalReach,
+      total_interactions: totalInteractions,
+      accounts_engaged: accountsEngaged,
       updated_at: new Date().toISOString(),
     };
 
@@ -279,10 +297,24 @@ Deno.serve(async (req) => {
       updateData.audience_demographics = audienceDemographics;
     }
 
-    const { error: updateError } = await supabaseAdmin
+    let { error: updateError } = await supabaseAdmin
       .from("influencer_profiles")
       .update(updateData)
       .eq("influencer_id", userId);
+
+    // Retry without the new metrics columns if they haven't been added yet
+    // (avoids breaking when migration 003 hasn't run yet).
+    if (updateError && /total_interactions|accounts_engaged/i.test(updateError.message)) {
+      console.warn("Retrying without new metrics columns:", updateError.message);
+      const fallback = { ...updateData };
+      delete (fallback as any).total_interactions;
+      delete (fallback as any).accounts_engaged;
+      const retry = await supabaseAdmin
+        .from("influencer_profiles")
+        .update(fallback)
+        .eq("influencer_id", userId);
+      updateError = retry.error;
+    }
 
     if (updateError) {
       console.error("DB update error:", updateError);
@@ -304,6 +336,8 @@ Deno.serve(async (req) => {
           avgComments,
           totalImpressions,
           totalReach,
+          totalInteractions,
+          accountsEngaged,
         },
       }),
       { status: 200, headers: jsonHeaders }

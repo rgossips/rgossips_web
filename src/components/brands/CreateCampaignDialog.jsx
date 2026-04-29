@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Drawer,
   DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
   DrawerClose,
   DrawerOverlay,
   DrawerPortal,
@@ -13,11 +11,17 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-import { X, Upload, Loader2, Trash2, Image as ImageIcon, Plus } from "lucide-react";
+import {
+  X,
+  Upload,
+  Loader2,
+  Trash2,
+  Image as ImageIcon,
+  Check,
+  Plus,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 
@@ -39,6 +43,65 @@ const CATEGORIES = [
   "Pet Care & Animals",
 ];
 
+const PLATFORMS = ["Instagram", "YouTube", "TikTok", "LinkedIn", "X (Twitter)", "Blog"];
+
+const CITIES = [
+  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai",
+  "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore",
+  "Bhopal", "Kochi", "Remote",
+];
+
+const LANGUAGES = [
+  "Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada",
+  "Bengali", "Gujarati", "Punjabi", "Malayalam",
+];
+
+const GENDERS = ["Male", "Female", "Any"];
+
+const USAGE_RIGHTS = [
+  { value: "creator_only", label: "Influencer's page only" },
+  { value: "brand_repost", label: "Brand can repost" },
+  { value: "paid_ads", label: "Brand can use in paid ads" },
+  { value: "full_rights", label: "Full rights transfer" },
+];
+
+const PAYMENT_TIMELINES = [
+  { value: "advance", label: "Advance" },
+  { value: "on_approval", label: "On content approval" },
+  { value: "7_days", label: "Within 7 days of posting" },
+  { value: "30_days", label: "Within 30 days" },
+];
+
+const KEEPUP_DURATIONS = [
+  { value: "24h", label: "24 hours (stories)" },
+  { value: "7d", label: "7 days" },
+  { value: "30d", label: "30 days" },
+  { value: "permanent", label: "Permanent" },
+];
+
+const APPROVAL_TURNAROUNDS = [
+  { value: "24", label: "24 hours" },
+  { value: "48", label: "48 hours" },
+  { value: "72", label: "72 hours" },
+];
+
+const EXCLUSIVITY_PERIODS = [
+  { value: "0", label: "No exclusivity" },
+  { value: "7", label: "7 days" },
+  { value: "15", label: "15 days" },
+  { value: "30", label: "30 days" },
+  { value: "60", label: "60 days" },
+  { value: "90", label: "90 days" },
+];
+
+// Auto-fill follower ranges when tier is selected
+const TIER_RANGES = {
+  nano: { min: 1000, max: 10000 },
+  micro: { min: 10000, max: 100000 },
+  macro: { min: 100000, max: 1000000 },
+  mega: { min: 1000000, max: 10000000 },
+};
+
 const emptyForm = {
   title: "",
   description: "",
@@ -46,15 +109,30 @@ const emptyForm = {
   max_influencers: "",
   budget_total: "",
   budget_per_influencer: "",
+  product_name: "",
+  product_value: "",
+  shipping_required: "no",
+  shipping_timeline_days: "",
+  barter_compensation: "",
   num_reels: "",
   num_posts: "",
   num_stories: "",
   num_videos: "",
+  num_blogs: "",
   target_follower_min: "",
   target_follower_max: "",
   target_influencer_tier: "all",
   min_engagement_rate: "",
-  target_cities: "",
+  content_dos: "",
+  content_donts: "",
+  required_hashtags: "",
+  brand_handles_to_tag: "",
+  requires_approval: false,
+  approval_turnaround_hours: "48",
+  usage_rights: "creator_only",
+  keepup_duration: "permanent",
+  exclusivity_days: "0",
+  payment_timeline: "on_approval",
   campaign_start_date: "",
   campaign_end_date: "",
 };
@@ -72,12 +150,20 @@ function useIsDesktop() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+const DESCRIPTION_TEMPLATE =
+  "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?";
+
 export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated }) {
   const supabase = createClient();
   const isDesktop = useIsDesktop();
   const { startLoading, stopLoading } = useGlobalLoading();
   const [form, setForm] = useState(emptyForm);
   const [categories, setCategories] = useState([]);
+  const [platforms, setPlatforms] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [allIndia, setAllIndia] = useState(false);
+  const [genders, setGenders] = useState([]);
+  const [languages, setLanguages] = useState([]);
   const [bannerFile, setBannerFile] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -87,18 +173,57 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const galleryInputRef = useRef(null);
 
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const toggleCategory = (c) =>
-    setCategories((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
+  const toggleSetItem = (setter) => (item) =>
+    setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
+  const toggleCategory = toggleSetItem(setCategories);
+  const togglePlatform = toggleSetItem(setPlatforms);
+  const toggleCity = toggleSetItem(setCities);
+  const toggleGender = toggleSetItem(setGenders);
+  const toggleLanguage = toggleSetItem(setLanguages);
 
-  // Client-side image compression so huge phone photos upload cleanly.
-  // Targets a max 1920px long edge + JPEG 85%. Falls back to the original
-  // file if compression isn't possible (e.g. decode failure).
+  const isBarter = form.campaign_type === "barter";
+  const isHybrid = form.campaign_type === "hybrid";
+  const showBudget = !isBarter; // budget hidden when pure barter
+  const showProductValue = isBarter || isHybrid; // product value shown when barter/hybrid
+  const showBarterCompensation = isBarter || isHybrid;
+
+  // Auto-calc Budget / Influencer = Budget Total / Slots
+  useEffect(() => {
+    const total = Number(form.budget_total) || 0;
+    const slots = Number(form.max_influencers) || 0;
+    if (total > 0 && slots > 0) {
+      const perInf = Math.round(total / slots);
+      // Only update if different to avoid render loop
+      if (String(perInf) !== form.budget_per_influencer) {
+        setForm((p) => ({ ...p, budget_per_influencer: String(perInf) }));
+      }
+    }
+  }, [form.budget_total, form.max_influencers, form.budget_per_influencer]);
+
+  // Auto-fill follower min/max when tier changes
+  useEffect(() => {
+    const range = TIER_RANGES[form.target_influencer_tier];
+    if (range) {
+      setForm((p) => ({
+        ...p,
+        target_follower_min: String(range.min),
+        target_follower_max: String(range.max),
+      }));
+    }
+  }, [form.target_influencer_tier]);
+
+  // Live total deliverables
+  const totalDeliverables = useMemo(() => {
+    return ["num_reels", "num_posts", "num_stories", "num_videos", "num_blogs"]
+      .reduce((s, k) => s + (Number(form[k]) || 0), 0);
+  }, [form.num_reels, form.num_posts, form.num_stories, form.num_videos, form.num_blogs]);
+
   const compressImage = async (file, maxEdge = 1920, quality = 0.85) => {
     if (!file.type.startsWith("image/")) return file;
     try {
       const bitmap = await createImageBitmap(file);
       const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
-      if (scale >= 1 && file.size <= 5 * 1024 * 1024) return file; // already small enough
+      if (scale >= 1 && file.size <= 5 * 1024 * 1024) return file;
       const w = Math.round(bitmap.width * scale);
       const h = Math.round(bitmap.height * scale);
       const canvas = document.createElement("canvas");
@@ -111,8 +236,9 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       );
       bitmap.close?.();
       if (!blob) return file;
-      // If compression actually made it bigger, keep the original
-      return blob.size < file.size ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
+      return blob.size < file.size
+        ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" })
+        : file;
     } catch {
       return file;
     }
@@ -135,13 +261,14 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const submitForm = async (publish) => {
     setError("");
 
-    if (!brandId) {
-      setError("You must be signed in");
-      return;
-    }
+    // Validation
+    if (!brandId) return setError("You must be signed in");
     if (!form.title.trim()) return setError("Title is required");
     if (!form.campaign_start_date) return setError("Start date is required");
     if (!form.campaign_end_date) return setError("Deadline is required");
+    if (totalDeliverables < 1) return setError("Add at least 1 deliverable (reels, posts, stories, videos or blogs)");
+    if (categories.length < 1) return setError("Select at least 1 category");
+    if (platforms.length < 1) return setError("Select at least 1 platform");
 
     setSubmitting(true);
     startLoading(publish ? "Publishing campaign..." : "Saving draft...");
@@ -171,9 +298,14 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             campaign: {
               ...form,
               target_categories: categories,
+              target_cities: allIndia ? ["All India"] : cities,
               banner_image_url: bannerUrl,
               gallery_image_urls: galleryUrls,
               status: publish ? "active" : "draft",
+              // Extended audit fields packed into description metadata
+              platforms,
+              target_gender: genders,
+              target_languages: languages,
             },
           },
         }
@@ -193,7 +325,6 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   };
 
   const handleSubmit = (e) => {
-    // Default form submit (e.g. Enter key) acts as "Save as Draft"
     e?.preventDefault?.();
     submitForm(false);
   };
@@ -208,10 +339,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         )}
 
         {/* Basic Info */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Basic info
-          </h3>
+        <Section title="Basic info">
           <Field label="Title" required>
             <input
               value={form.title}
@@ -220,12 +348,12 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               className="input"
             />
           </Field>
-          <Field label="Description">
+          <Field label="Description" hint="Helps creators understand what you need">
             <textarea
               value={form.description}
               onChange={(e) => update("description", e.target.value)}
-              rows={3}
-              placeholder="Describe goals, expectations, brand story..."
+              rows={5}
+              placeholder={DESCRIPTION_TEMPLATE}
               className="input resize-none"
             />
           </Field>
@@ -241,7 +369,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 <option value="hybrid">Hybrid</option>
               </select>
             </Field>
-            <Field label="Slots">
+            <Field label="Slots" hint="Number of creators">
               <input
                 type="number"
                 min="1"
@@ -252,35 +380,100 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               />
             </Field>
           </div>
+
+          {/* Budget — only when paid or hybrid */}
+          {showBudget && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Budget (Total)">
+                <input
+                  type="number"
+                  min="0"
+                  value={form.budget_total}
+                  onChange={(e) => update("budget_total", e.target.value)}
+                  placeholder="50000"
+                  className="input"
+                />
+              </Field>
+              <Field label="Budget / Influencer" hint="Auto-calculated">
+                <input
+                  type="number"
+                  min="0"
+                  value={form.budget_per_influencer}
+                  readOnly
+                  placeholder="—"
+                  className="input bg-gray-100 cursor-not-allowed"
+                />
+              </Field>
+            </div>
+          )}
+
+          {/* Product value — when barter or hybrid */}
+          {showProductValue && (
+            <Field label="Product value (approx.)" hint="Helps creators evaluate the offer">
+              <input
+                type="number"
+                min="0"
+                value={form.product_value}
+                onChange={(e) => update("product_value", e.target.value)}
+                placeholder="3500"
+                className="input"
+              />
+            </Field>
+          )}
+        </Section>
+
+        {/* Product / Service */}
+        <Section title="Product / service">
+          <Field label="What are you promoting?" required>
+            <input
+              value={form.product_name}
+              onChange={(e) => update("product_name", e.target.value)}
+              placeholder='e.g. "Moisturizing cream — 50ml tube" or "Weekend stay at our resort"'
+              className="input"
+            />
+          </Field>
+
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Budget (Total)">
-              <input
-                type="number"
-                min="0"
-                value={form.budget_total}
-                onChange={(e) => update("budget_total", e.target.value)}
-                placeholder="50000"
+            <Field label="Will product be shipped?">
+              <select
+                value={form.shipping_required}
+                onChange={(e) => update("shipping_required", e.target.value)}
                 className="input"
-              />
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+                <option value="pickup">Pickup required</option>
+              </select>
             </Field>
-            <Field label="Budget / Influencer">
-              <input
-                type="number"
-                min="0"
-                value={form.budget_per_influencer}
-                onChange={(e) => update("budget_per_influencer", e.target.value)}
-                placeholder="5000"
-                className="input"
-              />
-            </Field>
+            {form.shipping_required === "yes" && (
+              <Field label="Shipping timeline (days)">
+                <input
+                  type="number"
+                  min="1"
+                  value={form.shipping_timeline_days}
+                  onChange={(e) => update("shipping_timeline_days", e.target.value)}
+                  placeholder="3"
+                  className="input"
+                />
+              </Field>
+            )}
           </div>
-        </section>
+
+          {showBarterCompensation && (
+            <Field label="What does the influencer get? (compensation details)">
+              <textarea
+                value={form.barter_compensation}
+                onChange={(e) => update("barter_compensation", e.target.value)}
+                rows={2}
+                placeholder='e.g. "Free 2-night stay + meals" or "Full skincare kit worth ₹3,500"'
+                className="input resize-none"
+              />
+            </Field>
+          )}
+        </Section>
 
         {/* Banner */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Banner image
-          </h3>
+        <Section title="Banner image">
           {bannerFile ? (
             <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
               <img
@@ -304,7 +497,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             >
               <Upload size={24} />
               <span className="text-xs font-semibold">Click to upload</span>
-              <span className="text-[10px]">PNG, JPG, WebP up to 5MB</span>
+              <span className="text-[10px]">PNG, JPG, WebP up to 10MB</span>
             </button>
           )}
           <input
@@ -317,20 +510,17 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               if (f) setBannerFile(f);
             }}
           />
-        </section>
+        </Section>
 
         {/* Gallery */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-              Gallery
-            </h3>
-            {galleryFiles.length > 0 && (
-              <span className="text-[10px] text-gray-400">
-                {galleryFiles.length} image{galleryFiles.length > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
+        <Section
+          title="Gallery"
+          right={galleryFiles.length > 0 && (
+            <span className="text-[10px] text-gray-400">
+              {galleryFiles.length} image{galleryFiles.length > 1 ? "s" : ""}
+            </span>
+          )}
+        >
           {galleryFiles.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {galleryFiles.map((f, i) => (
@@ -371,19 +561,36 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               setGalleryFiles((prev) => [...prev, ...files]);
             }}
           />
-        </section>
+        </Section>
+
+        {/* Platforms */}
+        <Section
+          title="Platforms"
+          required
+          right={platforms.length > 0 && (
+            <span className="text-[10px] text-gray-400">{platforms.length} selected</span>
+          )}
+        >
+          <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
+        </Section>
 
         {/* Deliverables */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Content deliverables
-          </h3>
-          <div className="grid grid-cols-4 gap-3">
+        <Section
+          title="Content deliverables"
+          required
+          right={
+            <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
+              {totalDeliverables} piece{totalDeliverables !== 1 ? "s" : ""}
+            </span>
+          }
+        >
+          <div className="grid grid-cols-5 gap-3">
             {[
               { k: "num_reels", label: "Reels" },
               { k: "num_posts", label: "Posts" },
               { k: "num_stories", label: "Stories" },
               { k: "num_videos", label: "Videos" },
+              { k: "num_blogs", label: "Blogs" },
             ].map((d) => (
               <Field key={d.k} label={d.label}>
                 <input
@@ -397,37 +604,25 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               </Field>
             ))}
           </div>
-        </section>
+        </Section>
 
-        {/* Requirements */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Influencer requirements
-          </h3>
+        {/* Categories */}
+        <Section
+          title="Categories"
+          required
+          right={
+            <span className={`text-[11px] font-bold ${categories.length > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
+              {categories.length} of {CATEGORIES.length} selected
+            </span>
+          }
+        >
+          <ChipGroup options={CATEGORIES} selected={categories} onToggle={toggleCategory} />
+        </Section>
+
+        {/* Influencer Requirements */}
+        <Section title="Influencer requirements">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Min. Followers">
-              <input
-                type="number"
-                min="0"
-                value={form.target_follower_min}
-                onChange={(e) => update("target_follower_min", e.target.value)}
-                placeholder="1000"
-                className="input"
-              />
-            </Field>
-            <Field label="Max. Followers">
-              <input
-                type="number"
-                min="0"
-                value={form.target_follower_max}
-                onChange={(e) => update("target_follower_max", e.target.value)}
-                placeholder="100000"
-                className="input"
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Influencer Tier">
+            <Field label="Influencer Tier" hint="Auto-fills follower range">
               <select
                 value={form.target_influencer_tier}
                 onChange={(e) => update("target_influencer_tier", e.target.value)}
@@ -452,45 +647,183 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               />
             </Field>
           </div>
-          <Field label="Location (comma-separated)">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Min. Followers">
+              <input
+                type="number"
+                min="0"
+                value={form.target_follower_min}
+                onChange={(e) => update("target_follower_min", e.target.value)}
+                placeholder="1000"
+                className="input"
+              />
+            </Field>
+            <Field label="Max. Followers">
+              <input
+                type="number"
+                min="0"
+                value={form.target_follower_max}
+                onChange={(e) => update("target_follower_max", e.target.value)}
+                placeholder="100000"
+                className="input"
+              />
+            </Field>
+          </div>
+        </Section>
+
+        {/* Cities */}
+        <Section
+          title="Locations"
+          right={
+            <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allIndia}
+                onChange={(e) => setAllIndia(e.target.checked)}
+                className="w-3.5 h-3.5 accent-[#5851DB]"
+              />
+              All India
+            </label>
+          }
+        >
+          {!allIndia && (
+            <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />
+          )}
+          {allIndia && (
+            <p className="text-[11px] text-gray-500 italic">
+              Open to all creators across India.
+            </p>
+          )}
+        </Section>
+
+        {/* Audience preferences */}
+        <Section title="Audience preferences">
+          <Field label="Preferred gender">
+            <ChipGroup options={GENDERS} selected={genders} onToggle={toggleGender} />
+          </Field>
+          <Field label="Preferred languages">
+            <ChipGroup options={LANGUAGES} selected={languages} onToggle={toggleLanguage} />
+          </Field>
+        </Section>
+
+        {/* Content Guidelines */}
+        <Section title="Content guidelines">
+          <Field label="Must include (Do's)" hint="What every creator must show or mention">
+            <textarea
+              value={form.content_dos}
+              onChange={(e) => update("content_dos", e.target.value)}
+              rows={2}
+              placeholder='e.g. "Show product packaging, mention discount code SAVE20"'
+              className="input resize-none"
+            />
+          </Field>
+          <Field label="Must avoid (Don'ts)" hint="Eliminates 80% of revisions">
+            <textarea
+              value={form.content_donts}
+              onChange={(e) => update("content_donts", e.target.value)}
+              rows={2}
+              placeholder='e.g. "Don&apos;t show competitor products, no copyrighted music"'
+              className="input resize-none"
+            />
+          </Field>
+          <Field label="Required hashtags">
             <input
-              type="text"
-              value={form.target_cities}
-              onChange={(e) => update("target_cities", e.target.value)}
-              placeholder="Mumbai, Delhi, Bangalore"
+              value={form.required_hashtags}
+              onChange={(e) => update("required_hashtags", e.target.value)}
+              placeholder="#RGossips #Ad #Paidpartnership"
               className="input"
             />
           </Field>
-        </section>
+          <Field label="Brand handle(s) to tag">
+            <input
+              value={form.brand_handles_to_tag}
+              onChange={(e) => update("brand_handles_to_tag", e.target.value)}
+              placeholder="@yourbrand"
+              className="input"
+            />
+          </Field>
+        </Section>
 
-        {/* Categories */}
-        <section className="space-y-3">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Categories
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => toggleCategory(c)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
-                  categories.includes(c)
-                    ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-                }`}
+        {/* Approval workflow */}
+        <Section title="Approval workflow">
+          <label className="flex items-center justify-between p-3 bg-[#F8F9FE] rounded-xl">
+            <span className="text-xs font-bold text-gray-700">
+              Require draft approval before posting
+            </span>
+            <input
+              type="checkbox"
+              checked={form.requires_approval}
+              onChange={(e) => update("requires_approval", e.target.checked)}
+              className="w-4 h-4 accent-[#5851DB]"
+            />
+          </label>
+          {form.requires_approval && (
+            <Field label="Review turnaround time">
+              <select
+                value={form.approval_turnaround_hours}
+                onChange={(e) => update("approval_turnaround_hours", e.target.value)}
+                className="input"
               >
-                {c}
-              </button>
-            ))}
-          </div>
-        </section>
+                {APPROVAL_TURNAROUNDS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </Section>
+
+        {/* Terms */}
+        <Section title="Terms & rights">
+          <Field label="Content usage rights">
+            <select
+              value={form.usage_rights}
+              onChange={(e) => update("usage_rights", e.target.value)}
+              className="input"
+            >
+              {USAGE_RIGHTS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Content keep-up duration">
+            <select
+              value={form.keepup_duration}
+              onChange={(e) => update("keepup_duration", e.target.value)}
+              className="input"
+            >
+              {KEEPUP_DURATIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Exclusivity (no competing brands)">
+            <select
+              value={form.exclusivity_days}
+              onChange={(e) => update("exclusivity_days", e.target.value)}
+              className="input"
+            >
+              {EXCLUSIVITY_PERIODS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
+          {!isBarter && (
+            <Field label="Payment timeline">
+              <select
+                value={form.payment_timeline}
+                onChange={(e) => update("payment_timeline", e.target.value)}
+                className="input"
+              >
+                {PAYMENT_TIMELINES.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </Section>
 
         {/* Schedule */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
-            Schedule
-          </h3>
+        <Section title="Schedule">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Start Date" required>
               <input
@@ -510,9 +843,9 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             </Field>
           </div>
           <p className="text-[10px] text-gray-400">
-            One deadline — applications close and the campaign ends on this date.
+            Applications close and the campaign ends on this date.
           </p>
-        </section>
+        </Section>
 
         <style jsx>{`
           .input {
@@ -572,7 +905,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0">
       <div>
         <h2 className="text-lg font-bold text-gray-900">New Campaign</h2>
-        <p className="text-[11px] text-gray-400">Will be saved as a draft</p>
+        <p className="text-[11px] text-gray-400">Will be saved as a draft unless you publish</p>
       </div>
       {isDesktop ? (
         <DialogClose asChild>
@@ -595,7 +928,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="sm:max-w-[680px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl"
+          className="sm:max-w-[720px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl"
         >
           {header}
           {content}
@@ -617,13 +950,54 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   );
 }
 
-function Field({ label, required, children }) {
+function Section({ title, required, right, children }) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
+          {title}
+          {required && <span className="text-red-400 ml-1">*</span>}
+        </h3>
+        {right}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, required, hint, children }) {
   return (
     <div>
       <label className="block text-[11px] font-bold text-gray-700 mb-1.5">
         {label} {required && <span className="text-red-400">*</span>}
+        {hint && <span className="ml-2 text-[10px] font-medium text-gray-400">{hint}</span>}
       </label>
       {children}
+    </div>
+  );
+}
+
+function ChipGroup({ options, selected, onToggle }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const on = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onToggle(opt)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
+              on
+                ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
+                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            {on && <Check size={12} />}
+            {opt}
+          </button>
+        );
+      })}
     </div>
   );
 }

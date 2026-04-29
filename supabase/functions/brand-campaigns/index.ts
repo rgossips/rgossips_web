@@ -37,11 +37,44 @@ function unpackDescription(raw: string | null) {
 
 function buildContentTypes(nums: Record<string, number | undefined>) {
   const out: string[] = [];
-  for (const k of ["reels", "posts", "stories", "videos"]) {
+  for (const k of ["reels", "posts", "stories", "videos", "blogs"]) {
     const n = Number(nums[`num_${k}`] ?? 0);
     if (n > 0) out.push(`${k}:${n}`);
   }
   return out;
+}
+
+// Extra audit fields stored inside description metadata (no DB migration).
+function pickExtras(c: any) {
+  const extras: Record<string, unknown> = {};
+  const keys = [
+    "platforms",
+    "product_name",
+    "product_value",
+    "shipping_required",
+    "shipping_timeline_days",
+    "barter_compensation",
+    "content_dos",
+    "content_donts",
+    "required_hashtags",
+    "brand_handles_to_tag",
+    "requires_approval",
+    "approval_turnaround_hours",
+    "usage_rights",
+    "keepup_duration",
+    "exclusivity_days",
+    "payment_timeline",
+    "target_gender",
+    "target_languages",
+  ];
+  for (const k of keys) {
+    const v = (c as any)[k];
+    if (v === undefined || v === null) continue;
+    if (typeof v === "string" && v.trim() === "") continue;
+    if (Array.isArray(v) && v.length === 0) continue;
+    extras[k] = v;
+  }
+  return extras;
 }
 
 Deno.serve(async (req) => {
@@ -139,14 +172,15 @@ Deno.serve(async (req) => {
 
       const { body, meta } = unpackDescription(c.description);
 
+      const m = meta as any;
       return ok({
         campaign: {
           id: c.campaign_id,
           title: c.title,
           description: body,
-          bannerImage: meta.banner_image || "",
-          galleryImages: meta.gallery_images || [],
-          minEngagementRate: meta.min_engagement_rate || 0,
+          bannerImage: m.banner_image || "",
+          galleryImages: m.gallery_images || [],
+          minEngagementRate: m.min_engagement_rate || 0,
           status: c.status || "draft",
           campaignType: c.campaign_type,
           maxInfluencers: c.max_influencers || 0,
@@ -162,6 +196,25 @@ Deno.serve(async (req) => {
           endDate: c.campaign_end_date || "",
           applicationDeadline: c.application_deadline || "",
           createdAt: c.created_at,
+          // Extended audit fields from description metadata
+          platforms: m.platforms || [],
+          productName: m.product_name || "",
+          productValue: m.product_value || 0,
+          shippingRequired: m.shipping_required || "no",
+          shippingTimelineDays: m.shipping_timeline_days || 0,
+          barterCompensation: m.barter_compensation || "",
+          contentDos: m.content_dos || "",
+          contentDonts: m.content_donts || "",
+          requiredHashtags: m.required_hashtags || "",
+          brandHandlesToTag: m.brand_handles_to_tag || "",
+          requiresApproval: !!m.requires_approval,
+          approvalTurnaroundHours: m.approval_turnaround_hours || "",
+          usageRights: m.usage_rights || "",
+          keepupDuration: m.keepup_duration || "",
+          exclusivityDays: m.exclusivity_days || "0",
+          paymentTimeline: m.payment_timeline || "",
+          targetGender: m.target_gender || [],
+          targetLanguages: m.target_languages || [],
         },
         applications: apps || [],
       });
@@ -185,6 +238,9 @@ Deno.serve(async (req) => {
         meta.gallery_images = campaign.gallery_image_urls;
       }
       if (campaign.min_engagement_rate) meta.min_engagement_rate = Number(campaign.min_engagement_rate);
+      // Pack the extended audit fields into the same metadata blob so we
+      // don't need a DB migration for them.
+      Object.assign(meta, pickExtras(campaign));
 
       const fullDescription = packDescription(campaign.description || "", meta);
 
