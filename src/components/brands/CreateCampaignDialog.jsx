@@ -79,12 +79,6 @@ const KEEPUP_DURATIONS = [
   { value: "permanent", label: "Permanent" },
 ];
 
-const APPROVAL_TURNAROUNDS = [
-  { value: "24", label: "24 hours" },
-  { value: "48", label: "48 hours" },
-  { value: "72", label: "72 hours" },
-];
-
 const EXCLUSIVITY_PERIODS = [
   { value: "0", label: "No exclusivity" },
   { value: "7", label: "7 days" },
@@ -106,6 +100,7 @@ const emptyForm = {
   title: "",
   description: "",
   campaign_type: "barter",
+  offering_type: "product", // "product" | "service"
   max_influencers: "",
   budget_total: "",
   budget_per_influencer: "",
@@ -113,6 +108,7 @@ const emptyForm = {
   product_value: "",
   shipping_required: "no",
   shipping_timeline_days: "",
+  service_location: "",
   barter_compensation: "",
   num_reels: "",
   num_posts: "",
@@ -127,13 +123,12 @@ const emptyForm = {
   content_donts: "",
   required_hashtags: "",
   brand_handles_to_tag: "",
-  requires_approval: false,
-  approval_turnaround_hours: "48",
   usage_rights: "creator_only",
   keepup_duration: "permanent",
   exclusivity_days: "0",
   payment_timeline: "on_approval",
   campaign_start_date: "",
+  application_deadline: "",
   campaign_end_date: "",
 };
 
@@ -265,7 +260,15 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     if (!brandId) return setError("You must be signed in");
     if (!form.title.trim()) return setError("Title is required");
     if (!form.campaign_start_date) return setError("Start date is required");
-    if (!form.campaign_end_date) return setError("Deadline is required");
+    if (!form.application_deadline) return setError("Application deadline is required");
+    if (!form.campaign_end_date) return setError("Campaign end date is required");
+    if (
+      form.application_deadline &&
+      form.campaign_end_date &&
+      new Date(form.application_deadline) > new Date(form.campaign_end_date)
+    ) {
+      return setError("Application deadline must be on or before the campaign end date");
+    }
     if (totalDeliverables < 1) return setError("Add at least 1 deliverable (reels, posts, stories, videos or blogs)");
     if (categories.length < 1) return setError("Select at least 1 category");
     if (platforms.length < 1) return setError("Select at least 1 platform");
@@ -425,39 +428,82 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         {/* Product / Service */}
         <Section title="Product / service">
           <Field label="What are you promoting?" required>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => update("offering_type", "product")}
+                className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
+                  form.offering_type === "product"
+                    ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                📦 Product
+              </button>
+              <button
+                type="button"
+                onClick={() => update("offering_type", "service")}
+                className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
+                  form.offering_type === "service"
+                    ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                🛎️ Service / Experience
+              </button>
+            </div>
             <input
               value={form.product_name}
               onChange={(e) => update("product_name", e.target.value)}
-              placeholder='e.g. "Moisturizing cream — 50ml tube" or "Weekend stay at our resort"'
+              placeholder={
+                form.offering_type === "product"
+                  ? 'e.g. "Moisturizing cream — 50ml tube"'
+                  : 'e.g. "Weekend stay at our Mussoorie resort"'
+              }
               className="input"
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Will product be shipped?">
-              <select
-                value={form.shipping_required}
-                onChange={(e) => update("shipping_required", e.target.value)}
-                className="input"
-              >
-                <option value="no">No</option>
-                <option value="yes">Yes</option>
-                <option value="pickup">Pickup required</option>
-              </select>
-            </Field>
-            {form.shipping_required === "yes" && (
-              <Field label="Shipping timeline (days)">
-                <input
-                  type="number"
-                  min="1"
-                  value={form.shipping_timeline_days}
-                  onChange={(e) => update("shipping_timeline_days", e.target.value)}
-                  placeholder="3"
+          {/* Product-only fields */}
+          {form.offering_type === "product" && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Will product be shipped?">
+                <select
+                  value={form.shipping_required}
+                  onChange={(e) => update("shipping_required", e.target.value)}
                   className="input"
-                />
+                >
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                  <option value="pickup">Pickup required</option>
+                </select>
               </Field>
-            )}
-          </div>
+              {form.shipping_required === "yes" && (
+                <Field label="Shipping timeline (days)">
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.shipping_timeline_days}
+                    onChange={(e) => update("shipping_timeline_days", e.target.value)}
+                    placeholder="3"
+                    className="input"
+                  />
+                </Field>
+              )}
+            </div>
+          )}
+
+          {/* Service-only fields */}
+          {form.offering_type === "service" && (
+            <Field label="Service location" hint="Where the influencer experiences the service">
+              <input
+                value={form.service_location}
+                onChange={(e) => update("service_location", e.target.value)}
+                placeholder='e.g. "Mussoorie, India" or "Online / virtual"'
+                className="input"
+              />
+            </Field>
+          )}
 
           {showBarterCompensation && (
             <Field label="What does the influencer get? (compensation details)">
@@ -465,7 +511,11 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 value={form.barter_compensation}
                 onChange={(e) => update("barter_compensation", e.target.value)}
                 rows={2}
-                placeholder='e.g. "Free 2-night stay + meals" or "Full skincare kit worth ₹3,500"'
+                placeholder={
+                  form.offering_type === "product"
+                    ? 'e.g. "Full skincare kit worth ₹3,500"'
+                    : 'e.g. "Free 2-night stay + meals + spa session"'
+                }
                 className="input resize-none"
               />
             </Field>
@@ -744,34 +794,6 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           </Field>
         </Section>
 
-        {/* Approval workflow */}
-        <Section title="Approval workflow">
-          <label className="flex items-center justify-between p-3 bg-[#F8F9FE] rounded-xl">
-            <span className="text-xs font-bold text-gray-700">
-              Require draft approval before posting
-            </span>
-            <input
-              type="checkbox"
-              checked={form.requires_approval}
-              onChange={(e) => update("requires_approval", e.target.checked)}
-              className="w-4 h-4 accent-[#5851DB]"
-            />
-          </label>
-          {form.requires_approval && (
-            <Field label="Review turnaround time">
-              <select
-                value={form.approval_turnaround_hours}
-                onChange={(e) => update("approval_turnaround_hours", e.target.value)}
-                className="input"
-              >
-                {APPROVAL_TURNAROUNDS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </Field>
-          )}
-        </Section>
-
         {/* Terms */}
         <Section title="Terms & rights">
           <Field label="Content usage rights">
@@ -824,7 +846,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
 
         {/* Schedule */}
         <Section title="Schedule">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Start Date" required>
               <input
                 type="date"
@@ -833,7 +855,23 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 className="input"
               />
             </Field>
-            <Field label="Deadline" required>
+            <Field
+              label="Application Deadline"
+              required
+              hint="Last day to apply"
+            >
+              <input
+                type="date"
+                value={form.application_deadline}
+                onChange={(e) => update("application_deadline", e.target.value)}
+                className="input"
+              />
+            </Field>
+            <Field
+              label="Campaign End Date"
+              required
+              hint="All content delivered by"
+            >
               <input
                 type="date"
                 value={form.campaign_end_date}
@@ -843,7 +881,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             </Field>
           </div>
           <p className="text-[10px] text-gray-400">
-            Applications close and the campaign ends on this date.
+            Application deadline is when influencers stop applying. Campaign end date is when all content must be delivered.
           </p>
         </Section>
 

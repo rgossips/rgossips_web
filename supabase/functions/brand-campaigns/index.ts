@@ -48,18 +48,18 @@ function buildContentTypes(nums: Record<string, number | undefined>) {
 function pickExtras(c: any) {
   const extras: Record<string, unknown> = {};
   const keys = [
+    "offering_type",
     "platforms",
     "product_name",
     "product_value",
     "shipping_required",
     "shipping_timeline_days",
+    "service_location",
     "barter_compensation",
     "content_dos",
     "content_donts",
     "required_hashtags",
     "brand_handles_to_tag",
-    "requires_approval",
-    "approval_turnaround_hours",
     "usage_rights",
     "keepup_duration",
     "exclusivity_days",
@@ -226,10 +226,9 @@ Deno.serve(async (req) => {
       if (!brandId) return ok({ error: "brandId is required" });
       if (!campaign?.title) return ok({ error: "Title is required" });
       if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
-      if (!campaign?.campaign_end_date) return ok({ error: "Deadline is required" });
-      // Single deadline — both DB columns get the same value for compat with
-      // any code path still reading application_deadline.
-      const deadline = campaign.application_deadline || campaign.campaign_end_date;
+      if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
+      if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
+      const deadline = campaign.application_deadline;
 
       const contentTypes = buildContentTypes(campaign);
       const meta: Record<string, unknown> = {};
