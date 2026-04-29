@@ -12,6 +12,11 @@ import {
   Phone,
   Users,
   Activity,
+  Calendar,
+  Truck,
+  MapPin,
+  Tag,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -139,6 +144,9 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
           )}
 
+          {/* Campaign briefing — what you're committing to */}
+          <CampaignBriefing campaign={campaignData} />
+
           {/* Your Profile (Auto-populated, Non-editable) */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -188,23 +196,25 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             )}
           </section>
 
-          {/* Proposed Rate (Editable) */}
-          <section className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">Your Proposed Rate</h3>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
-              <input
-                type="number"
-                placeholder="Enter your rate for this campaign"
-                value={proposedRate}
-                onChange={(e) => setProposedRate(e.target.value)}
-                className="w-full py-3 pl-8 pr-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
-              />
-            </div>
-            {campaignData?.budget && (
-              <p className="text-[10px] text-slate-400">Campaign budget: {campaignData.budget}</p>
-            )}
-          </section>
+          {/* Proposed Rate — hidden for pure barter campaigns */}
+          {campaignData?.campaignType !== "barter" && (
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-slate-900">Your Proposed Rate</h3>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                <input
+                  type="number"
+                  placeholder="Enter your rate for this campaign"
+                  value={proposedRate}
+                  onChange={(e) => setProposedRate(e.target.value)}
+                  className="w-full py-3 pl-8 pr-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
+                />
+              </div>
+              {campaignData?.budget && (
+                <p className="text-[10px] text-slate-400">Campaign budget: {campaignData.budget}</p>
+              )}
+            </section>
+          )}
 
           {/* Why Choose You (Editable) */}
           <section className="space-y-3">
@@ -247,5 +257,172 @@ function ReadOnlyField({ icon, label, value }) {
         <p className="text-sm font-bold text-slate-700 truncate">{value}</p>
       </div>
     </div>
+  );
+}
+
+function CampaignBriefing({ campaign }) {
+  if (!campaign) return null;
+
+  const isBarter = campaign.campaignType === "barter";
+  const isService = campaign.offeringType === "service" || (!campaign.offeringType && campaign.serviceLocation);
+
+  const formatDate = (d) => {
+    if (!d) return null;
+    try {
+      return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    } catch { return d; }
+  };
+
+  const usageLabels = {
+    creator_only: "Influencer's page only",
+    brand_repost: "Brand can repost",
+    paid_ads: "Brand can use in paid ads",
+    full_rights: "Full rights transfer",
+  };
+  const paymentLabels = {
+    advance: "Advance",
+    on_approval: "On content approval",
+    "7_days": "Within 7 days of posting",
+    "30_days": "Within 30 days",
+  };
+
+  const appDeadline = formatDate(campaign.applicationDeadline);
+  const endDate = formatDate(campaign.endDate);
+
+  return (
+    <section className="space-y-3">
+      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        Before you apply
+        <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+          What you&apos;re committing to
+        </span>
+      </h3>
+
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-2xl p-4 space-y-3">
+        {/* Headline */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Campaign type</p>
+            <p className="text-sm font-extrabold text-slate-900 capitalize">
+              {campaign.campaignType || "—"}
+              {campaign.productName && (
+                <span className="font-medium text-slate-500"> · {campaign.productName}</span>
+              )}
+            </p>
+          </div>
+          {!isBarter && campaign.budget && (
+            <div className="text-right shrink-0">
+              <p className="text-[10px] font-bold text-emerald-700 uppercase">Pay</p>
+              <p className="text-sm font-extrabold text-emerald-700">{campaign.budget}</p>
+            </div>
+          )}
+          {isBarter && campaign.productValue > 0 && (
+            <div className="text-right shrink-0">
+              <p className="text-[10px] font-bold text-emerald-700 uppercase">Worth</p>
+              <p className="text-sm font-extrabold text-emerald-700">₹{Number(campaign.productValue).toLocaleString("en-IN")}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Quick chips */}
+        <div className="flex flex-wrap gap-2">
+          {campaign.deliverables && campaign.deliverables !== "Not specified" && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+              <Tag size={10} /> {campaign.deliverables}
+            </span>
+          )}
+          {appDeadline && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
+              <Calendar size={10} /> Apply by {appDeadline}
+            </span>
+          )}
+          {endDate && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+              <Calendar size={10} /> Deliver by {endDate}
+            </span>
+          )}
+          {!isService && campaign.shippingRequired === "yes" && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+              <Truck size={10} /> Product shipped{campaign.shippingTimelineDays ? ` (${campaign.shippingTimelineDays}d)` : ""}
+            </span>
+          )}
+          {!isService && campaign.shippingRequired === "pickup" && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+              <Truck size={10} /> Pickup required
+            </span>
+          )}
+          {isService && campaign.serviceLocation && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
+              <MapPin size={10} /> {campaign.serviceLocation}
+            </span>
+          )}
+        </div>
+
+        {/* Compensation summary */}
+        {campaign.barterCompensation && (
+          <div className="bg-white/60 rounded-xl p-3 border border-emerald-100">
+            <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">You get</p>
+            <p className="text-xs text-slate-700 leading-relaxed">{campaign.barterCompensation}</p>
+          </div>
+        )}
+
+        {/* Critical guidelines flagged */}
+        {(campaign.contentDos || campaign.contentDonts) && (
+          <div className="bg-white/60 rounded-xl p-3 border border-purple-100 space-y-1.5">
+            {campaign.contentDos && (
+              <p className="text-[11px] text-slate-700 leading-snug">
+                <span className="font-extrabold text-emerald-600">✓ </span>
+                <span className="font-semibold">{campaign.contentDos}</span>
+              </p>
+            )}
+            {campaign.contentDonts && (
+              <p className="text-[11px] text-slate-700 leading-snug">
+                <span className="font-extrabold text-red-600">✗ </span>
+                <span className="font-semibold">{campaign.contentDonts}</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Hashtags & handles */}
+        {(campaign.requiredHashtags || campaign.brandHandlesToTag) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {campaign.requiredHashtags && (
+              <div className="bg-white rounded-xl p-2.5 border border-slate-200">
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Hashtags</p>
+                <p className="text-[11px] font-semibold text-slate-700 break-words">{campaign.requiredHashtags}</p>
+              </div>
+            )}
+            {campaign.brandHandlesToTag && (
+              <div className="bg-white rounded-xl p-2.5 border border-slate-200">
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Tag</p>
+                <p className="text-[11px] font-semibold text-slate-700 break-words">{campaign.brandHandlesToTag}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Terms summary */}
+        {(campaign.usageRights || campaign.paymentTimeline || (campaign.exclusivityDays && campaign.exclusivityDays !== "0")) && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {campaign.usageRights && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+                Usage: {usageLabels[campaign.usageRights] || campaign.usageRights}
+              </span>
+            )}
+            {campaign.paymentTimeline && !isBarter && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+                Payment: {paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline}
+              </span>
+            )}
+            {campaign.exclusivityDays && campaign.exclusivityDays !== "0" && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
+                <AlertCircle size={10} /> No competing brands for {campaign.exclusivityDays}d
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

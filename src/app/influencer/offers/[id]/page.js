@@ -69,20 +69,40 @@ function useCampaign(id, userId) {
           );
           const activeBrandCampaigns = brandCampaigns.filter((c) => c.status === "Active").length;
 
-          // Enrich with display fields the UI expects
+          // Build follower-range label from real numbers when present
+          const fmtFollowers = (n) => {
+            if (!n) return "Any";
+            if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`;
+            if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+            return String(n);
+          };
+          const followerLabel = found.targetFollowerMin || found.targetFollowerMax
+            ? `${fmtFollowers(found.targetFollowerMin)} – ${fmtFollowers(found.targetFollowerMax)}`
+            : "Any";
+
+          const requirements = [
+            { icon: "users", label: `Followers: ${followerLabel}`, sub: "Audience size" },
+            { icon: "trending", label: `Tier: ${(found.targetInfluencerTier || "all").replace(/^./, (c) => c.toUpperCase())}`, sub: "Creator tier" },
+            { icon: "star", label: `Location: ${found.location}`, sub: "Target region" },
+          ];
+          if (found.minEngagementRate > 0) {
+            requirements.push({ icon: "trending", label: `Min Engagement: ${found.minEngagementRate}%`, sub: "Activity threshold" });
+          }
+          if (Array.isArray(found.targetGender) && found.targetGender.length > 0) {
+            requirements.push({ icon: "users", label: `Gender: ${found.targetGender.join(", ")}`, sub: "Preferred" });
+          }
+          if (Array.isArray(found.targetLanguages) && found.targetLanguages.length > 0) {
+            requirements.push({ icon: "star", label: `Language: ${found.targetLanguages.join(", ")}`, sub: "Content language" });
+          }
+
           setCampaign({
             ...found,
-            // Use the campaign's banner when set, otherwise fall back to a stock image
             heroImg:
               found.bannerImage ||
               "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80",
             slots: found.maxInfluencers || 0,
             about: found.description || "No description available for this campaign.",
-            requirements: [
-              { icon: "users", label: `Min Followers: ${found.tags?.length > 0 ? "1K+" : "Any"}`, sub: "Minimum requirement" },
-              { icon: "trending", label: `Category: ${found.tags?.[0] || "Any"}`, sub: "Target niche" },
-              { icon: "star", label: `Location: ${found.location}`, sub: "Target region" },
-            ],
+            requirements,
             payments: [{ type: "base", label: "Base Payment", val: found.budget, sub: "Per influencer" }],
             brandStats: { campaigns: brandCampaigns.length, success: `${activeBrandCampaigns} active`, response: "24h" },
             deliverableIcons: found.deliverables
@@ -357,6 +377,127 @@ function PlatformIcon({ platform, size = 20 }) {
 }
 
 /* ─── Gallery with Lightbox ─── */
+/* ─── Audit field sections ─── */
+
+function ProductInfoSection({ campaign }) {
+  const isService = campaign.offeringType === "service" || (!campaign.offeringType && campaign.serviceLocation);
+  const shipText = {
+    yes: `Will be shipped${campaign.shippingTimelineDays ? ` in ~${campaign.shippingTimelineDays} day${campaign.shippingTimelineDays !== 1 ? "s" : ""}` : ""}`,
+    no: "No shipping",
+    pickup: "Pickup required",
+  }[campaign.shippingRequired] || "";
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-base font-bold text-slate-800">
+        {isService ? "Service / Experience" : "Product"}
+      </h3>
+      <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-4 space-y-2">
+        {campaign.productName && (
+          <p className="text-sm font-bold text-slate-800 leading-snug">{campaign.productName}</p>
+        )}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {isService && campaign.serviceLocation && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full">
+              📍 {campaign.serviceLocation}
+            </span>
+          )}
+          {!isService && shipText && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
+              🚚 {shipText}
+            </span>
+          )}
+          {campaign.productValue > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+              ₹{Number(campaign.productValue).toLocaleString("en-IN")} approx. value
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuidelinesSection({ campaign }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-base font-bold text-slate-800">Content guidelines</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {campaign.contentDos && (
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+            <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider mb-1.5">✓ Must include</p>
+            <p className="text-xs text-emerald-900 leading-relaxed whitespace-pre-wrap">{campaign.contentDos}</p>
+          </div>
+        )}
+        {campaign.contentDonts && (
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+            <p className="text-[10px] font-extrabold text-red-700 uppercase tracking-wider mb-1.5">✗ Must avoid</p>
+            <p className="text-xs text-red-900 leading-relaxed whitespace-pre-wrap">{campaign.contentDonts}</p>
+          </div>
+        )}
+      </div>
+      {(campaign.requiredHashtags || campaign.brandHandlesToTag) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {campaign.requiredHashtags && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-4">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Hashtags</p>
+              <p className="text-xs font-semibold text-slate-700 break-words">{campaign.requiredHashtags}</p>
+            </div>
+          )}
+          {campaign.brandHandlesToTag && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-4">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Tag</p>
+              <p className="text-xs font-semibold text-slate-700 break-words">{campaign.brandHandlesToTag}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TermsSection({ campaign }) {
+  const usageLabels = {
+    creator_only: "Influencer's page only",
+    brand_repost: "Brand can repost",
+    paid_ads: "Brand can use in paid ads",
+    full_rights: "Full rights transfer",
+  };
+  const keepupLabels = {
+    "24h": "24 hours (stories)",
+    "7d": "7 days",
+    "30d": "30 days",
+    permanent: "Permanent",
+  };
+  const paymentLabels = {
+    advance: "Advance",
+    on_approval: "On content approval",
+    "7_days": "Within 7 days of posting",
+    "30_days": "Within 30 days",
+  };
+
+  const rows = [];
+  if (campaign.usageRights) rows.push(["Usage rights", usageLabels[campaign.usageRights] || campaign.usageRights]);
+  if (campaign.keepupDuration) rows.push(["Keep content live", keepupLabels[campaign.keepupDuration] || campaign.keepupDuration]);
+  if (campaign.exclusivityDays && campaign.exclusivityDays !== "0") rows.push(["Exclusivity", `No competing brands for ${campaign.exclusivityDays} days`]);
+  if (campaign.paymentTimeline) rows.push(["Payment", paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline]);
+
+  if (rows.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <h3 className="text-base font-bold text-slate-800">Terms &amp; rights</h3>
+      <div className="bg-white border border-slate-100 shadow-sm rounded-2xl divide-y divide-slate-50">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between p-3.5">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{k}</span>
+            <span className="text-xs font-semibold text-slate-700 text-right ml-3">{v}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Gallery({ images }) {
   const [index, setIndex] = useState(-1);
   const open = (i) => setIndex(i);
@@ -662,6 +803,34 @@ function ActiveContent({ campaign }) {
         <h3 className="text-base font-bold text-slate-800">About Campaign</h3>
         <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{campaign.about}</p>
       </div>
+
+      {/* Product / Service info */}
+      {(campaign.productName || campaign.serviceLocation || campaign.shippingRequired) && (
+        <ProductInfoSection campaign={campaign} />
+      )}
+
+      {/* Compensation / what the influencer gets */}
+      {campaign.barterCompensation && (
+        <div className="space-y-3">
+          <h3 className="text-base font-bold text-slate-800">What you get</h3>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+            <p className="text-sm text-emerald-900 whitespace-pre-wrap leading-relaxed">{campaign.barterCompensation}</p>
+            {campaign.productValue > 0 && (
+              <p className="text-[11px] font-bold text-emerald-700 mt-2">Approx. value ₹{Number(campaign.productValue).toLocaleString("en-IN")}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Content Guidelines */}
+      {(campaign.contentDos || campaign.contentDonts || campaign.requiredHashtags || campaign.brandHandlesToTag) && (
+        <GuidelinesSection campaign={campaign} />
+      )}
+
+      {/* Terms & Rights */}
+      {(campaign.usageRights || campaign.keepupDuration || (campaign.exclusivityDays && campaign.exclusivityDays !== "0") || campaign.paymentTimeline) && (
+        <TermsSection campaign={campaign} />
+      )}
 
       {/* Gallery */}
       {campaign.galleryImages?.length > 0 && (

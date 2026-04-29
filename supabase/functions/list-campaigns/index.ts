@@ -209,15 +209,18 @@ Deno.serve(async (req) => {
       // Tags from categories
       const tags = c.target_categories || [];
 
-      // Platforms (default to instagram)
-      const platforms = ["instagram"];
-
-      // Unpack banner/gallery from description metadata
+      // Unpack metadata from description (banner, gallery, audit fields)
       const { body: descBody, meta } = unpackDescription(c.description);
-      const bannerImage = (meta as any).banner_image || "";
-      const galleryImages = Array.isArray((meta as any).gallery_images)
-        ? (meta as any).gallery_images
-        : [];
+      const m = meta as any;
+      const bannerImage = m.banner_image || "";
+      const galleryImages = Array.isArray(m.gallery_images) ? m.gallery_images : [];
+
+      // Platforms — pulled from metadata (lowercased for icon mapping); fallback
+      // to instagram so legacy campaigns keep working.
+      const rawPlatforms = Array.isArray(m.platforms) ? m.platforms : [];
+      const platforms = rawPlatforms.length > 0
+        ? rawPlatforms.map((p: string) => String(p).toLowerCase().replace(/\s+\(.*\)/, "").trim())
+        : ["instagram"];
 
       return {
         id: c.campaign_id,
@@ -240,12 +243,37 @@ Deno.serve(async (req) => {
         campaignType: c.campaign_type || "",
         startDate: c.campaign_start_date || "",
         endDate: c.campaign_end_date || "",
+        applicationDeadline: c.application_deadline || "",
+        targetCities: c.target_cities || [],
+        targetFollowerMin: c.target_follower_min || 0,
+        targetFollowerMax: c.target_follower_max || 0,
+        targetInfluencerTier: c.target_influencer_tier || "all",
         applicationStatus,
         applicationId,
         submissionLinks,
         rejectionReason,
         contentTypesRequired: c.content_types_required || [],
         isExpired,
+        // Audit fields packed in metadata
+        offeringType: m.offering_type || "",
+        productName: m.product_name || "",
+        productValue: m.product_value || 0,
+        shippingRequired: m.shipping_required || "",
+        shippingTimelineDays: m.shipping_timeline_days || 0,
+        serviceLocation: m.service_location || "",
+        barterCompensation: m.barter_compensation || "",
+        contentDos: m.content_dos || "",
+        contentDonts: m.content_donts || "",
+        requiredHashtags: m.required_hashtags || "",
+        brandHandlesToTag: m.brand_handles_to_tag || "",
+        usageRights: m.usage_rights || "",
+        keepupDuration: m.keepup_duration || "",
+        exclusivityDays: m.exclusivity_days || "0",
+        paymentTimeline: m.payment_timeline || "",
+        targetGender: m.target_gender || [],
+        targetLanguages: m.target_languages || [],
+        minEngagementRate: m.min_engagement_rate || 0,
+        rawPlatforms,
       };
     });
 
