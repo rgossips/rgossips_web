@@ -29,6 +29,8 @@ import {
   Loader2,
   Upload,
   X,
+  Copy,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -418,6 +420,54 @@ function ProductInfoSection({ campaign }) {
   );
 }
 
+function CopyableField({ label, value }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        // Fallback for non-secure contexts
+        const ta = document.createElement("textarea");
+        ta.value = value;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      console.error("Copy failed:", e);
+    }
+  };
+  return (
+    <div className="bg-white border border-slate-100 rounded-2xl p-4">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+          {label}
+        </p>
+        <button
+          type="button"
+          onClick={onCopy}
+          aria-label={`Copy ${label}`}
+          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md transition-colors cursor-pointer ${
+            copied
+              ? "text-emerald-700 bg-emerald-50"
+              : "text-[#E60076] hover:bg-pink-50"
+          }`}
+        >
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <p className="text-xs font-semibold text-slate-700 break-words">{value}</p>
+    </div>
+  );
+}
+
 function GuidelinesSection({ campaign }) {
   return (
     <div className="space-y-3">
@@ -439,16 +489,10 @@ function GuidelinesSection({ campaign }) {
       {(campaign.requiredHashtags || campaign.brandHandlesToTag) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {campaign.requiredHashtags && (
-            <div className="bg-white border border-slate-100 rounded-2xl p-4">
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Hashtags</p>
-              <p className="text-xs font-semibold text-slate-700 break-words">{campaign.requiredHashtags}</p>
-            </div>
+            <CopyableField label="Hashtags" value={campaign.requiredHashtags} />
           )}
           {campaign.brandHandlesToTag && (
-            <div className="bg-white border border-slate-100 rounded-2xl p-4">
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">Tag</p>
-              <p className="text-xs font-semibold text-slate-700 break-words">{campaign.brandHandlesToTag}</p>
-            </div>
+            <CopyableField label="Tag" value={campaign.brandHandlesToTag} />
           )}
         </div>
       )}

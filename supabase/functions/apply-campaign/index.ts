@@ -43,6 +43,59 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Plan-based application limit (mirrors src/lib/plans.js values):
+    //   starter → 3/month, pro → 15/month, elite/trial → unlimited
+    try {
+      const { data: profile } = await supabaseAdmin
+        .from("influencer_profiles")
+        .select("subscription_plan, created_at")
+        .eq("influencer_id", influencerId)
+        .maybeSingle();
+
+      const TRIAL_DAYS = 30;
+      const explicit = (profile?.subscription_plan || "").toLowerCase();
+      let plan: string;
+      if (explicit === "starter" || explicit === "pro" || explicit === "elite") {
+        plan = explicit;
+      } else if (profile?.created_at) {
+        const days = (Date.now() - new Date(profile.created_at).getTime()) / 86_400_000;
+        plan = days < TRIAL_DAYS ? "elite" : "starter";
+      } else {
+        plan = "starter";
+      }
+
+      const limits: Record<string, number> = { starter: 3, pro: 15, elite: Infinity };
+      const cap = limits[plan] ?? 3;
+
+      if (cap !== Infinity) {
+        // Count this calendar month's applications
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const { count } = await supabaseAdmin
+          .from("campaign_applications")
+          .select("id", { count: "exact", head: true })
+          .eq("influencer_id", influencerId)
+          .gte("created_at", monthStart.toISOString());
+
+        if ((count ?? 0) >= cap) {
+          return new Response(
+            JSON.stringify({
+              error: "plan_limit_reached",
+              message: `You've reached your ${plan} plan limit of ${cap} applications this month. Upgrade to apply to more campaigns.`,
+              plan,
+              limit: cap,
+              used: count ?? 0,
+            }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+      }
+    } catch (e) {
+      // Non-blocking — we'd rather let an apply through than block on a count failure.
+      console.error("Plan-limit check failed:", e);
+    }
+
     // Insert application
     const { data: application, error: insertError } = await supabaseAdmin
       .from("campaign_applications")

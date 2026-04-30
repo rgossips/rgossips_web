@@ -75,6 +75,14 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         return;
       }
 
+      if (data?.error === "plan_limit_reached") {
+        setError(
+          (data.message || "Plan application limit reached.") +
+            " Visit /influencer/pricing to upgrade."
+        );
+        return;
+      }
+
       if (data?.error) {
         setError(data.error);
         return;

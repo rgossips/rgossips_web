@@ -1,268 +1,98 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, X, Target, Zap, Rocket, Crown, ArrowLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import {
+  PLAN_IDS,
+  PLAN_PRICING,
+  PLAN_STRIPE_PRICES,
+  FEATURE_GROUPS,
+  FEATURE_MATRIX,
+  formatFeatureValue,
+} from "@/lib/plans";
+import {
+  getEffectivePlan,
+  isWithinTrial,
+  trialDaysLeft,
+} from "@/lib/plans";
 
-const TRIAL_DAYS = 30;
-
-const plans = {
-  monthly: [
-    {
-      id: "starter",
-      name: "Starter",
-      icon: <Target className="w-5 h-5" />,
-      tagline: "Your launchpad into the world of brand collaborations",
-      price: "99",
-      priceNum: 99,
-      period: "/mo",
-      description:
-        "Best for: Nano & micro influencers (1K – 25K followers)",
-      features: [
-        "Listed in brand search",
-        "Up to 3 campaign applications/month",
-        "Brand DMs 10/month",
-        "1 media kit template (PDF)",
-        "Basic analytics dashboard",
-        "Creator community & forums",
-        "Standard payouts 7-10 days",
-        "Verified badge eligibility",
-        "AI caption & hook generator 3/month",
-        "Brief templates library",
-      ],
-      notIncluded: [
-        "Priority brand search placement",
-        "Unlimited applications",
-        "AI content suite",
-        "Audience insights & demographics",
-        "Dedicated support manager",
-      ],
-    },
-    {
-      id: "pro",
-      name: "Pro",
-      icon: <Zap className="w-5 h-5" />,
-      tagline: "Built for creators who are ready to earn seriously",
-      price: "299",
-      priceNum: 299,
-      period: "/mo",
-      popular: true,
-      description:
-        "Best for: Micro to mid-tier influencers (10K – 200K followers)",
-      features: [
-        "Priority brand search placement 3× more visibility",
-        "Unlimited campaign applications",
-        "Unlimited brand DMs",
-        "AI content suite 50/month",
-        "3 media kit templates (PDF + link)",
-        "Advanced analytics & reports",
-        "Audience insights age, gender, location",
-        "Fake follower & engagement audit monthly",
-        "Rate benchmarking tool",
-        "Early access to brand deals 48hr head start",
-        "Faster payouts 3-5 days",
-        "Creator Academy - Full access",
-      ],
-      notIncluded: [
-        "Dedicated account manager",
-        "Homepage spotlight feature",
-        "Custom media kit builder",
-      ],
-    },
-    {
-      id: "elite",
-      name: "Elite",
-      icon: <Rocket className="w-5 h-5" />,
-      tagline: "The professional-grade creator OS",
-      price: "699",
-      priceNum: 699,
-      period: "/mo",
-      description:
-        "Best for: Macro & mega influencers (200K+ followers)",
-      features: [
-        "Featured in brand search (top) max visibility",
-        "Unlimited applications + AI shortlisting",
-        "Dedicated account manager WhatsApp + email",
-        "AI content suite - unlimited",
-        "Custom media kit builder",
-        "Deep audience analytics + psychographics",
-        "Monthly fake follower & engagement audit",
-        "Instant payouts within 48 hrs",
-        "Priority deal matching",
-        "Campaign ROI report for brand partners",
-        "Homepage spotlight feature monthly rotation",
-        "Analytics export (Excel, PDF, link)",
-        "Elite Verified badge",
-        "Beta access to new features",
-      ],
-      notIncluded: [],
-    },
-  ],
-  annual: [
-    {
-      id: "starter_annual",
-      name: "Starter Annual",
-      icon: <Target className="w-5 h-5" />,
-      tagline: "12 months for the price of 9",
-      price: "899",
-      priceNum: 899,
-      period: "/yr",
-      savings: "Save ₹289",
-      description: "₹75/month · 32% off",
-      features: [
-        "All Starter Monthly features, plus:",
-        "3 months FREE (pay for 9)",
-        "2× AI content generation 4/mo",
-        "2 media kit templates",
-        "Annual performance report",
-        "Priority access to events & webinars",
-        "Price locked for 12 months",
-      ],
-      notIncluded: [
-        "Priority brand search",
-        "AI content suite (unlimited)",
-        "Audience insights",
-        "Dedicated support manager",
-      ],
-    },
-    {
-      id: "pro_annual",
-      name: "Pro Annual",
-      icon: <Zap className="w-5 h-5" />,
-      tagline: "Scale your brand deals all year long",
-      price: "2,899",
-      priceNum: 2899,
-      period: "/yr",
-      savings: "Save ₹689",
-      popular: true,
-      description: "₹241/month · 24% off",
-      features: [
-        "All Pro Monthly features, plus:",
-        "~2 months FREE (pay for 10)",
-        "2× AI content suite 100/mo",
-        "Quarterly audience audit 4×/year",
-        "2 brand newsletter features/yr",
-        "Exclusive annual-only campaigns",
-        "Annual income summary download",
-        "Priority support 12hr SLA",
-        "Price locked for 12 months",
-      ],
-      notIncluded: [
-        "Dedicated account manager",
-        "Custom analytics export",
-        "Homepage spotlight",
-      ],
-    },
-    {
-      id: "elite_annual",
-      name: "Elite Annual",
-      icon: <Rocket className="w-5 h-5" />,
-      tagline: "The all-in-one professional creator OS",
-      price: "6,899",
-      priceNum: 6899,
-      period: "/yr",
-      savings: "Save ₹1,489",
-      description: "₹575/month · 22% off",
-      features: [
-        "All Elite Monthly features, plus:",
-        "~2 months FREE on annual billing",
-        "Dedicated account manager - 8hr SLA",
-        "Quarterly strategy call 4 sessions/yr",
-        "4 homepage spotlights/yr",
-        "Annual report - stats, income & growth",
-        "RGossips Creator Summit invite",
-        "First access to all new features",
-        "Price locked for 12 months",
-      ],
-      notIncluded: [],
-    },
-  ],
+const PLAN_META = {
+  starter: {
+    label: "Starter",
+    icon: <Target className="w-5 h-5" />,
+    tagline: "Get listed and start applying",
+    description: "Best for nano creators (1K – 25K)",
+    accent: "text-slate-700 bg-slate-50",
+  },
+  pro: {
+    label: "Pro",
+    icon: <Zap className="w-5 h-5" />,
+    tagline: "Built to earn seriously",
+    description: "Best for micro/mid creators (10K – 200K)",
+    accent: "text-[#5851DB] bg-[#EBE9FE]",
+    popular: true,
+  },
+  elite: {
+    label: "Elite",
+    icon: <Rocket className="w-5 h-5" />,
+    tagline: "Pro-grade creator OS",
+    description: "Best for macro/mega creators (200K+)",
+    accent: "text-emerald-700 bg-emerald-50",
+  },
 };
 
-function getTrialInfo(profile) {
-  const createdAt = profile?.created_at || profile?.updated_at;
-  if (!createdAt) return { daysLeft: TRIAL_DAYS, progress: 0, expired: false };
-
-  const start = new Date(createdAt);
-  const now = new Date();
-  const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, TRIAL_DAYS - elapsed);
-
-  return { daysLeft, expired: daysLeft === 0 };
-}
-
-function getCurrentPlanId(profile) {
-  return profile?.subscription_plan || "free";
-}
-
-function getBillingCycle(profile) {
-  return profile?.billing_cycle || "monthly";
-}
+const PLAN_ORDER = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
 
 export default function PricingPage() {
-  const { profile, user } = useAuth();
   const router = useRouter();
-  const [billing, setBilling] = useState(getBillingCycle(profile));
+  const { profile, user } = useAuth();
+  const supabase = createClient();
+  const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
   const [upgrading, setUpgrading] = useState(null);
-  const [successPlan, setSuccessPlan] = useState(null);
 
-  const currentPlan = getCurrentPlanId(profile);
-  const { daysLeft, expired } = getTrialInfo(profile);
-  const currentPlans = plans[billing];
+  const effectivePlan = getEffectivePlan(profile);
+  const onTrial = isWithinTrial(profile);
+  const daysLeft = trialDaysLeft(profile);
 
-  const handleUpgrade = async (plan) => {
-    if (upgrading) return;
-    setUpgrading(plan.id);
+  const handleUpgrade = async (planId) => {
+    if (!user?.id) {
+      alert("Please sign in first");
+      return;
+    }
+    const priceId = PLAN_STRIPE_PRICES[planId]?.[billing];
+    if (!priceId) {
+      alert(
+        "Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_" +
+          planId.toUpperCase() +
+          "_" +
+          billing.toUpperCase() +
+          " in env."
+      );
+      return;
+    }
 
+    setUpgrading(planId);
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          table: "influencer_profiles",
-          subscriptionPlan: plan.id,
-          billingCycle: billing,
-        }),
+      const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+        body: { userId: user.id, priceId, plan: planId, cycle: billing },
       });
-
-      const data = await res.json();
-
-      if (data.success) {
-        setSuccessPlan(plan.id);
-        // Update profile in context by reloading
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        alert("Failed to update plan. Please try again.");
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
       }
+      throw new Error("No checkout URL returned");
     } catch (err) {
-      console.error("Upgrade error:", err);
-      alert("Something went wrong. Please try again.");
+      alert(err.message || "Failed to start checkout");
     } finally {
       setUpgrading(null);
     }
-  };
-
-  const isPlanActive = (planId) => {
-    return currentPlan === planId;
-  };
-
-  const isPlanUpgrade = (planId) => {
-    const order = ["free", "starter", "pro", "elite", "starter_annual", "pro_annual", "elite_annual"];
-    return order.indexOf(planId) > order.indexOf(currentPlan);
   };
 
   return (
@@ -270,252 +100,216 @@ export default function PricingPage() {
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30">
         <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-          >
+          <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-xl">
             <ArrowLeft size={20} className="text-slate-600" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Choose Your Plan</h1>
+            <h1 className="text-lg font-bold text-slate-900">Choose your plan</h1>
             <p className="text-xs text-slate-500">Upgrade anytime to unlock more features</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 lg:py-10 space-y-8">
-        {/* Current Plan Status */}
-        <Card className="p-5 lg:p-8 rounded-3xl border bg-white">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 lg:py-10 space-y-8 lg:pt-24">
+        {/* Current plan banner */}
+        <Card className="p-5 lg:p-7 rounded-3xl border bg-white">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-50 rounded-2xl">
                 <Crown size={24} className="text-purple-600" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {currentPlan === "free"
-                      ? "Free Trial"
-                      : currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-lg font-bold text-slate-900 capitalize">
+                    {onTrial ? "Free Trial" : effectivePlan}
                   </h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">
                     CURRENT
                   </Badge>
+                  {onTrial && (
+                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">
+                      Elite features unlocked
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  {currentPlan === "free"
-                    ? expired
-                      ? "Your free trial has expired"
-                      : `${daysLeft} days remaining on your free trial`
-                    : `Active ${billing} subscription`}
+                  {onTrial
+                    ? `${daysLeft} days remaining on your 30-day free trial`
+                    : effectivePlan === "starter"
+                    ? "Upgrade to unlock more applications, analytics, and visibility"
+                    : `Active ${profile?.billing_cycle || "monthly"} subscription`}
                 </p>
               </div>
             </div>
-
-            {currentPlan === "free" && !expired && (
+            {onTrial && (
               <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl">
-                <Zap size={16} className="text-amber-600 fill-amber-600" />
+                <Sparkles size={16} className="text-amber-600" />
                 <span className="text-sm font-semibold text-amber-700">
-                  {daysLeft} days left — upgrade to keep all features
-                </span>
-              </div>
-            )}
-
-            {currentPlan === "free" && expired && (
-              <div className="flex items-center gap-3 bg-red-50 px-4 py-2.5 rounded-2xl">
-                <Zap size={16} className="text-red-500" />
-                <span className="text-sm font-semibold text-red-600">
-                  Trial expired — upgrade now to continue
+                  Pick a plan before day 30 to keep your features
                 </span>
               </div>
             )}
           </div>
         </Card>
 
-        {/* Billing Toggle */}
+        {/* Billing toggle */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center p-1 bg-white rounded-full border border-slate-200 shadow-sm">
+          <div className="inline-flex bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer ${
-                billing === "monthly"
-                  ? "text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700"
+              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${
+                billing === "monthly" ? "bg-[#5851DB] text-white" : "text-slate-500"
               }`}
-              style={
-                billing === "monthly"
-                  ? { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
-                  : {}
-              }
             >
               Monthly
             </button>
             <button
               onClick={() => setBilling("annual")}
-              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all cursor-pointer relative ${
-                billing === "annual"
-                  ? "text-white shadow-md"
-                  : "text-slate-500 hover:text-slate-700"
+              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${
+                billing === "annual" ? "bg-[#5851DB] text-white" : "text-slate-500"
               }`}
-              style={
-                billing === "annual"
-                  ? { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
-                  : {}
-              }
             >
-              Annual
-              <span className="absolute -top-3 -right-6 bg-red-500 text-[9px] text-white px-2 py-0.5 rounded-full font-black">
-                SAVE 20%
-              </span>
+              Annual <span className="text-[10px] text-emerald-500">(save up to 32%)</span>
             </button>
           </div>
         </div>
 
-        {/* Plan Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {currentPlans.map((plan) => {
-            const isActive = isPlanActive(plan.id);
-            const isUpgrade = isPlanUpgrade(plan.id);
-            const isSuccess = successPlan === plan.id;
-            const isLoading = upgrading === plan.id;
+        {/* Plan cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {PLAN_ORDER.map((planId) => {
+            const meta = PLAN_META[planId];
+            const pricing = PLAN_PRICING[planId];
+            const price = billing === "annual" ? pricing.annual : pricing.monthly;
+            const monthEquiv = billing === "annual" ? pricing.monthlyEquivalent : pricing.monthly;
+            const isCurrent = effectivePlan === planId && !onTrial;
+            const isPopular = meta.popular;
 
             return (
               <Card
-                key={plan.id}
-                className={`relative flex flex-col p-6 lg:p-8 rounded-3xl transition-all duration-300 ${
-                  plan.popular
-                    ? "text-white shadow-xl lg:scale-[1.02] z-10 border-0"
-                    : isActive
-                    ? "bg-white border-2 border-purple-300 shadow-lg"
-                    : "bg-white border border-slate-100 shadow-sm"
+                key={planId}
+                className={`relative p-6 rounded-3xl border-2 transition-all ${
+                  isPopular ? "border-[#5851DB] shadow-xl" : "border-slate-100"
                 }`}
-                style={
-                  plan.popular
-                    ? { background: "linear-gradient(135deg, #6C4DFF 0%, #3F2B96 100%)" }
-                    : {}
-                }
               >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg">
-                    Most Popular
+                {isPopular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Most popular
                   </div>
                 )}
 
-                {isActive && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg">
-                    Current Plan
-                  </div>
-                )}
-
-                {/* Plan Header */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={plan.popular ? "text-white" : "text-purple-600"}>
-                      {plan.icon}
-                    </div>
-                    <h3 className="text-2xl font-extrabold">{plan.name}</h3>
-                  </div>
-                  <p className={`text-xs ${plan.popular ? "text-indigo-200" : "text-slate-500"}`}>
-                    {plan.tagline}
-                  </p>
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold ${meta.accent}`}>
+                  {meta.icon} {meta.label}
                 </div>
 
-                {/* Price */}
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-5xl font-black tracking-tight">₹{plan.price}</span>
-                  <span className={`text-sm font-bold ${plan.popular ? "text-indigo-200" : "text-slate-400"}`}>
-                    {plan.period}
-                  </span>
-                </div>
+                <p className="text-sm text-slate-500 mt-3 leading-snug">{meta.tagline}</p>
+                <p className="text-[11px] text-slate-400 mt-1">{meta.description}</p>
 
-                {plan.savings && (
-                  <Badge className="bg-green-100 text-green-700 border-0 text-[10px] font-bold mb-4 w-fit">
-                    {plan.savings}
-                  </Badge>
-                )}
-
-                <p className={`text-[10px] font-bold tracking-wide uppercase mb-6 ${plan.popular ? "text-indigo-200" : "text-slate-400"}`}>
-                  {plan.description}
-                </p>
-
-                {/* CTA Button */}
-                <Button
-                  onClick={() => !isActive && handleUpgrade(plan)}
-                  disabled={isActive || isLoading}
-                  className={`w-full h-12 rounded-2xl font-bold text-sm mb-6 transition-all cursor-pointer ${
-                    isSuccess
-                      ? "bg-green-500 text-white hover:bg-green-500"
-                      : isActive
-                      ? plan.popular
-                        ? "bg-white/20 text-white/60 cursor-not-allowed"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      : plan.popular
-                      ? "bg-white text-purple-700 hover:bg-slate-50 shadow-lg"
-                      : "text-white hover:opacity-90 shadow-md"
-                  }`}
-                  style={
-                    !isActive && !plan.popular && !isSuccess
-                      ? { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
-                      : {}
-                  }
-                >
-                  {isLoading ? (
-                    <Loader2 size={18} className="animate-spin" />
-                  ) : isSuccess ? (
-                    "Plan Activated!"
-                  ) : isActive ? (
-                    "Current Plan"
-                  ) : isUpgrade ? (
-                    "Upgrade Now"
-                  ) : (
-                    "Switch Plan"
+                <div className="mt-5">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-slate-900">₹{price}</span>
+                    <span className="text-sm text-slate-400 font-medium">
+                      /{billing === "annual" ? "yr" : "mo"}
+                    </span>
+                  </div>
+                  {billing === "annual" && (
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">
+                      ≈ ₹{monthEquiv}/mo
+                    </p>
                   )}
-                </Button>
+                </div>
 
-                {/* Features */}
-                <div className={`space-y-3 flex-1 pt-4 border-t border-dashed ${plan.popular ? "border-white/20" : "border-slate-100"}`}>
-                  {plan.features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <Check
-                        className={`w-4 h-4 mt-0.5 shrink-0 ${plan.popular ? "text-white" : "text-purple-600"}`}
-                      />
-                      <span className="text-xs font-semibold leading-snug">{feature}</span>
-                    </div>
-                  ))}
-                  {plan.notIncluded?.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2.5 opacity-30">
-                      <X className="w-4 h-4 mt-0.5 shrink-0" />
-                      <span className="text-xs font-semibold leading-snug">{feature}</span>
-                    </div>
-                  ))}
+                <button
+                  onClick={() => handleUpgrade(planId)}
+                  disabled={isCurrent || upgrading === planId}
+                  className={`w-full mt-6 py-3 rounded-2xl text-sm font-bold cursor-pointer transition flex items-center justify-center gap-2 ${
+                    isCurrent
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : isPopular
+                      ? "bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white shadow-lg shadow-purple-100"
+                      : "bg-slate-900 text-white"
+                  } disabled:opacity-50`}
+                >
+                  {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
+                  {isCurrent ? "Current plan" : `Upgrade to ${meta.label}`}
+                </button>
+
+                <div className="mt-6 space-y-2">
+                  {FEATURE_GROUPS.flatMap((g) => g.features)
+                    .filter((f) => {
+                      const v = FEATURE_MATRIX[f.key]?.[planId];
+                      return v && v !== false;
+                    })
+                    .slice(0, 8)
+                    .map((f) => {
+                      const v = FEATURE_MATRIX[f.key][planId];
+                      const valueText = formatFeatureValue(v);
+                      const showValue = valueText !== "✓";
+                      return (
+                        <div key={f.key} className="flex items-start gap-2">
+                          <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                          <span className="text-xs text-slate-700 leading-snug">
+                            {f.label}
+                            {showValue && (
+                              <span className="ml-1 font-bold text-slate-900">— {valueText}</span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
                 </div>
               </Card>
             );
           })}
         </div>
 
-        {/* FAQ Section */}
-        <Card className="p-6 lg:p-8 rounded-3xl border bg-white">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Frequently Asked Questions</h3>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Can I switch plans anytime?</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Yes! You can upgrade or change your plan at any time. Your new plan takes effect immediately.
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">What happens when my free trial ends?</p>
-              <p className="text-xs text-slate-500 mt-1">
-                You&apos;ll be moved to limited access. Upgrade to any plan to continue using all features.
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-800">Can I cancel my subscription?</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Yes, you can cancel anytime. You&apos;ll continue to have access until the end of your billing period.
-              </p>
-            </div>
+        {/* Full feature matrix */}
+        <Card className="p-5 lg:p-8 rounded-3xl border bg-white">
+          <h2 className="text-base lg:text-lg font-extrabold text-slate-900 mb-1">Compare all features</h2>
+          <p className="text-xs text-slate-500 mb-6">Everything included on each tier.</p>
+
+          <div className="space-y-7">
+            {FEATURE_GROUPS.map((group) => (
+              <div key={group.title}>
+                <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">
+                  {group.title}
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs min-w-[560px]">
+                    <thead>
+                      <tr className="border-b border-slate-100">
+                        <th className="py-2.5 pr-4 font-bold text-slate-500">Feature</th>
+                        {PLAN_ORDER.map((p) => (
+                          <th key={p} className="py-2.5 px-3 text-center font-bold text-slate-700 capitalize">
+                            {p}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.features.map((f) => (
+                        <tr key={f.key} className="border-b border-slate-50 last:border-0">
+                          <td className="py-2.5 pr-4 text-slate-700">{f.label}</td>
+                          {PLAN_ORDER.map((p) => {
+                            const v = FEATURE_MATRIX[f.key]?.[p];
+                            const text = formatFeatureValue(v);
+                            return (
+                              <td
+                                key={p}
+                                className={`py-2.5 px-3 text-center font-bold ${
+                                  text === "—" ? "text-slate-300" : "text-slate-700"
+                                }`}
+                              >
+                                {text}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         </Card>
       </div>
