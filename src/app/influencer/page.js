@@ -17,7 +17,6 @@ import { ProStatusCard } from "@/components/ProStatusCard";
 import { CompleteProfileCard } from "@/components/CompleteProfileCard";
 import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
-import { CommunityFeed } from "@/components/CommunityFeed";
 import CreatorsLikeYou from "@/components/CreatorsLikeYou";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
@@ -180,7 +179,6 @@ export default function HomePage() {
           <div id="section-for-you">
             <JourneyCarousel />
           </div>
-          <CommunityFeed />
         </div>
 
         <PerformanceDashboard />

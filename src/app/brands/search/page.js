@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search,
   Plus,
@@ -92,11 +93,27 @@ const SortPopover = ({ value, onChange }) => {
 
 const InfluencerDirectory = () => {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const initialCategory = searchParams.get("category");
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [sort, setSort] = useState(null);
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useState(() =>
+    initialCategory && filterData.Categories.includes(initialCategory)
+      ? { ...emptyFilters, Categories: [initialCategory] }
+      : emptyFilters
+  );
+
+  useEffect(() => {
+    if (initialCategory && filterData.Categories.includes(initialCategory)) {
+      setFilters((prev) =>
+        prev.Categories?.includes(initialCategory)
+          ? prev
+          : { ...prev, Categories: [initialCategory] }
+      );
+    }
+  }, [initialCategory]);
 
   useEffect(() => {
     let cancelled = false;

@@ -2,7 +2,8 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Sparkles, Zap } from "lucide-react";
+import { ChevronRight, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Carousel,
   CarouselContent,
@@ -33,12 +34,14 @@ const CATEGORIES = filterData["Categories"].map((cat) => ({
   emoji: CATEGORY_EMOJIS[cat] || "📌",
 }));
 
-const CategoryIcon = ({ label, emoji, index }) => (
-  <motion.div
+const CategoryIcon = ({ label, emoji, index, onClick }) => (
+  <motion.button
+    type="button"
+    onClick={onClick}
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: index * 0.05 }}
-    className="flex flex-col items-center group cursor-pointer bg-white p-4 justify-center gap-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-[#5B3DF5]/30 hover:shadow-md"
+    className="flex flex-col items-center group cursor-pointer bg-white p-4 justify-center gap-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-[#5B3DF5]/30 hover:shadow-md w-full"
   >
     <div className="text-2xl transition-transform group-hover:-translate-y-1">
       {emoji}
@@ -46,10 +49,16 @@ const CategoryIcon = ({ label, emoji, index }) => (
     <span className="text-[10px] lg:text-xs font-bold text-slate-500 group-hover:text-[#5B3DF5] transition-colors text-center leading-tight">
       {label}
     </span>
-  </motion.div>
+  </motion.button>
 );
 
 export const CategorySection = () => {
+  const router = useRouter();
+
+  const goToCategory = (label) => {
+    router.push(`/brands/search?category=${encodeURIComponent(label)}`);
+  };
+
   return (
     <div className="px-4 lg:px-6 space-y-8 bg-slate-50/50 overflow-hidden w-full py-10">
       {/* Top Header */}
@@ -57,7 +66,10 @@ export const CategorySection = () => {
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
           Creator Categories
         </h2>
-        <button className="text-sm font-bold text-[#5B3DF5] flex items-center gap-1 hover:opacity-70">
+        <button
+          onClick={() => router.push("/brands/search")}
+          className="text-sm font-bold text-[#5B3DF5] flex items-center gap-1 hover:opacity-70 cursor-pointer"
+        >
           View All <ChevronRight size={14} />
         </button>
       </div>
@@ -76,6 +88,7 @@ export const CategorySection = () => {
                       label={cat.label}
                       emoji={cat.emoji}
                       index={i}
+                      onClick={() => goToCategory(cat.label)}
                     />
                   </CarouselItem>
                 ))}
@@ -91,6 +104,7 @@ export const CategorySection = () => {
                 label={cat.label}
                 emoji={cat.emoji}
                 index={i}
+                onClick={() => goToCategory(cat.label)}
               />
             ))}
           </div>
@@ -99,15 +113,15 @@ export const CategorySection = () => {
           <div className="grid grid-cols-2 gap-4">
             <motion.div
               whileHover={{ y: -4 }}
-              className="bg-[#E9F0FF] p-6 rounded-[32px] flex flex-col justify-between h-40 border border-blue-100 cursor-pointer"
+              className="bg-[#FFF7E6] p-6 rounded-[32px] flex flex-col justify-between h-40 border border-amber-100 cursor-pointer"
             >
-              <Sparkles className="text-yellow-500" size={24} />
+              <span className="text-2xl">😂</span>
               <div>
-                <h3 className="font-black text-[#1C115A] text-xl">
-                  Influencers
+                <h3 className="font-black text-[#5C3B00] text-xl">
+                  Meme Pages
                 </h3>
-                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">
-                  Micro & Macro
+                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-1">
+                  Viral & Trending
                 </p>
               </div>
             </motion.div>
