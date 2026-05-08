@@ -79,7 +79,13 @@ export default function CampaignsPage() {
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
-      const matchesTab = campaign.status === activeTab;
+      // The "Completed" tab should only surface campaigns this user has
+      // actually applied to and that finished — not any campaign whose
+      // brand-side status is closed.
+      const matchesTab =
+        activeTab === "Completed"
+          ? campaign.applicationStatus === "completed"
+          : campaign.status === activeTab;
       const matchesSearch = campaign.title
         .toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
@@ -224,7 +230,7 @@ export default function CampaignsPage() {
                 },
                 {
                   label: "Completed",
-                  val: campaigns.filter((c) => c.status === "Completed").length,
+                  val: campaigns.filter((c) => c.applicationStatus === "completed").length,
                   icon: <CheckCircle className="text-emerald-500" />,
                   bg: "bg-emerald-50",
                 },

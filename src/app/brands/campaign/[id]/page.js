@@ -19,6 +19,7 @@ import {
   Play,
   RefreshCw,
   RotateCcw,
+  Star,
   Target,
   TrendingUp,
   Users,
@@ -79,6 +80,7 @@ const CampaignDetailPage = () => {
 
   const [campaign, setCampaign] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [ratingsByApp, setRatingsByApp] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -97,9 +99,29 @@ const CampaignDetailPage = () => {
       return;
     }
     setCampaign(data.campaign);
-    setApplications(data.applications || []);
+    const apps = data.applications || [];
+    setApplications(apps);
     setLoading(false);
+
+    // Pull existing brand-side ratings for all applications in this campaign
+    // (one query — RLS lets the brand read its own rows).
+    const appIds = apps.map((a) => a.id).filter(Boolean);
+    if (appIds.length > 0) {
+      const { data: ratings } = await supabase
+        .from("campaign_ratings")
+        .select("application_id, journey_rating, target_rating")
+        .in("application_id", appIds)
+        .eq("rater_role", "brand");
+      const map = {};
+      for (const r of ratings || []) map[r.application_id] = r;
+      setRatingsByApp(map);
+    } else {
+      setRatingsByApp({});
+    }
   };
+
+  const upsertRating = (applicationId, partial) =>
+    setRatingsByApp((prev) => ({ ...prev, [applicationId]: { ...(prev[applicationId] || {}), ...partial } }));
 
   useEffect(() => {
     if (!authLoading && user?.id && id) load();
@@ -382,6 +404,8 @@ const CampaignDetailPage = () => {
                     app={a}
                     brandId={user?.id}
                     defaultRate={campaign.budgetPerInfluencer || 0}
+                    rating={ratingsByApp[a.id] || null}
+                    onRated={(r) => upsertRating(a.id, r)}
                     onRefresh={load}
                   />
                 ))}
@@ -575,7 +599,7 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
   </div>
 );
 
-const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
+const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh }) => {
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
   // Auto-expand actionable statuses so the brand can review immediately
@@ -704,6 +728,12 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
         >
           {st.label}
         </span>
+        {rating && (
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold shrink-0">
+            <Star size={10} className="fill-amber-400 text-amber-400" />
+            {rating.target_rating}/5
+          </span>
+        )}
         {hasActions && (
           <ChevronDown
             size={14}
@@ -717,6 +747,21 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
       {/* Expanded actions */}
       {expanded && hasActions && (
         <div className="px-3 pb-3 border-t border-gray-50">
+          {rating && (
+            <div className="mt-3 p-3 bg-amber-50/60 rounded-lg border border-amber-100 flex items-center gap-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600 shrink-0">
+                <Star size={14} className="fill-amber-400 text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Your rating</p>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  Journey <span className="font-bold">{rating.journey_rating}/5</span> · {displayName}{" "}
+                  <span className="font-bold">{rating.target_rating}/5</span>
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Creator details — review before approving */}
           <div className="mt-3 p-3 bg-[#F8F9FE] rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -1062,6 +1107,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
         targetLabel={`How would you rate ${displayName}?`}
         primaryCta="Submit & Release Payment"
         secondaryCta="Skip & Approve"
+        onSaved={(saved) => onRated?.(saved)}
         onPrimary={() => updateStatus("payment")}
         onSkip={() => updateStatus("payment")}
       />

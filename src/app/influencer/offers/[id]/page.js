@@ -653,7 +653,7 @@ export default function CampaignDetailsPage() {
   const router = useRouter();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [showRating, setShowRating] = useState(false);
-  const [hasRated, setHasRated] = useState(false);
+  const [myRating, setMyRating] = useState(null);
   const { user } = useAuth();
 
   const { campaign, loading, refetch } = useCampaign(id, user?.id);
@@ -674,14 +674,13 @@ export default function CampaignDetailsPage() {
         const supabase = createClient();
         const { data } = await supabase
           .from("campaign_ratings")
-          .select("id")
+          .select("journey_rating, target_rating")
           .eq("application_id", campaign.applicationId)
           .eq("rater_role", "influencer")
           .maybeSingle();
         if (cancelled) return;
-        const already = !!data;
-        setHasRated(already);
-        if (!already && !dismissed) {
+        setMyRating(data || null);
+        if (!data && !dismissed) {
           setShowRating(true);
         }
       } catch (e) {
@@ -792,23 +791,52 @@ export default function CampaignDetailsPage() {
               </p>
             </div>
 
-            {/* Rating CTA — shown on completed campaigns the influencer hasn't rated yet */}
-            {isCompleted && !hasRated && campaign.brandId && (
-              <button
-                onClick={() => setShowRating(true)}
-                className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-left hover:shadow-md transition-all cursor-pointer"
-              >
-                <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
-                  <Star size={20} />
+            {/* Rating CTA / summary — only on completed campaigns */}
+            {isCompleted && campaign.brandId && (
+              myRating ? (
+                <div className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
+                    <Star size={20} className="fill-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900">Your rating submitted</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      Journey <span className="font-bold">{myRating.journey_rating}/5</span>
+                      {" · "}
+                      {campaign.brandName} <span className="font-bold">{myRating.target_rating}/5</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        size={14}
+                        className={
+                          i < myRating.target_rating
+                            ? "text-amber-400 fill-amber-400"
+                            : "text-slate-200"
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-slate-900">Rate this campaign</p>
-                  <p className="text-[11px] text-slate-500">
-                    Share your experience working with {campaign.brandName}
-                  </p>
-                </div>
-                <ChevronRight size={18} className="text-amber-500 shrink-0" />
-              </button>
+              ) : (
+                <button
+                  onClick={() => setShowRating(true)}
+                  className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-left hover:shadow-md transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
+                    <Star size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900">Rate this campaign</p>
+                    <p className="text-[11px] text-slate-500">
+                      Share your experience working with {campaign.brandName}
+                    </p>
+                  </div>
+                  <ChevronRight size={18} className="text-amber-500 shrink-0" />
+                </button>
+              )
             )}
 
             {/* Always show full campaign content */}
@@ -867,7 +895,7 @@ export default function CampaignDetailsPage() {
           targetLabel={`How would you rate ${campaign.brandName}?`}
           primaryCta="Submit Rating"
           secondaryCta="Skip for now"
-          onPrimary={() => setHasRated(true)}
+          onSaved={(r) => setMyRating(r)}
           onSkip={dismissRating}
         />
       )}

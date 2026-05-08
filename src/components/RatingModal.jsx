@@ -55,6 +55,7 @@ export default function RatingModal({
   secondaryCta = "Skip",
   onPrimary, // optional async, runs AFTER successful save (e.g. brand: release payment)
   onSkip, // optional, runs when secondary clicked
+  onSaved, // optional, fired with { journey_rating, target_rating } after successful save
 }) {
   const supabase = createClient();
   const [journey, setJourney] = useState(0);
@@ -113,6 +114,7 @@ export default function RatingModal({
         );
       if (dbErr) throw new Error(dbErr.message);
 
+      onSaved?.({ journey_rating: journey, target_rating: target });
       await onPrimary?.();
       reset();
       onClose?.();
