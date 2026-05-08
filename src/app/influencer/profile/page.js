@@ -5,7 +5,6 @@ import AddReelFlow from "@/components/AddReelFlow";
 import DashboardView from "@/components/DashboardView";
 import MyInformationDetail from "@/components/MyInformationDetail";
 import AnalyticsPage from "@/components/AnalyticsPage";
-import DetailedCampaignAnalytics from "@/components/CampaignAnalytics";
 
 import NotificationSettings from "@/components/NotificationSettings";
 import PrivacySecurityPage from "@/components/PrivacySettings";
@@ -52,19 +51,7 @@ export default function ProfilePage() {
           </div>
         )}
         {view === "analytics" && (
-          <AnalyticsPage
-            key="analytics"
-            onCampaignAnalytics={() => {
-              setView("campaign");
-            }}
-            onBack={() => setView("dashboard")}
-          />
-        )}
-        {view === "campaign" && (
-          <DetailedCampaignAnalytics
-            key="campaign"
-            onBack={() => setView("analytics")}
-          />
+          <AnalyticsPage key="analytics" onBack={() => setView("dashboard")} />
         )}
         {view === "notifications" && (
           <NotificationSettings

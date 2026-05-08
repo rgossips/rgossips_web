@@ -397,7 +397,7 @@ const DashboardView = ({
 
               <HubCard
                 onClick={onOpenAnalytics}
-                title="Analytics"
+                title="Campaign Analytics"
                 sub="Track performance and campaign insights"
                 bgColor="bg-[#F0F9FF]"
                 icon={BarChart3}
@@ -627,7 +627,7 @@ const DashboardView = ({
 
             <HubCard
               onClick={onOpenAnalytics}
-              title="Analytics"
+              title="Campaign Analytics"
               sub="Track performance and campaign insights"
               bgColor="bg-[#F0F9FF]"
               icon={BarChart3}
