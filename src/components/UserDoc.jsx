@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import {
   MessageSquare,
+  HeadphonesIcon,
   Bell,
   Search,
   Menu,
@@ -19,12 +20,14 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import SupportChat from "@/components/SupportChat";
 
 const UserDoc = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const { profile } = useAuth();
 
   const navLinks = [
@@ -254,16 +257,18 @@ const UserDoc = () => {
                   <Bell size={22} />
                 </button>
                 <button
-                  onClick={() => router.push("/influencer/chats")}
-                  className="p-3.5 cursor-pointer bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100"
+                  onClick={() => setSupportOpen(true)}
+                  title="Support"
+                  className="p-3.5 cursor-pointer bg-white rounded-2xl shadow-sm text-slate-600 hover:text-pink-500 border border-slate-100 transition-colors"
                 >
-                  <MessageSquare size={22} />
+                  <HeadphonesIcon size={22} />
                 </button>
               </div>
             </div>
           </div>
         </div>
       </header>
+      <SupportChat open={supportOpen} onClose={() => setSupportOpen(false)} />
     </>
   );
 };

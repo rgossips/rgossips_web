@@ -6,7 +6,7 @@ import {
   Compass,
   Briefcase,
   User,
-  MessageSquare,
+  HeadphonesIcon,
   Bell,
   Search,
   LogOut,
@@ -22,6 +22,7 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import SupportChat from "@/components/SupportChat";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -86,6 +87,7 @@ export const DesktopNavbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [showPopover, setShowPopover] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const popoverRef = useRef(null);
 
   // Close popover on outside click
@@ -240,14 +242,13 @@ export const DesktopNavbar = () => {
             )}
           </div>
 
-          <Link href="/influencer/chats" className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 border border-slate-100 relative">
-            <MessageSquare size={22} />
-            {unreadChats > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#E60076] text-white text-[9px] font-black rounded-full flex items-center justify-center">
-                {unreadChats > 9 ? "9+" : unreadChats}
-              </span>
-            )}
-          </Link>
+          <button
+            onClick={() => setSupportOpen(true)}
+            className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:text-pink-500 border border-slate-100 transition-colors"
+            title="Support"
+          >
+            <HeadphonesIcon size={22} />
+          </button>
           <button
             onClick={() => setLogoutOpen(true)}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-red-500 hover:bg-red-50 border border-slate-100 transition-colors"
@@ -258,6 +259,7 @@ export const DesktopNavbar = () => {
         </div>
       </div>
       <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
+      <SupportChat open={supportOpen} onClose={() => setSupportOpen(false)} />
     </nav>
   );
 };
