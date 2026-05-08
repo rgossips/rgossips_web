@@ -14,10 +14,10 @@ import {
   CheckCircle2,
   Loader2,
   Building2,
-  MapPin,
   BadgeCheck,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { classifyGstPan } from "@/lib/brandProfile";
 
 const BrandSignUpForm = ({
   onSubmit,
@@ -45,10 +45,6 @@ const BrandSignUpForm = ({
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [localError, setLocalError] = useState("");
-
-  // GSTIN state
-  const [gstinLoading, setGstinLoading] = useState(false);
-  const [gstinData, setGstinData] = useState(null);
   const [gstinError, setGstinError] = useState("");
 
   useEffect(() => {
@@ -74,54 +70,9 @@ const BrandSignUpForm = ({
     } else if (name === "gstin") {
       const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15);
       setFormData((prev) => ({ ...prev, gstin: cleaned }));
-      if (gstinData) {
-        setGstinData(null);
-        setGstinError("");
-      }
+      if (gstinError) setGstinError("");
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // --- GSTIN Verification ---
-  const handleVerifyGstin = async () => {
-    if (formData.gstin.length !== 15) return;
-    setGstinLoading(true);
-    setGstinError("");
-    try {
-      const { data, error: funcError } = await supabase.functions.invoke(
-        "verify-gstin",
-        { body: { gstin: formData.gstin } }
-      );
-
-      if (funcError) throw new Error(funcError.message);
-      if (data?.error) throw new Error(data.error);
-
-      if (!data?.verified) {
-        setGstinError("GSTIN not found or inactive");
-        return;
-      }
-
-      if (data.data.gstStatus !== "Active") {
-        setGstinError(`GSTIN status: ${data.data.gstStatus}. Only active GSTINs are allowed.`);
-        return;
-      }
-
-      // Check GSTIN uniqueness
-      const { data: uniqueCheck } = await supabase.functions.invoke(
-        "check-uniqueness",
-        { body: { gstin: formData.gstin } }
-      );
-      if (uniqueCheck?.conflicts?.includes("gstin")) {
-        setGstinError("This GSTIN is already registered with another account.");
-        return;
-      }
-
-      setGstinData(data.data);
-    } catch (err) {
-      setGstinError(err.message || "Failed to verify GSTIN");
-    } finally {
-      setGstinLoading(false);
     }
   };
 
@@ -184,15 +135,24 @@ const BrandSignUpForm = ({
       setLocalError("Please enter your full name");
       return;
     }
-    if (!gstinData) {
-      setLocalError("Please verify your GSTIN");
-      return;
+    if (formData.gstin) {
+      const { valid, kind } = classifyGstPan(formData.gstin);
+      if (!valid) {
+        setGstinError(
+          kind === "pan"
+            ? "PAN should be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)."
+            : kind === "gst"
+            ? "GST should be 15 chars (e.g. 22AAAAA0000A1Z5)."
+            : "Enter a valid GST (15 chars) or PAN (10 chars)."
+        );
+        return;
+      }
     }
     if (!otpVerified) {
       setLocalError("Please verify your phone number");
       return;
     }
-    onSubmit({ ...formData, gstinData });
+    onSubmit({ ...formData, gstin: formData.gstin || "" });
   };
 
   const displayError = error || localError;
@@ -273,90 +233,31 @@ const BrandSignUpForm = ({
           </div>
         </div>
 
-        {/* GSTIN Verification */}
+        {/* GST / PAN — optional */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">
-            GSTIN Number <span className="text-red-400">*</span>
+            GST / PAN <span className="text-slate-300 font-normal">(optional)</span>
           </Label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Building2
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60"
-                size={18}
-              />
-              <Input
-                placeholder="e.g. 22AAAAA0000A1Z5"
-                name="gstin"
-                value={formData.gstin}
-                onChange={handleChange}
-                disabled={!!gstinData}
-                maxLength={15}
-                className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9] uppercase tracking-wider font-mono"
-              />
-            </div>
-            {!gstinData && (
-              <Button
-                onClick={handleVerifyGstin}
-                disabled={formData.gstin.length !== 15 || gstinLoading}
-                className="h-12 px-4 rounded-xl btn-purple text-sm font-semibold cursor-pointer whitespace-nowrap"
-              >
-                {gstinLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Verify"
-                )}
-              </Button>
-            )}
-            {gstinData && (
-              <div className="h-12 px-3 flex items-center">
-                <CheckCircle2 size={22} className="text-green-500" />
-              </div>
-            )}
+          <div className="relative">
+            <Building2
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60"
+              size={18}
+            />
+            <Input
+              placeholder="GST (15) or PAN (10) — e.g. ABCDE1234F"
+              name="gstin"
+              value={formData.gstin}
+              onChange={handleChange}
+              maxLength={15}
+              className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9] uppercase tracking-wider font-mono"
+            />
           </div>
-
-          {gstinError && (
+          {gstinError ? (
             <p className="text-xs text-red-500 ml-1">{gstinError}</p>
-          )}
-
-          {/* GSTIN Verified Details Card */}
-          {gstinData && (
-            <div className="p-3 rounded-xl bg-green-50/70 border border-green-200 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center gap-2">
-                <BadgeCheck size={16} className="text-green-600" />
-                <span className="text-xs font-bold text-green-700">
-                  GSTIN Verified
-                </span>
-                <span className="ml-auto px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">
-                  {gstinData.gstStatus}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-slate-800">
-                  {gstinData.tradeName || gstinData.legalName}
-                </p>
-                {gstinData.tradeName && gstinData.legalName !== gstinData.tradeName && (
-                  <p className="text-[11px] text-slate-500">
-                    Legal: {gstinData.legalName}
-                  </p>
-                )}
-                <div className="flex items-start gap-1 text-[11px] text-slate-500">
-                  <MapPin size={12} className="mt-0.5 shrink-0" />
-                  <span>{gstinData.address}</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  {gstinData.businessType} · Regd: {gstinData.registrationDate}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setGstinData(null);
-                  setFormData((prev) => ({ ...prev, gstin: "" }));
-                }}
-                className="text-[11px] text-red-400 hover:text-red-600 font-semibold cursor-pointer"
-              >
-                Change GSTIN
-              </button>
-            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400 ml-1">
+              Helps boost your trust score; you can add it later in Profile.
+            </p>
           )}
         </div>
 
@@ -456,7 +357,7 @@ const BrandSignUpForm = ({
       <div className="pt-2">
         <Button
           onClick={handleSubmit}
-          disabled={loading || !formData.name || !gstinData || !otpVerified}
+          disabled={loading || !formData.name || !otpVerified}
           className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
         >
           {loading ? (

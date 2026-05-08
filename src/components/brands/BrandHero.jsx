@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 
 const baseBrands = [
   "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
@@ -17,10 +18,16 @@ const baseBrands = [
 const BrandHero = () => {
   const router = useRouter();
   const { profile } = useAuth();
+  const { trust } = useBrandTrustScore();
 
   const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
   const logoUrl = profile?.logo_url;
   const initials = brandName.charAt(0).toUpperCase();
+
+  const trustScore = trust?.score || 0;
+  const trustBand = trust?.band || "LOW";
+  const trustBorder =
+    trustBand === "HIGH" ? "border-emerald-500" : trustBand === "GOOD" ? "border-indigo-500" : "border-amber-500";
 
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
@@ -154,16 +161,16 @@ const BrandHero = () => {
                 </p>
 
                 <div className="flex items-end gap-2 mt-1">
-                  <span className="text-2xl font-bold">840</span>
-                  <span className="text-green-400 text-xs font-semibold">
-                    +12%
+                  <span className="text-2xl font-bold">{trustScore}</span>
+                  <span className="text-gray-400 text-xs font-semibold">
+                    /1000
                   </span>
                 </div>
               </div>
 
               {/* Circle indicator */}
-              <div className="w-14 h-14 rounded-full border-4 border-indigo-500 flex items-center justify-center text-xs font-bold">
-                HIGH
+              <div className={`w-14 h-14 rounded-full border-4 ${trustBorder} flex items-center justify-center text-xs font-bold`}>
+                {trustBand}
               </div>
             </div>
           </div>

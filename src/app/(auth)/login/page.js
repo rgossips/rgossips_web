@@ -255,7 +255,7 @@ const Login = () => {
         table,
         phone: storagePhone,
         name: formData.name || signupData.name,
-        gstinData: formData.gstinData || null,
+        gstin: formData.gstin || "",
         invitationId: invitation?.id || null,
       };
 

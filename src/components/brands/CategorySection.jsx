@@ -2,8 +2,9 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, Zap } from "lucide-react";
+import { ChevronRight, Check, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 import {
   Carousel,
   CarouselContent,
@@ -54,10 +55,28 @@ const CategoryIcon = ({ label, emoji, index, onClick }) => (
 
 export const CategorySection = () => {
   const router = useRouter();
+  const { completion } = useBrandTrustScore();
 
   const goToCategory = (label) => {
     router.push(`/brands/search?category=${encodeURIComponent(label)}`);
   };
+
+  const completionPct = completion?.percent ?? 0;
+  const missing = completion?.missing || [];
+  const filled = completion?.filled || [];
+  const allFields = [...filled.map((label) => ({ label, done: true })), ...missing.map((label) => ({ label, done: false }))];
+  const completionColor =
+    completionPct >= 100
+      ? "text-emerald-500 bg-emerald-50 border-emerald-100"
+      : completionPct >= 67
+      ? "text-indigo-500 bg-indigo-50 border-indigo-100"
+      : "text-orange-500 bg-orange-50 border-orange-100";
+  const barColor =
+    completionPct >= 100
+      ? "bg-emerald-500"
+      : completionPct >= 67
+      ? "bg-indigo-500"
+      : "bg-orange-500";
 
   return (
     <div className="px-4 lg:px-6 space-y-8 bg-slate-50/50 overflow-hidden w-full py-10">
@@ -143,39 +162,61 @@ export const CategorySection = () => {
           </div>
         </div>
 
-        {/* RIGHT: Trust Score Sidebar (Hidden on Mobile) */}
+        {/* RIGHT: Profile completion sidebar */}
         <aside className="hidden lg:block w-[380px]">
           <div className="bg-white rounded-[40px] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-24">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-xl font-bold text-slate-900">
-                Your Trust Score
+                Profile completion
               </h3>
-              <span className="bg-orange-50 text-orange-500 text-sm font-bold px-3 py-1 rounded-full border border-orange-100">
-                10%
+              <span className={`text-sm font-bold px-3 py-1 rounded-full border ${completionColor}`}>
+                {completionPct}%
               </span>
             </div>
             <p className="text-slate-400 text-sm mb-6 font-medium">
-              Unlock premium features
+              {completionPct >= 100
+                ? "All set — your profile is fully complete."
+                : "Complete these to unlock the most trust"}
             </p>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-slate-100 h-2.5 rounded-full mb-10 overflow-hidden">
-              <div className="bg-orange-500 h-full w-[10%] rounded-full shadow-[0_0_10px_rgba(249,115,22,0.4)]" />
+            {/* Progress bar */}
+            <div className="w-full bg-slate-100 h-2.5 rounded-full mb-6 overflow-hidden">
+              <div
+                className={`${barColor} h-full rounded-full transition-all duration-500`}
+                style={{ width: `${completionPct}%` }}
+              />
             </div>
 
-            {/* Locked Feature Notice */}
-            <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 text-center">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
-                <Zap size={20} className="text-orange-400 fill-orange-400" />
-              </div>
-              <p className="text-slate-600 text-xs font-semibold leading-relaxed px-4">
-                You cannot contact creators yet. Verify your work email to start
-                connecting.
-              </p>
+            {/* Field checklist */}
+            <div className="space-y-2.5">
+              {allFields.map((f) => (
+                <div
+                  key={f.label}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50/60 border border-slate-100"
+                >
+                  <div
+                    className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                      f.done ? "bg-emerald-100 text-emerald-600" : "bg-white border border-slate-200 text-slate-300"
+                    }`}
+                  >
+                    {f.done ? <Check size={14} /> : <Sparkles size={14} />}
+                  </div>
+                  <span
+                    className={`text-sm font-semibold ${
+                      f.done ? "text-slate-700" : "text-slate-500"
+                    }`}
+                  >
+                    {f.label}
+                  </span>
+                </div>
+              ))}
             </div>
 
-            <button className="w-full cursor-pointer mt-8 bg-[#131722] hover:scale-[105%] text-white py-4 rounded-2xl font-bold text-sm hover:bg-black transition-all active:scale-95">
-              Verify My Email
+            <button
+              onClick={() => router.push("/brands/profile")}
+              className="w-full cursor-pointer mt-7 bg-[#131722] hover:scale-[105%] text-white py-4 rounded-2xl font-bold text-sm hover:bg-black transition-all active:scale-95"
+            >
+              {completionPct >= 100 ? "Manage Profile" : "Complete Profile"}
             </button>
           </div>
         </aside>

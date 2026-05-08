@@ -1,7 +1,23 @@
+"use client";
+
 import React from "react";
 import { Plus } from "lucide-react";
+import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 
 export const TrustSection = () => {
+  const { trust } = useBrandTrustScore();
+  const score = trust?.score || 0;
+  const band = trust?.band || "LOW";
+  const ringPct = Math.min(100, Math.max(0, (score / 1000) * 100));
+
+  // SVG ring (radius 26, circumference ≈ 163.4)
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (ringPct / 100) * circumference;
+
+  const ringColor =
+    band === "HIGH" ? "#10b981" : band === "GOOD" ? "#5B3DF5" : "#f59e0b";
+
   return (
     <div className="flex items-center flex-col lg:flex-row w-full px-3 lg:px-0 gap-3 lg:gap-5">
       {/* Floating Search */}
@@ -21,16 +37,36 @@ export const TrustSection = () => {
             Your Trust Score
           </p>
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-black">840</span>
-            <span className="text-emerald-400 text-xs font-bold">+12% ★</span>
+            <span className="text-4xl font-black">{score}</span>
+            <span className="text-slate-500 text-xs font-bold">/1000</span>
           </div>
         </div>
 
         {/* Score Ring */}
         <div className="relative flex items-center justify-center w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
-          <div className="absolute inset-0 rounded-full border-4 border-[#5B3DF5] border-t-transparent -rotate-45" />
-          <span className="text-[10px] font-black italic">HIGH</span>
+          <svg className="absolute inset-0" viewBox="0 0 64 64">
+            <circle
+              cx="32"
+              cy="32"
+              r={radius}
+              fill="none"
+              stroke="#2A2A2A"
+              strokeWidth="4"
+            />
+            <circle
+              cx="32"
+              cy="32"
+              r={radius}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              transform="rotate(-90 32 32)"
+            />
+          </svg>
+          <span className="text-[10px] font-black italic">{band}</span>
         </div>
       </div>
     </div>

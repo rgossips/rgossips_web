@@ -25,6 +25,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
 const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
@@ -52,6 +53,7 @@ const BrandProfile = () => {
   const { user, profile, refreshProfile } = useAuth();
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
+  const { trust, completion } = useBrandTrustScore();
   const fileInputRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
@@ -286,6 +288,97 @@ const BrandProfile = () => {
             {uploadError && (
               <p className="mt-2 text-[11px] text-red-500">{uploadError}</p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Profile completion + trust score */}
+      <div className="max-w-6xl mx-auto px-6 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Profile completion
+            </p>
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                completion.percent >= 100
+                  ? "bg-emerald-50 text-emerald-600"
+                  : completion.percent >= 67
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "bg-orange-50 text-orange-600"
+              }`}
+            >
+              {completion.percent}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-3">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                completion.percent >= 100
+                  ? "bg-emerald-500"
+                  : completion.percent >= 67
+                  ? "bg-indigo-500"
+                  : "bg-orange-500"
+              }`}
+              style={{ width: `${completion.percent}%` }}
+            />
+          </div>
+          {completion.missing.length > 0 ? (
+            <p className="text-[11px] text-gray-500 leading-snug">
+              Add{" "}
+              <span className="font-semibold text-gray-700">
+                {completion.missing.join(", ")}
+              </span>{" "}
+              to complete your profile.
+            </p>
+          ) : (
+            <p className="text-[11px] text-emerald-600 font-semibold">
+              Your brand profile is fully complete.
+            </p>
+          )}
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              Trust score
+            </p>
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                trust.band === "HIGH"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : trust.band === "GOOD"
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "bg-amber-50 text-amber-600"
+              }`}
+            >
+              {trust.band}
+            </span>
+          </div>
+          <p className="text-2xl font-black text-gray-900 mb-3">
+            {trust.score}
+            <span className="text-sm font-bold text-gray-400 ml-1">/1000</span>
+          </p>
+          <div className="space-y-1.5 text-[11px] text-gray-500">
+            <p>
+              <span className="font-semibold text-gray-700">
+                {trust.breakdown.influencerRating.percent}%
+              </span>{" "}
+              from influencer ratings ({trust.breakdown.influencerRating.count})
+            </p>
+            <p>
+              <span className="font-semibold text-gray-700">
+                {trust.breakdown.campaignDelivery.percent}%
+              </span>{" "}
+              campaigns delivered ({trust.breakdown.campaignDelivery.completedCount}/
+              {trust.breakdown.campaignDelivery.total})
+            </p>
+            <p>
+              <span className="font-semibold text-gray-700">
+                {trust.breakdown.profileCompleteness.percent}%
+              </span>{" "}
+              profile complete
+            </p>
           </div>
         </div>
       </div>

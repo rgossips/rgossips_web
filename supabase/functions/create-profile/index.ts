@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, invitationId } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId } = await req.json();
 
     if (!userId || !table) {
       return new Response(
@@ -79,6 +79,10 @@ Deno.serve(async (req) => {
       };
     } else {
       // brand_profiles
+      // gstin can arrive either as a verified blob (legacy `gstinData`) or as
+      // a plain user-entered string (`gstin`). Prefer the structured one so
+      // re-using older clients keeps populating the metadata columns.
+      const gstinValue = gstinData?.gstin || (gstin ? String(gstin).toUpperCase().trim() : "");
       row = {
         brand_id: userId,
         brand_name: gstinData?.tradeName || name || "",
@@ -87,7 +91,7 @@ Deno.serve(async (req) => {
         contact_phone: phone || "",
         instagram_username: instagram || "",
         logo_url: storedProfilePictureUrl,
-        gstin: gstinData?.gstin || "",
+        gstin: gstinValue,
         gstin_legal_name: gstinData?.legalName || "",
         gstin_trade_name: gstinData?.tradeName || "",
         gstin_business_type: gstinData?.businessType || "",
