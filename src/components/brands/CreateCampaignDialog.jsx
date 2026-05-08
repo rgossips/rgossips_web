@@ -43,7 +43,7 @@ const CATEGORIES = [
   "Pet Care & Animals",
 ];
 
-const PLATFORMS = ["Instagram", "YouTube", "TikTok", "LinkedIn", "X (Twitter)", "Blog"];
+const PLATFORMS = ["Instagram"];
 
 const CITIES = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai",
@@ -154,7 +154,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const { startLoading, stopLoading } = useGlobalLoading();
   const [form, setForm] = useState(emptyForm);
   const [categories, setCategories] = useState([]);
-  const [platforms, setPlatforms] = useState([]);
+  const [platforms, setPlatforms] = useState(["Instagram"]);
   const [cities, setCities] = useState([]);
   const [allIndia, setAllIndia] = useState(false);
   const [genders, setGenders] = useState([]);

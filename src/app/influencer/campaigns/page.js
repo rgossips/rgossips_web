@@ -32,7 +32,6 @@ export default function CampaignsPage() {
     return cat ? [cat] : [];
   });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
-  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState(() => {
     const b = searchParams?.get("brand");
     return b ? [b] : [];
@@ -88,18 +87,13 @@ export default function CampaignsPage() {
       const matchesCategory =
         selectedCategories.length === 0 ||
         campaign.tags.some((t) => selectedCategories.some((c) => t.toLowerCase().includes(c.toLowerCase())));
-      const matchesPlatform =
-        selectedPlatforms.length === 0 ||
-        campaign.platforms.some((p) =>
-          selectedPlatforms.map((sp) => sp.toLowerCase()).includes(p.toLowerCase())
-        );
       const matchesBrand =
         selectedBrands.length === 0 || selectedBrands.includes(campaign.brandName);
       const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
       const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-      return matchesTab && matchesSearch && matchesCategory && matchesPlatform && matchesBrand && matchesBudget;
+      return matchesTab && matchesSearch && matchesCategory && matchesBrand && matchesBudget;
     });
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedPlatforms, selectedBrands, budgetRange]);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
@@ -194,8 +188,6 @@ export default function CampaignsPage() {
               setSelectedCategories={setSelectedCategories}
               budgetRange={budgetRange}
               setBudgetRange={setBudgetRange}
-              selectedPlatforms={selectedPlatforms}
-              setSelectedPlatforms={setSelectedPlatforms}
               brands={brandNames}
               selectedBrands={selectedBrands}
               setSelectedBrands={setSelectedBrands}
@@ -282,8 +274,6 @@ export default function CampaignsPage() {
             setSelectedCategories={setSelectedCategories}
             budgetRange={budgetRange}
             setBudgetRange={setBudgetRange}
-            selectedPlatforms={selectedPlatforms}
-            setSelectedPlatforms={setSelectedPlatforms}
             brands={brandNames}
             selectedBrands={selectedBrands}
             setSelectedBrands={setSelectedBrands}
