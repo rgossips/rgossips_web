@@ -141,7 +141,7 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
               onClick={() => router.push("/influencer/offers/" + campaign.id)}
               className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
             >
-              <BarChart3 size={16} className="mr-2" /> Full Analytics <ChevronRight size={16} className="ml-1" />
+              <BarChart3 size={16} className="mr-2" /> View Status <ChevronRight size={16} className="ml-1" />
             </Button>
           )}
         </div>
