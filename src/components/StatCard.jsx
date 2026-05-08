@@ -23,7 +23,9 @@ export const StatCard = ({
       </p>
       <div className="flex items-baseline gap-1.5 mt-1">
         <h3 className="text-lg font-black text-[#1A1A1A]">{value}</h3>
-        <span className="text-[10px] font-black text-emerald-500">+{change}</span>
+        {change && (
+          <span className="text-[10px] font-black text-emerald-500">+{change}</span>
+        )}
       </div>
     </div>
   );

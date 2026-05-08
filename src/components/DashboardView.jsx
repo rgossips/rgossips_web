@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Cropper from "react-easy-crop";
 import {
   Settings,
@@ -18,6 +18,7 @@ import {
   Crown,
   Zap,
   X,
+  Hourglass,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
@@ -29,6 +30,29 @@ import { Loader2 } from "lucide-react";
 import { useProfileCompletion } from "./CompleteProfileCard";
 
 const TRIAL_DAYS = 30;
+
+const ACTIVE_APP_STATUSES = new Set([
+  "pending",
+  "approved",
+  "accepted",
+  "submitted",
+  "live_submitted",
+  "revision_needed",
+  "payment",
+]);
+
+const parseBudgetINR = (s) => {
+  if (typeof s === "number") return s;
+  if (!s) return 0;
+  const digits = String(s).replace(/[^\d]/g, "");
+  return digits ? parseInt(digits, 10) : 0;
+};
+
+const formatINRCompact = (n) => {
+  if (!Number.isFinite(n) || n <= 0) return "₹0";
+  if (n >= 1_00_000) return `₹${(n / 1_00_000).toFixed(n >= 10_00_000 ? 1 : 2)}L`;
+  return `₹${n.toLocaleString("en-IN")}`;
+};
 
 function getTrialInfo(profile) {
   const createdAt = profile?.created_at || profile?.updated_at;
@@ -52,6 +76,51 @@ const DashboardView = ({
   const router = useRouter();
   const { profile, user, signOut } = useAuth();
   const completion = useProfileCompletion(profile);
+  const [myCampaigns, setMyCampaigns] = useState([]);
+
+  // Pull this user's campaigns once for the stat cards. list-campaigns is
+  // already what other influencer pages use, so the cache stays warm.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ influencerId: user.id }),
+        });
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data?.campaigns)) {
+          setMyCampaigns(data.campaigns.filter((c) => c.applicationStatus));
+        }
+      } catch (e) {
+        console.error("Stat campaign fetch failed:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const campaignStats = useMemo(() => {
+    const completed = myCampaigns.filter((c) => c.applicationStatus === "completed");
+    const active = myCampaigns.filter((c) => ACTIVE_APP_STATUSES.has(c.applicationStatus));
+    const totalEarnings = completed.reduce((s, c) => s + parseBudgetINR(c.budget), 0);
+    const expectedEarnings = active.reduce((s, c) => s + parseBudgetINR(c.budget), 0);
+    return {
+      totalEarnings,
+      expectedEarnings,
+      activeCount: active.length,
+      completedCount: completed.length,
+    };
+  }, [myCampaigns]);
 
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -333,33 +402,29 @@ const DashboardView = ({
           <section className="grid grid-cols-4 gap-3">
             <StatCard
               title="Total Earnings"
-              value="₹78,450"
-              change="+23%"
+              value={formatINRCompact(campaignStats.totalEarnings)}
               icon={CreditCard}
               color="text-emerald-500"
               bgColor="bg-gradient-to-br from-emerald-50 to-emerald-100"
             />
             <StatCard
               title="Active Campaigns"
-              value="5"
-              change="+2"
+              value={String(campaignStats.activeCount)}
               icon={Clock}
               color="text-blue-500"
               bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
             />
             <StatCard
               title="Completed"
-              value="47"
-              change="+12"
+              value={String(campaignStats.completedCount)}
               icon={Award}
               color="text-emerald-500"
               bgColor="bg-gradient-to-br from-green-50 to-green-100"
             />
             <StatCard
-              title="Success Rate"
-              value="94%"
-              change="+5%"
-              icon={TrendingUp}
+              title="Expected Earnings"
+              value={formatINRCompact(campaignStats.expectedEarnings)}
+              icon={Hourglass}
               color="text-purple-500"
               bgColor="bg-gradient-to-br from-purple-50 to-purple-100"
             />
@@ -563,33 +628,29 @@ const DashboardView = ({
         <section className="grid grid-cols-2 gap-4">
           <StatCard
             title="Total Earnings"
-            value="₹78,450"
-            change="23%"
+            value={formatINRCompact(campaignStats.totalEarnings)}
             icon={CreditCard}
             color="text-emerald-500"
             bgColor="bg-gradient-to-br from-[#FFFBF5] to-[#FFFFFF]"
           />
           <StatCard
             title="Active Campaigns"
-            value="5"
-            change="2"
+            value={String(campaignStats.activeCount)}
             icon={Clock}
             color="text-blue-500"
             bgColor="bg-gradient-to-br from-[#F0F9FF] to-[#FFFFFF]"
           />
           <StatCard
             title="Completed"
-            value="47"
-            change="12"
+            value={String(campaignStats.completedCount)}
             icon={Award}
             color="text-emerald-500"
             bgColor="bg-gradient-to-br from-green-50 to-[#FFFFFF]"
           />
           <StatCard
-            title="Success Rate"
-            value="94%"
-            change="5%"
-            icon={TrendingUp}
+            title="Expected Earnings"
+            value={formatINRCompact(campaignStats.expectedEarnings)}
+            icon={Hourglass}
             color="text-purple-500"
             bgColor="bg-gradient-to-br from-[#FAF5FF] to-[#FFFFFF]"
           />
