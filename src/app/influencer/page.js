@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { TrendingUp, Star, Box, Compass, Crown } from "lucide-react";
+import { Star, Box, Compass, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import BrandsCarousel from "@/components/BrandsCarousel2";
 import CreatorsCarouselWithLink from "@/components/CreatorsCarouselWithLink";
@@ -17,16 +17,14 @@ import { ProStatusCard } from "@/components/ProStatusCard";
 import { CompleteProfileCard } from "@/components/CompleteProfileCard";
 import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
-import CreatorsLikeYou from "@/components/CreatorsLikeYou";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 
 const CATEGORIES = [
-  { id: 1, label: "Trending", icon: <TrendingUp size={20} />, active: true, action: "scroll", target: "section-trending" },
-  { id: 2, label: "For You", icon: <Star size={20} />, active: false, action: "scroll", target: "section-for-you" },
-  { id: 3, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
-  { id: 4, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
-  { id: 5, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
+  { id: 1, label: "For You", icon: <Star size={20} />, active: true, action: "scroll", target: "section-for-you" },
+  { id: 2, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
+  { id: 3, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
+  { id: 4, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
 ];
 export default function HomePage() {
   const router = useRouter();
@@ -168,11 +166,6 @@ export default function HomePage() {
               <AiToolsGrid />
             </div>
           </div>
-        </div>
-
-        {/* Full-width background sections */}
-        <div id="section-trending">
-          <CreatorsLikeYou />
         </div>
 
         <div className="max-w-[1440px] mx-auto">
