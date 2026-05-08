@@ -4,12 +4,16 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   HeadphonesIcon,
-  Send,
   Phone,
   ChevronLeft,
+  ChevronRight,
   Loader2,
   CheckCircle2,
+  Calendar,
+  Clock,
+  Sparkles,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
@@ -17,9 +21,11 @@ import { createClient } from "@/utils/supabase/client";
 // ── Decision tree ─────────────────────────────────────────────────────────
 //
 // Each node is either:
-//   { id, label, description?, children: [...] }   — a category / branch
-//   { id, label, response, link?: { href, label } } — a leaf with a reply
-//   { id, label, action: "callback" }               — opens the callback form
+//   { id, label, description?, children: [...] }       — a category / branch
+//   { id, label, response, link?: { href, label } }    — leaf with a reply
+//   { id, label, action: "callback" | "list_active" | "list_for_issue" }
+//                                                       — leaf that triggers
+//                                                         a special flow
 //
 // Keep the tree small and decisive — every leaf should either give an answer
 // or send the user somewhere useful in the app. Always reachable: callback.
@@ -33,6 +39,16 @@ const TREE = {
       label: "Campaigns",
       children: [
         {
+          id: "campaign_show_active",
+          label: "Show my active campaigns",
+          action: "list_active",
+        },
+        {
+          id: "campaign_issue",
+          label: "Issue with a campaign",
+          action: "list_for_issue",
+        },
+        {
           id: "campaign_apply_how",
           label: "How do I apply to a campaign?",
           response:
@@ -45,18 +61,6 @@ const TREE = {
           response:
             "Open Campaigns and switch to the Applied tab — that's where every active application lives. The Completed tab only shows wrapped-up campaigns.",
           link: { href: "/influencer/campaigns", label: "Go to Campaigns" },
-        },
-        {
-          id: "campaign_rejected",
-          label: "My application was rejected",
-          response:
-            "Brands can reject for many reasons (audience fit, budget, fit). The campaign is marked Active again so you can re-apply if it suits you. Your monthly application cap isn't impacted by rejections.",
-        },
-        {
-          id: "campaign_no_response",
-          label: "Brand hasn't responded to my application",
-          response:
-            "Most brands respond within 5–7 days. If it's been longer, request a callback and we'll nudge them on your behalf.",
         },
         {
           id: "campaign_submit",
@@ -201,9 +205,7 @@ const findNode = (path) => {
   return cursor;
 };
 
-const labelForPath = (path) =>
-  path.map((id) => findPath(id)).filter(Boolean).join(" › ");
-const findPath = (id) => {
+const findLabel = (id) => {
   const stack = [TREE];
   while (stack.length) {
     const n = stack.pop();
@@ -213,23 +215,84 @@ const findPath = (id) => {
   return "";
 };
 
+// ── Per-campaign issue prompts ────────────────────────────────────────────
+//
+// These are status-aware sub-options shown after the user picks a specific
+// campaign in the "issue with a campaign" flow. The response template gets
+// the campaign object so we can mention the live status / brand / dates.
+
+const ISSUE_OPTIONS = (campaign) => {
+  const status = campaign.applicationStatus;
+  const brand = campaign.brandName || "the brand";
+  const opts = [
+    {
+      id: "issue_no_response",
+      label: "Brand hasn't responded",
+      response:
+        status === "pending"
+          ? `Your application is still Pending with ${brand}. If it's been over 5–7 days since you applied, request a callback and we'll nudge them.`
+          : `Your application status is "${status}". If you're waiting on something specific, request a callback so we can chase ${brand} for you.`,
+    },
+    {
+      id: "issue_payment",
+      label: "Payment is delayed",
+      response:
+        status === "completed"
+          ? `${brand} has marked this campaign Completed. Payment usually reflects within 7–10 business days. If 14+ business days have passed, request a callback.`
+          : status === "payment"
+          ? `${brand} has released payment. It typically takes 7–10 business days to land. If it's been longer, request a callback.`
+          : `Payments only release after the brand approves your live links. Current status: "${status}". Once it moves to Payment, the 7–10 day clock starts.`,
+    },
+    {
+      id: "issue_deliverables",
+      label: "Submit / update deliverables",
+      response:
+        status === "approved"
+          ? `Open the campaign detail page — you'll see a Submit Deliverables button now that ${brand} has approved you.`
+          : status === "revision_needed"
+          ? `${brand} has asked for a revision. Open the campaign detail page to see exactly which deliverables need re-uploading.`
+          : status === "accepted"
+          ? `Now's the time to post the live content and paste the live links inside the campaign detail page.`
+          : `Deliverables can only be submitted from the Approved or Accepted state. Your current status is "${status}".`,
+      link: { href: `/influencer/offers/${campaign.id}`, label: "Open this campaign" },
+    },
+    {
+      id: "issue_rejected",
+      label: "Why was I rejected / removed?",
+      response:
+        status === "rejected"
+          ? `${brand} declined your application — usually for fit, timing, or audience match. The campaign goes back to Active so you can apply to a different one. Your monthly application cap isn't impacted.`
+          : `Your application status is "${status}", not rejected. Take another look at the campaign detail page to see the latest update from ${brand}.`,
+      link: { href: `/influencer/offers/${campaign.id}`, label: "Open this campaign" },
+    },
+    {
+      id: "issue_callback",
+      label: "Talk to a human about this",
+      action: "callback",
+    },
+  ];
+  return opts;
+};
+
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function SupportChat({ open, onClose }) {
   const router = useRouter();
   const { user, profile, role } = useAuth();
   const [path, setPath] = useState([]); // breadcrumb of node ids
-  const [messages, setMessages] = useState([]); // {role: 'bot'|'user', text, options?, link?}
+  const [messages, setMessages] = useState([]); // {role, text, options?, link?, ...}
   const [callbackOpen, setCallbackOpen] = useState(false);
+  const [callbackContext, setCallbackContext] = useState(""); // topic prefix
+  const [campaigns, setCampaigns] = useState(null); // null = not fetched yet
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
   const scrollRef = useRef(null);
-
-  const currentNode = useMemo(() => findNode(path), [path]);
 
   // Reset on open
   useEffect(() => {
     if (open) {
       setPath([]);
       setCallbackOpen(false);
+      setCallbackContext("");
       setMessages([
         {
           role: "bot",
@@ -240,27 +303,165 @@ export default function SupportChat({ open, onClose }) {
     }
   }, [open, profile]);
 
-  // Autoscroll on new messages
+  // Smooth-scroll to bottom whenever the message list grows
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const el = scrollRef.current;
+    if (!el) return;
+    // requestAnimationFrame keeps the scroll synced with framer-motion's mount
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
   }, [messages, callbackOpen]);
 
   if (!open) return null;
 
-  const handlePick = (node) => {
-    if (node.action === "callback") {
+  // ── Lazy campaigns fetch ────────────────────────────────────────────────
+  const ensureCampaigns = async () => {
+    if (campaigns !== null) return campaigns;
+    setCampaignsLoading(true);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ influencerId: user?.id }),
+      });
+      const data = await res.json();
+      const list = (data?.campaigns || []).filter((c) => c.applicationStatus);
+      setCampaigns(list);
+      return list;
+    } catch (e) {
+      console.error("SupportChat campaigns fetch failed:", e);
+      setCampaigns([]);
+      return [];
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
+
+  // ── Action handlers ─────────────────────────────────────────────────────
+  const openCallback = (context = "") => {
+    setCallbackContext(context);
+    setCallbackOpen(true);
+    setMessages((prev) => [
+      ...prev,
+      { role: "bot", text: "Tell us how to reach you and we'll call back." },
+    ]);
+  };
+
+  const handleListActive = async () => {
+    setMessages((prev) => [
+      ...prev,
+      { role: "bot", text: "Pulling your active campaigns…", typing: true },
+    ]);
+    const list = await ensureCampaigns();
+    const active = list.filter(
+      (c) => c.applicationStatus && c.applicationStatus !== "completed" && c.applicationStatus !== "rejected"
+    );
+    setMessages((prev) => {
+      const next = prev.filter((m) => !m.typing);
+      if (active.length === 0) {
+        next.push({
+          role: "bot",
+          text: "You don't have any active campaigns right now. Browse open ones from the Campaigns tab.",
+          link: { href: "/influencer/campaigns", label: "Open Campaigns" },
+          followUp: true,
+        });
+      } else {
+        next.push({
+          role: "bot",
+          text: `You have ${active.length} active campaign${active.length === 1 ? "" : "s"}. Tap one to open it.`,
+          campaigns: active,
+          campaignAction: "open",
+        });
+      }
+      return next;
+    });
+  };
+
+  const handleListForIssue = async () => {
+    setMessages((prev) => [
+      ...prev,
+      { role: "bot", text: "Pulling your campaigns…", typing: true },
+    ]);
+    const list = await ensureCampaigns();
+    setMessages((prev) => {
+      const next = prev.filter((m) => !m.typing);
+      if (list.length === 0) {
+        next.push({
+          role: "bot",
+          text: "You haven't applied to any campaigns yet, so there's nothing to flag here.",
+          link: { href: "/influencer/campaigns", label: "Browse Campaigns" },
+          followUp: true,
+        });
+      } else {
+        next.push({
+          role: "bot",
+          text: "Pick the campaign you're having trouble with:",
+          campaigns: list,
+          campaignAction: "issue",
+        });
+      }
+      return next;
+    });
+  };
+
+  const handlePickCampaignForIssue = (campaign) => {
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", text: campaign.title },
+      {
+        role: "bot",
+        text: `Got it — what's going on with "${campaign.title}"?`,
+        campaignContext: campaign,
+        options: ISSUE_OPTIONS(campaign),
+      },
+    ]);
+  };
+
+  const handlePickIssueOption = (campaign, opt) => {
+    if (opt.action === "callback") {
       setMessages((prev) => [
         ...prev,
-        { role: "user", text: node.label },
-        { role: "bot", text: "Tell us how to reach you and we'll call back." },
+        { role: "user", text: opt.label },
       ]);
-      setCallbackOpen(true);
+      openCallback(`${campaign.brandName || ""} · ${campaign.title}`);
+      return;
+    }
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", text: opt.label },
+      {
+        role: "bot",
+        text: opt.response,
+        link: opt.link,
+        followUp: true,
+      },
+    ]);
+  };
+
+  const handlePick = (node) => {
+    if (node.action === "callback") {
+      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      openCallback();
+      return;
+    }
+    if (node.action === "list_active") {
+      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      handleListActive();
+      return;
+    }
+    if (node.action === "list_for_issue") {
+      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      handleListForIssue();
       return;
     }
 
-    // Show user's choice
     setMessages((prev) => [...prev, { role: "user", text: node.label }]);
 
     if (node.children?.length) {
@@ -305,6 +506,7 @@ export default function SupportChat({ open, onClose }) {
   const handleStartOver = () => {
     setPath([]);
     setCallbackOpen(false);
+    setCallbackContext("");
     setMessages([
       {
         role: "bot",
@@ -316,6 +518,7 @@ export default function SupportChat({ open, onClose }) {
 
   const handleCallbackSubmitted = () => {
     setCallbackOpen(false);
+    setCallbackContext("");
     setMessages((prev) => [
       ...prev,
       {
@@ -332,7 +535,12 @@ export default function SupportChat({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:justify-end bg-black/30 backdrop-blur-sm p-0 sm:p-6">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:w-[420px] h-[85vh] sm:h-[640px] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-300">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", damping: 22, stiffness: 240 }}
+        className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:w-[420px] h-[85vh] sm:h-[640px] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 shrink-0">
           {path.length > 0 && !callbackOpen && (
@@ -363,35 +571,64 @@ export default function SupportChat({ open, onClose }) {
           </button>
         </div>
 
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/40">
-          {messages.map((m, i) => (
-            <Bubble
-              key={i}
-              message={m}
-              onPick={handlePick}
-              onLink={handleLink}
-              onStartOver={handleStartOver}
-              onRequestCallback={() => {
-                setMessages((prev) => [
-                  ...prev,
-                  { role: "user", text: "Request a callback" },
-                  { role: "bot", text: "Tell us how to reach you and we'll call back." },
-                ]);
-                setCallbackOpen(true);
-              }}
-            />
-          ))}
+        {/* Messages — scroll-smooth keeps the auto-scroll buttery */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/40 scroll-smooth"
+        >
+          <AnimatePresence initial={false}>
+            {messages.map((m, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+              >
+                <Bubble
+                  message={m}
+                  onPick={handlePick}
+                  onLink={handleLink}
+                  onStartOver={handleStartOver}
+                  onPickCampaignForIssue={handlePickCampaignForIssue}
+                  onPickIssueOption={handlePickIssueOption}
+                  onRequestCallback={() => {
+                    setMessages((prev) => [
+                      ...prev,
+                      { role: "user", text: "Request a callback" },
+                    ]);
+                    openCallback();
+                  }}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
-          {callbackOpen && (
-            <CallbackForm
-              user={user}
-              role={role}
-              profile={profile}
-              path={path}
-              onSubmitted={handleCallbackSubmitted}
-              onCancel={() => setCallbackOpen(false)}
-            />
+          <AnimatePresence>
+            {callbackOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.25 }}
+              >
+                <CallbackForm
+                  user={user}
+                  role={role}
+                  profile={profile}
+                  path={path}
+                  context={callbackContext}
+                  onSubmitted={handleCallbackSubmitted}
+                  onCancel={() => setCallbackOpen(false)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {campaignsLoading && (
+            <div className="flex items-center gap-2 text-xs text-slate-400 px-2">
+              <Loader2 size={12} className="animate-spin" />
+              Loading campaigns…
+            </div>
           )}
         </div>
 
@@ -403,9 +640,8 @@ export default function SupportChat({ open, onClose }) {
                 setMessages((prev) => [
                   ...prev,
                   { role: "user", text: "Request a callback" },
-                  { role: "bot", text: "Tell us how to reach you and we'll call back." },
                 ]);
-                setCallbackOpen(true);
+                openCallback();
               }}
               className="w-full h-11 rounded-2xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-[0.98] transition cursor-pointer"
             >
@@ -413,18 +649,35 @@ export default function SupportChat({ open, onClose }) {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
-function Bubble({ message, onPick, onLink, onStartOver, onRequestCallback }) {
+function Bubble({
+  message,
+  onPick,
+  onLink,
+  onStartOver,
+  onRequestCallback,
+  onPickCampaignForIssue,
+  onPickIssueOption,
+}) {
   const isBot = message.role === "bot";
+  const campaignAction = message.campaignAction;
+  const handleCampaignClick = (c) => {
+    if (campaignAction === "issue") {
+      onPickCampaignForIssue?.(c);
+    } else {
+      onLink?.(`/influencer/offers/${c.id}`);
+    }
+  };
+
   return (
     <div className={`flex ${isBot ? "justify-start" : "justify-end"}`}>
-      <div className={`max-w-[85%] ${isBot ? "" : "ml-auto"}`}>
+      <div className={`max-w-[88%] ${isBot ? "" : "ml-auto"}`}>
         <div
           className={`rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
             isBot
@@ -432,7 +685,16 @@ function Bubble({ message, onPick, onLink, onStartOver, onRequestCallback }) {
               : "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm"
           }`}
         >
-          {message.text}
+          {message.typing ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-pulse [animation-delay:0ms]" />
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-pulse [animation-delay:150ms]" />
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-pulse [animation-delay:300ms]" />
+              <span className="ml-1">{message.text}</span>
+            </span>
+          ) : (
+            message.text
+          )}
         </div>
 
         {message.link && isBot && (
@@ -444,19 +706,75 @@ function Bubble({ message, onPick, onLink, onStartOver, onRequestCallback }) {
           </button>
         )}
 
-        {/* Options grid */}
+        {/* Campaign list — animated, clickable cards */}
+        {message.campaigns && isBot && (
+          <motion.div
+            className="mt-3 space-y-2"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+            }}
+          >
+            {message.campaigns.map((c) => (
+              <motion.button
+                key={c.id}
+                onClick={() => handleCampaignClick(c)}
+                variants={{
+                  hidden: { opacity: 0, y: 8 },
+                  show: { opacity: 1, y: 0 },
+                }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-white hover:border-pink-300 hover:shadow-sm transition cursor-pointer flex items-center gap-3"
+              >
+                <CampaignAvatar c={c} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-black text-slate-900 truncate">
+                    {c.title}
+                  </p>
+                  <p className="text-[10px] text-slate-500 truncate flex items-center gap-1.5">
+                    <span className="truncate">{c.brandName}</span>
+                    <span className="text-slate-300">·</span>
+                    <StatusPill status={c.applicationStatus} />
+                  </p>
+                </div>
+                <ChevronRight size={14} className="text-slate-300 shrink-0" />
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Quick-reply options */}
         {message.options && isBot && (
-          <div className="mt-3 flex flex-col gap-1.5">
+          <motion.div
+            className="mt-3 flex flex-col gap-1.5"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: 0.04, delayChildren: 0.06 } },
+            }}
+          >
             {message.options.map((opt) => (
-              <button
+              <motion.button
                 key={opt.id}
-                onClick={() => onPick(opt)}
+                onClick={() =>
+                  message.campaignContext
+                    ? onPickIssueOption?.(message.campaignContext, opt)
+                    : onPick?.(opt)
+                }
+                variants={{
+                  hidden: { opacity: 0, y: 6 },
+                  show: { opacity: 1, y: 0 },
+                }}
+                whileTap={{ scale: 0.97 }}
                 className="text-left px-3 py-2 rounded-xl border border-slate-200 bg-white text-[12px] font-semibold text-slate-700 hover:border-pink-300 hover:bg-pink-50 transition cursor-pointer"
               >
                 {opt.label}
-              </button>
+              </motion.button>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Follow-up actions */}
@@ -481,6 +799,46 @@ function Bubble({ message, onPick, onLink, onStartOver, onRequestCallback }) {
   );
 }
 
+function CampaignAvatar({ c }) {
+  if (c.brandLogo) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={c.brandLogo}
+        alt={c.brandName}
+        className="w-9 h-9 rounded-xl object-cover shrink-0"
+      />
+    );
+  }
+  return (
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 text-white flex items-center justify-center text-[11px] font-black shrink-0">
+      {c.initials || (c.brandName || "?").charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+const STATUS_STYLES = {
+  pending: "bg-amber-50 text-amber-700",
+  approved: "bg-emerald-50 text-emerald-700",
+  accepted: "bg-emerald-50 text-emerald-700",
+  submitted: "bg-blue-50 text-blue-700",
+  live_submitted: "bg-cyan-50 text-cyan-700",
+  revision_needed: "bg-orange-50 text-orange-700",
+  payment: "bg-amber-50 text-amber-700",
+  completed: "bg-slate-100 text-slate-600",
+  rejected: "bg-red-50 text-red-700",
+};
+
+function StatusPill({ status }) {
+  if (!status) return null;
+  const cls = STATUS_STYLES[status] || "bg-slate-100 text-slate-600";
+  return (
+    <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${cls}`}>
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
+
 const TIME_OPTIONS = [
   "ASAP",
   "Today afternoon",
@@ -490,7 +848,7 @@ const TIME_OPTIONS = [
   "Anytime",
 ];
 
-function CallbackForm({ user, role, profile, path, onSubmitted, onCancel }) {
+function CallbackForm({ user, role, profile, path, context, onSubmitted, onCancel }) {
   const supabase = createClient();
   const [phone, setPhone] = useState(
     profile?.contact_phone || profile?.phone || user?.phone || ""
@@ -501,8 +859,8 @@ function CallbackForm({ user, role, profile, path, onSubmitted, onCancel }) {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
-  const topicLabel = path.length > 0 ? findPath(path[0]) : "General";
-  const topicPath = path.join(" > ");
+  const topicLabel = path.length > 0 ? findLabel(path[0]) : "General";
+  const topicPath = [path.join(" > "), context].filter(Boolean).join(" · ");
 
   const handleSubmit = async () => {
     if (!user?.id) {
@@ -551,6 +909,11 @@ function CallbackForm({ user, role, profile, path, onSubmitted, onCancel }) {
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+      {context && (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-pink-50 text-pink-700 text-[10px] font-bold">
+          <Sparkles size={10} /> {context}
+        </div>
+      )}
       <div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
           Phone
