@@ -369,7 +369,11 @@ const Login = () => {
       (localStorage.getItem("instagram_oauth_code") ||
         localStorage.getItem("instagram_oauth_error")));
 
-  if (authLoading || redirectingAuthed) {
+  // While a user-initiated action is mid-flight (loading), keep the drawer
+  // visible so its in-card spinner stays on screen — otherwise the dark
+  // splash takes over and the user perceives a "loader with black background"
+  // between signing in and landing on the dashboard.
+  if (!loading && (authLoading || redirectingAuthed)) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0F0F1A]">
         <Loader2 size={28} className="animate-spin text-pink-500" />
