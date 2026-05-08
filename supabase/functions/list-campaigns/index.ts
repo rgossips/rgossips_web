@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       let applications: any[] = [];
       const { data: appsData, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links, rejection_reason")
+        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at")
         .eq("influencer_id", influencerId);
 
       if (appErr) {
@@ -68,6 +68,8 @@ Deno.serve(async (req) => {
           applicationId: app.id,
           submissionLinks: app.submission_links || [],
           rejectionReason: app.rejection_reason || "",
+          metrics: app.metrics || null,
+          metricsRefreshedAt: app.metrics_refreshed_at || null,
         };
       }
     }
@@ -177,12 +179,16 @@ Deno.serve(async (req) => {
       let applicationId = null;
       let submissionLinks: any[] = [];
       let rejectionReason = "";
+      let applicationMetrics: any = null;
+      let metricsRefreshedAt: string | null = null;
 
       if (appStatus) {
         applicationStatus = appStatus;
         applicationId = appData.applicationId;
         submissionLinks = appData.submissionLinks || [];
         rejectionReason = appData.rejectionReason || "";
+        applicationMetrics = appData.metrics || null;
+        metricsRefreshedAt = appData.metricsRefreshedAt || null;
 
         if (appStatus === "completed") {
           status = "Completed";
@@ -253,6 +259,8 @@ Deno.serve(async (req) => {
         applicationId,
         submissionLinks,
         rejectionReason,
+        applicationMetrics,
+        metricsRefreshedAt,
         contentTypesRequired: c.content_types_required || [],
         isExpired,
         // Audit fields packed in metadata

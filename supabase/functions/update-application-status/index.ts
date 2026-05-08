@@ -103,6 +103,25 @@ Deno.serve(async (req) => {
 
     if (updateErr) return ok({ error: "Failed to update: " + updateErr.message });
 
+    // Refresh cached IG insights whenever the application enters a stage
+    // where live links matter (payment, completed). Fire-and-forget — the
+    // status change shouldn't fail if the refresh hits a token issue.
+    if (status === "payment" || status === "completed" || status === "live_submitted") {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        await fetch(`${supabaseUrl}/functions/v1/refresh-application-metrics`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ applicationId }),
+        });
+      } catch (e) {
+        console.error("Metrics refresh kick-off failed:", e);
+      }
+    }
+
     // Notify the brand when the status change is NOT initiated by them.
     // (brandId is passed only from brand UI — admin won't pass it, so a
     // missing brandId means "external" change that the brand should know about.)

@@ -90,6 +90,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // If the influencer just posted live links, kick off a metrics refresh in
+    // the background so the analytics surface has real numbers without waiting
+    // for the brand to act. Best-effort — never block the submit on it.
+    if (nextStatus === "live_submitted") {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        await fetch(`${supabaseUrl}/functions/v1/refresh-application-metrics`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+          },
+          body: JSON.stringify({ applicationId }),
+        });
+      } catch (e) {
+        console.error("Metrics refresh kick-off failed:", e);
+      }
+    }
+
     // Best-effort notification to the brand
     try {
       const { data: campaign } = await supabaseAdmin

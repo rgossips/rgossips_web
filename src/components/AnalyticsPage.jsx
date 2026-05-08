@@ -12,6 +12,7 @@ import {
   Target,
   Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
 const RUPEE = "₹";
@@ -616,15 +617,32 @@ const RecentRow = ({ c, engagementPct }) => {
       ? "bg-[#E6F1FB] text-[#1F6FB5]"
       : "bg-gradient-to-r from-[#FFC1D1] to-[#E94560] text-white";
   const earnings = c.applicationStatus === "completed" ? parseBudget(c.budget) : 0;
-  const reach = c.applicationStatus === "completed" ? Math.round((c.targetFollowerMin || 0) * 1.2) : 0;
+  // Real per-campaign metrics from refresh-application-metrics, with the
+  // influencer-level engagement rate as a fallback when no live links have
+  // been measured yet.
+  const m = c.applicationMetrics;
+  const reach = m?.reach || 0;
+  const rowEngagement = m && m.engagement > 0 ? m.engagement : engagementPct;
 
   return (
     <tr className="hover:bg-[#FAFBFC]">
       <td className="py-3.5 px-3 border-b border-[#F1F3F8]">
-        <div className="font-semibold text-[#1A1A2E]">{c.title}</div>
+        <Link
+          href={`/influencer/offers/${c.id}`}
+          className="font-semibold text-[#1A1A2E] hover:text-[#E94560] hover:underline cursor-pointer"
+        >
+          {c.title}
+        </Link>
         <div className="text-[11px] text-[#9CA3AF] mt-0.5">{c.deadline || ""}</div>
       </td>
-      <td className="py-3.5 px-3 border-b border-[#F1F3F8] text-[#1A1A2E]">{c.brandName}</td>
+      <td className="py-3.5 px-3 border-b border-[#F1F3F8] text-[#1A1A2E]">
+        <Link
+          href={`/influencer/campaigns?brand=${encodeURIComponent(c.brandName || "")}`}
+          className="hover:text-[#E94560] hover:underline cursor-pointer"
+        >
+          {c.brandName}
+        </Link>
+      </td>
       <td className="py-3.5 px-3 border-b border-[#F1F3F8]">
         <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-md inline-block ${statusClass}`}>
           {status}
@@ -634,7 +652,7 @@ const RecentRow = ({ c, engagementPct }) => {
         {reach > 0 ? formatCount(reach) : "—"}
       </td>
       <td className="py-3.5 px-3 border-b border-[#F1F3F8] text-right text-[#1A1A2E]">
-        {engagementPct > 0 ? `${engagementPct.toFixed(1)}%` : "—"}
+        {rowEngagement > 0 ? `${rowEngagement.toFixed(1)}%` : "—"}
       </td>
       <td className="py-3.5 px-3 border-b border-[#F1F3F8] text-right">
         <span className="font-bold bg-gradient-to-r from-[#E94560] to-[#7F47CD] bg-clip-text text-transparent">
