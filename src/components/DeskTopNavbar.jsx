@@ -21,6 +21,7 @@ import logo from "@/assets/logo2.png";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -79,11 +80,12 @@ const apiCall = async (fn, body) => {
 export const DesktopNavbar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChats, setUnreadChats] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showPopover, setShowPopover] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const popoverRef = useRef(null);
 
   // Close popover on outside click
@@ -247,7 +249,7 @@ export const DesktopNavbar = () => {
             )}
           </Link>
           <button
-            onClick={async () => { await signOut(); router.push("/login"); }}
+            onClick={() => setLogoutOpen(true)}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-red-500 hover:bg-red-50 border border-slate-100 transition-colors"
             title="Log Out"
           >
@@ -255,6 +257,7 @@ export const DesktopNavbar = () => {
           </button>
         </div>
       </div>
+      <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </nav>
   );
 };

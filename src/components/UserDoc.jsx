@@ -18,12 +18,14 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const UserDoc = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { profile, signOut } = useAuth();
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const { profile } = useAuth();
 
   const navLinks = [
     { label: "Home", icon: Home, path: "/influencer" },
@@ -189,7 +191,10 @@ const UserDoc = () => {
               {/* Sidebar footer */}
               <div className="p-4 border-t border-slate-100">
                 <button
-                  onClick={async () => { await signOut(); router.push("/login"); }}
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    setLogoutOpen(true);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <LogOut size={20} />
@@ -200,6 +205,7 @@ const UserDoc = () => {
           </>
         )}
       </AnimatePresence>
+      <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
 
       {/* ─── DESKTOP HEADER (unchanged) ─── */}
       <header className="hidden lg:block w-full bg-[#F8F9FA] px-6 rounded-b-[40px] lg:pt-24 pt-4">

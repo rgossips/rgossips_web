@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const NOTIF_ICON = {
   welcome: <UserPlus size={14} className="text-purple-500" />,
@@ -72,12 +73,13 @@ const formatTime = (dateStr) => {
 };
 
 export function BrandNavbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [showPopover, setShowPopover] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const popoverRef = useRef(null);
 
   // Close popover on outside click
@@ -290,13 +292,14 @@ export function BrandNavbar() {
 
         {/* Logout */}
         <button
-          onClick={async () => { await signOut(); router.push("/login"); }}
+          onClick={() => setLogoutOpen(true)}
           className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
           title="Log Out"
         >
           <LogOut size={18} />
         </button>
       </div>
+      <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </header>
   );
 }

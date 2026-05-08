@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
+import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
 const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
@@ -48,7 +49,7 @@ const CATEGORIES = [
 
 const BrandProfile = () => {
   const router = useRouter();
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
   const fileInputRef = useRef(null);
@@ -56,6 +57,7 @@ const BrandProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   // Cropper state for new logo upload
   const [imageSrc, setImageSrc] = useState(null);
@@ -502,10 +504,7 @@ const BrandProfile = () => {
         {/* Logout */}
         <Section title="Account">
           <button
-            onClick={async () => {
-              await signOut();
-              router.push("/login");
-            }}
+            onClick={() => setLogoutOpen(true)}
             className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform cursor-pointer"
           >
             <div className="p-2 bg-red-50 rounded-xl">
@@ -514,6 +513,7 @@ const BrandProfile = () => {
             <span>Log Out</span>
           </button>
         </Section>
+        <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
         </div>
       </div>
 
