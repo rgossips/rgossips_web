@@ -1,0 +1,198 @@
+"use client";
+
+import React, { useState } from "react";
+import { Star, X, Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+
+const StarRow = ({ value, onChange, max = 5 }) => (
+  <div className="flex items-center gap-1.5">
+    {Array.from({ length: max }, (_, i) => {
+      const v = i + 1;
+      const filled = v <= value;
+      return (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className="cursor-pointer p-1.5 rounded-full transition-colors hover:bg-amber-50"
+          aria-label={`${v} star${v === 1 ? "" : "s"}`}
+        >
+          <Star
+            size={28}
+            className={
+              filled
+                ? "text-amber-400 fill-amber-400"
+                : "text-slate-200"
+            }
+          />
+        </button>
+      );
+    })}
+  </div>
+);
+
+/**
+ * RatingModal — two-axis rating (journey + target party). Used in two places:
+ *   1. Brand approving live links (raterRole="brand", target = influencer)
+ *   2. Influencer viewing completed campaign (raterRole="influencer", target = brand)
+ *
+ * The caller passes the FK ids; the modal writes directly via the supabase
+ * client so RLS gates the insert to the authenticated rater.
+ */
+export default function RatingModal({
+  open,
+  onClose,
+  applicationId,
+  campaignId,
+  brandId,
+  influencerId,
+  raterRole, // "brand" | "influencer"
+  title,
+  subtitle,
+  journeyLabel = "How was the journey?",
+  targetLabel = "How would you rate them?",
+  primaryCta = "Submit Rating",
+  secondaryCta = "Skip",
+  onPrimary, // optional async, runs AFTER successful save (e.g. brand: release payment)
+  onSkip, // optional, runs when secondary clicked
+}) {
+  const supabase = createClient();
+  const [journey, setJourney] = useState(0);
+  const [target, setTarget] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!open) return null;
+
+  const reset = () => {
+    setJourney(0);
+    setTarget(0);
+    setError("");
+  };
+
+  const handleClose = () => {
+    if (submitting || skipping) return;
+    reset();
+    onClose?.();
+  };
+
+  const handleSkip = async () => {
+    if (submitting) return;
+    setSkipping(true);
+    try {
+      await onSkip?.();
+      reset();
+      onClose?.();
+    } finally {
+      setSkipping(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!journey || !target) {
+      setError("Please rate both before submitting");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const { error: dbErr } = await supabase
+        .from("campaign_ratings")
+        .upsert(
+          {
+            application_id: applicationId,
+            campaign_id: campaignId,
+            brand_id: brandId,
+            influencer_id: influencerId,
+            rater_role: raterRole,
+            journey_rating: journey,
+            target_rating: target,
+          },
+          { onConflict: "application_id,rater_role" }
+        );
+      if (dbErr) throw new Error(dbErr.message);
+
+      await onPrimary?.();
+      reset();
+      onClose?.();
+    } catch (e) {
+      setError(e.message || "Failed to submit rating");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const busy = submitting || skipping;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 pr-3">
+            <h3 className="text-lg font-black text-slate-900 leading-tight">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+            )}
+          </div>
+          <button
+            onClick={handleClose}
+            disabled={busy}
+            className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-5 py-2">
+          <div>
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              {journeyLabel}
+            </p>
+            <StarRow value={journey} onChange={setJourney} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              {targetLabel}
+            </p>
+            <StarRow value={target} onChange={setTarget} />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-500 font-semibold mt-3">{error}</p>
+        )}
+
+        <div className="flex gap-3 mt-6">
+          {secondaryCta && (
+            <button
+              onClick={handleSkip}
+              disabled={busy}
+              className="flex-1 py-3 rounded-2xl border border-slate-200 font-bold text-slate-600 text-sm bg-white cursor-pointer disabled:opacity-50"
+            >
+              {skipping ? (
+                <span className="inline-flex items-center gap-2 justify-center">
+                  <Loader2 size={14} className="animate-spin" />
+                  Working…
+                </span>
+              ) : (
+                secondaryCta
+              )}
+            </button>
+          )}
+          <button
+            onClick={handleSubmit}
+            disabled={busy}
+            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-lg shadow-pink-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {submitting && <Loader2 size={14} className="animate-spin" />}
+            {submitting ? "Submitting…" : primaryCta}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

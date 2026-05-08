@@ -226,6 +226,7 @@ Deno.serve(async (req) => {
         id: c.campaign_id,
         initials,
         title: c.title || "Untitled Campaign",
+        brandId: c.brand_id || null,
         brandName: brand.name,
         brandLogo: brand.logo,
         status,

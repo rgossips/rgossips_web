@@ -37,6 +37,8 @@ import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
+import RatingModal from "@/components/RatingModal";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
@@ -650,9 +652,53 @@ export default function CampaignDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
   const { user } = useAuth();
 
   const { campaign, loading, refetch } = useCampaign(id, user?.id);
+
+  // Auto-prompt for rating once per session when an influencer lands on a
+  // completed campaign they haven't rated yet. RLS scopes the row to the
+  // logged-in user, so a maybeSingle is enough.
+  useEffect(() => {
+    if (!user?.id || !campaign?.applicationId) return;
+    if (campaign.applicationStatus !== "completed") return;
+
+    const dismissKey = `rating_dismissed_${campaign.applicationId}`;
+    const dismissed = typeof window !== "undefined" && sessionStorage.getItem(dismissKey);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("campaign_ratings")
+          .select("id")
+          .eq("application_id", campaign.applicationId)
+          .eq("rater_role", "influencer")
+          .maybeSingle();
+        if (cancelled) return;
+        const already = !!data;
+        setHasRated(already);
+        if (!already && !dismissed) {
+          setShowRating(true);
+        }
+      } catch (e) {
+        // Non-blocking — leave the manual CTA available.
+        console.error("Rating lookup failed:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, campaign?.applicationId, campaign?.applicationStatus]);
+
+  const dismissRating = () => {
+    if (campaign?.applicationId && typeof window !== "undefined") {
+      sessionStorage.setItem(`rating_dismissed_${campaign.applicationId}`, "1");
+    }
+  };
 
   if (loading) {
     return (
@@ -746,6 +792,25 @@ export default function CampaignDetailsPage() {
               </p>
             </div>
 
+            {/* Rating CTA — shown on completed campaigns the influencer hasn't rated yet */}
+            {isCompleted && !hasRated && campaign.brandId && (
+              <button
+                onClick={() => setShowRating(true)}
+                className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-left hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
+                  <Star size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-900">Rate this campaign</p>
+                  <p className="text-[11px] text-slate-500">
+                    Share your experience working with {campaign.brandName}
+                  </p>
+                </div>
+                <ChevronRight size={18} className="text-amber-500 shrink-0" />
+              </button>
+            )}
+
             {/* Always show full campaign content */}
             <ActiveContent campaign={campaign} />
           </div>
@@ -782,6 +847,29 @@ export default function CampaignDetailsPage() {
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
+      )}
+
+      {campaign.applicationStatus === "completed" && campaign.brandId && (
+        <RatingModal
+          open={showRating}
+          onClose={() => {
+            dismissRating();
+            setShowRating(false);
+          }}
+          applicationId={campaign.applicationId}
+          campaignId={campaign.id}
+          brandId={campaign.brandId}
+          influencerId={user?.id}
+          raterRole="influencer"
+          title="Rate this campaign"
+          subtitle={`How was working with ${campaign.brandName}?`}
+          journeyLabel="How was the journey?"
+          targetLabel={`How would you rate ${campaign.brandName}?`}
+          primaryCta="Submit Rating"
+          secondaryCta="Skip for now"
+          onPrimary={() => setHasRated(true)}
+          onSkip={dismissRating}
+        />
       )}
     </div>
   );

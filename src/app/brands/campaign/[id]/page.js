@@ -28,6 +28,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
+import RatingModal from "@/components/RatingModal";
 
 const statusStyles = {
   draft: "bg-gray-100 text-gray-700 border-gray-200",
@@ -591,6 +592,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
   const [reason, setReason] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionIndexes, setRevisionIndexes] = useState([]);
+  const [showRating, setShowRating] = useState(false);
 
   const inf = app.influencer_profiles || {};
   const st = appStatusConfig[app.status] || appStatusConfig.pending;
@@ -895,7 +897,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
               {app.status === "live_submitted" && (
                 <>
                   <button
-                    onClick={() => updateStatus("payment")}
+                    onClick={() => setShowRating(true)}
                     disabled={loading}
                     className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}
                   >
@@ -1045,6 +1047,24 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, onRefresh }) => {
           )}
         </div>
       )}
+
+      <RatingModal
+        open={showRating}
+        onClose={() => setShowRating(false)}
+        applicationId={app.id}
+        campaignId={app.campaign_id}
+        brandId={brandId}
+        influencerId={app.influencer_id}
+        raterRole="brand"
+        title="Rate this collaboration"
+        subtitle={`Share your experience working with ${displayName} before approving payment.`}
+        journeyLabel="How was the journey?"
+        targetLabel={`How would you rate ${displayName}?`}
+        primaryCta="Submit & Release Payment"
+        secondaryCta="Skip & Approve"
+        onPrimary={() => updateStatus("payment")}
+        onSkip={() => updateStatus("payment")}
+      />
     </div>
   );
 };
