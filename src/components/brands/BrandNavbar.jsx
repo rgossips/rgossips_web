@@ -6,7 +6,6 @@ import {
   LogOut,
   RefreshCw,
   Search,
-  Zap,
   CheckCircle,
   XCircle,
   RotateCcw,
@@ -158,12 +157,6 @@ export function BrandNavbar() {
 
       {/* Right */}
       <div className="flex items-center gap-4">
-        {/* Trust Score */}
-        <div className="flex items-center gap-2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
-          <Zap size={14} />
-          Trust Score: 10%
-        </div>
-
         {/* Notification Bell + Popover */}
         <div className="relative" ref={popoverRef}>
           <button

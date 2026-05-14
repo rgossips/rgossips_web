@@ -1,0 +1,83 @@
+"use client";
+
+import React from "react";
+import { Plus, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
+
+// Drop-in replacement for TrustSection on the brand search page. Uses the
+// same hook so we stay in sync with the brand profile page, but renders a
+// profile-completion bar instead of the trust score.
+export const ProfileCompletionSection = () => {
+  const { completion, loading } = useBrandTrustScore();
+
+  const pct = loading ? 0 : completion?.percent || 0;
+  const missing = completion?.missing || [];
+  const filled = completion?.filled || [];
+  const total = (filled?.length || 0) + (missing?.length || 0);
+  const complete = pct >= 100 && total > 0;
+
+  return (
+    <div className="flex items-center flex-col lg:flex-row w-full px-3 lg:px-0 gap-3 lg:gap-5">
+      {/* Floating Search (mobile) */}
+      <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
+        <p className="text-slate-400 text-sm font-medium pl-2">
+          Looking for 10 nano creators, 15L...
+        </p>
+        <button className="bg-[#5B3DF5] p-2.5 rounded-2xl text-white cursor-pointer">
+          <Plus size={24} />
+        </button>
+      </div>
+
+      {/* Profile Completion Card */}
+      <Link
+        href="/brands/profile"
+        className="bg-[#1F1F1F] w-full lg:min-w-[280px] rounded-4xl p-6 flex justify-between items-center text-white cursor-pointer hover:bg-[#2A2A2A] transition-colors"
+      >
+        <div>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">
+            Profile Completion
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-black">{pct}%</span>
+            {complete ? (
+              <span className="text-emerald-400 text-xs font-bold inline-flex items-center gap-1">
+                <CheckCircle2 size={12} /> Complete
+              </span>
+            ) : missing.length > 0 ? (
+              <span className="text-amber-300 text-xs font-bold">
+                Add {missing[0]}
+              </span>
+            ) : null}
+          </div>
+          <div className="w-full bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                complete ? "bg-emerald-400" : "bg-[#5B3DF5]"
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Score Ring */}
+        <div className="relative flex items-center justify-center w-16 h-16 shrink-0">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
+          <div
+            className={`absolute inset-0 rounded-full border-4 ${
+              complete
+                ? "border-emerald-400 border-t-transparent"
+                : "border-[#5B3DF5] border-t-transparent"
+            } -rotate-45`}
+            style={{
+              clipPath: `polygon(0 0, 100% 0, 100% ${100 - pct}%, 0 ${100 - pct}%)`,
+            }}
+          />
+          <span className="text-[10px] font-black italic">
+            {complete ? "DONE" : `${filled.length}/${total || 3}`}
+          </span>
+        </div>
+      </Link>
+    </div>
+  );
+};

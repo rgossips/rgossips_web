@@ -840,7 +840,6 @@ function StatusPill({ status }) {
 }
 
 const TIME_OPTIONS = [
-  "ASAP",
   "Today afternoon",
   "Today evening",
   "Tomorrow morning",
@@ -853,7 +852,7 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
   const [phone, setPhone] = useState(
     profile?.contact_phone || profile?.phone || user?.phone || ""
   );
-  const [time, setTime] = useState("ASAP");
+  const [time, setTime] = useState("Today afternoon");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");

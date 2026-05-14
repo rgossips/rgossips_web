@@ -366,6 +366,17 @@ const BrandProfile = () => {
               </span>{" "}
               from influencer ratings ({trust.breakdown.influencerRating.count})
             </p>
+            {trust.breakdown.influencerRating.count > 0 && (
+              <p className="text-[10px] text-gray-400 pl-1">
+                avg {trust.breakdown.influencerRating.avgRating.toFixed(1)}★
+                {trust.breakdown.influencerRating.briefCount > 0 && (
+                  <> · brief {trust.breakdown.influencerRating.avgBriefClarity.toFixed(1)}★</>
+                )}
+                {trust.breakdown.influencerRating.fairnessCount > 0 && (
+                  <> · fairness {trust.breakdown.influencerRating.avgFairness.toFixed(1)}★</>
+                )}
+              </p>
+            )}
             <p>
               <span className="font-semibold text-gray-700">
                 {trust.breakdown.campaignDelivery.percent}%

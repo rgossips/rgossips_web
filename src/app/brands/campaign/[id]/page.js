@@ -109,7 +109,7 @@ const CampaignDetailPage = () => {
     if (appIds.length > 0) {
       const { data: ratings } = await supabase
         .from("campaign_ratings")
-        .select("application_id, journey_rating, target_rating")
+        .select("application_id, target_rating")
         .in("application_id", appIds)
         .eq("rater_role", "brand");
       const map = {};
@@ -755,8 +755,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Your rating</p>
                 <p className="text-[11px] text-amber-800 mt-0.5">
-                  Journey <span className="font-bold">{rating.journey_rating}/5</span> · {displayName}{" "}
-                  <span className="font-bold">{rating.target_rating}/5</span>
+                  {displayName} <span className="font-bold">{rating.target_rating}/5</span>
                 </p>
               </div>
             </div>
@@ -1103,8 +1102,9 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         raterRole="brand"
         title="Rate this collaboration"
         subtitle={`Share your experience working with ${displayName} before approving payment.`}
-        journeyLabel="How was the journey?"
-        targetLabel={`How would you rate ${displayName}?`}
+        sections={[
+          { key: "target_rating", label: `How would you rate ${displayName}?` },
+        ]}
         primaryCta="Submit & Release Payment"
         secondaryCta="Skip & Approve"
         onSaved={(saved) => onRated?.(saved)}

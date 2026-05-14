@@ -674,7 +674,7 @@ export default function CampaignDetailsPage() {
         const supabase = createClient();
         const { data } = await supabase
           .from("campaign_ratings")
-          .select("journey_rating, target_rating")
+          .select("target_rating, brief_clarity, fairness")
           .eq("application_id", campaign.applicationId)
           .eq("rater_role", "influencer")
           .maybeSingle();
@@ -794,31 +794,47 @@ export default function CampaignDetailsPage() {
             {/* Rating CTA / summary — only on completed campaigns */}
             {isCompleted && campaign.brandId && (
               myRating ? (
-                <div className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
-                    <Star size={20} className="fill-white" />
+                <div className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-400 text-white rounded-xl flex items-center justify-center shrink-0">
+                      <Star size={20} className="fill-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-slate-900">Your rating submitted</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">
+                        {campaign.brandName} <span className="font-bold">{myRating.target_rating}/5</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <Star
+                          key={i}
+                          size={14}
+                          className={
+                            i < myRating.target_rating
+                              ? "text-amber-400 fill-amber-400"
+                              : "text-slate-200"
+                          }
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-slate-900">Your rating submitted</p>
-                    <p className="text-[11px] text-slate-600 mt-0.5">
-                      Journey <span className="font-bold">{myRating.journey_rating}/5</span>
-                      {" · "}
-                      {campaign.brandName} <span className="font-bold">{myRating.target_rating}/5</span>
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        size={14}
-                        className={
-                          i < myRating.target_rating
-                            ? "text-amber-400 fill-amber-400"
-                            : "text-slate-200"
-                        }
-                      />
-                    ))}
-                  </div>
+                  {(myRating.brief_clarity != null || myRating.fairness != null) && (
+                    <div className="mt-3 pt-3 border-t border-amber-200/70 grid grid-cols-2 gap-3 text-[11px] text-slate-600">
+                      {myRating.brief_clarity != null && (
+                        <div>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Brief clarity</p>
+                          <p className="font-bold text-slate-800">{myRating.brief_clarity}/5</p>
+                        </div>
+                      )}
+                      {myRating.fairness != null && (
+                        <div>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Fairness</p>
+                          <p className="font-bold text-slate-800">{myRating.fairness}/5</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -891,8 +907,22 @@ export default function CampaignDetailsPage() {
           raterRole="influencer"
           title="Rate this campaign"
           subtitle={`How was working with ${campaign.brandName}?`}
-          journeyLabel="How was the journey?"
-          targetLabel={`How would you rate ${campaign.brandName}?`}
+          sections={[
+            {
+              key: "target_rating",
+              label: `How would you rate ${campaign.brandName}?`,
+            },
+            {
+              key: "brief_clarity",
+              label: "Brief clarity",
+              helper: "Was the brief clear and detailed?",
+            },
+            {
+              key: "fairness",
+              label: "Fairness",
+              helper: "Were revisions and rejections reasonable?",
+            },
+          ]}
           primaryCta="Submit Rating"
           secondaryCta="Skip for now"
           onSaved={(r) => setMyRating(r)}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Star, X, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -32,12 +32,16 @@ const StarRow = ({ value, onChange, max = 5 }) => (
 );
 
 /**
- * RatingModal — two-axis rating (journey + target party). Used in two places:
- *   1. Brand approving live links (raterRole="brand", target = influencer)
- *   2. Influencer viewing completed campaign (raterRole="influencer", target = brand)
+ * RatingModal — multi-section star rating used in two places:
+ *   1. Brand approving live links (raterRole="brand", target = influencer).
+ *      Single section: target_rating (overall rating of the influencer).
+ *   2. Influencer viewing completed campaign (raterRole="influencer").
+ *      Three sections: target_rating (brand overall), brief_clarity,
+ *      fairness — see migration 009 for the schema.
  *
- * The caller passes the FK ids; the modal writes directly via the supabase
- * client so RLS gates the insert to the authenticated rater.
+ * Caller passes `sections: [{ key, label }]`. Each key must be a column on
+ * campaign_ratings. The modal writes via supabase client and RLS gates the
+ * insert to the authenticated rater.
  */
 export default function RatingModal({
   open,
@@ -49,28 +53,36 @@ export default function RatingModal({
   raterRole, // "brand" | "influencer"
   title,
   subtitle,
-  journeyLabel = "How was the journey?",
-  targetLabel = "How would you rate them?",
+  sections, // [{ key: 'target_rating', label: '…' }, ...]
   primaryCta = "Submit Rating",
   secondaryCta = "Skip",
   onPrimary, // optional async, runs AFTER successful save (e.g. brand: release payment)
   onSkip, // optional, runs when secondary clicked
-  onSaved, // optional, fired with { journey_rating, target_rating } after successful save
+  onSaved, // optional, fired with the saved values map after a successful upsert
 }) {
   const supabase = createClient();
-  const [journey, setJourney] = useState(0);
-  const [target, setTarget] = useState(0);
+  const [values, setValues] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState("");
 
+  // Reset every time the modal is reopened — stale values from a previous
+  // session would otherwise carry over.
+  useEffect(() => {
+    if (open) {
+      setValues({});
+      setError("");
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const reset = () => {
-    setJourney(0);
-    setTarget(0);
+    setValues({});
     setError("");
   };
+
+  const setVal = (key, v) => setValues((prev) => ({ ...prev, [key]: v }));
 
   const handleClose = () => {
     if (submitting || skipping) return;
@@ -91,30 +103,29 @@ export default function RatingModal({
   };
 
   const handleSubmit = async () => {
-    if (!journey || !target) {
-      setError("Please rate both before submitting");
+    const missing = (sections || []).find((s) => !values[s.key]);
+    if (missing) {
+      setError(`Please rate "${missing.label}" before submitting`);
       return;
     }
     setSubmitting(true);
     setError("");
     try {
+      const row = {
+        application_id: applicationId,
+        campaign_id: campaignId,
+        brand_id: brandId,
+        influencer_id: influencerId,
+        rater_role: raterRole,
+      };
+      for (const s of sections) row[s.key] = values[s.key];
+
       const { error: dbErr } = await supabase
         .from("campaign_ratings")
-        .upsert(
-          {
-            application_id: applicationId,
-            campaign_id: campaignId,
-            brand_id: brandId,
-            influencer_id: influencerId,
-            rater_role: raterRole,
-            journey_rating: journey,
-            target_rating: target,
-          },
-          { onConflict: "application_id,rater_role" }
-        );
+        .upsert(row, { onConflict: "application_id,rater_role" });
       if (dbErr) throw new Error(dbErr.message);
 
-      onSaved?.({ journey_rating: journey, target_rating: target });
+      onSaved?.({ ...values });
       await onPrimary?.();
       reset();
       onClose?.();
@@ -129,7 +140,7 @@ export default function RatingModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 pr-3">
             <h3 className="text-lg font-black text-slate-900 leading-tight">
@@ -150,18 +161,17 @@ export default function RatingModal({
         </div>
 
         <div className="space-y-5 py-2">
-          <div>
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              {journeyLabel}
-            </p>
-            <StarRow value={journey} onChange={setJourney} />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              {targetLabel}
-            </p>
-            <StarRow value={target} onChange={setTarget} />
-          </div>
+          {(sections || []).map((s) => (
+            <div key={s.key}>
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                {s.label}
+              </p>
+              {s.helper && (
+                <p className="text-[11px] text-slate-400 mb-2 -mt-1.5">{s.helper}</p>
+              )}
+              <StarRow value={values[s.key] || 0} onChange={(v) => setVal(s.key, v)} />
+            </div>
+          ))}
         </div>
 
         {error && (

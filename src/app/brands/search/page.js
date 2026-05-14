@@ -14,7 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { TrustSection } from "@/components/brands/TrustSection";
+import { ProfileCompletionSection } from "@/components/brands/ProfileCompletionSection";
 import { InfluencerCard } from "@/components/brands/InfluencerCard";
 import { FilterDrawer, filterData, sortOptions } from "@/components/brands/FilterDrawer";
 import { createClient } from "@/utils/supabase/client";
@@ -241,19 +241,19 @@ const InfluencerDirectory = () => {
         </div>
       </section>
 
-      {/* ── DESKTOP: Trust + Filter Bar ── */}
+      {/* ── DESKTOP: Profile Completion + Filter Bar ── */}
       <div className="hidden w-full lg:flex justify-between items-center gap-4 px-8 py-3">
         <div className="flex-1 max-w-[50%]">
-          <TrustSection />
+          <ProfileCompletionSection />
         </div>
         <div className="col-span-2">
           <FilterBar />
         </div>
       </div>
 
-      {/* ── MOBILE: Trust Section ── */}
+      {/* ── MOBILE: Profile Completion ── */}
       <div className="lg:hidden pt-4 px-4">
-        <TrustSection />
+        <ProfileCompletionSection />
       </div>
 
       {/* ── MOBILE: Filter Bar ── */}

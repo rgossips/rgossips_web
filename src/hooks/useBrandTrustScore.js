@@ -10,7 +10,14 @@ import { computeBrandTrustScore, getProfileCompletion } from "@/lib/brandProfile
 // for non-brand users.
 export function useBrandTrustScore() {
   const { user, profile, role } = useAuth();
-  const [ratings, setRatings] = useState({ avgRating: 0, count: 0 });
+  const [ratings, setRatings] = useState({
+    avgRating: 0,
+    avgBriefClarity: 0,
+    avgFairness: 0,
+    count: 0,
+    briefCount: 0,
+    fairnessCount: 0,
+  });
   const [campaignStats, setCampaignStats] = useState({ completedCount: 0, staleCount: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +35,7 @@ export function useBrandTrustScore() {
         const [{ data: ratingRows }, { data: campaignRows }] = await Promise.all([
           supabase
             .from("campaign_ratings")
-            .select("target_rating")
+            .select("target_rating, brief_clarity, fairness")
             .eq("brand_id", user.id)
             .eq("rater_role", "influencer"),
           supabase
@@ -39,15 +46,29 @@ export function useBrandTrustScore() {
 
         if (cancelled) return;
 
-        // Rating average
-        const ratingValues = (ratingRows || [])
-          .map((r) => Number(r.target_rating))
-          .filter((n) => Number.isFinite(n) && n > 0);
-        const avgRating =
-          ratingValues.length > 0
-            ? ratingValues.reduce((s, v) => s + v, 0) / ratingValues.length
-            : 0;
-        setRatings({ avgRating, count: ratingValues.length });
+        // Average of each axis, computed independently because the
+        // sub-ratings are nullable (older rows pre-migration 009 only
+        // carry target_rating).
+        const avg = (rows, key) => {
+          const vals = (rows || [])
+            .map((r) => Number(r[key]))
+            .filter((n) => Number.isFinite(n) && n > 0);
+          return {
+            avg: vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0,
+            count: vals.length,
+          };
+        };
+        const target = avg(ratingRows, "target_rating");
+        const brief = avg(ratingRows, "brief_clarity");
+        const fair = avg(ratingRows, "fairness");
+        setRatings({
+          avgRating: target.avg,
+          avgBriefClarity: brief.avg,
+          avgFairness: fair.avg,
+          count: target.count,
+          briefCount: brief.count,
+          fairnessCount: fair.count,
+        });
 
         // Campaign delivery ratio — needs to know which campaigns had a
         // completed application. One follow-up query keyed by campaign_id.

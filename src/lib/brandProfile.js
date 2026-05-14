@@ -1,8 +1,12 @@
 // Validation + scoring helpers for brand profiles.
 //
-// Trust score components:
-//   50% — average influencer rating of this brand (target_rating from
-//          rater_role='influencer' rows in campaign_ratings)
+// Trust score components (out of 100, then scaled ×10 to give a 0–1000):
+//   50% — influencer ratings of this brand, blended:
+//          30% target_rating (the headline overall score)
+//          10% brief_clarity sub-score
+//          10% fairness sub-score
+//          Sub-axes that have no samples yet fall back to the target_rating
+//          average so brands aren't penalised for data we don't have.
 //   25% — completed-vs-stale ratio: completed / (completed + closed-stale)
 //          where stale = closed/expired campaigns that never reached completion
 //   25% — profile completeness (GST/PAN, contact email, categories)
@@ -74,12 +78,55 @@ export function getCampaignDeliveryRatio({ completedCount = 0, staleCount = 0 } 
   };
 }
 
-export function getInfluencerRatingScore({ avgRating = 0, count = 0 } = {}) {
-  if (!count || avgRating <= 0) return { percent: 0, avgRating: 0, count };
+const ratingToPct = (avg) => (avg > 0 ? Math.round((Math.min(5, avg) / 5) * 100) : 0);
+
+// Blends overall + brief_clarity + fairness into one 0-100 number used for
+// the 50% slice. Each sub-axis contributes a fixed share of the slice; if
+// brief/fair have no samples we reuse the overall average so a brand isn't
+// penalised for missing data the influencer chose not to provide.
+export function getInfluencerRatingScore({
+  avgRating = 0,
+  avgBriefClarity = 0,
+  avgFairness = 0,
+  count = 0,
+  briefCount = 0,
+  fairnessCount = 0,
+} = {}) {
+  if (!count || avgRating <= 0) {
+    return {
+      percent: 0,
+      avgRating: 0,
+      avgBriefClarity: 0,
+      avgFairness: 0,
+      count,
+      briefCount,
+      fairnessCount,
+      // Sub-shares within the slice — kept here for tooltips so the UI can
+      // explain how the 50% breaks down.
+      shareTarget: 0.6,
+      shareBrief: 0.2,
+      shareFair: 0.2,
+    };
+  }
+
+  const targetPct = ratingToPct(avgRating);
+  const briefPct = briefCount > 0 ? ratingToPct(avgBriefClarity) : targetPct;
+  const fairPct = fairnessCount > 0 ? ratingToPct(avgFairness) : targetPct;
+
+  // 30/10/10 of the parent 50% slice → 0.6 / 0.2 / 0.2 *within* the slice.
+  const blendedPercent = Math.round(targetPct * 0.6 + briefPct * 0.2 + fairPct * 0.2);
+
   return {
-    percent: Math.round((Math.min(5, avgRating) / 5) * 100),
+    percent: blendedPercent,
     avgRating,
+    avgBriefClarity,
+    avgFairness,
     count,
+    briefCount,
+    fairnessCount,
+    shareTarget: 0.6,
+    shareBrief: 0.2,
+    shareFair: 0.2,
   };
 }
 

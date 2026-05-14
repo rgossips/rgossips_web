@@ -54,19 +54,47 @@ Deno.serve(async (req) => {
       city: r.city || r.location || "",
     }));
 
-    const invites = (invitesRes.data || []).map((r: any) => ({
-      // Prefix invitation IDs to avoid collisions with registered profiles
-      influencer_id: `inv_${r.id}`,
-      full_name: r.full_name || "",
-      username: r.instagram_username || "",
-      instagram_handle: r.instagram_username || "",
-      profile_photo_url: r.profile_photo_url || "",
-      followers_count: r.followers_count || 0,
-      follows_count: r.follows_count || 0,
-      media_count: r.media_count || 0,
-      categories: r.categories || [],
-      city: r.city || "",
-    }));
+    // The admin form packs the extras (categories, city, gender, languages,
+    // and a display string for followers like "1.4M") into a JSON blob on
+    // influencer_invitations.notes — they aren't top-level columns. Parse it
+    // here so the brand-side search surfaces them.
+    const parseFollowerString = (s: any): number => {
+      if (s == null) return 0;
+      if (typeof s === "number") return s;
+      const raw = String(s).trim().toLowerCase().replace(/,/g, "");
+      const num = parseFloat(raw);
+      if (!Number.isFinite(num)) return 0;
+      if (raw.endsWith("m")) return Math.round(num * 1_000_000);
+      if (raw.endsWith("k")) return Math.round(num * 1_000);
+      return Math.round(num);
+    };
+
+    const parseNotes = (notes: any) => {
+      if (!notes) return {};
+      if (typeof notes === "object") return notes;
+      try {
+        return JSON.parse(notes);
+      } catch {
+        return {};
+      }
+    };
+
+    const invites = (invitesRes.data || []).map((r: any) => {
+      const meta = parseNotes(r.notes);
+      return {
+        // Prefix invitation IDs to avoid collisions with registered profiles
+        influencer_id: `inv_${r.id}`,
+        full_name: r.full_name || "",
+        username: r.instagram_username || "",
+        instagram_handle: r.instagram_username || "",
+        profile_photo_url: r.profile_photo_url || "",
+        followers_count: parseFollowerString(meta.followers ?? r.followers_count),
+        follows_count: r.follows_count || 0,
+        media_count: r.media_count || 0,
+        categories: Array.isArray(meta.categories) ? meta.categories : [],
+        city: meta.city || r.city || "",
+      };
+    });
 
     // Merge, de-dupe by instagram_handle (registered wins)
     const seen = new Set<string>();
