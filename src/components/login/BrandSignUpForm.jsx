@@ -306,6 +306,9 @@ const BrandSignUpForm = ({
           {/* OTP Input */}
           {otpSent && !otpVerified && (
             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-[11px] text-center text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                💌 Your OTP just slid into WhatsApp — say hi to <span className="font-bold">Rgossips Media</span>!
+              </p>
               <div className="flex justify-center">
                 <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
                   <InputOTPGroup className="gap-1.5">
