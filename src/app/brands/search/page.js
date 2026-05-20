@@ -139,52 +139,52 @@ const InfluencerDirectory = () => {
     };
   }, [supabase]);
 
+  // Pure predicate so the drawer's "Apply Filters (N)" count can re-run it
+  // against a *draft* filter set without going through state.
+  const matchesFilters = (inf, f, q = "") => {
+    if (q) {
+      const haystack = `${inf.full_name || ""} ${inf.username || ""} ${inf.instagram_handle || ""}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    const selectedCats = f.Categories || [];
+    if (selectedCats.length) {
+      const infCats = Array.isArray(inf.categories) ? inf.categories : [];
+      if (!selectedCats.some((c) => infCats.includes(c))) return false;
+    }
+    const followerBuckets = f["Follower Count"] || [];
+    if (followerBuckets.length) {
+      const fc = inf.followers_count || 0;
+      const matches = followerBuckets.some((b) => {
+        const [min, max] = followerRanges[b] || [0, Infinity];
+        return fc >= min && fc < max;
+      });
+      if (!matches) return false;
+    }
+    const creatorTypes = f["Creator Type"] || [];
+    if (creatorTypes.length) {
+      const fc = inf.followers_count || 0;
+      const matches = creatorTypes.some((t) => {
+        const [min, max] = creatorTypeRanges[t] || [0, Infinity];
+        return fc >= min && fc < max;
+      });
+      if (!matches) return false;
+    }
+    const locations = f.Location || [];
+    if (locations.length) {
+      if (!inf.city || !locations.includes(inf.city)) return false;
+    }
+    return true;
+  };
+
+  // Counter the drawer calls as the user toggles options.
+  const countForDraft = (draft) => {
+    const q = searchText.trim().toLowerCase();
+    return influencers.reduce((n, inf) => (matchesFilters(inf, draft, q) ? n + 1 : n), 0);
+  };
+
   const filteredInfluencers = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    let list = influencers.filter((inf) => {
-      // Search by name / username / instagram handle
-      if (q) {
-        const haystack = `${inf.full_name || ""} ${inf.username || ""} ${inf.instagram_handle || ""}`.toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
-
-      // Categories filter — match if influencer has ANY of the selected categories
-      const selectedCats = filters.Categories || [];
-      if (selectedCats.length) {
-        const infCats = Array.isArray(inf.categories) ? inf.categories : [];
-        if (!selectedCats.some((c) => infCats.includes(c))) return false;
-      }
-
-      // Follower Count filter — match if followers fall in ANY selected bucket
-      const followerBuckets = filters["Follower Count"] || [];
-      if (followerBuckets.length) {
-        const fc = inf.followers_count || 0;
-        const matches = followerBuckets.some((b) => {
-          const [min, max] = followerRanges[b] || [0, Infinity];
-          return fc >= min && fc < max;
-        });
-        if (!matches) return false;
-      }
-
-      // Creator Type filter — derived from followers_count
-      const creatorTypes = filters["Creator Type"] || [];
-      if (creatorTypes.length) {
-        const fc = inf.followers_count || 0;
-        const matches = creatorTypes.some((t) => {
-          const [min, max] = creatorTypeRanges[t] || [0, Infinity];
-          return fc >= min && fc < max;
-        });
-        if (!matches) return false;
-      }
-
-      // Location filter — match against `city` column if present
-      const locations = filters.Location || [];
-      if (locations.length) {
-        if (!inf.city || !locations.includes(inf.city)) return false;
-      }
-
-      return true;
-    });
+    let list = influencers.filter((inf) => matchesFilters(inf, filters, q));
 
     // Sort
     if (sort === "Followers (High to Low)") {
@@ -206,6 +206,7 @@ const InfluencerDirectory = () => {
         filters={filters}
         onApply={setFilters}
         onClear={() => setFilters(emptyFilters)}
+        countForDraft={countForDraft}
       />
       <SortPopover value={sort} onChange={setSort} />
     </div>

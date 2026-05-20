@@ -95,7 +95,7 @@ function useIsDesktop() {
 
 export { sortOptions };
 
-export function FilterDrawer({ filters, onApply, onClear }) {
+export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
   const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   // Draft filters while the drawer is open; committed to parent on Apply
@@ -162,6 +162,11 @@ export function FilterDrawer({ filters, onApply, onClear }) {
     </div>
   );
 
+  // Live count for the Apply button. Only computed when the drawer is open
+  // and the parent has supplied a counter — otherwise we just render
+  // "Apply Filters" with no number.
+  const draftCount = countForDraft && open ? countForDraft(draft) : null;
+
   const footer = (
     <div className="grid grid-cols-2 gap-4 p-6 border-t bg-white shrink-0">
       <button
@@ -174,7 +179,7 @@ export function FilterDrawer({ filters, onApply, onClear }) {
         onClick={handleApply}
         className="py-4 bg-[#5851DB] text-white font-bold rounded-2xl shadow-lg shadow-purple-200 cursor-pointer"
       >
-        Apply Filters
+        {draftCount != null ? `Apply Filters (${draftCount})` : "Apply Filters"}
       </button>
     </div>
   );
