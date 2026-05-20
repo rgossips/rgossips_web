@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     };
 
     const whatsappResponse = await fetch(
-      `https://graph.facebook.com/v21.0/${whatsappPhoneId}/messages`,
+      `https://graph.facebook.com/v22.0/${whatsappPhoneId}/messages`,
       {
         method: "POST",
         headers: {

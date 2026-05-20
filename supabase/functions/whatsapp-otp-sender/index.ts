@@ -51,7 +51,13 @@ Deno.serve(async (req) => {
     const templateName = Deno.env.get("WHATSAPP_TEMPLATE") || "hello_world";
     const useTemplate = Deno.env.get("WHATSAPP_USE_TEMPLATE") !== "false";
 
-    // Build message body: use template for production, plain text for testing
+    // Build message body: use template for production, plain text for testing.
+    //
+    // The AUTHENTICATION-category template stores its "Copy code" button as a
+    // URL button (Meta rewrites OTP/COPY_CODE templates that way under the
+    // hood — see the generated wa.me/otp/code URL on the template). So the
+    // outgoing payload uses sub_type: "url" with the OTP as a text parameter,
+    // not the legacy sub_type: "copy_code" / coupon_code shape.
     const messageBody = useTemplate
       ? {
           messaging_product: "whatsapp",
@@ -67,9 +73,9 @@ Deno.serve(async (req) => {
               },
               {
                 type: "button",
-                sub_type: "copy_code",
+                sub_type: "url",
                 index: "0",
-                parameters: [{ type: "coupon_code", coupon_code: otp }],
+                parameters: [{ type: "text", text: otp }],
               },
             ],
           },
@@ -85,7 +91,11 @@ Deno.serve(async (req) => {
           },
         };
 
-    const whatsappResponse = await fetch(`https://graph.facebook.com/v21.0/${whatsappPhoneId}/messages`, {
+    // v22 — required for AUTHENTICATION templates with the
+    // add_security_recommendation flag and the URL-button OTP shape Meta
+    // rewrites copy-code templates into. v21 accepts the send and returns a
+    // wamid but silently drops delivery for this body shape.
+    const whatsappResponse = await fetch(`https://graph.facebook.com/v22.0/${whatsappPhoneId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${metaToken}`,
@@ -95,6 +105,17 @@ Deno.serve(async (req) => {
     });
 
     const whatsappData = await whatsappResponse.json();
+    // Surface the wamid + recipient resolution in the function logs so we can
+    // confirm Meta accepted vs only-validated each send.
+    console.log(
+      "WhatsApp send →",
+      JSON.stringify({
+        status: whatsappResponse.status,
+        wamid: whatsappData?.messages?.[0]?.id,
+        wa_id: whatsappData?.contacts?.[0]?.wa_id,
+        error: whatsappData?.error,
+      })
+    );
 
     if (!whatsappResponse.ok) {
       console.error("WhatsApp API Error:", JSON.stringify(whatsappData));
