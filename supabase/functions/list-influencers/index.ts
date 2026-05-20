@@ -20,26 +20,47 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Registered influencers
-    const profilesRes = await supabase
-      .from("influencer_profiles")
-      .select("*")
-      .order("followers_count", { ascending: false })
-      .limit(500);
+    // Paginate so we don't silently cap large directories at 500 rows.
+    // Supabase REST defaults to 1000 max per page; we walk until exhausted.
+    const PAGE = 1000;
+    const pageThrough = async (
+      table: string,
+      build: (q: any) => any,
+    ): Promise<any[]> => {
+      const out: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const q = build(supabase.from(table).select("*")).range(from, from + PAGE - 1);
+        const { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        out.push(...data);
+        if (data.length < PAGE) break;
+      }
+      return out;
+    };
 
-    if (profilesRes.error) {
+    // Registered influencers
+    let profilesData: any[];
+    try {
+      profilesData = await pageThrough("influencer_profiles", (q) =>
+        q.order("followers_count", { ascending: false })
+      );
+    } catch (e: any) {
       return new Response(
-        JSON.stringify({ error: profilesRes.error.message }),
+        JSON.stringify({ error: e?.message || "Failed to load profiles" }),
         { status: 200, headers: jsonHeaders }
       );
     }
+    const profilesRes = { data: profilesData };
 
     // Admin-invited (not yet registered) influencers
-    const invitesRes = await supabase
-      .from("influencer_invitations")
-      .select("*")
-      .eq("status", "pending")
-      .limit(500);
+    let invitesData: any[] = [];
+    try {
+      invitesData = await pageThrough("influencer_invitations", (q) => q.eq("status", "pending"));
+    } catch (e) {
+      console.error("invitations page error:", e);
+    }
+    const invitesRes = { data: invitesData };
 
     const profiles = (profilesRes.data || []).map((r: any) => ({
       influencer_id: r.influencer_id,
