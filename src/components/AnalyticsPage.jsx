@@ -161,9 +161,11 @@ const AnalyticsPage = ({ onBack }) => {
     });
     const earningsByCategory = [...catMap.values()].sort((a, b) => b.total - a.total).slice(0, 5);
 
-    // Brands worked with — unique by brand name from approved/completed
+    // Brands worked with — unique by brand name from completed applications
+    // only. A brand only counts once the campaign actually wrapped, not
+    // mid-flight (approved / submitted / payment in progress).
     const brandMap = new Map();
-    approved.forEach((c) => {
+    completed.forEach((c) => {
       const name = c.brandName || "Brand";
       const cur = brandMap.get(name) || { name, count: 0, logo: c.brandLogo };
       cur.count += 1;
