@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   };
 
   try {
-    const { phone, otp } = await req.json();
+    const { phone, otp, mode } = await req.json();
 
     if (!phone || !otp) {
       return new Response(
@@ -39,6 +39,11 @@ Deno.serve(async (req) => {
         { status: 200, headers: jsonHeaders }
       );
     }
+
+    // "signin" mode never creates a new user — if the phone isn't already
+    // registered we send the caller back with `no_user` so the UI can prompt
+    // them to sign up instead.
+    const isSignIn = mode === "signin";
 
     // Normalize phone: strip '+' for DB lookup
     const normalizedPhone = phone.replace(/\+/g, "");
@@ -79,46 +84,65 @@ Deno.serve(async (req) => {
       .update({ verified: true })
       .eq("id", otpRecord.id);
 
-    // Step 4: Find or create user by phone number
-    // Supabase stores phone WITHOUT '+' prefix (e.g., "917204909749")
+    // Step 4: Resolve auth user by phone.
+    // Supabase stores phone WITHOUT '+' prefix (e.g., "917204909749").
     let userId: string;
 
-    // Try to create user via Admin REST API (use normalizedPhone without '+')
-    const createRes = await authAdminFetch("users", "POST", {
-      phone: normalizedPhone,
-      phone_confirm: true,
-    });
-
-    if (createRes.ok) {
-      userId = createRes.data.id;
-    } else {
-      console.error("Create user response:", createRes.status, JSON.stringify(createRes.data));
-
-      // User already exists — find by phone
+    // For sign-in we look up FIRST and never create — if nothing matches the
+    // function returns `no_user` so the UI can prompt to sign up instead.
+    const findExisting = async () => {
       const listRes = await authAdminFetch("users?page=1&per_page=1000");
-      if (!listRes.ok) {
-        return new Response(
-          JSON.stringify({ error: "Failed to list users: " + JSON.stringify(listRes.data) }),
-          { status: 200, headers: jsonHeaders }
-        );
-      }
-
-      const existingUser = listRes.data?.users?.find((u: any) =>
+      if (!listRes.ok) return null;
+      return (listRes.data?.users || []).find((u: any) =>
         u.phone === normalizedPhone ||
         u.phone === normalizedPhone.slice(2) ||
         u.phone === `+${normalizedPhone}`
-      );
+      ) || null;
+    };
 
-      if (!existingUser) {
-        const allPhones = listRes.data?.users?.map((u: any) => u.phone) || [];
-        console.error("Looking for:", normalizedPhone, "Found phones:", allPhones);
+    if (isSignIn) {
+      const existing = await findExisting();
+      if (!existing) {
         return new Response(
-          JSON.stringify({ error: "Could not find existing user" }),
+          JSON.stringify({ error: "no_user", message: "This number isn't registered yet. Please sign up first." }),
           { status: 200, headers: jsonHeaders }
         );
       }
+      userId = existing.id;
+    } else {
+      // Sign-up — try to create, fall back to existing on conflict.
+      const createRes = await authAdminFetch("users", "POST", {
+        phone: normalizedPhone,
+        phone_confirm: true,
+      });
 
-      userId = existingUser.id;
+      if (createRes.ok) {
+        userId = createRes.data.id;
+      } else {
+        console.error("Create user response:", createRes.status, JSON.stringify(createRes.data));
+        const existing = await findExisting();
+        if (!existing) {
+          return new Response(
+            JSON.stringify({ error: "Could not find existing user" }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+        userId = existing.id;
+      }
+    }
+
+    // Look up which role this user actually has so the caller can route them
+    // and so we can reject role-mismatch sign-ins.
+    let resolvedRole: string | null = null;
+    try {
+      const [{ data: inf }, { data: br }] = await Promise.all([
+        supabaseAdmin.from("influencer_profiles").select("influencer_id").eq("influencer_id", userId).maybeSingle(),
+        supabaseAdmin.from("brand_profiles").select("brand_id").eq("brand_id", userId).maybeSingle(),
+      ]);
+      if (inf) resolvedRole = "influencer";
+      else if (br) resolvedRole = "brand";
+    } catch (e) {
+      console.error("Role lookup failed (non-fatal):", e);
     }
 
     // Step 5: Generate session — set temp password, sign in, clear it
@@ -178,6 +202,7 @@ Deno.serve(async (req) => {
         user: {
           id: userId,
           phone: normalizedPhone,
+          role: resolvedRole,
         },
       }),
       { status: 200, headers: jsonHeaders }
