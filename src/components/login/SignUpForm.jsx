@@ -4,11 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { User, CheckCircle2, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -69,10 +65,7 @@ const SignUpForm = ({
     setLocalError("");
     try {
       // Check phone uniqueness first
-      const { data: uniqueCheck } = await supabase.functions.invoke(
-        "check-uniqueness",
-        { body: { phone: formData.phone } }
-      );
+      const { data: uniqueCheck } = await supabase.functions.invoke("check-uniqueness", { body: { phone: formData.phone } });
       if (uniqueCheck?.conflicts?.includes("phone")) {
         setLocalError("This phone number is already registered. Please sign in instead.");
         setOtpLoading(false);
@@ -134,16 +127,10 @@ const SignUpForm = ({
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-1">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-slate-900">Create Account</h2>
-        <p className="text-sm text-slate-500">
-          Fill in your details to get started
-        </p>
+        <p className="text-sm text-slate-500">Fill in your details to get started</p>
       </div>
 
-      {displayError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-          {displayError}
-        </div>
-      )}
+      {displayError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{displayError}</div>}
 
       <div className="space-y-4">
         {/* Instagram Connected Badge */}
@@ -166,35 +153,20 @@ const SignUpForm = ({
 
         {/* Full Name */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">
-            Full Name
-          </Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">Full Name</Label>
           <div className="relative">
-            <User
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60"
-              size={18}
-            />
-            <Input
-              placeholder="Your full name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]"
-            />
+            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
+            <Input placeholder="Your full name" name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
           </div>
         </div>
 
         {/* Phone + OTP */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">
-            Mobile Number
-          </Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">Mobile Number</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 border-r pr-2 border-slate-200">
-                <span className="text-sm font-semibold text-slate-700">
-                  +91
-                </span>
+                <span className="text-sm font-semibold text-slate-700">+91</span>
               </div>
               <Input
                 type="tel"
@@ -207,16 +179,8 @@ const SignUpForm = ({
               />
             </div>
             {!otpVerified && !otpSent && (
-              <Button
-                onClick={handleSendOtp}
-                disabled={formData.phone.length < 10 || otpLoading}
-                className="h-12 px-4 rounded-xl btn-purple text-sm font-semibold cursor-pointer whitespace-nowrap"
-              >
-                {otpLoading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Send OTP"
-                )}
+              <Button onClick={handleSendOtp} disabled={formData.phone.length < 10 || otpLoading} className="h-12 px-4 rounded-xl btn-purple text-sm font-semibold cursor-pointer whitespace-nowrap">
+                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : "Send OTP"}
               </Button>
             )}
             {otpVerified && (
@@ -230,45 +194,29 @@ const SignUpForm = ({
           {otpSent && !otpVerified && (
             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <p className="text-[11px] text-center text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                💌 Your OTP just slid into WhatsApp — say hi to <span className="font-bold">Rgossips Media</span>!
+                Your OTP just slid into WhatsApp — say hi to <span className="font-bold">Rgossips Media</span>!
               </p>
               <div className="flex justify-center">
                 <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
                   <InputOTPGroup className="gap-1.5">
                     {[...Array(6)].map((_, i) => (
-                      <InputOTPSlot
-                        key={i}
-                        index={i}
-                        className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 data-[focus]:border-[#6347F9] data-[focus]:ring-0"
-                      />
+                      <InputOTPSlot key={i} index={i} className="w-10 h-12 text-lg font-bold border-2 rounded-lg border-slate-200 data-[focus]:border-[#6347F9] data-[focus]:ring-0" />
                     ))}
                   </InputOTPGroup>
                 </InputOTP>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <Button
-                  onClick={handleVerifyOtp}
-                  disabled={otp.length < 6 || verifyLoading}
-                  className="h-9 px-8 rounded-lg btn-purple text-sm font-semibold cursor-pointer"
-                >
-                  {verifyLoading ? (
-                    <Loader2 size={14} className="animate-spin mr-1" />
-                  ) : null}
+                <Button onClick={handleVerifyOtp} disabled={otp.length < 6 || verifyLoading} className="h-9 px-8 rounded-lg btn-purple text-sm font-semibold cursor-pointer">
+                  {verifyLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
                   Verify
                 </Button>
                 <div className="text-center">
                   {timer > 0 ? (
                     <p className="text-xs text-slate-400">
-                      Resend in{" "}
-                      <span className="text-[#6347F9] font-bold">
-                        0:{timer < 10 ? `0${timer}` : timer}
-                      </span>
+                      Resend in <span className="text-[#6347F9] font-bold">0:{timer < 10 ? `0${timer}` : timer}</span>
                     </p>
                   ) : (
-                    <button
-                      className="text-xs cursor-pointer text-[#6347F9] font-bold hover:underline"
-                      onClick={handleResend}
-                    >
+                    <button className="text-xs cursor-pointer text-[#6347F9] font-bold hover:underline" onClick={handleResend}>
                       Resend OTP
                     </button>
                   )}
@@ -277,7 +225,6 @@ const SignUpForm = ({
             </div>
           )}
         </div>
-
       </div>
 
       {/* Submit */}
