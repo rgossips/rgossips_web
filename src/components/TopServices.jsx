@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from "react";
 import { Star, Bookmark } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const services = [
@@ -59,6 +60,7 @@ const services = [
 ];
 
 const TopServices = () => {
+  const router = useRouter();
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -112,7 +114,10 @@ const TopServices = () => {
             Popular creator services brands are booking right now
           </p>
         </div>
-        <button className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1">
+        <button
+          onClick={() => router.push("/influencer/services")}
+          className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1 cursor-pointer"
+        >
           View All Services <span className="text-lg">›</span>
         </button>
       </div>
