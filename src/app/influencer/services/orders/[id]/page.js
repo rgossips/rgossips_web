@@ -129,6 +129,29 @@ export default function ServiceOrderDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // If we just came back from Stripe with ?paid=advance|final, poll briefly
+  // so the page reflects the webhook update without the user refreshing.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const paid = url.searchParams.get("paid");
+    if (!paid) return;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts += 1;
+      refresh();
+      if (attempts >= 6) {
+        clearInterval(interval);
+        // Strip the query param so reloads don't keep polling.
+        url.searchParams.delete("paid");
+        url.searchParams.delete("session_id");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const validityRemaining = useMemo(() => {
     if (!order?.quote_valid_until) return null;
     const ms = new Date(order.quote_valid_until).getTime() - Date.now();
@@ -137,6 +160,47 @@ export default function ServiceOrderDetailPage() {
     const h = Math.floor((ms % 86_400_000) / 3_600_000);
     return `${d}d ${h}h`;
   }, [order?.quote_valid_until]);
+
+  // Kicks off the Stripe Checkout flow for the advance (50%) — or, when
+  // status is draft_ready, the final 50%. Redirects in-place to Stripe.
+  const payViaStripe = async (phase) => {
+    setActionLoading(phase === "advance" ? "accept" : "approve");
+    setError("");
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      // For "advance" we first flip the quote to 'accepted' (so the user's
+      // intent is recorded) and then hand off to Stripe. The webhook will
+      // mark advance_paid + status='in_progress' on a successful payment.
+      if (phase === "advance" && order.status === "quoted") {
+        await fetch(`${supabaseUrl}/functions/v1/respond-to-quote`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ userId: user?.id, orderId: id, action: "accept" }),
+        });
+      }
+      const res = await fetch(`${supabaseUrl}/functions/v1/service-payment-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId: user?.id, orderId: id, phase }),
+      });
+      const data = await res.json();
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error("No checkout URL returned");
+      window.location.href = data.url; // hand off to Stripe
+    } catch (e) {
+      setError(e.message || "Failed to start payment");
+      setActionLoading(null);
+    }
+  };
 
   const respond = async (action, extra = {}) => {
     setActionLoading(action);
@@ -326,7 +390,7 @@ export default function ServiceOrderDetailPage() {
                 {mode === null && (
                   <>
                     <button
-                      onClick={() => respond("accept")}
+                      onClick={() => payViaStripe("advance")}
                       disabled={!!actionLoading}
                       className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
                     >
@@ -414,7 +478,7 @@ export default function ServiceOrderDetailPage() {
                 )}
 
                 <div className="text-[10px] text-slate-400 flex items-center justify-center gap-1 pt-1">
-                  <Info size={10} /> Secure payment via Stripe — coming next.
+                  <Info size={10} /> Secure payment via Stripe
                 </div>
               </div>
             )}

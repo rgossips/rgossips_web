@@ -47,6 +47,105 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
   if (error) console.error("Failed to update plan:", error.message);
 }
 
+// ── Service marketplace payment handlers ────────────────────────────────
+//
+// When a Stripe Checkout completes for a service order we flip the order's
+// status, log an event, drop a chat message and notify the user. Idempotent:
+// we re-check advance_paid / final_paid before mutating so a webhook retry
+// can't double-progress an order.
+
+async function handleServicePayment(session: Stripe.Checkout.Session) {
+  const orderId = (session.metadata?.order_id as string) || "";
+  const phase = (session.metadata?.phase as string) || "advance";
+  if (!orderId) {
+    console.error("service_payment webhook missing order_id");
+    return;
+  }
+
+  const { data: order, error: oErr } = await supabase
+    .from("service_orders")
+    .select("id, user_id, status, service_title, advance_paid, final_paid")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (oErr || !order) {
+    console.error("service_payment webhook: order not found", orderId, oErr?.message);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const sessionId = session.id;
+  const amountTotal = session.amount_total ?? 0; // in paise
+  const amountRupees = Math.round(amountTotal / 100);
+
+  if (phase === "advance") {
+    if (order.advance_paid) return; // already processed
+    const { error } = await supabase
+      .from("service_orders")
+      .update({
+        advance_paid: true,
+        advance_paid_at: now,
+        advance_stripe_session_id: sessionId,
+        status: "in_progress",
+        updated_at: now,
+      })
+      .eq("id", orderId);
+    if (error) {
+      console.error("Advance payment update failed:", error.message);
+      return;
+    }
+    await supabase.from("service_order_events").insert({
+      order_id: orderId,
+      type: "advance_paid",
+      label: `Quote accepted & advance paid (₹${amountRupees.toLocaleString("en-IN")})`,
+      meta: { amount: amountRupees, session_id: sessionId },
+    });
+    await supabase.from("notifications").insert({
+      user_id: order.user_id,
+      type: "service_advance_paid",
+      title: "Advance received — work begins",
+      body: JSON.stringify({
+        text: `${order.service_title}: advance received, our team is on it.`,
+        link: `/influencer/services/orders/${orderId}`,
+        orderId,
+      }),
+      is_read: false,
+    });
+  } else if (phase === "final") {
+    if (order.final_paid) return;
+    const { error } = await supabase
+      .from("service_orders")
+      .update({
+        final_paid: true,
+        final_paid_at: now,
+        final_stripe_session_id: sessionId,
+        status: "paid_final",
+        updated_at: now,
+      })
+      .eq("id", orderId);
+    if (error) {
+      console.error("Final payment update failed:", error.message);
+      return;
+    }
+    await supabase.from("service_order_events").insert({
+      order_id: orderId,
+      type: "final_paid",
+      label: `Final payment received (₹${amountRupees.toLocaleString("en-IN")})`,
+      meta: { amount: amountRupees, session_id: sessionId },
+    });
+    await supabase.from("notifications").insert({
+      user_id: order.user_id,
+      type: "service_final_paid",
+      title: "Final payment received",
+      body: JSON.stringify({
+        text: `${order.service_title}: we'll deliver your final files shortly.`,
+        link: `/influencer/services/orders/${orderId}`,
+        orderId,
+      }),
+      is_read: false,
+    });
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -74,7 +173,17 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = (session.metadata?.user_id as string) || (session.client_reference_id as string) || "";
+        const kind = (session.metadata?.kind as string) || "";
+
+        // Service marketplace payment (one-time, mode: 'payment')
+        if (kind === "service_payment") {
+          await handleServicePayment(session);
+          break;
+        }
+
+        // Otherwise it's a subscription checkout (default behaviour).
+        const userId =
+          (session.metadata?.user_id as string) || (session.client_reference_id as string) || "";
         const plan = (session.metadata?.plan as string) || "";
         const cycle = (session.metadata?.cycle as string) || "monthly";
         if (userId && plan) {
