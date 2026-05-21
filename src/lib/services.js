@@ -1,6 +1,6 @@
-// Single source of truth for the influencer/services list + detail pages.
-// One row per offering; everything past the basics (about / included /
-// packages / reviews) drives the service detail page layout.
+// Helpers for the influencer services pages. Service rows now come from the
+// `services` table via the list-services edge function — see iconForName()
+// for mapping the DB's `icon_name` string back to a lucide component.
 
 import {
   Instagram,
@@ -12,401 +12,66 @@ import {
   Megaphone,
   Mic,
   Film,
+  Sparkles,
 } from "lucide-react";
 
-export const SERVICES = [
-  {
-    id: "aesthetic-reel",
-    tag: "CONTENT",
-    icon: Film,
-    accent: "bg-rose-100 text-rose-600",
-    heroGradient: "from-violet-500 via-fuchsia-500 to-pink-500",
-    title: "Aesthetic Reel Production — Pro Video Editing",
-    description:
-      "Cinematic Reel edits from your raw footage — trending audio, dynamic captions, brand-tuned color",
-    price: 2500,
-    priceTo: 6000,
-    rating: 4.9,
-    reviews: 124,
-    quoteSlaHours: 4,
-    bookedThisMonth: 47,
-    deliveryDays: "3-7 d",
-    paymentSplit: "50/50",
-    about:
-      "High-quality cinematic Instagram Reels and YouTube edits crafted from your raw footage. We add trending audio, smooth transitions, dynamic captions, and brand-appropriate color grading. Final files delivered in 9:16 format optimized for Instagram (with thumbnail) and 16:9 for YouTube — whichever you need.",
-    included: [
-      "Full edit of provided raw footage",
-      "Trending audio licensing & sync",
-      "Dynamic captions with custom typography",
-      "Color grading to match brand tone",
-      "Custom thumbnail design",
-      "Up to 2 revision rounds",
-      "Final files in 4K and Instagram-optimized formats",
-    ],
-    packages: [
-      { name: "Basic Reel", spec: "15-30 sec, 1 revision", price: 2500 },
-      { name: "Standard Reel", spec: "30-60 sec, 2 revisions", price: 4500 },
-      { name: "Premium Reel Bundle", spec: "3 reels, unlimited revisions", price: 9000 },
-    ],
-    recentReviews: [
-      {
-        name: "Priya Sharma",
-        initials: "PS",
-        color: "bg-amber-500",
-        ago: "2 weeks ago",
-        text: "Absolutely loved the final reel. The team understood my brand instantly and delivered something even better than I imagined. Will definitely book again for my next launch.",
-      },
-      {
-        name: "Rahul Mehta",
-        initials: "RM",
-        color: "bg-indigo-500",
-        ago: "1 month ago",
-        text: "Quote came in within 2 hours and was very fair. Once I paid the advance, work started the same day. Got my draft in 4 days and it was on-point. Smooth experience.",
-      },
-    ],
-  },
-  {
-    id: "social-media-management",
-    tag: "MANAGEMENT",
-    icon: Instagram,
-    accent: "bg-violet-100 text-violet-600",
-    heroGradient: "from-indigo-500 via-violet-500 to-fuchsia-500",
-    title: "Social Media Page Management",
-    description:
-      "Full-service handling of your Instagram & Facebook page — posting, engagement, growth",
-    price: 8000,
-    priceSuffix: "/mo",
-    priceTo: 20000,
-    rating: 4.9,
-    reviews: 67,
-    quoteSlaHours: 6,
-    bookedThisMonth: 12,
-    deliveryDays: "Ongoing",
-    paymentSplit: "Monthly",
-    about:
-      "We run your brand's day-to-day social presence so you don't have to. Content calendar, post creation, scheduling, DM replies, comment moderation, and monthly performance reports. We treat your page like our own.",
-    included: [
-      "Content calendar planning",
-      "Post & Reel creation (8/mo on Starter)",
-      "Daily DM & comment moderation",
-      "Hashtag and audience strategy",
-      "Engagement boosts during peak hours",
-      "Monthly analytics report",
-      "Quarterly strategy review call",
-    ],
-    packages: [
-      { name: "Starter", spec: "8 posts / month, 1 platform", price: 8000 },
-      { name: "Growth", spec: "16 posts / month, 2 platforms", price: 14000 },
-      { name: "Premium", spec: "Daily posting, 3 platforms + ads liaison", price: 20000 },
-    ],
-    recentReviews: [
-      {
-        name: "Anita Verma",
-        initials: "AV",
-        color: "bg-emerald-500",
-        ago: "3 weeks ago",
-        text: "Our follower count doubled in 6 weeks. Genuinely good content, not just spam. Highly recommend.",
-      },
-    ],
-  },
-  {
-    id: "meta-ads",
-    tag: "ADS",
-    icon: Target,
-    accent: "bg-orange-100 text-orange-600",
-    heroGradient: "from-orange-500 via-rose-500 to-pink-500",
-    title: "Meta Ads Campaign Management",
-    description:
-      "Set up, run & optimize Instagram + Facebook ad campaigns for maximum ROAS",
-    price: 10000,
-    priceTo: 30000,
-    rating: 4.8,
-    reviews: 54,
-    quoteSlaHours: 6,
-    bookedThisMonth: 19,
-    deliveryDays: "Setup in 3 d",
-    paymentSplit: "50/50",
-    about:
-      "We architect, launch and continuously optimize your Instagram and Facebook ad campaigns. Audience research, creative testing, bid strategy and weekly performance reports — focused entirely on driving ROAS rather than vanity metrics.",
-    included: [
-      "Audience research & lookalike modelling",
-      "Ad creative (3 variants per campaign)",
-      "Campaign setup in Ads Manager",
-      "Daily bid + budget optimization",
-      "Weekly performance report",
-      "Pixel & Conversions API verification",
-      "Slack/WhatsApp updates",
-    ],
-    packages: [
-      { name: "Single campaign", spec: "₹25K – ₹1L ad spend managed", price: 10000 },
-      { name: "Always-on", spec: "Up to ₹3L/mo ad spend", price: 18000 },
-      { name: "Performance retainer", spec: "₹3L+/mo, full funnel", price: 30000 },
-    ],
-    recentReviews: [
-      {
-        name: "Karan Bhatia",
-        initials: "KB",
-        color: "bg-orange-500",
-        ago: "1 month ago",
-        text: "ROAS went from 1.4 to 3.8 in two months. Reporting is sharp and they actually explain the numbers.",
-      },
-    ],
-  },
-  {
-    id: "graphic-design",
-    tag: "DESIGN",
-    icon: Palette,
-    accent: "bg-emerald-100 text-emerald-600",
-    heroGradient: "from-emerald-500 via-teal-500 to-cyan-500",
-    title: "Graphic Designing & Branding",
-    description:
-      "Logos, brand kits, social designs, thumbnails & visual identity",
-    price: 2000,
-    priceTo: 25000,
-    rating: 4.9,
-    reviews: 112,
-    quoteSlaHours: 6,
-    bookedThisMonth: 34,
-    deliveryDays: "2-5 d",
-    paymentSplit: "50/50",
-    about:
-      "Identity systems, social media collateral, thumbnails and digital ads — built by designers who specialize in creator-first brands. We deliver source files plus an asset library so your team can reuse them.",
-    included: [
-      "Up to 3 concept rounds",
-      "Source files (Figma + PDF/PNG/JPG)",
-      "Color palette & typography spec",
-      "Asset library on Google Drive",
-      "Two rounds of refinement",
-      "Commercial usage rights",
-    ],
-    packages: [
-      { name: "Single design", spec: "1 design, 2 revisions", price: 2000 },
-      { name: "10-pack", spec: "10 social media designs", price: 12000 },
-      { name: "Full brand kit", spec: "Logo + guidelines + 20 templates", price: 25000 },
-    ],
-    recentReviews: [
-      {
-        name: "Sneha Iyer",
-        initials: "SI",
-        color: "bg-emerald-500",
-        ago: "2 weeks ago",
-        text: "Brand kit nailed our vibe on the first round. Templates are a lifesaver.",
-      },
-    ],
-  },
-  {
-    id: "brand-audit",
-    tag: "STRATEGY",
-    icon: LineChart,
-    accent: "bg-amber-100 text-amber-600",
-    heroGradient: "from-amber-500 via-orange-500 to-rose-500",
-    title: "Personal Brand Audit & Content Roadmap",
-    description:
-      "Audit of your presence + 30-day content roadmap with hooks & ideas",
-    price: 2500,
-    priceTo: 10000,
-    rating: 5.0,
-    reviews: 210,
-    quoteSlaHours: 12,
-    bookedThisMonth: 28,
-    deliveryDays: "5-7 d",
-    paymentSplit: "100% upfront",
-    about:
-      "A deep-dive into your current social presence — what's working, what's not, where the opportunities are — followed by a 30-day content roadmap with specific hooks, formats and posting cadence. Built around your goals (followers, leads, brand deals).",
-    included: [
-      "Audit deck (~30 slides)",
-      "Audience persona breakdown",
-      "Competitor benchmark (5 creators)",
-      "30-day content calendar",
-      "Hook library (50+ ideas)",
-      "60-minute strategy call",
-    ],
-    packages: [
-      { name: "Audit", spec: "Audit deck only", price: 2500 },
-      { name: "Audit + Roadmap", spec: "Audit + 30-day plan", price: 6000 },
-      { name: "Quarterly retainer", spec: "Audit + 90-day plan + monthly calls", price: 10000 },
-    ],
-    recentReviews: [
-      {
-        name: "Devika Rao",
-        initials: "DR",
-        color: "bg-amber-500",
-        ago: "5 days ago",
-        text: "Honest, specific, and actually usable. Already shipping the roadmap.",
-      },
-    ],
-  },
-  {
-    id: "product-photography",
-    tag: "CONTENT",
-    icon: Camera,
-    accent: "bg-rose-100 text-rose-600",
-    heroGradient: "from-pink-500 via-rose-500 to-orange-500",
-    title: "Product Photography & Videography",
-    description:
-      "Professional product shoots — studio-quality photos & videos for your brand",
-    price: 5000,
-    priceTo: 25000,
-    rating: 4.9,
-    reviews: 142,
-    quoteSlaHours: 6,
-    bookedThisMonth: 23,
-    deliveryDays: "5-10 d",
-    paymentSplit: "50/50",
-    about:
-      "Studio shoots with our network of product photographers across Mumbai, Delhi and Bangalore. Lifestyle and pack-shot setups, editing and rights bundled.",
-    included: [
-      "Shoot brief + moodboard sign-off",
-      "Studio + photographer + stylist",
-      "Edited final images (10-30 depending on package)",
-      "Square + 9:16 + 16:9 crops",
-      "Commercial usage rights",
-      "One round of edit revisions",
-    ],
-    packages: [
-      { name: "Basic", spec: "10 product shots, 1 setup", price: 5000 },
-      { name: "Lifestyle", spec: "20 shots + 3 setups", price: 12000 },
-      { name: "Campaign", spec: "30 shots + reel + setups", price: 25000 },
-    ],
-    recentReviews: [
-      {
-        name: "Mihir Joshi",
-        initials: "MJ",
-        color: "bg-rose-500",
-        ago: "1 week ago",
-        text: "Crisp shots, fast turnaround. We're moving all packaging photos to them.",
-      },
-    ],
-  },
-  {
-    id: "content-writing",
-    tag: "WRITING",
-    icon: PenSquare,
-    accent: "bg-sky-100 text-sky-600",
-    heroGradient: "from-sky-500 via-blue-500 to-indigo-500",
-    title: "Content Writing & Captions",
-    description:
-      "Hooks, captions, scripts and blog content tailored to your brand voice",
-    price: 1500,
-    priceTo: 12000,
-    rating: 4.8,
-    reviews: 89,
-    quoteSlaHours: 6,
-    bookedThisMonth: 18,
-    deliveryDays: "2-5 d",
-    paymentSplit: "100% upfront",
-    about:
-      "Captions that stop the scroll, scripts that perform, blogs that rank. We work from your brand tone-of-voice doc (or build one with you on the first call).",
-    included: [
-      "Tone-of-voice alignment",
-      "SEO research for blog work",
-      "Two revision rounds",
-      "Hook library bundled free",
-      "Hashtag suggestions",
-    ],
-    packages: [
-      { name: "Captions pack", spec: "10 captions + hooks", price: 1500 },
-      { name: "Script pack", spec: "5 reel/video scripts", price: 4000 },
-      { name: "Blog bundle", spec: "4 SEO blogs, 1000 words each", price: 12000 },
-    ],
-    recentReviews: [
-      {
-        name: "Lakshmi Pillai",
-        initials: "LP",
-        color: "bg-sky-500",
-        ago: "3 weeks ago",
-        text: "Our average watch-time jumped 18% after switching to their scripts.",
-      },
-    ],
-  },
-  {
-    id: "influencer-marketing",
-    tag: "MARKETING",
-    icon: Megaphone,
-    accent: "bg-pink-100 text-pink-600",
-    heroGradient: "from-fuchsia-500 via-pink-500 to-rose-500",
-    title: "Influencer Marketing Campaigns",
-    description:
-      "End-to-end campaign management with vetted creators in your niche",
-    price: 15000,
-    priceTo: 1_00_000,
-    rating: 4.9,
-    reviews: 47,
-    quoteSlaHours: 12,
-    bookedThisMonth: 9,
-    deliveryDays: "3-6 weeks",
-    paymentSplit: "Milestones",
-    about:
-      "We shortlist, contract and manage creator campaigns end-to-end — briefing, content approvals, posting schedule, performance tracking and final reporting in one place.",
-    included: [
-      "Creator shortlist (10-15 vetted profiles)",
-      "Brief deck + brand guidelines",
-      "Negotiation & contracts",
-      "Content review + approval flow",
-      "Performance tracking (reach, ER, CPM)",
-      "Final wrap report",
-    ],
-    packages: [
-      { name: "Pilot", spec: "3 nano creators, 1 reel each", price: 15000 },
-      { name: "Standard", spec: "10 micro creators, multi-deliverable", price: 60000 },
-      { name: "Full campaign", spec: "25+ creators, integrated launch", price: 1_00_000 },
-    ],
-    recentReviews: [
-      {
-        name: "Tanvi Shah",
-        initials: "TS",
-        color: "bg-pink-500",
-        ago: "1 month ago",
-        text: "Easiest influencer campaign we've ever run. They handled everything from shortlisting to final invoices.",
-      },
-    ],
-  },
-  {
-    id: "podcast-production",
-    tag: "AUDIO",
-    icon: Mic,
-    accent: "bg-indigo-100 text-indigo-600",
-    heroGradient: "from-indigo-500 via-blue-500 to-cyan-500",
-    title: "Podcast Editing & Production",
-    description:
-      "Editing, mastering, episode artwork & distribution support",
-    price: 3500,
-    priceTo: 15000,
-    rating: 4.8,
-    reviews: 38,
-    quoteSlaHours: 12,
-    bookedThisMonth: 11,
-    deliveryDays: "3-5 d",
-    paymentSplit: "50/50",
-    about:
-      "Send us raw recordings, get back broadcast-quality episodes — noise removal, leveling, mastering, intro/outro splicing, chapter markers and ready-to-publish files for Spotify and Apple Podcasts.",
-    included: [
-      "Noise removal & leveling",
-      "Mastering to broadcast standard",
-      "Intro / outro splicing",
-      "Episode artwork",
-      "Chapter markers",
-      "Show notes + transcript",
-    ],
-    packages: [
-      { name: "Single episode", spec: "Up to 60 min", price: 3500 },
-      { name: "Series", spec: "4 episodes / month", price: 10000 },
-      { name: "Full production", spec: "8 episodes + distribution support", price: 15000 },
-    ],
-    recentReviews: [
-      {
-        name: "Aarav Nair",
-        initials: "AN",
-        color: "bg-indigo-500",
-        ago: "2 weeks ago",
-        text: "Episodes sound like a studio production. They even cleaned up audio I thought was unusable.",
-      },
-    ],
-  },
-];
+const ICON_MAP = {
+  Instagram,
+  Target,
+  Palette,
+  LineChart,
+  Camera,
+  PenSquare,
+  Megaphone,
+  Mic,
+  Film,
+  Sparkles,
+};
 
-export const ALL_TAGS = Array.from(new Set(SERVICES.map((s) => s.tag)));
-
-export const findService = (id) => SERVICES.find((s) => s.id === id) || null;
+export const iconForName = (name) => ICON_MAP[name] || Sparkles;
 
 export const formatINR = (n) => `₹${Number(n).toLocaleString("en-IN")}`;
+
+// Fetch all active services from the list-services edge function. Returns
+// the array of service rows (or an empty array on failure).
+export async function fetchServices() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+    const res = await fetch(`${supabaseUrl}/functions/v1/list-services`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+      body: "{}",
+    });
+    const data = await res.json();
+    return Array.isArray(data?.services) ? data.services : [];
+  } catch (e) {
+    console.error("fetchServices failed:", e);
+    return [];
+  }
+}
+
+export async function fetchServiceBySlug(slug) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+    const res = await fetch(`${supabaseUrl}/functions/v1/list-services`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({ slug }),
+    });
+    const data = await res.json();
+    return data?.service || null;
+  } catch (e) {
+    console.error("fetchServiceBySlug failed:", e);
+    return null;
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -10,9 +10,8 @@ import {
   CheckCircle2,
   Info,
 } from "lucide-react";
-import { findService, formatINR } from "@/lib/services";
+import { fetchServiceBySlug, formatINR, iconForName } from "@/lib/services";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/utils/supabase/client";
 
 // Scope options (the "Reel duration" field in the screenshot). The label and
 // choices change per service tag so the form fits any offering.
@@ -76,9 +75,22 @@ const defaultDeliveryISO = () => {
 export default function QuoteRequestPage() {
   const router = useRouter();
   const { id } = useParams();
-  const service = findService(id);
   const { user, role } = useAuth();
-  const supabase = createClient();
+  const [service, setService] = useState(null);
+  const [loadingService, setLoadingService] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await fetchServiceBySlug(id);
+      if (cancelled) return;
+      setService(data);
+      setLoadingService(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const scopeCfg = useMemo(
     () => SCOPE_FOR_TAG[service?.tag] || { label: "Scope", required: false, options: [] },
@@ -88,13 +100,27 @@ export default function QuoteRequestPage() {
   const [description, setDescription] = useState("");
   const [assetUrl, setAssetUrl] = useState("");
   const [deliveryDate, setDeliveryDate] = useState(defaultDeliveryISO());
-  const [scope, setScope] = useState(scopeCfg.options[0] || "");
+  const [scope, setScope] = useState("");
   const [budgetRange, setBudgetRange] = useState("");
   const [styleRefs, setStyleRefs] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+
+  // Seed scope to the first option once the service (and therefore scopeCfg)
+  // arrives from the DB.
+  useEffect(() => {
+    if (!scope && scopeCfg.options.length > 0) setScope(scopeCfg.options[0]);
+  }, [scopeCfg, scope]);
+
+  if (loadingService) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-pink-500" />
+      </div>
+    );
+  }
 
   if (!service) {
     return (
@@ -110,7 +136,7 @@ export default function QuoteRequestPage() {
     );
   }
 
-  const Icon = service.icon;
+  const Icon = iconForName(service.icon_name);
 
   const isValidUrl = (s) => /^(https?:\/\/|http:\/\/)\S+\.\S+/i.test(s.trim());
 
@@ -134,20 +160,30 @@ export default function QuoteRequestPage() {
     }
     setSubmitting(true);
     try {
-      const { error: dbErr } = await supabase.from("service_quote_requests").insert({
-        user_id: user.id,
-        user_role: role || "",
-        service_id: service.id,
-        service_title: service.title,
-        description: description.trim(),
-        asset_url: assetUrl.trim(),
-        delivery_date: deliveryDate || null,
-        scope: scope || null,
-        budget_range: budgetRange || null,
-        style_references: styleRefs.trim() || null,
-        notes: notes.trim() || null,
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/submit-quote-request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          userRole: role || "",
+          serviceSlug: service.slug,
+          description: description.trim(),
+          assetUrl: assetUrl.trim(),
+          desiredDeliveryDate: deliveryDate || null,
+          scope: scope || null,
+          budgetRange: budgetRange || null,
+          styleReferences: styleRefs.trim() || null,
+          notes: notes.trim() || null,
+        }),
       });
-      if (dbErr) throw new Error(dbErr.message);
+      const data = await res.json();
+      if (data?.error) throw new Error(data.error);
       setDone(true);
     } catch (e) {
       setError(e.message || "Failed to submit quote request");
@@ -168,7 +204,7 @@ export default function QuoteRequestPage() {
           </h2>
           <p className="text-[13px] text-slate-500 mt-2 leading-snug">
             We'll review your brief and get back with a custom quote within{" "}
-            <span className="font-bold text-slate-700">{service.quoteSlaHours} hours</span>.
+            <span className="font-bold text-slate-700">{service.quote_sla_hours} hours</span>.
             You'll receive an update on the phone number tied to your account.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
@@ -295,12 +331,12 @@ export default function QuoteRequestPage() {
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
-            {service.priceTo && (
+            {service.price_to && (
               <div className="mt-2 bg-rose-50 border border-rose-100 rounded-xl p-2.5 flex gap-2 items-start text-[11px] text-rose-700">
                 <Info size={12} className="text-rose-500 shrink-0 mt-0.5" />
                 <p>
                   Typical range for similar projects:{" "}
-                  <span className="font-bold">{formatINR(service.price)} – {formatINR(service.priceTo)}</span>
+                  <span className="font-bold">{formatINR(service.price_starting)} – {formatINR(service.price_to)}</span>
                   {" "}depending on footage complexity and revision count.
                 </p>
               </div>

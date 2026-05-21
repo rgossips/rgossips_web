@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Search, Star, ChevronLeft } from "lucide-react";
-import { SERVICES, ALL_TAGS, formatINR } from "@/lib/services";
+import { ArrowLeft, Search, Star, ChevronLeft, Loader2 } from "lucide-react";
+import { fetchServices, formatINR, iconForName } from "@/lib/services";
 
 const PRICE_BANDS = [
   { id: "any", label: "Any price", test: () => true },
@@ -18,6 +18,26 @@ export default function ServicesPage() {
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [priceBand, setPriceBand] = useState("any");
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await fetchServices();
+      if (cancelled) return;
+      setServices(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const allTags = useMemo(
+    () => Array.from(new Set(services.map((s) => s.tag).filter(Boolean))),
+    [services]
+  );
 
   const toggleTag = (t) =>
     setSelectedTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -25,17 +45,17 @@ export default function ServicesPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const band = PRICE_BANDS.find((b) => b.id === priceBand) || PRICE_BANDS[0];
-    return SERVICES.filter((s) => {
+    return services.filter((s) => {
       if (selectedTags.length && !selectedTags.includes(s.tag)) return false;
-      if (!band.test(s.price)) return false;
+      if (!band.test(s.price_starting || 0)) return false;
       if (!q) return true;
       return (
         s.title.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
+        (s.description || "").toLowerCase().includes(q) ||
         s.tag.toLowerCase().includes(q)
       );
     });
-  }, [query, selectedTags, priceBand]);
+  }, [services, query, selectedTags, priceBand]);
 
   const clearFilters = () => {
     setSelectedTags([]);
@@ -82,7 +102,7 @@ export default function ServicesPage() {
 
           {/* Mobile tag chips */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {ALL_TAGS.map((t) => (
+            {allTags.map((t) => (
               <button
                 key={t}
                 onClick={() => toggleTag(t)}
@@ -149,7 +169,7 @@ export default function ServicesPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {ALL_TAGS.map((t) => {
+                {allTags.map((t) => {
                   const active = selectedTags.includes(t);
                   return (
                     <button
@@ -228,7 +248,11 @@ export default function ServicesPage() {
               ))}
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 size={24} className="animate-spin text-pink-500" />
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
                 No services match your filters.
               </div>
@@ -248,8 +272,8 @@ export default function ServicesPage() {
 
 function ServiceCard({ service }) {
   const router = useRouter();
-  const Icon = service.icon;
-  const open = () => router.push(`/influencer/services/${service.id}`);
+  const Icon = iconForName(service.icon_name);
+  const open = () => router.push(`/influencer/services/${service.slug}`);
   return (
     <div
       onClick={open}
@@ -276,8 +300,8 @@ function ServiceCard({ service }) {
         <div className="flex items-center gap-1">
           <Star size={12} className="fill-amber-400 text-amber-400" />
           <span className="text-[11px] font-black text-slate-700">
-            {service.rating.toFixed(1)}
-            <span className="text-slate-400 font-bold"> ({service.reviews})</span>
+            {Number(service.rating_avg || 0).toFixed(1)}
+            <span className="text-slate-400 font-bold"> ({service.reviews_count || 0})</span>
           </span>
         </div>
         <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wider">
@@ -291,10 +315,10 @@ function ServiceCard({ service }) {
             Starting at
           </p>
           <p className="text-lg font-black text-slate-900 leading-tight">
-            {formatINR(service.price)}
-            {service.priceSuffix && (
+            {formatINR(service.price_starting)}
+            {service.price_suffix && (
               <span className="text-[10px] font-bold text-slate-400">
-                {service.priceSuffix}
+                {service.price_suffix}
               </span>
             )}
           </p>

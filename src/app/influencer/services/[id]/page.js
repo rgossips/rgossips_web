@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -12,13 +12,36 @@ import {
   Info,
   Image as ImageIcon,
   Film,
+  Loader2,
 } from "lucide-react";
-import { findService, formatINR } from "@/lib/services";
+import { fetchServiceBySlug, formatINR, iconForName } from "@/lib/services";
 
 export default function ServiceDetailPage() {
   const router = useRouter();
   const { id } = useParams();
-  const service = findService(id);
+  const [service, setService] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await fetchServiceBySlug(id);
+      if (cancelled) return;
+      setService(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-pink-500" />
+      </div>
+    );
+  }
 
   if (!service) {
     return (
@@ -34,7 +57,7 @@ export default function ServiceDetailPage() {
     );
   }
 
-  const Icon = service.icon;
+  const Icon = iconForName(service.icon_name);
   const tagColor = service.accent || "bg-rose-100 text-rose-600";
 
   return (
@@ -63,24 +86,24 @@ export default function ServiceDetailPage() {
                 <div className="flex items-center gap-1">
                   <Star size={13} className="fill-amber-400 text-amber-400" />
                   <span className="text-[12px] font-black text-slate-700">
-                    {service.rating.toFixed(1)}
-                    <span className="text-slate-400 font-bold"> ({service.reviews} reviews)</span>
+                    {Number(service.rating_avg || 0).toFixed(1)}
+                    <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
                   </span>
                 </div>
                 <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider">
                   Available Now
                 </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                  <Clock size={11} /> {service.quoteSlaHours} hr quote SLA
+                  <Clock size={11} /> {service.quote_sla_hours} hr quote SLA
                 </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                  <Flame size={11} className="text-orange-500" /> {service.bookedThisMonth} booked this month
+                  <Flame size={11} className="text-orange-500" /> {service.booked_this_month} booked this month
                 </span>
               </div>
             </div>
 
             {/* Hero */}
-            <div className={`relative aspect-[2.4/1] rounded-3xl bg-gradient-to-br ${service.heroGradient} flex items-center justify-center overflow-hidden`}>
+            <div className={`relative aspect-[2.4/1] rounded-3xl bg-gradient-to-br ${service.hero_gradient} flex items-center justify-center overflow-hidden`}>
               <Icon size={68} strokeWidth={1.4} className="text-white/85" />
             </div>
 
@@ -97,7 +120,7 @@ export default function ServiceDetailPage() {
             <section>
               <h2 className="text-base font-black text-slate-900 mb-3">What's included</h2>
               <ul className="space-y-2">
-                {service.included.map((line) => (
+                {(Array.isArray(service.included) ? service.included : []).map((line) => (
                   <li key={line} className="flex items-start gap-2 text-[13px] text-slate-700">
                     <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                     <span>{line}</span>
@@ -105,18 +128,6 @@ export default function ServiceDetailPage() {
                 ))}
               </ul>
             </section>
-
-            {/* Recent reviews */}
-            {service.recentReviews?.length > 0 && (
-              <section>
-                <h2 className="text-base font-black text-slate-900 mb-3">Recent reviews</h2>
-                <div className="space-y-3">
-                  {service.recentReviews.map((r, i) => (
-                    <ReviewCard key={i} review={r} />
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
 
           {/* ── RIGHT SIDEBAR ── */}
@@ -126,16 +137,16 @@ export default function ServiceDetailPage() {
                 Starting at
               </p>
               <p className="text-3xl font-black text-slate-900 leading-tight">
-                {formatINR(service.price)}
-                {service.priceSuffix && (
+                {formatINR(service.price_starting)}
+                {service.price_suffix && (
                   <span className="text-[12px] font-bold text-slate-400">
-                    {service.priceSuffix}
+                    {service.price_suffix}
                   </span>
                 )}
               </p>
-              {service.priceTo && (
+              {service.price_to && (
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Most {service.tag.toLowerCase()} priced between {formatINR(service.price)} – {formatINR(service.priceTo)} depending on length, complexity, and revisions.
+                  Most {service.tag.toLowerCase()} priced between {formatINR(service.price_starting)} – {formatINR(service.price_to)} depending on length, complexity, and revisions.
                 </p>
               )}
             </div>
@@ -143,11 +154,11 @@ export default function ServiceDetailPage() {
             <div className="bg-rose-50 border border-rose-100 rounded-2xl p-3 flex gap-2 items-start text-[11px] text-rose-700">
               <Info size={14} className="text-rose-500 shrink-0 mt-0.5" />
               <p>
-                Final price is custom-quoted after we review your raw footage and requirements. Quote sent within {service.quoteSlaHours} hours.
+                Final price is custom-quoted after we review your raw footage and requirements. Quote sent within {service.quote_sla_hours} hours.
               </p>
             </div>
 
-            {service.packages?.length > 0 && (
+            {Array.isArray(service.packages) && service.packages.length > 0 && (
               <div className="space-y-2 pt-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   Typical packages
@@ -168,7 +179,7 @@ export default function ServiceDetailPage() {
 
             <div className="space-y-2 pt-1">
               <button
-                onClick={() => router.push(`/influencer/services/${service.id}/quote`)}
+                onClick={() => router.push(`/influencer/services/${service.slug}/quote`)}
                 className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100"
               >
                 <MessageSquare size={15} /> Get Custom Quote
@@ -179,9 +190,9 @@ export default function ServiceDetailPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 text-center">
-              <Stat label="Quote turnaround" value={`${service.quoteSlaHours} hrs`} />
-              <Stat label="Delivery time" value={service.deliveryDays} />
-              <Stat label="Payment split" value={service.paymentSplit} />
+              <Stat label="Quote turnaround" value={`${service.quote_sla_hours} hrs`} />
+              <Stat label="Delivery time" value={service.delivery_days} />
+              <Stat label="Payment split" value={service.payment_split} />
             </div>
           </aside>
         </div>
@@ -191,7 +202,7 @@ export default function ServiceDetailPage() {
 }
 
 function Thumbnails({ service }) {
-  const Icon = service.icon;
+  const Icon = iconForName(service.icon_name);
   // Static thumbnail row matching the screenshot — first tile mirrors the hero
   // icon, the rest are placeholder media icons.
   const tiles = [
