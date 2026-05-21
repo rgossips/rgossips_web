@@ -15,12 +15,18 @@ import {
   Loader2,
 } from "lucide-react";
 import { fetchServiceBySlug, formatINR, iconForName } from "@/lib/services";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
 
 export default function ServiceDetailPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { user } = useAuth();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Latest order this user has for this service, if any. Shown in the right
+  // rail so they can pick up where they left off.
+  const [latestOrder, setLatestOrder] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +40,26 @@ export default function ServiceDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!service?.id || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("service_orders")
+        .select("id, order_number, status, total_amount, quoted_amount, advance_pct, quote_valid_until, created_at")
+        .eq("user_id", user.id)
+        .eq("service_id", service.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setLatestOrder(data || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [service?.id, user?.id]);
 
   if (loading) {
     return (
@@ -131,7 +157,11 @@ export default function ServiceDetailPage() {
           </div>
 
           {/* ── RIGHT SIDEBAR ── */}
-          <aside className="lg:sticky lg:top-24 space-y-4 bg-white rounded-3xl border border-slate-100 p-5 lg:p-6">
+          <div className="lg:sticky lg:top-24 space-y-4">
+            {latestOrder && (
+              <LatestOrderCard order={latestOrder} onOpen={() => router.push(`/influencer/services/orders/${latestOrder.id}`)} />
+            )}
+          <aside className="space-y-4 bg-white rounded-3xl border border-slate-100 p-5 lg:p-6">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Starting at
@@ -195,9 +225,56 @@ export default function ServiceDetailPage() {
               <Stat label="Payment split" value={service.payment_split} />
             </div>
           </aside>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+const STATUS_PILL = {
+  pending_quote: { label: "Awaiting quote", class: "bg-amber-50 text-amber-700" },
+  quoted: { label: "Quote ready", class: "bg-emerald-50 text-emerald-700" },
+  counter_offered: { label: "Counter sent", class: "bg-orange-50 text-orange-700" },
+  accepted: { label: "Quote accepted", class: "bg-emerald-50 text-emerald-700" },
+  paid_advance: { label: "Advance paid", class: "bg-violet-50 text-violet-700" },
+  in_progress: { label: "In progress", class: "bg-violet-50 text-violet-700" },
+  draft_ready: { label: "Draft ready", class: "bg-amber-50 text-amber-700" },
+  revision_requested: { label: "Revision sent", class: "bg-orange-50 text-orange-700" },
+  paid_final: { label: "Final paid", class: "bg-emerald-50 text-emerald-700" },
+  completed: { label: "Completed", class: "bg-blue-50 text-blue-700" },
+  declined: { label: "Declined", class: "bg-gray-100 text-gray-500" },
+  expired: { label: "Expired", class: "bg-gray-100 text-gray-500" },
+};
+
+function LatestOrderCard({ order, onOpen }) {
+  const pill = STATUS_PILL[order.status] || { label: order.status, class: "bg-slate-100 text-slate-600" };
+  const amount =
+    order.total_amount ||
+    order.quoted_amount ||
+    0;
+
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full text-left bg-gradient-to-br from-pink-50 via-rose-50 to-violet-50 rounded-3xl border border-pink-100 p-5 hover:shadow-md transition-all cursor-pointer"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold text-pink-600 uppercase tracking-widest">
+          Your latest request
+        </p>
+        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded ${pill.class}`}>
+          {pill.label}
+        </span>
+      </div>
+      <p className="text-[11px] font-mono text-slate-400 mt-1">{order.order_number}</p>
+      {amount > 0 && (
+        <p className="text-2xl font-black text-slate-900 mt-2 leading-tight">
+          ₹{Number(amount).toLocaleString("en-IN")}
+        </p>
+      )}
+      <p className="text-[12px] font-bold text-pink-500 mt-2">Open order →</p>
+    </button>
   );
 }
 
