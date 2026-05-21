@@ -105,11 +105,12 @@ export default function ServiceOrderDetailPage() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actionLoading, setActionLoading] = useState(null); // 'accept' | 'counter' | 'decline'
+  const [actionLoading, setActionLoading] = useState(null); // 'accept' | 'counter' | 'decline' | 'approve' | 'revision'
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
   const [declineReason, setDeclineReason] = useState("");
-  const [mode, setMode] = useState(null); // 'counter' | 'decline'
+  const [revisionNote, setRevisionNote] = useState("");
+  const [mode, setMode] = useState(null); // 'counter' | 'decline' | 'revision'
 
   const refresh = async () => {
     if (!id) return;
@@ -198,6 +199,35 @@ export default function ServiceOrderDetailPage() {
       window.location.href = data.url; // hand off to Stripe
     } catch (e) {
       setError(e.message || "Failed to start payment");
+      setActionLoading(null);
+    }
+  };
+
+  // POSTs to request-revision — only valid when status='draft_ready' and
+  // there are revisions left.
+  const requestRevision = async () => {
+    setActionLoading("revision");
+    setError("");
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/request-revision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId: user?.id, orderId: id, note: revisionNote }),
+      });
+      const data = await res.json();
+      if (data?.error) throw new Error(data.message || data.error);
+      setMode(null);
+      setRevisionNote("");
+      await refresh();
+    } catch (e) {
+      setError(e.message || "Failed to request revision");
+    } finally {
       setActionLoading(null);
     }
   };
@@ -352,6 +382,11 @@ export default function ServiceOrderDetailPage() {
                 </ul>
               </Card>
             )}
+
+            {/* Draft preview — visible from draft_ready onwards if a URL exists */}
+            {order.draft_url && ["draft_ready", "revision_requested", "paid_final", "completed"].includes(order.status) && (
+              <DraftPreviewBlock order={order} />
+            )}
           </div>
 
           {/* ── RIGHT — pricing & actions ── */}
@@ -498,6 +533,32 @@ export default function ServiceOrderDetailPage() {
               </Card>
             )}
 
+            {/* Two ways forward — approve & pay final, or request a revision */}
+            {order.status === "draft_ready" && (
+              <DraftReviewSidebar
+                order={order}
+                payViaStripe={payViaStripe}
+                actionLoading={actionLoading}
+                error={error}
+                mode={mode}
+                setMode={setMode}
+                revisionNote={revisionNote}
+                setRevisionNote={setRevisionNote}
+                requestRevision={requestRevision}
+              />
+            )}
+
+            {order.status === "revision_requested" && (
+              <Card title="Revision in progress">
+                <p className="text-[12px] text-slate-600 leading-relaxed">
+                  Our team is on your revision. {order.revisions_used} of {order.revisions_allowed} revision rounds used.
+                </p>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  We'll notify you when the next draft lands.
+                </p>
+              </Card>
+            )}
+
             <Card title="Order details">
               <Spec label="Order ID" value={order.order_number} />
               <Spec label="Service" value={order.service_title} />
@@ -558,6 +619,174 @@ function Message({ message, mine }) {
         </p>
         <p className="whitespace-pre-wrap">{message.body}</p>
       </div>
+    </div>
+  );
+}
+
+function DraftPreviewBlock({ order }) {
+  const isWatermarked = order.status === "draft_ready" || order.status === "revision_requested";
+  return (
+    <div className="bg-slate-900 rounded-3xl overflow-hidden relative">
+      <div className="aspect-[2.4/1] flex items-center justify-center relative">
+        <div className="w-14 h-14 rounded-full bg-white/15 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+        {isWatermarked && (
+          <p className="absolute inset-0 flex items-center justify-center text-white/15 text-7xl font-black tracking-widest rotate-[-15deg] select-none pointer-events-none">
+            PREVIEW
+          </p>
+        )}
+        <a
+          href={order.draft_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute inset-0"
+          aria-label="Open draft preview"
+        />
+      </div>
+      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/95 text-[11px] text-slate-300">
+        <span className="font-mono truncate">{order.service_title}</span>
+        <a
+          href={order.draft_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-pink-400 hover:underline font-bold cursor-pointer"
+        >
+          Open preview ↗
+        </a>
+      </div>
+      {isWatermarked && (
+        <div className="px-4 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-700 flex items-start gap-2">
+          <Info size={12} className="text-amber-500 shrink-0 mt-0.5" />
+          <p>
+            This draft is watermarked. You can review the full quality and approve, or request changes.
+            Watermarks will be removed and final files unlocked once you pay the remaining{" "}
+            {formatINR(
+              (order.total_amount || 0) -
+                Math.round(((order.total_amount || 0) * (order.advance_pct || 50)) / 100)
+            )}
+            .
+          </p>
+        </div>
+      )}
+      {order.draft_note && (
+        <div className="px-4 py-3 bg-white border-t border-slate-100">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Note from editor</p>
+          <p className="text-[13px] text-slate-700 mt-1 leading-relaxed">{order.draft_note}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DraftReviewSidebar({
+  order,
+  payViaStripe,
+  actionLoading,
+  error,
+  mode,
+  setMode,
+  revisionNote,
+  setRevisionNote,
+  requestRevision,
+}) {
+  const total = order.total_amount || 0;
+  const advance = Math.round((total * (order.advance_pct || 50)) / 100);
+  const dueNow = total - advance;
+  const revsLeft = (order.revisions_allowed || 0) - (order.revisions_used || 0);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        Two ways forward
+      </p>
+
+      {/* Approve & pay final */}
+      <div className="bg-emerald-50 rounded-xl p-3 space-y-1.5 text-[12px]">
+        <p className="text-[11px] font-black text-emerald-700 inline-flex items-center gap-1">
+          <CheckCircle2 size={12} /> Looks good as-is?
+        </p>
+        <Row label="Total project" value={formatINR(total)} />
+        <Row label="Paid (advance)" value={`–${formatINR(advance)}`} muted />
+        <div className="border-t border-emerald-200 pt-1.5">
+          <Row label="Due now" value={formatINR(dueNow)} bold />
+        </div>
+      </div>
+
+      <div className="bg-pink-50 rounded-xl p-3 text-center">
+        <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider">Pay to unlock final files</p>
+        <p className="text-xl font-black text-slate-900 mt-1">{formatINR(dueNow)}</p>
+      </div>
+
+      <button
+        onClick={() => payViaStripe("final")}
+        disabled={!!actionLoading}
+        className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
+      >
+        {actionLoading === "approve" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+        Approve &amp; Pay Final {formatINR(dueNow)}
+      </button>
+
+      {error && <p className="text-[12px] text-red-500 font-semibold">{error}</p>}
+
+      {/* Revision */}
+      <div className="bg-amber-50 rounded-xl p-3 mt-2">
+        <p className="text-[11px] font-black text-amber-700 inline-flex items-center gap-1">
+          ✎ Need changes?
+        </p>
+        <p className="text-[11px] text-amber-700 mt-1 leading-snug">
+          {revsLeft > 0
+            ? `Use one of your ${revsLeft} revision${revsLeft === 1 ? "" : "s"} to request changes. No additional payment required.`
+            : "You've used all your revision rounds. Reach out via support for additional changes."}
+        </p>
+      </div>
+
+      {mode !== "revision" && (
+        <button
+          onClick={() => setMode("revision")}
+          disabled={revsLeft <= 0 || !!actionLoading}
+          className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer hover:border-pink-200 hover:text-pink-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ✎ Request Revision
+        </button>
+      )}
+
+      {mode === "revision" && (
+        <div className="space-y-2">
+          <textarea
+            rows={4}
+            value={revisionNote}
+            onChange={(e) => setRevisionNote(e.target.value)}
+            placeholder="Be specific — which parts need to change?"
+            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setMode(null);
+                setRevisionNote("");
+              }}
+              disabled={!!actionLoading}
+              className="flex-1 py-2 rounded-xl border border-slate-200 text-[12px] font-black text-slate-500 cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={requestRevision}
+              disabled={!!actionLoading || revisionNote.trim().length < 5}
+              className="flex-1 py-2 rounded-xl btn-purple text-white text-[12px] font-black cursor-pointer disabled:opacity-60"
+            >
+              {actionLoading === "revision" ? "Sending…" : "Send revision"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <p className="text-[10px] text-slate-400 text-center pt-1">
+        Once approved, files become permanently available in your order history.
+      </p>
     </div>
   );
 }
