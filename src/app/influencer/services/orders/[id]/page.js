@@ -111,6 +111,8 @@ export default function ServiceOrderDetailPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [mode, setMode] = useState(null); // 'counter' | 'decline' | 'revision'
+  const [myReview, setMyReview] = useState(null);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   const refresh = async () => {
     if (!id) return;
@@ -200,6 +202,51 @@ export default function ServiceOrderDetailPage() {
     } catch (e) {
       setError(e.message || "Failed to start payment");
       setActionLoading(null);
+    }
+  };
+
+  // Load any existing review for this order so the form collapses into a
+  // read-only "thank you" once submitted.
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("service_reviews")
+        .select("*")
+        .eq("order_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) setMyReview(data || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user?.id, supabase]);
+
+  const submitReview = async (review) => {
+    setReviewSubmitting(true);
+    setError("");
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/submit-service-review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ userId: user?.id, orderId: id, ...review }),
+      });
+      const data = await res.json();
+      if (data?.error) throw new Error(data.error);
+      setMyReview(review);
+      await refresh();
+    } catch (e) {
+      setError(e.message || "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -387,6 +434,10 @@ export default function ServiceOrderDetailPage() {
             {order.draft_url && ["draft_ready", "revision_requested", "paid_final", "completed"].includes(order.status) && (
               <DraftPreviewBlock order={order} />
             )}
+
+            {order.status === "completed" && Array.isArray(order.final_files) && order.final_files.length > 0 && (
+              <DownloadList files={order.final_files} />
+            )}
           </div>
 
           {/* ── RIGHT — pricing & actions ── */}
@@ -557,6 +608,14 @@ export default function ServiceOrderDetailPage() {
                   We'll notify you when the next draft lands.
                 </p>
               </Card>
+            )}
+
+            {order.status === "completed" && (
+              <ReviewPanel
+                existing={myReview}
+                submitting={reviewSubmitting}
+                onSubmit={submitReview}
+              />
             )}
 
             <Card title="Order details">
@@ -787,6 +846,162 @@ function DraftReviewSidebar({
       <p className="text-[10px] text-slate-400 text-center pt-1">
         Once approved, files become permanently available in your order history.
       </p>
+    </div>
+  );
+}
+
+function DownloadList({ files }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-5">
+      <div className="flex items-baseline justify-between">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Download your files
+        </p>
+        <span className="text-[10px] text-slate-400">All files available permanently in your order history</span>
+      </div>
+      <ul className="mt-3 divide-y divide-slate-100">
+        {files.map((f, i) => (
+          <li key={i} className="py-2.5 flex items-center justify-between gap-3 text-[13px]">
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-900 truncate">{f.name}</p>
+              {f.size && <p className="text-[11px] text-slate-400 mt-0.5">{f.size}</p>}
+            </div>
+            <a
+              href={f.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="text-pink-500 hover:underline font-bold text-[12px] whitespace-nowrap"
+            >
+              Download ↓
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ReviewPanel({ existing, submitting, onSubmit }) {
+  // Read-only "thank you" if there's already a row.
+  if (existing) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100 p-5">
+        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+          Review submitted
+        </p>
+        <p className="text-2xl font-black text-slate-900 mt-1 leading-tight">
+          {existing.overall}.0 ★
+        </p>
+        <p className="text-[12px] text-slate-500 mt-2">
+          Thanks for the feedback — it helps other creators discover the service.
+        </p>
+        <div className="grid grid-cols-2 gap-3 mt-4 text-[11px]">
+          <SubScore label="Quality" value={existing.quality} />
+          <SubScore label="Communication" value={existing.communication} />
+          <SubScore label="On-time delivery" value={existing.on_time_delivery} />
+          <SubScore label="Value for money" value={existing.value_for_money} />
+        </div>
+        {existing.text && (
+          <p className="text-[12px] text-slate-600 mt-3 italic">"{existing.text}"</p>
+        )}
+      </div>
+    );
+  }
+
+  return <ReviewForm submitting={submitting} onSubmit={onSubmit} />;
+}
+
+function SubScore({ label, value }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+      <p className="text-[13px] font-black text-slate-700 mt-0.5">{value ? `${value} ★` : "—"}</p>
+    </div>
+  );
+}
+
+function ReviewForm({ submitting, onSubmit }) {
+  const [overall, setOverall] = useState(5);
+  const [quality, setQuality] = useState(5);
+  const [communication, setCommunication] = useState(5);
+  const [onTime, setOnTime] = useState(5);
+  const [value, setValue] = useState(5);
+  const [text, setText] = useState("");
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Rate your experience
+        </p>
+        <p className="text-[11px] text-pink-500 mt-0.5">Help others discover the best RGossips services</p>
+      </div>
+
+      <div>
+        <p className="text-[11px] text-slate-500 text-center">Tap to rate ({overall} star{overall === 1 ? "" : "s"} selected)</p>
+        <div className="flex justify-center mt-1">
+          <StarRow value={overall} onChange={setOverall} size={26} />
+        </div>
+      </div>
+
+      <textarea
+        rows={3}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Share your experience… (optional)"
+        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
+      />
+
+      <div className="grid grid-cols-2 gap-3 pt-1">
+        <SubAxis label="Quality" value={quality} onChange={setQuality} />
+        <SubAxis label="Communication" value={communication} onChange={setCommunication} />
+        <SubAxis label="On-time delivery" value={onTime} onChange={setOnTime} />
+        <SubAxis label="Value for money" value={value} onChange={setValue} />
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={() => onSubmit({ overall, quality, communication, on_time_delivery: onTime, value_for_money: value, text })}
+          disabled={submitting}
+          className="flex-1 py-2.5 rounded-xl btn-purple text-white text-[13px] font-black cursor-pointer disabled:opacity-60"
+        >
+          {submitting ? "Submitting…" : "Submit Review"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SubAxis({ label, value, onChange }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+      <StarRow value={value} onChange={onChange} size={14} />
+    </div>
+  );
+}
+
+function StarRow({ value, onChange, size = 18 }) {
+  return (
+    <div className="flex items-center gap-0.5 mt-0.5">
+      {Array.from({ length: 5 }, (_, i) => {
+        const v = i + 1;
+        const filled = v <= value;
+        return (
+          <button
+            key={v}
+            type="button"
+            onClick={() => onChange(v)}
+            className="cursor-pointer transition-transform hover:scale-110"
+            aria-label={`${v} star${v === 1 ? "" : "s"}`}
+          >
+            <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#fbbf24" : "transparent"} stroke={filled ? "#fbbf24" : "#cbd5e1"} strokeWidth="2">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+          </button>
+        );
+      })}
     </div>
   );
 }
