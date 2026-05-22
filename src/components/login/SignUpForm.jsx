@@ -33,6 +33,7 @@ const SignUpForm = ({
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [localError, setLocalError] = useState("");
+  const [consentAgreed, setConsentAgreed] = useState(false);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -116,6 +117,10 @@ const SignUpForm = ({
     }
     if (!otpVerified) {
       setLocalError("Please verify your phone number");
+      return;
+    }
+    if (!consentAgreed) {
+      setLocalError("Please accept the Influencer Consent Policy to continue");
       return;
     }
     onSubmit({ ...formData });
@@ -227,11 +232,33 @@ const SignUpForm = ({
         </div>
       </div>
 
+      {/* Consent (mandatory) */}
+      <label className="flex items-start gap-3 px-1 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={consentAgreed}
+          onChange={(e) => setConsentAgreed(e.target.checked)}
+          className="mt-0.5 w-4 h-4 accent-[#6347F9] cursor-pointer"
+        />
+        <span className="text-[12px] text-slate-600 leading-snug">
+          I have read and agree to the{" "}
+          <a
+            href="/influencer/consent-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#6347F9] font-bold hover:underline"
+          >
+            Influencer Consent Policy
+          </a>
+          , Terms of Service, Privacy Policy and Community Guidelines of Recent Gossips.
+        </span>
+      </label>
+
       {/* Submit */}
       <div className="pt-2">
         <Button
           onClick={handleSubmit}
-          disabled={loading || !formData.name || !otpVerified}
+          disabled={loading || !formData.name || !otpVerified || !consentAgreed}
           className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100 disabled:opacity-50"
         >
           {loading ? (
