@@ -172,20 +172,11 @@ export default function ServiceOrderDetailPage() {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      // For "advance" we first flip the quote to 'accepted' (so the user's
-      // intent is recorded) and then hand off to Stripe. The webhook will
-      // mark advance_paid + status='in_progress' on a successful payment.
-      if (phase === "advance" && order.status === "quoted") {
-        await fetch(`${supabaseUrl}/functions/v1/respond-to-quote`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-          },
-          body: JSON.stringify({ userId: user?.id, orderId: id, action: "accept" }),
-        });
-      }
+      // Status stays at 'quoted' while we hand off to Stripe. If the user
+      // cancels in the Checkout page the order remains 'quoted' and they
+      // can try again (or counter / decline). Only the webhook's successful
+      // payment event flips the order forward — preventing "accepted but
+      // never paid" zombie orders.
       const res = await fetch(`${supabaseUrl}/functions/v1/service-payment-checkout`, {
         method: "POST",
         headers: {

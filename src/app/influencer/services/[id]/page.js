@@ -128,12 +128,23 @@ export default function ServiceDetailPage() {
               </div>
             </div>
 
-            {/* Hero */}
-            <div className={`relative aspect-[2.4/1] rounded-3xl bg-gradient-to-br ${service.hero_gradient} flex items-center justify-center overflow-hidden`}>
-              <Icon size={68} strokeWidth={1.4} className="text-white/85" />
-            </div>
+            {/* Hero — featured image overrides the gradient when present */}
+            {service.featured_image_url ? (
+              <div className="relative aspect-[2.4/1] rounded-3xl overflow-hidden bg-slate-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={service.featured_image_url}
+                  alt={service.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className={`relative aspect-[2.4/1] rounded-3xl bg-gradient-to-br ${service.hero_gradient} flex items-center justify-center overflow-hidden`}>
+                <Icon size={68} strokeWidth={1.4} className="text-white/85" />
+              </div>
+            )}
 
-            {/* Thumbnails */}
+            {/* Gallery thumbnails */}
             <Thumbnails service={service} />
 
             {/* About */}
@@ -279,35 +290,36 @@ function LatestOrderCard({ order, onOpen }) {
 }
 
 function Thumbnails({ service }) {
-  const Icon = iconForName(service.icon_name);
-  // Static thumbnail row matching the screenshot — first tile mirrors the hero
-  // icon, the rest are placeholder media icons.
-  const tiles = [
-    { Icon, active: true },
-    { Icon: ImageIcon },
-    { Icon: ImageIcon },
-    { Icon: Film },
-  ];
-  const [active, setActive] = useState(0);
+  const gallery = Array.isArray(service.gallery) ? service.gallery : [];
+  if (gallery.length === 0) return null;
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {tiles.map((t, i) => {
-        const I = t.Icon;
-        const isActive = i === active;
-        return (
-          <button
-            key={i}
-            onClick={() => setActive(i)}
-            className={`aspect-[2.4/1] rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
-              isActive
-                ? "bg-white border-2 border-pink-500 shadow-sm"
-                : "bg-slate-100 border border-slate-200 hover:border-slate-300"
-            }`}
-          >
-            <I size={20} className={isActive ? "text-pink-500" : "text-slate-400"} strokeWidth={1.6} />
-          </button>
-        );
-      })}
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {gallery.map((g, i) => (
+        <a
+          key={i}
+          href={g.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 hover:border-pink-300 transition-colors relative cursor-pointer block group"
+          title={g.caption || ""}
+        >
+          {g.type === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={g.url}
+              alt={g.caption || ""}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-400">
+              <Film size={24} />
+            </div>
+          )}
+          <span className="absolute top-1.5 left-1.5 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/60 text-white">
+            {g.type}
+          </span>
+        </a>
+      ))}
     </div>
   );
 }

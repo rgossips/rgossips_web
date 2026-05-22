@@ -16,7 +16,7 @@ const TopServices = () => {
     (async () => {
       const data = await fetchServices();
       if (cancelled) return;
-      setServices(data.slice(0, 5)); // featured + 4 in the right list
+      setServices(data.slice(0, 7)); // featured + 6 in the right list
       setLoading(false);
     })();
     return () => {
@@ -118,13 +118,26 @@ export default TopServices;
 // ── Featured left-side card ─────────────────────────────────────────────
 function FeaturedCard({ service, onClick }) {
   const Icon = iconForName(service.icon_name);
+  const hasImage = !!service.featured_image_url;
   return (
     <div
       onClick={onClick}
       className="col-span-5 flex flex-col group cursor-pointer border border-slate-200 hover:shadow-lg rounded-4xl overflow-hidden transition-shadow"
     >
-      <div className={`relative aspect-[4/3] bg-gradient-to-br ${service.hero_gradient} flex items-center justify-center overflow-hidden`}>
-        <div className="absolute top-4 left-4 flex gap-2">
+      <div
+        className={`relative aspect-[4/3] flex items-center justify-center overflow-hidden ${
+          hasImage ? "bg-slate-100" : `bg-gradient-to-br ${service.hero_gradient}`
+        }`}
+      >
+        {hasImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={service.featured_image_url}
+            alt={service.title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        )}
+        <div className="absolute top-4 left-4 flex gap-2 z-10">
           <span className="bg-white/90 backdrop-blur-sm text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1">
             <span className="text-pink-500">⚡</span> TOP RATED
           </span>
@@ -132,7 +145,9 @@ function FeaturedCard({ service, onClick }) {
             {service.tag}
           </span>
         </div>
-        <Icon size={84} strokeWidth={1.2} className="text-white/85 group-hover:scale-110 transition-transform duration-500" />
+        {!hasImage && (
+          <Icon size={84} strokeWidth={1.2} className="text-white/85 group-hover:scale-110 transition-transform duration-500 relative z-0" />
+        )}
       </div>
 
       <div className="p-4 space-y-3 flex-1 flex flex-col">
