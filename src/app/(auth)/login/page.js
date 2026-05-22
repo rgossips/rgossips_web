@@ -180,9 +180,31 @@ const Login = () => {
 
   const handleSignInSendOtp = async (phoneNumber) => {
     setLoading(true);
-    setLoadingMsg("Sending OTP…");
+    setLoadingMsg("Checking your number…");
     setError("");
     try {
+      // Pre-check: is this phone already registered? Unknown numbers get
+      // recorded in `leads` and the user is nudged to sign up instead.
+      const { data: check, error: checkError } = await supabase.functions.invoke("check-phone-exists", {
+        body: { phone: phoneNumber, role: signupData.role },
+      });
+      if (checkError) throw new Error(checkError.message);
+      if (check?.error) throw new Error(check.error);
+
+      if (!check?.exists) {
+        setError("You don't exist with us. Kindly sign up first.");
+        setLoading(false);
+        return;
+      }
+
+      if (check.match === false) {
+        const otherRole = check.role === "brand" ? "a Brand" : "an Influencer";
+        setError(`This number is registered as ${otherRole}. Please switch role and try again.`);
+        setLoading(false);
+        return;
+      }
+
+      setLoadingMsg("Sending OTP…");
       await sendOtp(phoneNumber);
       nextStep(); // → step 3 (verify)
     } catch (err) {

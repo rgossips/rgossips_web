@@ -127,6 +127,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Clean up the leads entry — this number has now graduated from "tried to
+    // sign in" to "actual user". Phone is stored without '+' in leads.
+    if (phone) {
+      try {
+        const leadDigits = String(phone).replace(/\D/g, "");
+        const leadPhone = leadDigits.startsWith("91") ? leadDigits : `91${leadDigits.slice(-10)}`;
+        await supabaseAdmin.from("leads").delete().eq("phone", leadPhone);
+      } catch (e) {
+        console.error("Lead cleanup failed (non-fatal):", e);
+      }
+    }
+
     // Trigger Instagram refresh to populate engagement data immediately
     if (table === "influencer_profiles" && instagramAccessToken) {
       try {
