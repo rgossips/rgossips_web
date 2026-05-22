@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import AddReelFlow from "@/components/AddReelFlow";
 import DashboardView from "@/components/DashboardView";
 import MyInformationDetail from "@/components/MyInformationDetail";
@@ -15,6 +16,7 @@ import HelpSupport from "@/components/HelpAndSupport";
 import PaymentMethods from "@/components/PaymentMethods";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
 
   useEffect(() => {
@@ -34,6 +36,7 @@ export default function ProfilePage() {
               setView("privacy");
             }}
             onOpenAnalytics={() => setView("analytics")}
+            onOpenServiceRequests={() => router.push("/influencer/services/orders")}
             onOpenInfo={() => setView("my-info")}
             onhelpSupportClick={() => setView("help&support")}
             onPaymentClick={() => setView("payments")}

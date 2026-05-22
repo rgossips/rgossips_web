@@ -19,6 +19,7 @@ import {
   Zap,
   X,
   Hourglass,
+  Briefcase,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
@@ -68,6 +69,7 @@ function getTrialInfo(profile) {
 const DashboardView = ({
   onOpenInfo,
   onOpenAnalytics,
+  onOpenServiceRequests,
   onNotificationClick,
   onPrivacyClick,
   onPaymentClick,
@@ -486,6 +488,23 @@ const DashboardView = ({
                   </div>
                 </div>
               </HubCard>
+
+              <HubCard
+                onClick={onOpenServiceRequests}
+                title="Service Requests"
+                sub="Your quote requests, orders & deliveries"
+                bgColor="bg-[#FEF3F2]"
+                icon={Briefcase}
+                iconGradient="from-[#F43F5E] to-[#FB7185]"
+              >
+                <div className="mt-3 bg-white/60 p-2 rounded-xl border border-white/80 flex items-center justify-between shadow-sm">
+                  <div>
+                    <p className="text-[8px] text-gray-400 font-black uppercase">Active orders</p>
+                    <p className="text-xs font-black text-gray-800 mt-0.5">View all</p>
+                  </div>
+                  <ChevronRight size={14} className="text-rose-400" />
+                </div>
+              </HubCard>
             </div>
           </section>
 
@@ -710,6 +729,25 @@ const DashboardView = ({
                     />
                   ))}
                 </div>
+              </div>
+            </HubCard>
+
+            <HubCard
+              onClick={onOpenServiceRequests}
+              title="Service Requests"
+              sub="Your quote requests, orders & deliveries"
+              bgColor="bg-[#FEF3F2]"
+              icon={Briefcase}
+              iconGradient="from-[#F43F5E] to-[#FB7185]"
+            >
+              <div className="mt-4 bg-white/60 p-3 rounded-xl border border-white/80 flex items-center justify-between shadow-sm">
+                <div>
+                  <p className="text-[8px] text-gray-400 font-black uppercase">
+                    Active orders
+                  </p>
+                  <p className="text-sm font-black text-gray-800">View all</p>
+                </div>
+                <ChevronRight size={16} className="text-rose-400" />
               </div>
             </HubCard>
           </div>
