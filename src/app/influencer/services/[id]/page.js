@@ -225,9 +225,6 @@ export default function ServiceDetailPage() {
               >
                 <MessageSquare size={15} /> Get Custom Quote
               </button>
-              <button className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer hover:border-pink-200 hover:text-pink-500">
-                <MessageSquare size={15} /> Ask a question
-              </button>
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 text-center">

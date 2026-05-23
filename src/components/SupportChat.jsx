@@ -106,6 +106,51 @@ const TREE = {
       ],
     },
     {
+      id: "services",
+      label: "Services",
+      children: [
+        {
+          id: "service_browse",
+          label: "How do I browse services?",
+          response:
+            "Open the Services tab to see everything I offer to brands — reels, photo shoots, story takeovers, ambassadorships, and more. Each card opens a detail page with my rates and turnaround.",
+          link: { href: "/influencer/services", label: "Open Services" },
+        },
+        {
+          id: "service_quote",
+          label: "How does Custom Quote work?",
+          response:
+            "Pick a service, tap Get Custom Quote, fill in what you need and submit. I review and reply with a personalised quote — once you accept, you pay the advance via Stripe and we move into delivery.",
+          link: { href: "/influencer/services", label: "Open Services" },
+        },
+        {
+          id: "service_order_track",
+          label: "Track an existing order",
+          response:
+            "Profile → Orders shows every service request you've made. Each order page has the live status, payment breakdown, and any draft deliverables ready for review.",
+          link: { href: "/influencer/services/orders", label: "My Orders" },
+        },
+        {
+          id: "service_payment",
+          label: "Payment / advance not going through",
+          response:
+            "Stripe occasionally declines cards on first attempt — try once more, or use a different card / UPI. If it still fails, request a callback and we'll help you wrap it up.",
+        },
+        {
+          id: "service_revision",
+          label: "Request a revision on a draft",
+          response:
+            "Open the order from Profile → Orders. While the draft is in review you'll see a Request Revision button — describe what to change and I'll re-deliver.",
+          link: { href: "/influencer/services/orders", label: "My Orders" },
+        },
+        {
+          id: "service_callback",
+          label: "Talk to a human about a service",
+          action: "callback",
+        },
+      ],
+    },
+    {
       id: "payments",
       label: "Payments",
       children: [
@@ -849,9 +894,11 @@ const TIME_OPTIONS = [
 
 function CallbackForm({ user, role, profile, path, context, onSubmitted, onCancel }) {
   const supabase = createClient();
-  const [phone, setPhone] = useState(
-    profile?.contact_phone || profile?.phone || user?.phone || ""
-  );
+  // Phones can arrive with or without `+` / country code — keep whatever the
+  // caller provides as a default, just strip noise. Indian numbers default to
+  // +91 if no country code is present.
+  const defaultPhone = (profile?.contact_phone || profile?.phone || user?.phone || "").toString().replace(/[^\d+]/g, "");
+  const [phone, setPhone] = useState(defaultPhone);
   const [time, setTime] = useState("Today afternoon");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -861,13 +908,30 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
   const topicLabel = path.length > 0 ? findLabel(path[0]) : "General";
   const topicPath = [path.join(" > "), context].filter(Boolean).join(" · ");
 
+  // Normalize to E.164-ish: keep `+` if present, otherwise prepend 91 for
+  // anything that looks like a bare 10-digit Indian mobile.
+  const normalizePhone = (raw) => {
+    const trimmed = (raw || "").trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("+")) {
+      const digits = trimmed.replace(/[^\d]/g, "");
+      return `+${digits}`;
+    }
+    const digits = trimmed.replace(/\D/g, "");
+    if (digits.length === 10) return `+91${digits}`;
+    return `+${digits}`;
+  };
+
   const handleSubmit = async () => {
     if (!user?.id) {
       setError("Please sign in first.");
       return;
     }
-    if (!phone || phone.replace(/\D/g, "").length < 10) {
-      setError("Enter a valid phone number.");
+    const normalized = normalizePhone(phone);
+    const digitsOnly = normalized.replace(/\D/g, "");
+    // E.164 numbers are 8–15 digits including country code.
+    if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+      setError("Enter a valid phone number with country code.");
       return;
     }
     setSubmitting(true);
@@ -879,7 +943,7 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
         topic: topicLabel,
         topic_path: topicPath,
         preferred_time: time,
-        phone: phone.replace(/\D/g, "").slice(-10),
+        phone: normalized,
         notes: notes.trim(),
       });
       if (dbErr) throw new Error(dbErr.message);
@@ -920,10 +984,11 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
         <input
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-          placeholder="10-digit mobile"
+          onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
+          placeholder="+91 98765 43210"
           className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
         />
+        <p className="text-[10px] text-slate-400 mt-1">Include country code (e.g. +91 for India)</p>
       </div>
 
       <div>

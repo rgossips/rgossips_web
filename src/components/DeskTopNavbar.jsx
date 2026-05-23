@@ -8,7 +8,6 @@ import {
   User,
   HeadphonesIcon,
   Bell,
-  Search,
   LogOut,
   CheckCircle,
   Award,
@@ -146,7 +145,9 @@ export const DesktopNavbar = () => {
   return (
     <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
       <div>
-        <Image src={logo} alt="logo" height={200} width={200} />
+        <Link href="/" aria-label="Go to homepage" className="inline-block">
+          <Image src={logo} alt="logo" height={200} width={200} className="cursor-pointer" />
+        </Link>
       </div>
       <div className="flex items-center gap-2">
         {DESKTOP_NAV_ITEMS.map((item) => {
@@ -166,12 +167,7 @@ export const DesktopNavbar = () => {
           );
         })}
       </div>
-      <div className="hidden lg:flex items-center gap-3 flex-1 lg:max-w-2xl">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input type="text" placeholder="Search campaigns, brands..." className="w-full bg-white py-3.5 pl-12 pr-4 rounded-2xl text-sm font-medium border-none shadow-sm focus:ring-2 focus:ring-pink-500 transition-all placeholder:text-slate-400" />
-        </div>
-
+      <div className="hidden lg:flex items-center justify-end gap-3 flex-1">
         <div className="flex gap-2">
           {/* Notification Bell with Popover */}
           <div className="relative" ref={popoverRef}>

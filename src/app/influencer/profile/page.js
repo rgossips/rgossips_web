@@ -9,7 +9,6 @@ import AnalyticsPage from "@/components/AnalyticsPage";
 
 import NotificationSettings from "@/components/NotificationSettings";
 import PrivacySecurityPage from "@/components/PrivacySettings";
-import ChangePassword from "@/components/ChangePassword";
 import TrustedDevices from "@/components/TrustedDevices";
 import DeactivateAccount from "@/components/DeactiveAccount";
 import HelpSupport from "@/components/HelpAndSupport";
@@ -68,15 +67,6 @@ export default function ProfilePage() {
             onBack={() => setView("dashboard")}
             onTrustedDevices={() => setView("trusted-devices")}
             onDeactiveAccount={() => setView("deactivate-account")}
-            onPasswordChange={() => {
-              setView("password-change");
-            }}
-          />
-        )}
-        {view === "password-change" && (
-          <ChangePassword
-            key="password-change"
-            onBack={() => setView("privacy")}
           />
         )}
         {view === "trusted-devices" && (

@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Eye,
   Shield,
-  Lock,
   Smartphone,
   UserMinus,
   ChevronRight,
@@ -12,14 +11,12 @@ import {
 
 const PrivacySecurityPage = ({
   onBack,
-  onPasswordChange,
   onTrustedDevices,
   onDeactiveAccount,
 }) => {
   const [settings, setSettings] = useState({
     publicProfile: true,
     showEmail: false,
-    activityStatus: true,
     searchIndexing: true,
     twoFactor: true,
   });
@@ -74,12 +71,6 @@ const PrivacySecurityPage = ({
               onToggle={() => toggleSetting("showEmail")}
             />
             <ToggleRow
-              title="Activity Status"
-              description="Show when you're online"
-              isEnabled={settings.activityStatus}
-              onToggle={() => toggleSetting("activityStatus")}
-            />
-            <ToggleRow
               title="Search Indexing"
               description="Allow search engines to index profile"
               isEnabled={settings.searchIndexing}
@@ -109,12 +100,6 @@ const PrivacySecurityPage = ({
 
             <div className="h-[1px] bg-gray-50 w-full" />
 
-            <SecurityLink
-              icon={<Lock size={18} />}
-              onClick={onPasswordChange}
-              title="Change Password"
-              description="Update your account password"
-            />
             <SecurityLink
               onClick={onTrustedDevices}
               icon={<Smartphone size={18} />}
