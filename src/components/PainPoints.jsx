@@ -1,22 +1,26 @@
 import React from "react";
-import { AlertCircle } from "lucide-react";
+import { SearchX, Wallet, Clock, BarChartHorizontal } from "lucide-react";
 
 const PainPoints = () => {
   const points = [
     {
+      icon: SearchX,
       title: "Finding the right influencer is a full-time job.",
       description:
         "Scrolling through thousands of profiles, wrong niches, fake followers, zero ROI.",
     },
     {
+      icon: Wallet,
       title: "Agencies eat your budget before a single post goes live.",
       description: "30-40% commissions, slow turnarounds.",
     },
     {
+      icon: Clock,
       title: "Creators get paid late — or not at all.",
       description: "Broken payment chains, ambiguous contracts.",
     },
     {
+      icon: BarChartHorizontal,
       title: "Zero visibility into what's actually performing.",
       description: "Vanity metrics, delayed reports.",
     },
@@ -39,22 +43,25 @@ const PainPoints = () => {
 
         {/* Dark Cards Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-          {points.map((point, idx) => (
-            <div
-              key={idx}
-              className="bg-[#0D0D12] rounded-3xl p-8 border border-white/5 hover:border-rose-500/30 transition-colors group"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                <AlertCircle className="w-6 h-6 text-rose-500" />
+          {points.map((point, idx) => {
+            const Icon = point.icon;
+            return (
+              <div
+                key={idx}
+                className="bg-[#0D0D12] rounded-3xl p-8 border border-white/5 hover:border-rose-500/30 transition-colors group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                  <Icon className="w-6 h-6 text-rose-500" />
+                </div>
+                <h4 className="text-white text-xl font-bold mb-4 leading-tight">
+                  {point.title}
+                </h4>
+                <p className="text-slate-400 text-sm leading-relaxed">
+                  {point.description}
+                </p>
               </div>
-              <h4 className="text-white text-xl font-bold mb-4 leading-tight">
-                {point.title}
-              </h4>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {point.description}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

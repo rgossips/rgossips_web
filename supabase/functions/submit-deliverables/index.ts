@@ -50,6 +50,70 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Normalise URLs the same way the client does so /reel/X/ and /reel/X
+    // and protocol differences don't slip through the dup check.
+    const normalise = (raw: string): string => {
+      if (!raw) return "";
+      try {
+        const u = new URL(String(raw).trim());
+        const host = u.hostname.toLowerCase().replace(/^www\./, "");
+        const path = u.pathname.replace(/\/+$/, "").toLowerCase();
+        return `${host}${path}`;
+      } catch {
+        return String(raw).trim().toLowerCase();
+      }
+    };
+
+    // Within-submission duplicates — client should already block these but
+    // re-check server-side in case the request was crafted manually.
+    const incoming = (Array.isArray(submissionLinks) ? submissionLinks : [])
+      .map((s: any) => ({ ...s, _norm: normalise(s?.url) }))
+      .filter((s: any) => s._norm);
+
+    const seen = new Set<string>();
+    for (const item of incoming) {
+      if (seen.has(item._norm)) {
+        return new Response(
+          JSON.stringify({ error: "Each deliverable needs a unique URL — you submitted the same link twice." }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      seen.add(item._norm);
+    }
+
+    // Cross-application dup check — a creator can't reuse the same live post
+    // across two campaigns. Skip rows for this very application (revisions
+    // overwrite their own prior submission and that's fine).
+    if (incoming.length > 0) {
+      const { data: priorApps } = await supabaseAdmin
+        .from("campaign_applications")
+        .select("id, submission_links, campaign_id")
+        .eq("influencer_id", app.influencer_id)
+        .neq("id", applicationId);
+
+      const reused: { url: string; campaignId: string }[] = [];
+      for (const row of priorApps || []) {
+        const links = Array.isArray(row.submission_links) ? row.submission_links : [];
+        for (const l of links) {
+          const norm = normalise(l?.url);
+          if (!norm) continue;
+          if (seen.has(norm)) {
+            reused.push({ url: l.url, campaignId: row.campaign_id });
+          }
+        }
+      }
+
+      if (reused.length > 0) {
+        const sample = reused[0];
+        return new Response(
+          JSON.stringify({
+            error: `This URL has already been submitted on another campaign (${sample.url}). Please post fresh content for this campaign.`,
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    }
+
     // Determine next status:
     //  - accepted → live_submitted (initial live links submission)
     //  - approved → submitted (initial deliverables submission)

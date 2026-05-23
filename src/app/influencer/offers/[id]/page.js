@@ -1,6 +1,12 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import {
+  detectInstagramLinkType,
+  labelForLinkType,
+  expectedLinkType,
+  normaliseInstagramUrl,
+} from "@/utils/instagram-url";
 import {
   ChevronLeft,
   Share2,
@@ -1824,8 +1830,43 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   // All deliverables must have links — non-revision ones are prefilled so they pass
   const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
 
+  // Per-input link analysis: detected type, expected type, type-mismatch flag,
+  // plus a per-key flag set when this URL collides with another row in the
+  // same submission. Memoised so onChange doesn't recompute everything.
+  const linkAnalysis = useMemo(() => {
+    const counts = new Map();
+    deliverables.forEach((d) => {
+      const url = links[d.key]?.trim();
+      if (!url) return;
+      const key = normaliseInstagramUrl(url);
+      if (!key) return;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    const out = {};
+    deliverables.forEach((d) => {
+      const url = links[d.key]?.trim();
+      if (!url) {
+        out[d.key] = { detected: null, expected: expectedLinkType(d.type), mismatch: false, duplicate: false };
+        return;
+      }
+      const detected = detectInstagramLinkType(url);
+      const expected = expectedLinkType(d.type);
+      const mismatch = expected && detected !== "unknown" && detected !== expected;
+      const norm = normaliseInstagramUrl(url);
+      const duplicate = !!norm && (counts.get(norm) || 0) > 1;
+      out[d.key] = { detected, expected, mismatch, duplicate };
+    });
+    return out;
+  }, [links, deliverables]);
+
+  const hasDuplicates = Object.values(linkAnalysis).some((a) => a.duplicate);
+
   const handleSubmit = async () => {
     if (!allFilled || submitting) return;
+    if (hasDuplicates) {
+      setError("You've pasted the same link more than once. Each deliverable needs a unique URL.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -1897,30 +1938,71 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
               : "Provide the link for each deliverable. All links are required before submitting."}
           </p>
 
-          {deliverables.map((d) => (
-            <div key={d.key} className={`space-y-1.5 ${isRevision && d.needsRevision ? "p-3 -mx-3 bg-amber-50/50 rounded-xl border border-amber-100" : ""}`}>
-              <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2">
-                <Instagram size={12} className="text-pink-500" />
-                <span className={isRevision && d.needsRevision ? "text-amber-700" : "text-slate-500"}>{d.label}</span>
-                {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">REVISE</span>}
-                {isRevision && !d.needsRevision && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black">OK</span>}
-              </label>
-              <input
-                type="url"
-                placeholder="https://www.instagram.com/reel/..."
-                value={links[d.key]}
-                onChange={(e) => setLinks((prev) => ({ ...prev, [d.key]: e.target.value }))}
-                disabled={isRevision && !d.needsRevision}
-                className={`w-full py-3 px-4 border rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${
-                  isRevision && !d.needsRevision
-                    ? "bg-slate-100 border-slate-100 opacity-60 cursor-not-allowed"
-                    : isRevision && d.needsRevision
-                      ? "bg-white border-amber-200 focus:border-amber-400"
-                      : "bg-slate-50 border-slate-100 focus:border-pink-200 focus:bg-white"
-                }`}
-              />
-            </div>
-          ))}
+          {deliverables.map((d) => {
+            const analysis = linkAnalysis[d.key] || {};
+            const { detected, expected, mismatch, duplicate } = analysis;
+            const hasUrl = !!links[d.key]?.trim();
+            const placeholder = expected === "story"
+              ? "https://www.instagram.com/stories/..."
+              : expected === "post"
+                ? "https://www.instagram.com/p/..."
+                : "https://www.instagram.com/reel/...";
+            return (
+              <div key={d.key} className={`space-y-1.5 ${isRevision && d.needsRevision ? "p-3 -mx-3 bg-amber-50/50 rounded-xl border border-amber-100" : ""}`}>
+                <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 flex-wrap">
+                  <Instagram size={12} className="text-pink-500" />
+                  <span className={isRevision && d.needsRevision ? "text-amber-700" : "text-slate-500"}>{d.label}</span>
+                  {expected && (
+                    <span className="text-[9px] font-bold text-slate-400 normal-case">
+                      Expecting a {labelForLinkType(expected)} URL
+                    </span>
+                  )}
+                  {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">REVISE</span>}
+                  {isRevision && !d.needsRevision && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black">OK</span>}
+                </label>
+                <input
+                  type="url"
+                  placeholder={placeholder}
+                  value={links[d.key]}
+                  onChange={(e) => setLinks((prev) => ({ ...prev, [d.key]: e.target.value }))}
+                  disabled={isRevision && !d.needsRevision}
+                  className={`w-full py-3 px-4 border rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${
+                    isRevision && !d.needsRevision
+                      ? "bg-slate-100 border-slate-100 opacity-60 cursor-not-allowed"
+                      : duplicate || mismatch
+                        ? "bg-white border-rose-300 focus:border-rose-400"
+                        : isRevision && d.needsRevision
+                          ? "bg-white border-amber-200 focus:border-amber-400"
+                          : "bg-slate-50 border-slate-100 focus:border-pink-200 focus:bg-white"
+                  }`}
+                />
+                {hasUrl && (
+                  <div className="flex items-center gap-2 text-[10px] font-bold flex-wrap">
+                    {detected && detected !== "unknown" && !mismatch && (
+                      <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Detected: {labelForLinkType(detected)}
+                      </span>
+                    )}
+                    {mismatch && (
+                      <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                        ⚠ {labelForLinkType(detected)} URL but {labelForLinkType(expected)} required
+                      </span>
+                    )}
+                    {detected === "unknown" && (
+                      <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                        Doesn't look like an Instagram URL
+                      </span>
+                    )}
+                    {duplicate && (
+                      <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                        ⚠ Duplicate of another deliverable
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {deliverables.length === 0 && (
             <div className="text-center py-8 text-sm text-slate-400">No deliverables specified for this campaign.</div>

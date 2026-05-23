@@ -4,8 +4,12 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+
+const DEMO_EMAIL = "grievance@rgossips.com";
 
 export default function CTASection() {
+  const router = useRouter();
   return (
     <section className="w-full">
       <motion.div
@@ -49,18 +53,22 @@ export default function CTASection() {
           <div className="flex flex-col sm:flex-row items-center gap-4 mb-12">
             <Button
               size="lg"
-              className="h-14 px-8 rounded-2xl bg-white text-purple-600 hover:bg-blue-50 font-bold text-lg group transition-all"
+              onClick={() => router.push("/login")}
+              className="h-14 px-8 rounded-2xl bg-white text-purple-600 hover:bg-blue-50 font-bold text-lg group transition-all cursor-pointer"
             >
               Get Started Free
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
 
             <Button
+              asChild
               variant="outline"
               size="lg"
-              className="h-14 px-8 rounded-2xl border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white font-semibold text-lg"
+              className="h-14 px-8 rounded-2xl border-white/30 bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white font-semibold text-lg cursor-pointer"
             >
-              Schedule a Demo
+              <a href={`mailto:${DEMO_EMAIL}?subject=Schedule%20a%20Demo`}>
+                Schedule a Demo
+              </a>
             </Button>
           </div>
 

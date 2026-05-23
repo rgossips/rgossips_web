@@ -240,7 +240,10 @@ const influencerPlans = {
   ],
 };
 
-// Helper function to highlight specific text patterns
+// Helper function to highlight specific text patterns. On the highlighted
+// (purple) plan card the pink-purple gradient effectively vanishes against
+// the background, so swap to a high-contrast amber tone instead — readable
+// on both light and dark cards.
 const highlightText = (text, isHighlighted) => {
   // Pattern matches: Numbers followed by /month, /mo, /yr, or 'x' followed by words
   const regex = /(\d+\/\w+|\d+×\s\w+|Unlimited|FREE|Best Value)/g;
@@ -248,6 +251,16 @@ const highlightText = (text, isHighlighted) => {
 
   return parts.map((part, i) => {
     if (part.match(regex)) {
+      if (isHighlighted) {
+        return (
+          <span
+            key={i}
+            className="text-xs font-extrabold text-amber-300"
+          >
+            {part}
+          </span>
+        );
+      }
       return (
         <span
           key={i}
@@ -447,16 +460,21 @@ function PricingCard({ plan, isInfluencer }) {
             <Check
               className={`w-4 h-4 mt-0.5 shrink-0 ${isHighlighted ? "text-white" : "text-[#6C4DFF]"}`}
             />
-            <span className="text-xs font-bold leading-snug">
+            <span className={`text-xs font-bold leading-snug ${isHighlighted ? "text-white" : ""}`}>
               {highlightText(feature, isHighlighted)}
             </span>
           </div>
         ))}
         {plan.notIncluded &&
           plan.notIncluded.map((feature, i) => (
-            <div key={i} className="flex items-start gap-3 opacity-30">
+            <div
+              key={i}
+              className={`flex items-start gap-3 ${isHighlighted ? "opacity-60" : "opacity-30"}`}
+            >
               <X className="w-4 h-4 mt-0.5 shrink-0" />
-              <span className="text-xs font-bold leading-snug">{feature}</span>
+              <span className={`text-xs font-bold leading-snug ${isHighlighted ? "text-indigo-100 line-through" : ""}`}>
+                {feature}
+              </span>
             </div>
           ))}
       </div>

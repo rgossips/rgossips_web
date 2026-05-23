@@ -8,7 +8,7 @@ import OnboardingCarousel from "@/components/login/OnboardingCarousel";
 import RoleSelection from "@/components/login/RoleSelection";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 // Lazy-load heavy components — only loaded when user reaches that step
 const loadingFallback = () => (
@@ -410,6 +410,17 @@ const Login = () => {
 
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
+      {/* Back to landing — visible across onboarding + auth flows so the user
+          can always escape the login surface without hitting the browser back. */}
+      <button
+        onClick={() => router.push("/")}
+        aria-label="Back to home"
+        className="absolute top-5 left-5 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 hover:bg-white text-slate-700 text-xs font-bold shadow-md backdrop-blur-sm transition-all cursor-pointer"
+      >
+        <ArrowLeft size={14} />
+        Home
+      </button>
+
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <OnboardingCarousel onLoginClick={switchToSignIn} onSignUpClick={switchToSignUp} />

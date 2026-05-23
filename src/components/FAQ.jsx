@@ -8,7 +8,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Mail, MessageCircle, Instagram } from "lucide-react";
+
+const SUPPORT_EMAIL = "grievance@rgossips.com";
+const SUPPORT_WHATSAPP = "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146";
+const SUPPORT_INSTAGRAM = "https://www.instagram.com/rgossips_/";
 
 const faqs = [
   {
@@ -104,11 +108,69 @@ export default function FaqSection() {
           <h3 className="text-2xl md:text-3xl font-bold text-slate-800 mb-4">
             Still have questions?
           </h3>
-          <p className="text-slate-500 text-lg mb-10 font-medium">
-            Our support team is here to help you get started
+          <p className="text-slate-500 text-lg mb-8 font-medium">
+            Our team usually replies within a few hours.
           </p>
-          <Button className="h-14 cursor-pointer px-10 bg-linear-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold transition-all shadow-lg shadow-blue-100">
-            Contact Support
+
+          {/* Contact options grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="group flex flex-col items-center gap-3 p-6 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-100">
+                <Mail size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Email</p>
+                <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors break-all">
+                  {SUPPORT_EMAIL}
+                </p>
+              </div>
+            </a>
+
+            <a
+              href={SUPPORT_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col items-center gap-3 p-6 bg-white border border-slate-100 rounded-2xl hover:border-emerald-200 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-100">
+                <MessageCircle size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
+                <p className="text-sm font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">
+                  Join the channel
+                </p>
+              </div>
+            </a>
+
+            <a
+              href={SUPPORT_INSTAGRAM}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col items-center gap-3 p-6 bg-white border border-slate-100 rounded-2xl hover:border-pink-200 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] text-white flex items-center justify-center shadow-md shadow-pink-100">
+                <Instagram size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Instagram</p>
+                <p className="text-sm font-bold text-slate-800 group-hover:text-pink-600 transition-colors">
+                  @rgossips_
+                </p>
+              </div>
+            </a>
+          </div>
+
+          <Button
+            asChild
+            className="h-14 cursor-pointer px-10 bg-linear-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold transition-all shadow-lg shadow-blue-100"
+          >
+            <a href={`mailto:${SUPPORT_EMAIL}?subject=Question%20about%20RGossips`}>
+              Email Support
+            </a>
           </Button>
         </div>
       </div>
