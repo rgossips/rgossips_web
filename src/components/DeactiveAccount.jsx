@@ -1,9 +1,49 @@
+"use client";
 import React, { useState } from "react";
-import { ArrowLeft, AlertCircle, ChevronRight } from "lucide-react";
+import { ArrowLeft, AlertCircle, ChevronRight, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
+  const supabase = createClient();
+  const router = useRouter();
+  const { user, role, signOut } = useAuth();
   const [selectedReason, setSelectedReason] = useState("");
   const [hasAcknowledged, setHasAcknowledged] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleDeactivate = async () => {
+    if (!user?.id || !selectedReason || !hasAcknowledged) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const table = role === "brand" ? "brand_profiles" : "influencer_profiles";
+      const idCol = role === "brand" ? "brand_id" : "influencer_id";
+      const { error: upErr } = await supabase
+        .from(table)
+        .update({
+          status: "deactivated",
+          updated_at: new Date().toISOString(),
+        })
+        .eq(idCol, user.id);
+      if (upErr) throw new Error(upErr.message);
+
+      // Also flip every device_session inactive so the user is signed out
+      // everywhere, not just here. Signing in again with OTP reactivates.
+      await supabase
+        .from("device_sessions")
+        .update({ is_active: false })
+        .eq("user_id", user.id);
+
+      await signOut();
+      router.replace("/login");
+    } catch (e) {
+      setError(e.message || "Failed to deactivate");
+      setSubmitting(false);
+    }
+  };
 
   const reasons = [
     "Taking a break from social media",
@@ -147,25 +187,42 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
           </button>
         </div>
 
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-600 font-bold">
+            {error}
+          </div>
+        )}
+
+        {/* Reactivation hint */}
+        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+          <p className="text-[11px] font-bold text-emerald-700 leading-relaxed">
+            Want to come back? Just sign in again with the same phone number
+            and your account is reactivated automatically.
+          </p>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-3 pt-4">
           <button
             onClick={onBack}
-            className="flex-1 py-4 cursor-pointer bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500"
+            disabled={submitting}
+            className="flex-1 py-4 cursor-pointer bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 disabled:opacity-50"
             type="button"
           >
             Cancel
           </button>
           <button
-            disabled={!selectedReason || !hasAcknowledged}
-            className={`flex-1 py-4 rounded-xl text-sm font-black text-white shadow-lg transition-all ${
-              selectedReason && hasAcknowledged
-                ? "bg-rose-500 shadow-rose-100 crusor-pointer"
+            onClick={handleDeactivate}
+            disabled={!selectedReason || !hasAcknowledged || submitting}
+            className={`flex-1 py-4 rounded-xl text-sm font-black text-white shadow-lg transition-all inline-flex items-center justify-center gap-2 ${
+              selectedReason && hasAcknowledged && !submitting
+                ? "bg-rose-500 shadow-rose-100 cursor-pointer hover:bg-rose-600"
                 : "bg-gray-200 shadow-none cursor-not-allowed"
             }`}
             type="button"
           >
-            Deactivate Account
+            {submitting && <Loader2 size={14} className="animate-spin" />}
+            {submitting ? "Deactivating…" : "Deactivate Account"}
           </button>
         </div>
       </div>

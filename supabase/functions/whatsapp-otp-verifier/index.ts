@@ -132,17 +132,34 @@ Deno.serve(async (req) => {
     }
 
     // Look up which role this user actually has so the caller can route them
-    // and so we can reject role-mismatch sign-ins.
+    // and so we can reject role-mismatch sign-ins. Also flip status back to
+    // 'active' if the user previously soft-deactivated — signing in IS the
+    // reactivation gesture per product design.
     let resolvedRole: string | null = null;
     try {
       const [{ data: inf }, { data: br }] = await Promise.all([
-        supabaseAdmin.from("influencer_profiles").select("influencer_id").eq("influencer_id", userId).maybeSingle(),
-        supabaseAdmin.from("brand_profiles").select("brand_id").eq("brand_id", userId).maybeSingle(),
+        supabaseAdmin.from("influencer_profiles").select("influencer_id, status").eq("influencer_id", userId).maybeSingle(),
+        supabaseAdmin.from("brand_profiles").select("brand_id, status").eq("brand_id", userId).maybeSingle(),
       ]);
-      if (inf) resolvedRole = "influencer";
-      else if (br) resolvedRole = "brand";
+      if (inf) {
+        resolvedRole = "influencer";
+        if (inf.status === "deactivated") {
+          await supabaseAdmin
+            .from("influencer_profiles")
+            .update({ status: "active", updated_at: new Date().toISOString() })
+            .eq("influencer_id", userId);
+        }
+      } else if (br) {
+        resolvedRole = "brand";
+        if (br.status === "deactivated") {
+          await supabaseAdmin
+            .from("brand_profiles")
+            .update({ status: "active", updated_at: new Date().toISOString() })
+            .eq("brand_id", userId);
+        }
+      }
     } catch (e) {
-      console.error("Role lookup failed (non-fatal):", e);
+      console.error("Role lookup / reactivation failed (non-fatal):", e);
     }
 
     // Step 5: Generate session — set temp password, sign in, clear it
