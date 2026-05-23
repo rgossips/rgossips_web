@@ -4,8 +4,14 @@ import { LayoutGrid, Search, Megaphone, User, Settings, HelpCircle, Plus } from 
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
+import { useState } from "react";
+import BrandHelpAndSupport from "@/components/brands/BrandHelpAndSupport";
 
 export default function Sidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [helpOpen, setHelpOpen] = useState(false);
+
   const mainMenu = [
     { name: "Explore", icon: LayoutGrid, url: "/brands" },
     { name: "Find Creators", icon: Search, url: "/brands/search" },
@@ -18,13 +24,14 @@ export default function Sidebar() {
     { name: "Profile", icon: User, url: "/brands/profile" },
   ];
 
+  // "Settings" lives inside the profile page today — sending it elsewhere
+  // would just create a dead route. "Help & Support" opens a slide-out drawer
+  // (BrandHelpAndSupport) so the brand can search FAQs and contact us
+  // without losing their place.
   const accountMenu = [
-    { name: "Settings", icon: Settings },
-    { name: "Help & Support", icon: HelpCircle },
+    { name: "Settings", icon: Settings, onClick: () => router.push("/brands/profile") },
+    { name: "Help & Support", icon: HelpCircle, onClick: () => setHelpOpen(true) },
   ];
-
-  const router = useRouter();
-  const pathname = usePathname();
 
   return (
     // Sidebar fills its parent container in the layout — no `fixed` here
@@ -67,7 +74,11 @@ export default function Sidebar() {
             {accountMenu.map((item, i) => {
               const Icon = item.icon;
               return (
-                <button key={i} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition">
+                <button
+                  key={i}
+                  onClick={item.onClick}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                >
                   <Icon size={18} />
                   <span>{item.name}</span>
                 </button>
@@ -76,6 +87,8 @@ export default function Sidebar() {
           </nav>
         </div>
       </div>
+
+      <BrandHelpAndSupport open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {/* Bottom CTA — navigates to campaigns list with ?new=1 which auto-opens the create dialog */}
       <div className="p-4">

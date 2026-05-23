@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { MapPin, Star } from "lucide-react";
 import {
@@ -8,8 +8,12 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
+import { createClient } from "@/utils/supabase/client";
 
-const topCreators = [
+// Hand-curated fallback shown when the admin hasn't published any rows in
+// public.featured_creators yet. As soon as admin adds entries, those take
+// over via the useEffect query below.
+const fallbackTopCreators = [
   {
     name: "sahilanandofficial",
     verified: true,
@@ -133,6 +137,37 @@ const topCreators = [
 ];
 
 export const TopCreatorsCarousel = () => {
+  const supabase = createClient();
+  const [topCreators, setTopCreators] = useState(fallbackTopCreators);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("featured_creators")
+        .select("username, display_name, avatar_url, followers_label, rating, verified, instagram_url")
+        .eq("is_active", true)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+      if (data && data.length > 0) {
+        setTopCreators(
+          data.map((r) => ({
+            name: r.username,
+            verified: r.verified,
+            rating: r.rating ? String(r.rating) : "—",
+            image: r.avatar_url || "",
+            followers: r.followers_label || "",
+            bio: r.display_name || "",
+            link: r.instagram_url,
+          }))
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
   return (
     <section className="w-full px-4 lg:px-6 bg-white py-8 lg:py-10">
       {/* Header Section */}
@@ -203,10 +238,17 @@ export const TopCreatorsCarousel = () => {
                       </span>
                     </div>
 
-                    {/* Action Button */}
-                    <button className="w-full py-3.5 rounded-2xl bg-slate-50 text-[#1C115A] font-black text-sm hover:bg-[#5B3DF5] hover:text-white transition-all duration-300">
-                      View Profile
-                    </button>
+                    {/* Action Button — opens the creator's Instagram in a
+                        new tab. "View Profile" is shorthand for "see them on
+                        the channel you'll book them from". */}
+                    <a
+                      href={creator.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-center w-full py-3.5 rounded-2xl bg-slate-50 text-[#1C115A] font-black text-sm hover:bg-[#5B3DF5] hover:text-white transition-all duration-300 cursor-pointer"
+                    >
+                      View on Instagram
+                    </a>
                   </div>
                 </div>
               </CarouselItem>

@@ -95,16 +95,25 @@ const InfluencerDirectory = () => {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category");
+  const initialQuery = searchParams.get("q") || "";
+  const initialCity = searchParams.get("city");
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(initialQuery);
   const [sort, setSort] = useState(null);
-  const [filters, setFilters] = useState(() =>
-    initialCategory && filterData.Categories.includes(initialCategory)
-      ? { ...emptyFilters, Categories: [initialCategory] }
-      : emptyFilters
-  );
+  const [filters, setFilters] = useState(() => {
+    let initial = { ...emptyFilters };
+    if (initialCategory && filterData.Categories.includes(initialCategory)) {
+      initial.Categories = [initialCategory];
+    }
+    if (initialCity && filterData.Location?.includes(initialCity)) {
+      initial.Location = [initialCity];
+    }
+    return initial;
+  });
 
+  // Re-sync filters when query params change after mount (e.g. user clicks a
+  // city tile on /brands while already on /brands/search).
   useEffect(() => {
     if (initialCategory && filterData.Categories.includes(initialCategory)) {
       setFilters((prev) =>
@@ -114,6 +123,20 @@ const InfluencerDirectory = () => {
       );
     }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialCity && filterData.Location?.includes(initialCity)) {
+      setFilters((prev) =>
+        prev.Location?.includes(initialCity)
+          ? prev
+          : { ...prev, Location: [initialCity] }
+      );
+    }
+  }, [initialCity]);
+
+  useEffect(() => {
+    setSearchText(initialQuery);
+  }, [initialQuery]);
 
   useEffect(() => {
     let cancelled = false;

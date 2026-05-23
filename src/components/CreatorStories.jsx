@@ -9,8 +9,12 @@ import {
 import Image from "next/image";
 import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { createClient } from "@/utils/supabase/client";
 
-const stories = [
+// Fallback list — replaced at runtime by rows in public.creator_stories
+// when the admin has published any. The shape mirrors the DB row so the
+// carousel doesn't care where the data came from.
+const fallbackStories = [
   {
     name: "sahilanandofficial",
     image:
@@ -63,8 +67,36 @@ const stories = [
 ];
 
 export default function CreatorStories() {
+  const supabase = createClient();
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
+  const [stories, setStories] = useState(fallbackStories);
+
+  // Pull admin-published stories. When the table is empty we stay on the
+  // hardcoded fallback so the section never renders blank.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("creator_stories")
+        .select("username, avatar_url, video_url, poster_url")
+        .eq("is_active", true)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+      if (data && data.length > 0) {
+        setStories(
+          data.map((r) => ({
+            name: r.username,
+            image: r.avatar_url || r.poster_url || "",
+            link: r.video_url,
+          }))
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   // Auto slide every 3 seconds
   useEffect(() => {

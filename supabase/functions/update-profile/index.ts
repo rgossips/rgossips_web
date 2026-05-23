@@ -121,6 +121,15 @@ Deno.serve(async (req) => {
       if (fields.website !== undefined) updateData.website = fields.website;
       if (fields.instagramUsername !== undefined) updateData.instagram_username = fields.instagramUsername;
       if (fields.logoUrl !== undefined) updateData.logo_url = fields.logoUrl || null;
+      // GSTIN-derived display fields. We let the brand override these on
+      // their profile because the autoverified values can be stale or
+      // wrong; ops still has access to the raw `gstin` for audit.
+      if (fields.gstinLegalName !== undefined) updateData.gstin_legal_name = fields.gstinLegalName;
+      if (fields.gstinTradeName !== undefined) updateData.gstin_trade_name = fields.gstinTradeName;
+      if (fields.gstinBusinessType !== undefined) updateData.gstin_business_type = fields.gstinBusinessType;
+      if (fields.gstinAddress !== undefined) updateData.gstin_address = fields.gstinAddress;
+      if (fields.gstinState !== undefined) updateData.gstin_state = fields.gstinState;
+      if (fields.gstinPincode !== undefined) updateData.gstin_pincode = fields.gstinPincode;
       // `name` prop maps to brand_name for brands (frontend uses the same key)
       if (fields.name !== undefined) {
         updateData.brand_name = fields.name;

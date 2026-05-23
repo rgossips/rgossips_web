@@ -1,5 +1,7 @@
+"use client";
 import Image from "next/image";
 import React from "react";
+import { useRouter } from "next/navigation";
 import mumbai from "@/assets/states/mumbai.jpg";
 import banglore from "@/assets/states/banglore.jpg";
 import chennai from "@/assets/states/chennai.jpg";
@@ -62,6 +64,7 @@ const locations = [
 ];
 
 export const CreatorsByLocation = () => {
+  const router = useRouter();
   return (
     <section className="w-full px-4 md:px-6 py-8 bg-white mt-8 mb-10 overflow-hidden">
       <div className="mb-8">
@@ -76,9 +79,11 @@ export const CreatorsByLocation = () => {
       {/* 2x2 Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 grid-rows-2 gap-4">
         {locations.map((location) => (
-          <div
+          <button
             key={location.id}
-            className="group relative h-36 rounded-3xl overflow-hidden cursor-pointer shadow-md transition-all hover:shadow-lg active:scale-95"
+            onClick={() => router.push(`/brands/search?city=${encodeURIComponent(location.name)}`)}
+            className="group relative h-36 rounded-3xl overflow-hidden cursor-pointer shadow-md transition-all hover:shadow-lg active:scale-95 text-left"
+            type="button"
           >
             {/* Iconic Background Image */}
             <Image
@@ -101,7 +106,7 @@ export const CreatorsByLocation = () => {
 
             {/* Optional: Simple attribution link if required by license */}
             {/* <span className="absolute bottom-1 right-2 text-[6px] text-white/50 z-20">Photo: {location.attribution}</span> */}
-          </div>
+          </button>
         ))}
       </div>
     </section>

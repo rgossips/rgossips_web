@@ -134,26 +134,36 @@ export function BrandNavbar() {
   const initials = brandName.charAt(0).toUpperCase();
 
   return (
-    <header className="w-full h-[72px] border-b bg-white hidden lg:flex items-center justify-between px-6 sticky top-0 z-40">
+    <header className="w-full h-[72px] border-b bg-white hidden lg:flex items-center justify-between px-6 sticky top-0 z-[100]">
       {/* Left */}
       <div className="flex items-center gap-3">
         <Image src={logo} alt="logo" height={100} width={200} />
       </div>
 
-      {/* Search */}
-      <div className="flex-1 max-w-xl mx-8">
+      {/* Search — submits to the find-creators page with the query so
+          Sidebar.Find Creators picks it up and filters by name / username /
+          category. */}
+      <form
+        className="flex-1 max-w-xl mx-8"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const q = e.currentTarget.querySelector("input")?.value?.trim();
+          router.push(q ? `/brands/search?q=${encodeURIComponent(q)}` : "/brands/search");
+        }}
+      >
         <div className="relative">
           <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
           />
-
           <input
-            placeholder="Search for creators, campaigns, or agencies..."
+            name="q"
+            type="search"
+            placeholder="Search creators by name, username or category…"
             className="w-full pl-9 pr-4 h-10 rounded-lg border bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
-      </div>
+      </form>
 
       {/* Right */}
       <div className="flex items-center gap-4">
@@ -173,7 +183,10 @@ export function BrandNavbar() {
           </button>
 
           {showPopover && (
-            <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[60] overflow-hidden">
+            // z-[110] beats the sticky page headers / sticky filter bars on a
+            // few of the brand pages that were previously rendering on top
+            // of the popover.
+            <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[110] overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
                 <h3 className="text-sm font-black text-slate-800">Notifications</h3>
                 {unread > 0 && (

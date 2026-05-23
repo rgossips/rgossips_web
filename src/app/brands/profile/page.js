@@ -60,6 +60,8 @@ const BrandProfile = () => {
   const [uploadError, setUploadError] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [brandInfoOpen, setBrandInfoOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   // Cropper state for new logo upload
   const [imageSrc, setImageSrc] = useState(null);
@@ -190,6 +192,31 @@ const BrandProfile = () => {
       await refreshProfile();
     } catch (err) {
       alert("Failed to update categories: " + err.message);
+    } finally {
+      stopLoading();
+    }
+  };
+
+  // Single edit path for both modals — the shape of `payload` matches the
+  // edge function's camelCase field names so callers don't have to know
+  // about DB column names.
+  const saveBrandFields = async (payload, loadingMsg) => {
+    if (!user?.id) return;
+    startLoading(loadingMsg);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-profile", {
+        body: {
+          userId: user.id,
+          table: "brand_profiles",
+          ...payload,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      await refreshProfile();
+    } catch (err) {
+      alert("Failed to save: " + err.message);
+      throw err;
     } finally {
       stopLoading();
     }
@@ -398,7 +425,17 @@ const BrandProfile = () => {
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         <div className="space-y-8 min-w-0">
         {/* Brand Info */}
-        <Section title="Brand Information">
+        <Section
+          title="Brand Information"
+          action={
+            <button
+              onClick={() => setBrandInfoOpen(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
+            >
+              <Pencil size={11} /> Edit
+            </button>
+          }
+        >
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
             <InfoRow
               icon={<Briefcase />}
@@ -478,42 +515,44 @@ const BrandProfile = () => {
         </Section>
 
         {/* Contact Details */}
-        <Section title="Contact Details">
+        <Section
+          title="Contact Details"
+          action={
+            <button
+              onClick={() => setContactOpen(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
+            >
+              <Pencil size={11} /> Edit
+            </button>
+          }
+        >
           <div className="bg-white rounded-3xl overflow-hidden border border-gray-100/50">
-            {profile.contact_name && (
-              <InfoRow
-                icon={<User />}
-                iconColor="text-green-500"
-                bgColor="bg-green-50"
-                label={profile.contact_name}
-                sub="Brand Manager"
-              />
-            )}
-            {profile.contact_phone && (
-              <InfoRow
-                icon={<Phone />}
-                iconColor="text-green-500"
-                bgColor="bg-green-50"
-                label={profile.contact_phone}
-                sub="Business Mobile"
-                isVerified
-              />
-            )}
-            {profile.contact_email && (
-              <InfoRow
-                icon={<Mail />}
-                iconColor="text-red-400"
-                bgColor="bg-red-50"
-                label={profile.contact_email}
-                sub="Email"
-                last
-              />
-            )}
-            {!profile.contact_name && !profile.contact_phone && !profile.contact_email && (
-              <div className="p-5 text-center">
-                <p className="text-[11px] text-gray-400">No contact details yet.</p>
-              </div>
-            )}
+            <InfoRow
+              icon={<User />}
+              iconColor="text-green-500"
+              bgColor="bg-green-50"
+              label={profile.contact_name || "Add brand manager name"}
+              sub="Brand Manager"
+              muted={!profile.contact_name}
+            />
+            <InfoRow
+              icon={<Phone />}
+              iconColor="text-green-500"
+              bgColor="bg-green-50"
+              label={profile.contact_phone || "Add business mobile"}
+              sub="Business Mobile"
+              isVerified={!!profile.contact_phone}
+              muted={!profile.contact_phone}
+            />
+            <InfoRow
+              icon={<Mail />}
+              iconColor="text-red-400"
+              bgColor="bg-red-50"
+              label={profile.contact_email || "Add email address"}
+              sub="Email"
+              last
+              muted={!profile.contact_email}
+            />
           </div>
         </Section>
         </div>
@@ -683,6 +722,28 @@ const BrandProfile = () => {
           }}
         />
       )}
+
+      {brandInfoOpen && (
+        <BrandInfoModal
+          profile={profile}
+          onClose={() => setBrandInfoOpen(false)}
+          onSave={async (payload) => {
+            await saveBrandFields(payload, "Saving brand information…");
+            setBrandInfoOpen(false);
+          }}
+        />
+      )}
+
+      {contactOpen && (
+        <ContactDetailsModal
+          profile={profile}
+          onClose={() => setContactOpen(false)}
+          onSave={async (payload) => {
+            await saveBrandFields(payload, "Saving contact details…");
+            setContactOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -701,7 +762,7 @@ const Section = ({ title, children, action }) => (
   </div>
 );
 
-const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified }) => (
+const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified, muted }) => (
   <div
     className={`flex items-center gap-4 p-5 ${!last ? "border-b border-gray-50" : ""}`}
   >
@@ -709,7 +770,11 @@ const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified }) => 
       {React.cloneElement(icon, { size: 18 })}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-[11px] font-bold text-gray-900 leading-tight truncate">
+      <p
+        className={`text-[11px] font-bold leading-tight truncate ${
+          muted ? "text-gray-400 italic font-medium" : "text-gray-900"
+        }`}
+      >
         {label}
       </p>
       <p className="text-[9px] text-gray-400 font-semibold mt-0.5">{sub}</p>
@@ -801,6 +866,147 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Shared modal shell — same shape as CategoriesModal but reusable.
+const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel = "Save", canSave = true }) => {
+  const [saving, setSaving] = useState(false);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center lg:justify-center bg-black/40">
+      <div className="w-full lg:max-w-lg bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+            {subtitle && <p className="text-[11px] text-gray-400">{subtitle}</p>}
+          </div>
+          <button onClick={onClose} className="p-2 -mr-2 cursor-pointer" disabled={saving}>
+            <X size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">{children}</div>
+
+        <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await onSave();
+              } catch {
+                /* parent handles error toast */
+              } finally {
+                setSaving(false);
+              }
+            }}
+            disabled={saving || !canSave}
+            className="py-3.5 rounded-2xl font-bold text-sm text-white bg-[#5851DB] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Field = ({ label, value, onChange, type = "text", placeholder, hint, ...props }) => (
+  <div>
+    <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
+      {label}
+    </label>
+    <input
+      type={type}
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full p-3.5 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
+      {...props}
+    />
+    {hint && <p className="text-[10px] text-gray-400 mt-1 ml-1">{hint}</p>}
+  </div>
+);
+
+const BrandInfoModal = ({ profile, onClose, onSave }) => {
+  const [brandName, setBrandName] = useState(profile.brand_name || "");
+  const [legalName, setLegalName] = useState(profile.gstin_legal_name || "");
+  const [tradeName, setTradeName] = useState(profile.gstin_trade_name || "");
+  const [businessType, setBusinessType] = useState(profile.gstin_business_type || "");
+  const [address, setAddress] = useState(profile.gstin_address || "");
+  const [state, setState] = useState(profile.gstin_state || "");
+  const [pincode, setPincode] = useState(profile.gstin_pincode || "");
+
+  return (
+    <EditModal
+      title="Edit Brand Information"
+      subtitle="Visible to brands and creators on your profile"
+      onClose={onClose}
+      onSave={() =>
+        onSave({
+          brandName: brandName.trim(),
+          gstinLegalName: legalName.trim(),
+          gstinTradeName: tradeName.trim(),
+          gstinBusinessType: businessType.trim(),
+          gstinAddress: address.trim(),
+          gstinState: state.trim(),
+          gstinPincode: pincode.trim(),
+        })
+      }
+    >
+      <Field label="Brand Name" value={brandName} onChange={setBrandName} placeholder="e.g. Recent Gossips" hint="Used everywhere your brand is displayed." />
+      <Field label="Legal Name" value={legalName} onChange={setLegalName} placeholder="As per GSTIN" />
+      <Field label="Trade Name" value={tradeName} onChange={setTradeName} placeholder="Common name customers know you by" />
+      <Field label="Business Type" value={businessType} onChange={setBusinessType} placeholder="e.g. Private Limited Company" />
+      <Field label="Registered Address" value={address} onChange={setAddress} placeholder="Street, area" />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="State" value={state} onChange={setState} placeholder="State" />
+        <Field label="Pincode" value={pincode} onChange={(v) => setPincode(v.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" />
+      </div>
+      {profile.gstin && (
+        <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+          These fields were auto-filled from GSTIN <span className="font-bold">{profile.gstin}</span>. Edits override the auto-fill but the original GSTIN is still on file.
+        </p>
+      )}
+    </EditModal>
+  );
+};
+
+const ContactDetailsModal = ({ profile, onClose, onSave }) => {
+  const [contactName, setContactName] = useState(profile.contact_name || "");
+  const [contactPhone, setContactPhone] = useState(profile.contact_phone || "");
+  const [contactEmail, setContactEmail] = useState(profile.contact_email || "");
+
+  const emailLooksOk =
+    !contactEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
+
+  return (
+    <EditModal
+      title="Edit Contact Details"
+      subtitle="Used for campaign messaging and payouts"
+      onClose={onClose}
+      canSave={emailLooksOk}
+      onSave={() =>
+        onSave({
+          contactName: contactName.trim(),
+          contactPhone: contactPhone.trim(),
+          contactEmail: contactEmail.trim(),
+        })
+      }
+    >
+      <Field label="Brand Manager" value={contactName} onChange={setContactName} placeholder="Person we'd reach out to" />
+      <Field label="Business Mobile" value={contactPhone} onChange={setContactPhone} type="tel" placeholder="+91 98765 43210" />
+      <Field label="Email" value={contactEmail} onChange={setContactEmail} type="email" placeholder="hello@yourbrand.com" hint="We'll send campaign updates and invoices here." />
+      {contactEmail && !emailLooksOk && (
+        <p className="text-[11px] text-rose-600 font-bold">That doesn't look like a valid email address.</p>
+      )}
+    </EditModal>
   );
 };
 
