@@ -10,7 +10,9 @@ export default function DashboardLayout({ children }) {
       {/* <Navbar /> */}
       <main className="min-h-screen flex flex-col">
         <DesktopNavbar />
-        <div className="flex-1 mb-20 lg:mb-0">{children}</div>
+        {/* All influencer pages share the same max-width container so layouts
+            stay consistent. Individual pages provide their own padding. */}
+        <div className="flex-1 mb-20 lg:mb-0 w-full max-w-7xl mx-auto">{children}</div>
         <ScrollToTop />
       </main>
       <BottomNav />

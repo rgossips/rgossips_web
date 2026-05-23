@@ -366,7 +366,7 @@ const DashboardView = ({
           </section>
 
           {/* Profile Completion */}
-          <ProfileCompletionCard completion={completion} />
+          <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
 
           {/* Current Plan Card */}
           <PlanCard profile={profile} />
@@ -641,7 +641,7 @@ const DashboardView = ({
         </section>
 
         {/* Profile Completion */}
-        <ProfileCompletionCard completion={completion} />
+        <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
 
         {/* Stats Grid */}
         <section className="grid grid-cols-2 gap-4">
@@ -1004,9 +1004,16 @@ const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
   </div>
 );
 
-function ProfileCompletionCard({ completion }) {
+function ProfileCompletionCard({ completion, onOpenInfo }) {
+  const router = useRouter();
   const { percent, completed, total, hasInstagram, hasMediaKit, hasRates } = completion;
   const isDone = percent === 100;
+
+  // Per task spec: Instagram + Rates land in My Info (same surface that owns
+  // both fields), Media Kit lands in /influencer/media-kit (its own page).
+  // Account-created is always done so it has no click target.
+  const goToInfo = () => onOpenInfo?.();
+  const goToMediaKit = () => router.push("/influencer/media-kit");
 
   return (
     <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
@@ -1051,22 +1058,24 @@ function ProfileCompletionCard({ completion }) {
       {!isDone && (
         <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] font-semibold">
           <ChecklistItem done label="Account created" />
-          <ChecklistItem done={hasInstagram} label="Instagram connected" />
-          <ChecklistItem done={hasMediaKit} label="Media kit published" />
-          <ChecklistItem done={hasRates} label="Rate card set" />
+          <ChecklistItem done={hasInstagram} label="Instagram connected" onClick={goToInfo} />
+          <ChecklistItem done={hasMediaKit} label="Media kit published" onClick={goToMediaKit} />
+          <ChecklistItem done={hasRates} label="Rate card set" onClick={goToInfo} />
         </div>
       )}
     </section>
   );
 }
 
-function ChecklistItem({ done, label }) {
-  return (
-    <div
-      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${
-        done ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-500"
-      }`}
-    >
+// Done items aren't clickable (no target — they're already done). Pending
+// items become buttons that jump to the relevant edit surface.
+function ChecklistItem({ done, label, onClick }) {
+  const baseCls = `flex items-center gap-2 px-2 py-1.5 rounded-lg text-left ${
+    done ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-500"
+  }`;
+  const interactiveCls = !done && onClick ? "cursor-pointer hover:bg-gray-100 active:scale-[0.98] transition" : "";
+  const Inner = (
+    <>
       <span
         className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 ${
           done ? "bg-emerald-500 text-white" : "border-2 border-gray-300"
@@ -1075,8 +1084,16 @@ function ChecklistItem({ done, label }) {
         {done && <CheckCircle2 size={10} className="fill-emerald-500 text-white" />}
       </span>
       <span className="truncate">{label}</span>
-    </div>
+    </>
   );
+  if (!done && onClick) {
+    return (
+      <button onClick={onClick} className={`${baseCls} ${interactiveCls}`} type="button">
+        {Inner}
+      </button>
+    );
+  }
+  return <div className={baseCls}>{Inner}</div>;
 }
 
 export default DashboardView;

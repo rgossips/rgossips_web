@@ -18,34 +18,20 @@ const Footer = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Updated link structure based on the image
+  // Only links that point at a real route or external resource. Dead links
+  // were trimmed — add them back as content is written.
   const navigation = {
     platform: [
       { name: "For Brands", href: "/brands" },
       { name: "For Influencers", href: "/influencer" },
-      { name: "How It Works", href: "/how-it-works" },
-      { name: "Pricing", href: "/pricing" },
-      { name: "Features", href: "/features" },
-    ],
-    company: [
-      { name: "About Us", href: "/about" },
-      { name: "Careers", href: "/careers" },
-      { name: "Blog", href: "/blog" },
-      { name: "Press Kit", href: "/press" },
-      { name: "Contact", href: "/contact" },
+      { name: "Pricing", href: "/influencer/pricing" },
     ],
     legal: [
-      { name: "Terms of Service", href: "/terms" },
-      { name: "Privacy Policy", href: "/privacy" },
-      { name: "Cookie Policy", href: "/cookies" },
-      { name: "Help Center", href: "/help" },
-      { name: "Support", href: "/support" },
+      { name: "Influencer Consent Policy", href: "/influencer/consent-policy" },
+      { name: "Brand Consent Policy", href: "/brands/consent-policy" },
     ],
     social: [
       { Icon: FaInstagram, href: "https://www.instagram.com/rgossips_/" },
-      { Icon: FaLinkedinIn, href: "https://linkedin.com" },
-      { Icon: FaTwitter, href: "https://twitter.com" },
-      { Icon: FaYoutube, href: "https://youtube.com" },
       {
         Icon: FaWhatsapp,
         href: "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
@@ -132,11 +118,10 @@ const Footer = () => {
           </div>
 
           {/* Links Columns */}
-          <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="md:col-span-8 grid grid-cols-2 gap-8">
             {[
               { title: "Platform", links: navigation.platform },
-              { title: "Company", links: navigation.company },
-              { title: "Legal & Support", links: navigation.legal },
+              { title: "Legal", links: navigation.legal },
             ].map((section) => (
               <div key={section.title}>
                 <h4 className="text-white font-semibold mb-6 text-sm tracking-wide">

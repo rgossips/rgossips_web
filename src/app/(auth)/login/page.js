@@ -221,14 +221,19 @@ const Login = () => {
     try {
       const data = await verifyOtp(phone, otpCode, "signin");
 
-      // Role-mismatch guard: if the user signed in as "brand" but their
-      // profile is influencer (or vice-versa), bounce them to the other
-      // role's dashboard with a heads-up rather than land them in a
-      // role they can't use.
+      // Role-mismatch guard: if the user picked "Brand" but the phone is
+      // registered as an influencer (or vice-versa), reject the sign-in
+      // outright. We do NOT set the session — that would log them into the
+      // wrong dashboard and silently misroute. The check-phone-exists
+      // pre-flight catches this earlier, but defending here too means a
+      // stale or tampered client can't bypass it.
       const detectedRole = data?.user?.role;
       const requestedRole = signupData.role;
       if (detectedRole && requestedRole && detectedRole !== requestedRole) {
-        setError(`This number is registered as ${detectedRole === "brand" ? "a Brand" : "an Influencer"}. Redirecting…`);
+        const otherRole = detectedRole === "brand" ? "a Brand" : "an Influencer";
+        setError(`This number is registered as ${otherRole}, not ${requestedRole === "brand" ? "a Brand" : "an Influencer"}. Please go back and pick the correct role.`);
+        setLoading(false);
+        return;
       }
 
       setLoadingMsg("Setting up your session…");

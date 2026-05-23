@@ -111,7 +111,7 @@ export default function HomePage() {
 
       <div className="relative z-20 bg-white p-2 pb-20 lg:pb-2">
         {/* Constrained content */}
-        <div className="flex flex-col gap-4 lg:gap-8 items-center max-w-[1440px] mx-auto lg:mb-10">
+        <div className="flex flex-col items-center max-w-[1440px] mx-auto lg:mb-10">
           {/* Mobile Header */}
           <div className="w-full lg:hidden">
             <UserDoc />
