@@ -34,6 +34,7 @@ if (!APIFY_TOKEN) {
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const ONLY_MISSING = args.includes("--only-missing");
+const NO_PHOTO_ONLY = args.includes("--no-photo");
 const usernameIdx = args.indexOf("--username");
 const ONLY_USERNAME = usernameIdx >= 0 ? args[usernameIdx + 1]?.replace(/^@/, "") : null;
 
@@ -117,6 +118,10 @@ function mergeNotes(existing, extras) {
   // notes JSON. Used to resume after a partial run without re-spending Apify
   // credits on rows we already updated.
   if (ONLY_MISSING) query = query.not("notes", "ilike", '%"followers"%');
+  // --no-photo: target rows that didn't get a profile picture from a prior
+  // run (empty / null profile_photo_url). Useful when the first pass enriched
+  // text data but the image download/upload failed.
+  if (NO_PHOTO_ONLY) query = query.or("profile_photo_url.is.null,profile_photo_url.eq.");
 
   const { data: invitations, error } = await query;
   if (error) {
