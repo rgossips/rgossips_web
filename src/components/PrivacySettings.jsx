@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Eye,
@@ -7,23 +8,75 @@ import {
   UserMinus,
   ChevronRight,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+
+const DEFAULT_PREFS = {
+  publicProfile: true,
+  showEmail: false,
+  searchIndexing: true,
+  twoFactor: true,
+};
 
 const PrivacySecurityPage = ({
   onBack,
   onTrustedDevices,
   onDeactiveAccount,
 }) => {
-  const [settings, setSettings] = useState({
-    publicProfile: true,
-    showEmail: false,
-    searchIndexing: true,
-    twoFactor: true,
-  });
+  const supabase = createClient();
+  const { user } = useAuth();
+  const [settings, setSettings] = useState(DEFAULT_PREFS);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("user_preferences")
+        .select("privacy_prefs")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.privacy_prefs) {
+        setSettings({ ...DEFAULT_PREFS, ...data.privacy_prefs });
+      }
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, supabase]);
 
   const toggleSetting = (key) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      await supabase
+        .from("user_preferences")
+        .upsert(
+          {
+            user_id: user.id,
+            privacy_prefs: settings,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+      setSavedAt(Date.now());
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const justSaved = savedAt && Date.now() - savedAt < 3000;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
@@ -45,6 +98,11 @@ const PrivacySecurityPage = ({
         </div>
       </div>
 
+      {!loaded ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 size={24} className="animate-spin text-pink-500" />
+        </div>
+      ) : (
       <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
         {/* Privacy Section */}
         <section className="space-y-4">
@@ -121,11 +179,20 @@ const PrivacySecurityPage = ({
           </div>
         </section>
       </div>
+      )}
 
       {/* Global Save Button - Desktop Floating / Mobile Fixed */}
-      <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 p-4 z-40 lg:bg-transparent lg:border-none lg:relative lg:flex lg:justify-end lg:px-6 lg:pb-10">
-        <button className="w-full cursor-pointer lg:w-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white px-10 py-4 rounded-xl font-black text-sm shadow-xl shadow-pink-200 active:scale-95 transition-all">
-          Save Changes
+      <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 p-4 z-40 lg:bg-transparent lg:border-none lg:relative lg:flex lg:justify-end lg:px-6 lg:pb-10 lg:items-center lg:gap-4">
+        {justSaved && (
+          <p className="hidden lg:block text-xs font-bold text-emerald-600">Saved ✓</p>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving || !loaded}
+          className="w-full cursor-pointer lg:w-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white px-10 py-4 rounded-xl font-black text-sm shadow-xl shadow-pink-200 active:scale-95 transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
+        >
+          {saving && <Loader2 size={14} className="animate-spin" />}
+          {saving ? "Saving…" : justSaved ? "Saved ✓" : "Save Changes"}
         </button>
       </div>
     </div>

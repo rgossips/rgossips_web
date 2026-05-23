@@ -22,6 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import SupportChat from "@/components/SupportChat";
+import { createClient } from "@/utils/supabase/client";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -77,13 +78,26 @@ const apiCall = async (fn, body) => {
   return res.json();
 };
 
+// Same mapping as the DB trigger — hides notification rows whose category
+// the user has toggled off. Returning null = unmapped = always show.
+const prefKeyForType = (type) => {
+  if (!type) return null;
+  if (type.startsWith("app_") || type === "new_application" || type === "application_status") return "applicationStatus";
+  if (["service_advance_paid", "service_final_paid", "payment_released", "payment_received"].includes(type)) return "paymentAlerts";
+  if (type.startsWith("deadline")) return "deadlineReminders";
+  if (["campaign_match", "new_campaign"].includes(type)) return "campaignUpdates";
+  return null;
+};
+
 export const DesktopNavbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = createClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChats, setUnreadChats] = useState(0);
   const [notifications, setNotifications] = useState([]);
+  const [prefs, setPrefs] = useState(null);
   const [showPopover, setShowPopover] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
@@ -100,6 +114,25 @@ export const DesktopNavbar = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Load notification prefs once so the popover hides categories the user
+  // has turned off (without hammering the DB on every refresh).
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("user_preferences")
+      .select("notification_prefs")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setPrefs(data?.notification_prefs || {}));
+  }, [user?.id, supabase]);
+
+  const visibleNotifications = notifications.filter((n) => {
+    if (!prefs) return true;
+    const key = prefKeyForType(n.type);
+    if (!key) return true;
+    return prefs[key] !== false;
+  });
+
   useEffect(() => {
     if (!user?.id) return;
     const fetchCounts = async () => {
@@ -110,7 +143,6 @@ export const DesktopNavbar = () => {
         ]);
         const notifs = notifData?.notifications || [];
         setNotifications(notifs);
-        setUnreadCount(notifs.filter((n) => !n.is_read).length);
         setUnreadChats((chatData?.conversations || []).reduce((s, c) => s + (c.unread || 0), 0));
       } catch {}
     };
@@ -118,6 +150,12 @@ export const DesktopNavbar = () => {
     const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
+
+  // Recompute unread count whenever notifications OR prefs change so toggling
+  // a category in settings updates the badge immediately.
+  useEffect(() => {
+    setUnreadCount(visibleNotifications.filter((n) => !n.is_read).length);
+  }, [notifications, prefs]);
 
   const handleMarkAllRead = async () => {
     await apiCall("notifications", { action: "markRead", userId: user.id, notificationIds: "all" });
@@ -196,13 +234,13 @@ export const DesktopNavbar = () => {
                 </div>
 
                 <div className="max-h-[360px] overflow-y-auto">
-                  {notifications.length === 0 ? (
+                  {visibleNotifications.length === 0 ? (
                     <div className="text-center py-10">
                       <Bell size={28} className="text-slate-200 mx-auto mb-2" />
                       <p className="text-xs text-slate-400 font-bold">No notifications</p>
                     </div>
                   ) : (
-                    notifications.slice(0, 8).map((n, i) => (
+                    visibleNotifications.slice(0, 8).map((n, i) => (
                       <div
                         key={n.created_at + i}
                         onClick={() => handleNotifClick(n)}

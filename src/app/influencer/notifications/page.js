@@ -5,6 +5,19 @@ import { motion } from "framer-motion";
 import { ChevronLeft, Bell, CheckCircle, Award, UserPlus, FileText, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
+
+// Mirror of the DB trigger in migration 014 — keeps this page in sync with
+// whatever the user toggled off in Notification Settings, even for rows that
+// were already inserted before the toggle.
+const prefKeyForType = (type) => {
+  if (!type) return null;
+  if (type.startsWith("app_") || type === "new_application" || type === "application_status") return "applicationStatus";
+  if (["service_advance_paid", "service_final_paid", "payment_released", "payment_received"].includes(type)) return "paymentAlerts";
+  if (type.startsWith("deadline")) return "deadlineReminders";
+  if (["campaign_match", "new_campaign"].includes(type)) return "campaignUpdates";
+  return null;
+};
 
 const ICON_MAP = {
   welcome: <UserPlus className="w-5 h-5 text-purple-500" />,
@@ -45,7 +58,9 @@ const BG_MAP = {
 export default function NotificationsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
+  const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = async () => {
@@ -68,8 +83,24 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
+    if (!user?.id) return;
     fetchNotifications();
+    // Load notification prefs in parallel so we can hide rows the user has
+    // since disabled (the DB trigger handles new rows, but old ones persist).
+    supabase
+      .from("user_preferences")
+      .select("notification_prefs")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setPrefs(data?.notification_prefs || {}));
   }, [user?.id]);
+
+  const visibleNotifications = notifications.filter((n) => {
+    if (!prefs) return true;
+    const key = prefKeyForType(n.type);
+    if (!key) return true;
+    return prefs[key] !== false;
+  });
 
   const handleMarkAllRead = async () => {
     try {
@@ -99,7 +130,7 @@ export default function NotificationsPage() {
     return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   };
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = visibleNotifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-24 lg:pb-10 lg:pt-24">
@@ -128,14 +159,14 @@ export default function NotificationsPage() {
             <Loader2 size={24} className="animate-spin text-purple-500" />
             <p className="text-sm font-bold text-slate-400">Loading notifications...</p>
           </div>
-        ) : notifications.length === 0 ? (
+        ) : visibleNotifications.length === 0 ? (
           <div className="text-center py-20">
             <Bell size={40} className="text-slate-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-slate-400">No notifications yet</p>
             <p className="text-xs text-slate-300 mt-1">You'll be notified about campaign updates and more</p>
           </div>
         ) : (
-          notifications.map((item, index) => (
+          visibleNotifications.map((item, index) => (
             <motion.div
               key={item.created_at + index}
               initial={{ opacity: 0, y: 10 }}
