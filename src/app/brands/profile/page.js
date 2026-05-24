@@ -980,12 +980,13 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
 
 const ContactDetailsModal = ({ profile, onClose, onSave }) => {
   const [contactName, setContactName] = useState(profile.contact_name || "");
-  const [contactPhone, setContactPhone] = useState(profile.contact_phone || "");
   const [contactEmail, setContactEmail] = useState(profile.contact_email || "");
 
   const emailLooksOk =
     !contactEmail || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
 
+  // Phone is the account's login identity (OTP) — changing it from a profile
+  // form would let a signed-in user lock themselves out. Surfaced read-only.
   return (
     <EditModal
       title="Edit Contact Details"
@@ -995,13 +996,23 @@ const ContactDetailsModal = ({ profile, onClose, onSave }) => {
       onSave={() =>
         onSave({
           contactName: contactName.trim(),
-          contactPhone: contactPhone.trim(),
           contactEmail: contactEmail.trim(),
         })
       }
     >
       <Field label="Brand Manager" value={contactName} onChange={setContactName} placeholder="Person we'd reach out to" />
-      <Field label="Business Mobile" value={contactPhone} onChange={setContactPhone} type="tel" placeholder="+91 98765 43210" />
+
+      <div>
+        <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
+          Business Mobile
+        </label>
+        <div className="w-full p-3.5 bg-gray-100 border border-gray-100 rounded-xl text-sm font-bold text-gray-500 flex items-center justify-between gap-3">
+          <span className="truncate">{profile.contact_phone || "—"}</span>
+          <span className="text-[10px] font-bold text-gray-400 shrink-0">Login number · not editable</span>
+        </div>
+        <p className="text-[10px] text-gray-400 mt-1 ml-1">Contact support to change the phone number on your account.</p>
+      </div>
+
       <Field label="Email" value={contactEmail} onChange={setContactEmail} type="email" placeholder="hello@yourbrand.com" hint="We'll send campaign updates and invoices here." />
       {contactEmail && !emailLooksOk && (
         <p className="text-[11px] text-rose-600 font-bold">That doesn't look like a valid email address.</p>
