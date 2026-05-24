@@ -73,6 +73,11 @@ Deno.serve(async (req) => {
       media_count: r.media_count || 0,
       categories: r.categories || [],
       city: r.city || r.location || "",
+      // Surface the rate card so the brand-side Pocket Friendly Creators
+      // section can filter by reel price. Values are strings on the
+      // influencer side; consumers should Number()-coerce before compare.
+      services: r.services || [],
+      service_rates: r.service_rates || {},
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,
