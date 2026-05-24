@@ -171,16 +171,11 @@ export const TopCreatorsCarousel = () => {
   return (
     <section className="w-full px-4 lg:px-6 bg-white py-8 lg:py-10">
       {/* Header Section */}
-      <div className="px-6 mb-6 flex justify-between items-start">
-        <div>
-          <h2 className="text-2xl font-black text-[#1C115A]">Top Creators</h2>
-          <p className="text-slate-500 font-medium text-sm">
-            High impact, low cost
-          </p>
-        </div>
-        <button className="text-[#5B3DF5] font-bold text-sm hover:underline">
-          See all
-        </button>
+      <div className="px-6 mb-6">
+        <h2 className="text-2xl font-black text-[#1C115A]">Top Creators</h2>
+        <p className="text-slate-500 font-medium text-sm">
+          High impact, low cost
+        </p>
       </div>
 
       {/* Carousel Section */}
