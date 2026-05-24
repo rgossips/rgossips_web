@@ -39,81 +39,60 @@ import { Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-// One card per submitted live link, keyed by URL + campaign. We render a
-// list (not a grid) so the brand context — name, logo, status pill — has
-// room to read. Desktop and mobile share the same shape.
-const STATUS_BADGE = {
-  live_submitted: { label: "Pending review", cls: "bg-amber-50 text-amber-700" },
-  completed: { label: "Approved", cls: "bg-emerald-50 text-emerald-700" },
+// Status pill colors for the live-link tiles.
+const SUBMISSION_STATUS_BADGE = {
+  live_submitted: { label: "Pending", cls: "bg-amber-100 text-amber-800" },
+  completed: { label: "Approved", cls: "bg-emerald-100 text-emerald-800" },
 };
 
-const renderCampaignSubmissions = (links, loading, isDesktop) => {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8 text-sm font-semibold text-gray-400 gap-2">
-        <span className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin" />
-        Loading submissions…
-      </div>
-    );
-  }
-  if (links.length === 0) {
-    return (
-      <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 text-center">
-        <p className="text-sm font-bold text-gray-500">No live links submitted yet.</p>
-        <p className="text-[11px] text-gray-400 mt-1">
-          When a brand approves your application and you post the live content, it'll show up here with the brand details.
-        </p>
-      </div>
-    );
-  }
+// One thumbnail per submitted live link — same visual language as the
+// existing "My Work" video tiles. We can't grab the actual Instagram
+// thumbnail without scraping, so we use the brand logo as the backdrop
+// and overlay the campaign + status. Clicking opens the live post.
+const submissionCard = (sub, isDesktop) => {
+  const status = SUBMISSION_STATUS_BADGE[sub.applicationStatus];
   return (
-    <div className={isDesktop ? "grid grid-cols-2 gap-4" : "space-y-3"}>
-      {links.map((l, i) => {
-        const status = STATUS_BADGE[l.applicationStatus];
-        return (
-          <a
-            key={`${l.campaignId}-${l.url}-${i}`}
-            href={l.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-start gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
-          >
-            {l.brandLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={l.brandLogo}
-                alt={l.brandName}
-                className="w-12 h-12 rounded-2xl object-cover border border-gray-100 shrink-0"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-black flex items-center justify-center shrink-0">
-                {(l.brandName || "?").charAt(0).toUpperCase()}
-              </div>
-            )}
+    <a
+      key={`${sub.campaignId}-${sub.url}`}
+      href={sub.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`relative overflow-hidden shadow-sm group cursor-pointer border border-gray-100 bg-gradient-to-br from-slate-100 to-slate-200 block ${isDesktop ? "aspect-[3/4] rounded-2xl" : "aspect-[3/4.5] rounded-[1.8rem]"}`}
+    >
+      {sub.brandLogo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={sub.brandLogo}
+          alt={sub.brandName}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => { (e.target).style.display = "none"; }}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white text-5xl font-black">
+          {(sub.brandName || "?").charAt(0).toUpperCase()}
+        </div>
+      )}
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-black text-gray-900 truncate">{l.brandName}</p>
-                {status && (
-                  <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${status.cls}`}>
-                    {status.label}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-gray-500 truncate mt-0.5">{l.campaignTitle}</p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
-                  {l.label}
-                </span>
-                <span className="text-[10px] text-gray-400 truncate font-medium max-w-full">
-                  {l.url}
-                </span>
-              </div>
-            </div>
-          </a>
-        );
-      })}
-    </div>
+      {/* Type badge — top-left, matches the existing videoCard category badge */}
+      <div className="absolute top-3 left-3 bg-white/30 backdrop-blur-md border border-white/40 px-3 py-1 rounded-full text-[7px] font-black text-white uppercase tracking-wider">
+        {sub.label}
+      </div>
+
+      {/* Status pill — top-right */}
+      {status && (
+        <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${status.cls}`}>
+          {status.label}
+        </div>
+      )}
+
+      {/* Brand + campaign overlay at the bottom */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+        <p className="text-[10px] font-bold text-white/80 truncate">{sub.brandName}</p>
+        <div className="flex items-center gap-1 text-[9px] font-black text-white truncate">
+          {sub.campaignTitle}
+        </div>
+      </div>
+    </a>
   );
 };
 
@@ -1084,26 +1063,31 @@ const MyInformationDetail = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Campaign Submissions — live links posted on accepted campaigns */}
-        <div className="ml-12 space-y-5">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-            <h3 className="font-black text-gray-800 text-lg">Campaign Submissions</h3>
-            <span className="text-xs font-bold text-gray-400 ml-2">
-              {submittedLiveLinks.length} live link{submittedLiveLinks.length === 1 ? "" : "s"}
-            </span>
-          </div>
-          {renderCampaignSubmissions(submittedLiveLinks, submissionsLoading, true)}
-        </div>
-
-        {/* Full Video Grid */}
+        {/* My Work — every live link the creator has submitted on a brand
+            campaign, rendered as thumbnails (brand logo as the backdrop,
+            status pill + deliverable type overlaid). */}
         <div className="ml-12 space-y-5">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
             <h3 className="font-black text-gray-800 text-lg">My Work</h3>
-            <span className="text-xs font-bold text-gray-400 ml-2">{reels.length} videos</span>
+            <span className="text-xs font-bold text-gray-400 ml-2">
+              {submittedLiveLinks.length} live submission{submittedLiveLinks.length === 1 ? "" : "s"}
+            </span>
           </div>
-          <div className="grid grid-cols-4 gap-4">{reels.map((reel) => videoCard(reel, true))}</div>
+          {submissionsLoading ? (
+            <div className="flex items-center justify-center py-12 text-sm font-semibold text-gray-400 gap-2">
+              <Loader2 size={16} className="animate-spin text-pink-500" /> Loading…
+            </div>
+          ) : submittedLiveLinks.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-10 text-center">
+              <p className="text-sm font-bold text-gray-500">No live submissions yet.</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Once a brand approves your application and you submit the live post link, it'll appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-4">{submittedLiveLinks.map((s) => submissionCard(s, true))}</div>
+          )}
         </div>
       </div>
 
@@ -1137,24 +1121,27 @@ const MyInformationDetail = ({ onBack }) => {
           </div>
         </section>
 
-        {/* Campaign Submissions — Mobile */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-            <h3 className="font-black text-gray-800 text-lg">Campaign Submissions</h3>
-            <span className="text-xs font-bold text-gray-400 ml-1">{submittedLiveLinks.length}</span>
-          </div>
-          {renderCampaignSubmissions(submittedLiveLinks, submissionsLoading, false)}
-        </section>
-
         {/* My Work — Mobile */}
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
             <h3 className="font-black text-gray-800 text-lg">My Work</h3>
-            <span className="text-xs font-bold text-gray-400 ml-1">{reels.length}</span>
+            <span className="text-xs font-bold text-gray-400 ml-1">{submittedLiveLinks.length}</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">{reels.map((reel) => videoCard(reel, false))}</div>
+          {submissionsLoading ? (
+            <div className="flex items-center justify-center py-10 text-xs font-semibold text-gray-400 gap-2">
+              <Loader2 size={14} className="animate-spin text-pink-500" /> Loading…
+            </div>
+          ) : submittedLiveLinks.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 text-center">
+              <p className="text-sm font-bold text-gray-500">No live submissions yet.</p>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Your approved campaign live links will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">{submittedLiveLinks.map((s) => submissionCard(s, false))}</div>
+          )}
         </section>
       </div>
 
