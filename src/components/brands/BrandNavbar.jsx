@@ -135,9 +135,15 @@ export function BrandNavbar() {
 
   return (
     <header className="w-full h-[72px] border-b bg-white hidden lg:flex items-center justify-between px-6 sticky top-0 z-[100]">
-      {/* Left */}
+      {/* Left — logo doubles as a "back to home" link. */}
       <div className="flex items-center gap-3">
-        <Image src={logo} alt="logo" height={100} width={200} />
+        <button
+          onClick={() => router.push("/")}
+          aria-label="Go to home page"
+          className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <Image src={logo} alt="logo" height={100} width={200} />
+        </button>
       </div>
 
       {/* Search — submits to the find-creators page with the query so
