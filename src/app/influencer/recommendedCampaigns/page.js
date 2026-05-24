@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   Search,
@@ -10,10 +10,12 @@ import {
   Users,
   MapPin,
   Check,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
 import {
   Drawer,
   DrawerClose,
@@ -24,7 +26,27 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-const DUMMY_OFFERS = [
+// "₹5K-15K" / "₹3,500" / "₹2.5L" → numeric bounds. We use the parsed pair
+// to test overlap with the user-typed [budgetMin, budgetMax] window.
+const parseBudgetRange = (raw) => {
+  if (!raw) return { min: 0, max: 0 };
+  const parts = String(raw).replace(/₹/g, "").split(/[-–—]/);
+  const toNum = (s) => {
+    if (!s) return 0;
+    const cleaned = String(s).trim().toLowerCase().replace(/,/g, "").replace(/\+/g, "");
+    const num = parseFloat(cleaned);
+    if (!Number.isFinite(num)) return 0;
+    if (cleaned.endsWith("l")) return Math.round(num * 100_000);
+    if (cleaned.endsWith("m")) return Math.round(num * 1_000_000);
+    if (cleaned.endsWith("k")) return Math.round(num * 1_000);
+    return Math.round(num);
+  };
+  const min = toNum(parts[0]);
+  const max = parts.length > 1 ? toNum(parts[1]) : min;
+  return { min, max: max || min };
+};
+
+const DUMMY_OFFERS_UNUSED = [
   {
     id: "camp-001",
     imageUrl:
@@ -121,15 +143,62 @@ const SORT_OPTIONS = [
 
 export default function RecommendedCampaigns() {
   const router = useRouter();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSort, setSelectedSort] = useState("Recommended");
 
-  // Filter state
-  const [selectedCategories, setSelectedCategories] = useState(["Fashion"]);
-  const [selectedPlatforms, setSelectedPlatforms] = useState(["Instagram"]);
+  // Filters start empty so the page opens with every active campaign
+  // visible. Each filter narrows the visible list as the user picks values.
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState([]);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [selectedContentTypes, setSelectedContentTypes] = useState([]);
+
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Live campaign list — same edge function the rest of the influencer side
+  // already uses. The cached response is warm if the user came from the
+  // dashboard or campaigns tab.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ influencerId: user?.id || null }),
+        });
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data?.campaigns)) {
+          // Only show campaigns the user can actually apply to — drop
+          // already-applied / closed rows.
+          setCampaigns(
+            data.campaigns.filter(
+              (c) =>
+                c.status === "Active" &&
+                !c.applicationStatus &&
+                !c.isExpired
+            )
+          );
+        }
+      } catch (e) {
+        console.error("Failed to fetch campaigns:", e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const toggleItem = (setArr, item) => {
     setArr((prev) =>
@@ -144,6 +213,69 @@ export default function RecommendedCampaigns() {
     setBudgetMax("");
     setSelectedContentTypes([]);
   };
+
+  // Filter + sort pipeline. Re-runs whenever any filter input changes.
+  const visibleCampaigns = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const budgetLow = budgetMin ? Number(String(budgetMin).replace(/[^\d]/g, "")) : 0;
+    const budgetHigh = budgetMax ? Number(String(budgetMax).replace(/[^\d]/g, "")) : Infinity;
+    const platformsLc = selectedPlatforms.map((p) => p.toLowerCase());
+    const contentTypesLc = selectedContentTypes.map((t) => t.toLowerCase());
+
+    const filtered = campaigns.filter((c) => {
+      // Search across title + brand
+      if (q) {
+        const haystack = `${c.title || ""} ${c.brandName || ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      // Categories — tags array on campaign vs selected list
+      if (selectedCategories.length > 0) {
+        const tags = Array.isArray(c.tags) ? c.tags : [];
+        const hit = selectedCategories.some((sel) =>
+          tags.some((t) => t.toLowerCase().includes(sel.toLowerCase()) || sel.toLowerCase().includes(t.toLowerCase()))
+        );
+        if (!hit) return false;
+      }
+      // Platforms — c.platforms is lowercase
+      if (platformsLc.length > 0) {
+        const cp = Array.isArray(c.platforms) ? c.platforms : [];
+        if (!cp.some((p) => platformsLc.includes(p))) return false;
+      }
+      // Budget — overlap between campaign range and user range
+      if (budgetLow > 0 || budgetHigh !== Infinity) {
+        const { min: cMin, max: cMax } = parseBudgetRange(c.budget);
+        const effMax = cMax || cMin;
+        if (effMax < budgetLow) return false;
+        if (cMin > budgetHigh) return false;
+      }
+      // Content types — c.contentTypesRequired is ["reels:2", ...]
+      if (contentTypesLc.length > 0) {
+        const required = (Array.isArray(c.contentTypesRequired) ? c.contentTypesRequired : []).map((t) =>
+          String(t).split(":")[0].toLowerCase()
+        );
+        const hit = contentTypesLc.some((t) =>
+          required.some((r) => r === t || r.startsWith(t) || t.startsWith(r))
+        );
+        if (!hit) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    if (selectedSort === "Highest Collaboration Cost" || selectedSort === "Lowest Collaboration Cost") {
+      const asc = selectedSort === "Lowest Collaboration Cost";
+      filtered.sort((a, b) => {
+        const av = parseBudgetRange(a.budget).max || 0;
+        const bv = parseBudgetRange(b.budget).max || 0;
+        return asc ? av - bv : bv - av;
+      });
+    } else if (selectedSort === "Highest Followers") {
+      filtered.sort((a, b) => (b.targetFollowerMax || 0) - (a.targetFollowerMax || 0));
+    } else if (selectedSort === "New Creators") {
+      filtered.sort((a, b) => (new Date(b.startDate || 0).getTime()) - (new Date(a.startDate || 0).getTime()));
+    }
+    return filtered;
+  }, [campaigns, searchQuery, selectedCategories, selectedPlatforms, budgetMin, budgetMax, selectedContentTypes, selectedSort]);
 
   return (
     <div className="min-h-screen bg-white pb-8 overflow-x-hidden">
@@ -233,88 +365,119 @@ export default function RecommendedCampaigns() {
 
       {/* CAMPAIGN CARDS */}
       <div className="px-4 pt-4 space-y-5">
-        <AnimatePresence>
-          {DUMMY_OFFERS.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-              className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden"
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={24} className="animate-spin text-pink-500" />
+          </div>
+        ) : visibleCampaigns.length === 0 ? (
+          <div className="text-center py-20 px-6">
+            <p className="text-sm font-bold text-slate-700">No campaigns match your filters</p>
+            <p className="text-xs text-slate-400 mt-1">Try clearing some filters or widening the budget range.</p>
+            <button
+              onClick={resetFilters}
+              className="mt-5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md cursor-pointer"
             >
-              {/* Image */}
-              <div className="relative h-48 w-full p-3">
-                <div className="relative h-full w-full rounded-2xl overflow-hidden">
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                  />
-                  {/* Top badges */}
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-white/90 backdrop-blur-sm text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide text-slate-700">
-                      {item.category}
-                    </span>
+              Reset filters
+            </button>
+          </div>
+        ) : (
+          <AnimatePresence>
+            {visibleCampaigns.map((c, index) => {
+              const cover = c.bannerImage || c.brandLogo;
+              const category = (Array.isArray(c.tags) ? c.tags[0] : "") || "Campaign";
+              const location = c.location || "Pan India";
+              const deliverables = c.deliverables || "Custom deliverables";
+              const targetFollowers = c.targetFollowerMin
+                ? `${(c.targetFollowerMin / 1000).toFixed(0)}K+ Followers`
+                : "Open to all tiers";
+              return (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index, 8) * 0.05 }}
+                  className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden"
+                >
+                  {/* Image */}
+                  <div className="relative h-48 w-full p-3">
+                    <div className="relative h-full w-full rounded-2xl overflow-hidden bg-slate-100">
+                      {cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={cover}
+                          alt={c.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => { e.target.style.display = "none"; }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-5xl font-black">
+                          {(c.brandName || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {/* Top badges */}
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-white/90 backdrop-blur-sm text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide text-slate-700">
+                          {category}
+                        </span>
+                      </div>
+                      {c.daysLeft > 0 && c.daysLeft <= 5 && (
+                        <div className="absolute top-3 right-3">
+                          <span className="bg-slate-900/70 backdrop-blur-sm text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-amber-300 rounded-full" />
+                            {c.daysLeft}d left
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-slate-900/70 backdrop-blur-sm text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                      {item.badge}
-                    </span>
-                  </div>
-                  {/* Match badge */}
-                  <div className="absolute bottom-3 left-3">
-                    <span className="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md">
-                      {item.match}
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Content */}
-              <div className="px-4 pb-4">
-                {/* Brand info */}
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-4 h-4 rounded-full bg-pink-100 flex items-center justify-center text-[8px] font-bold text-pink-600">
-                    {item.brand[0]}
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {item.brand}
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <div className="flex items-center gap-0.5 text-slate-400">
-                    <MapPin size={10} />
-                    <span className="text-[10px] font-semibold">
-                      {item.location}
-                    </span>
-                  </div>
-                </div>
+                  {/* Content */}
+                  <div className="px-4 pb-4">
+                    {/* Brand info */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-4 h-4 rounded-full bg-pink-100 flex items-center justify-center text-[8px] font-bold text-pink-600">
+                        {(c.brandName || "?")[0]}
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-400 truncate">
+                        {c.brandName}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <div className="flex items-center gap-0.5 text-slate-400">
+                        <MapPin size={10} />
+                        <span className="text-[10px] font-semibold truncate">{location}</span>
+                      </div>
+                    </div>
 
-                <h3 className="text-base font-bold text-slate-900 mb-1">
-                  {item.title}
-                </h3>
+                    <h3 className="text-base font-bold text-slate-900 mb-1 line-clamp-1">
+                      {c.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 line-clamp-2 mb-3">{deliverables}</p>
 
-                {/* Pay + Followers row */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <DollarSign size={12} className="text-green-500" />
-                    <span className="font-semibold">{item.pay}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Users size={12} className="text-blue-500" />
-                    <span className="font-semibold">{item.followers}</span>
-                  </div>
-                </div>
+                    {/* Pay + Followers row */}
+                    <div className="flex items-center gap-3 mb-3 flex-wrap">
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <DollarSign size={12} className="text-green-500" />
+                        <span className="font-semibold">{c.budget || "On request"}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <Users size={12} className="text-blue-500" />
+                        <span className="font-semibold">{targetFollowers}</span>
+                      </div>
+                    </div>
 
-                {/* Apply button */}
-                <button className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md shadow-pink-100 active:scale-[0.98] transition-transform">
-                  Apply
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                    {/* Apply button */}
+                    <button
+                      onClick={() => router.push(`/influencer/offers/${c.id}`)}
+                      className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md shadow-pink-100 active:scale-[0.98] transition-transform cursor-pointer"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

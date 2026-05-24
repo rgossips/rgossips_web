@@ -9,14 +9,12 @@ import {
 import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CreatorCard from "./CreatorCard";
-import { getInstagramReel, getLatestReelIds } from "@/lib/instagram";
+import { createClient } from "@/utils/supabase/client";
 
-export default function CreatorsCarouselWithLink() {
-  const [api, setApi] = useState(null);
-  const [current, setCurrent] = useState(0);
-  const [scrollSnaps, setScrollSnaps] = useState([]);
-
-  const creators = [
+// Built-in fallback shown until the admin publishes any rows in
+// public.featured_creators. Same source-of-truth as the brand-side
+// Top Creators carousel — admin manages both lists from one table.
+const fallbackCreators = [
     {
       name: "sahilanandofficial",
       verified: true,
@@ -128,6 +126,44 @@ export default function CreatorsCarouselWithLink() {
       link: "https://www.instagram.com/roohh_lifestyle/",
     },
   ];
+
+export default function CreatorsCarouselWithLink() {
+  const supabase = createClient();
+  const [api, setApi] = useState(null);
+  const [current, setCurrent] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState([]);
+  const [creators, setCreators] = useState(fallbackCreators);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("featured_creators")
+        .select("username, display_name, avatar_url, followers_label, verified, instagram_url")
+        .eq("is_active", true)
+        .order("position", { ascending: true });
+      if (cancelled) return;
+      if (data && data.length > 0) {
+        setCreators(
+          data.map((r) => ({
+            name: r.username,
+            verified: !!r.verified,
+            image: r.avatar_url || "",
+            followers: r.followers_label || "",
+            // CreatorCard renders these slots but the table doesn't carry
+            // them — pass empty strings so the card hides the rows.
+            posts: "",
+            following: "",
+            bio: r.display_name || "",
+            link: r.instagram_url,
+          }))
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   // Manual Auto-scroll logic
   useEffect(() => {
