@@ -2,13 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  FaTwitter,
-  FaInstagram,
-  FaLinkedinIn,
-  FaYoutube,
-  FaWhatsapp,
-} from "react-icons/fa";
+import { FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -31,7 +25,7 @@ const Footer = () => {
       { name: "Brand Consent Policy", href: "/brands/consent-policy" },
     ],
     social: [
-      { Icon: FaInstagram, href: "https://www.instagram.com/rgossips_/" },
+      { Icon: FaInstagram, href: "https://www.instagram.com/rgossips.agency/" },
       {
         Icon: FaWhatsapp,
         href: "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
@@ -68,16 +62,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
           {/* Brand Column */}
           <div className="md:col-span-4 space-y-4">
-            <h2 className="text-white text-3xl font-bold tracking-tight">
-              RGossips
-            </h2>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
-              The all-in-one influencer campaign platform connecting brands with
-              verified creators globally.
-            </p>
-            <p className="text-white text-sm font-medium pt-2">
-              Get influencer marketing tips — weekly in your inbox
-            </p>
+            <h2 className="text-white text-3xl font-bold tracking-tight">RGossips</h2>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">The all-in-one influencer campaign platform connecting brands with verified creators globally.</p>
+            <p className="text-white text-sm font-medium pt-2">Get influencer marketing tips — weekly in your inbox</p>
 
             {/* Newsletter Subscription */}
             <div className="flex gap-2 pt-2">
@@ -90,17 +77,11 @@ const Footer = () => {
                 placeholder="Enter your email"
                 className="bg-[#1a142c] border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white w-full max-w-[280px]"
               />
-              <button
-                disabled={loading}
-                onClick={handleSubscribe}
-                className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all"
-              >
+              <button disabled={loading} onClick={handleSubscribe} className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all">
                 Subscribe
               </button>
             </div>
-            {message && (
-              <div className="text-[#6C4DFF] font-semiboldm">{message}</div>
-            )}
+            {message && <div className="text-[#6C4DFF] font-semiboldm">{message}</div>}
 
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-4">
@@ -124,16 +105,11 @@ const Footer = () => {
               { title: "Legal", links: navigation.legal },
             ].map((section) => (
               <div key={section.title}>
-                <h4 className="text-white font-semibold mb-6 text-sm tracking-wide">
-                  {section.title}
-                </h4>
+                <h4 className="text-white font-semibold mb-6 text-sm tracking-wide">{section.title}</h4>
                 <ul className="space-y-4">
                   {section.links.map((link) => (
                     <li key={link.name}>
-                      <Link
-                        href={link.href}
-                        className="text-slate-400 hover:text-white text-sm transition-colors duration-200"
-                      >
+                      <Link href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
                         {link.name}
                       </Link>
                     </li>
