@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Cropper from "react-easy-crop";
 import {
   ArrowLeft,
@@ -38,6 +38,84 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
+
+// One card per submitted live link, keyed by URL + campaign. We render a
+// list (not a grid) so the brand context — name, logo, status pill — has
+// room to read. Desktop and mobile share the same shape.
+const STATUS_BADGE = {
+  live_submitted: { label: "Pending review", cls: "bg-amber-50 text-amber-700" },
+  completed: { label: "Approved", cls: "bg-emerald-50 text-emerald-700" },
+};
+
+const renderCampaignSubmissions = (links, loading, isDesktop) => {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8 text-sm font-semibold text-gray-400 gap-2">
+        <span className="w-4 h-4 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin" />
+        Loading submissions…
+      </div>
+    );
+  }
+  if (links.length === 0) {
+    return (
+      <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 text-center">
+        <p className="text-sm font-bold text-gray-500">No live links submitted yet.</p>
+        <p className="text-[11px] text-gray-400 mt-1">
+          When a brand approves your application and you post the live content, it'll show up here with the brand details.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className={isDesktop ? "grid grid-cols-2 gap-4" : "space-y-3"}>
+      {links.map((l, i) => {
+        const status = STATUS_BADGE[l.applicationStatus];
+        return (
+          <a
+            key={`${l.campaignId}-${l.url}-${i}`}
+            href={l.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-start gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer"
+          >
+            {l.brandLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={l.brandLogo}
+                alt={l.brandName}
+                className="w-12 h-12 rounded-2xl object-cover border border-gray-100 shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-black flex items-center justify-center shrink-0">
+                {(l.brandName || "?").charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-black text-gray-900 truncate">{l.brandName}</p>
+                {status && (
+                  <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${status.cls}`}>
+                    {status.label}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 truncate mt-0.5">{l.campaignTitle}</p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full uppercase">
+                  {l.label}
+                </span>
+                <span className="text-[10px] text-gray-400 truncate font-medium max-w-full">
+                  {l.url}
+                </span>
+              </div>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  );
+};
 
 // --- View Details Modal ---
 const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
@@ -346,6 +424,65 @@ const MyInformationDetail = ({ onBack }) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Live links the user has submitted on accepted campaigns. Pulled from
+  // list-campaigns which already joins through to brand info so we don't
+  // have to chase brand_profiles / brand_invitations here.
+  const [campaignSubmissions, setCampaignSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify({ influencerId: user.id }),
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        setCampaignSubmissions(Array.isArray(data?.campaigns) ? data.campaigns : []);
+      } catch (e) {
+        console.error("Failed to fetch campaign submissions:", e);
+      } finally {
+        if (!cancelled) setSubmissionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Flatten campaigns into one card per submitted live link, keeping the
+  // brand context attached. Status is `live_submitted` (waiting for brand
+  // approval) or `completed` (paid out). Anything earlier hasn't gone live.
+  const submittedLiveLinks = useMemo(() => {
+    const items = [];
+    for (const c of campaignSubmissions) {
+      const isLive = c.applicationStatus === "live_submitted" || c.applicationStatus === "completed";
+      if (!isLive) continue;
+      const links = Array.isArray(c.submissionLinks) ? c.submissionLinks : [];
+      for (const l of links) {
+        if (!l?.url) continue;
+        items.push({
+          url: l.url,
+          type: l.type || "link",
+          label: l.label || "Live post",
+          campaignId: c.id,
+          campaignTitle: c.title || "Campaign",
+          brandName: c.brandName || "Brand",
+          brandLogo: c.brandLogo || "",
+          brandInstagram: c.brandInstagram || "",
+          applicationStatus: c.applicationStatus,
+        });
+      }
+    }
+    return items;
+  }, [campaignSubmissions]);
 
   // Photo state
   const [showCropper, setShowCropper] = useState(false);
@@ -947,6 +1084,18 @@ const MyInformationDetail = ({ onBack }) => {
           </div>
         </div>
 
+        {/* Campaign Submissions — live links posted on accepted campaigns */}
+        <div className="ml-12 space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+            <h3 className="font-black text-gray-800 text-lg">Campaign Submissions</h3>
+            <span className="text-xs font-bold text-gray-400 ml-2">
+              {submittedLiveLinks.length} live link{submittedLiveLinks.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {renderCampaignSubmissions(submittedLiveLinks, submissionsLoading, true)}
+        </div>
+
         {/* Full Video Grid */}
         <div className="ml-12 space-y-5">
           <div className="flex items-center gap-2">
@@ -986,6 +1135,16 @@ const MyInformationDetail = ({ onBack }) => {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* Campaign Submissions — Mobile */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+            <h3 className="font-black text-gray-800 text-lg">Campaign Submissions</h3>
+            <span className="text-xs font-bold text-gray-400 ml-1">{submittedLiveLinks.length}</span>
+          </div>
+          {renderCampaignSubmissions(submittedLiveLinks, submissionsLoading, false)}
         </section>
 
         {/* My Work — Mobile */}
