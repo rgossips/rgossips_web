@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Search, Megaphone, User, Settings, HelpCircle, Plus } from "lucide-react";
+import { LayoutGrid, Search, Megaphone, User, HelpCircle, Plus } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
@@ -24,12 +24,10 @@ export default function Sidebar() {
     { name: "Profile", icon: User, url: "/brands/profile" },
   ];
 
-  // "Settings" lives inside the profile page today — sending it elsewhere
-  // would just create a dead route. "Help & Support" opens a slide-out drawer
-  // (BrandHelpAndSupport) so the brand can search FAQs and contact us
-  // without losing their place.
+  // Settings was removed — every preference today lives inside the profile
+  // page, and there's no separate destination worth keeping a top-level
+  // entry for. Help & Support opens a slide-out drawer.
   const accountMenu = [
-    { name: "Settings", icon: Settings, onClick: () => router.push("/brands/profile") },
     { name: "Help & Support", icon: HelpCircle, onClick: () => setHelpOpen(true) },
   ];
 

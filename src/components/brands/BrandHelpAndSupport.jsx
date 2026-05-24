@@ -1,5 +1,6 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Search,
@@ -91,6 +92,13 @@ const FAQ_GROUPS = [
 export default function BrandHelpAndSupport({ open, onClose }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Portal needs document.body — only available client-side. Without this
+  // first-render check we'd get an SSR mismatch.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -105,10 +113,14 @@ export default function BrandHelpAndSupport({ open, onClose }) {
       .filter((g) => g.items.length > 0);
   }, [query]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
+  // Render at <body> so the drawer escapes every ancestor stacking context
+  // (the sidebar's fixed container, anything with a transform, etc.).
+  // Plain `fixed` from inside the sidebar tree was being out-stacked by
+  // cards on the profile page.
+  return createPortal((
+    <div className="fixed inset-0 z-[9999] flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white w-full max-w-xl h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Header */}
@@ -258,5 +270,5 @@ export default function BrandHelpAndSupport({ open, onClose }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
