@@ -1,27 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerClose,
-  DrawerOverlay,
-  DrawerPortal,
-} from "@/components/ui/drawer";
-import {
-  Dialog,
-  DialogContent,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  X,
-  Upload,
-  Loader2,
-  Trash2,
-  Image as ImageIcon,
-  Check,
-  Plus,
-} from "lucide-react";
+import { Drawer, DrawerContent, DrawerClose, DrawerOverlay, DrawerPortal } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 
@@ -45,16 +27,9 @@ const CATEGORIES = [
 
 const PLATFORMS = ["Instagram"];
 
-const CITIES = [
-  "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai",
-  "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore",
-  "Bhopal", "Kochi", "Remote",
-];
+const CITIES = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore", "Bhopal", "Kochi", "Remote"];
 
-const LANGUAGES = [
-  "Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada",
-  "Bengali", "Gujarati", "Punjabi", "Malayalam",
-];
+const LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada", "Bengali", "Gujarati", "Punjabi", "Malayalam"];
 
 const GENDERS = ["Male", "Female", "Any"];
 
@@ -145,8 +120,7 @@ function useIsDesktop() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-const DESCRIPTION_TEMPLATE =
-  "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?";
+const DESCRIPTION_TEMPLATE = "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?";
 
 export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated }) {
   const supabase = createClient();
@@ -168,8 +142,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const galleryInputRef = useRef(null);
 
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const toggleSetItem = (setter) => (item) =>
-    setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
+  const toggleSetItem = (setter) => (item) => setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
   const toggleCategory = toggleSetItem(setCategories);
   const togglePlatform = toggleSetItem(setPlatforms);
   const toggleCity = toggleSetItem(setCities);
@@ -209,8 +182,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
 
   // Live total deliverables
   const totalDeliverables = useMemo(() => {
-    return ["num_reels", "num_posts", "num_stories", "num_videos", "num_blogs"]
-      .reduce((s, k) => s + (Number(form[k]) || 0), 0);
+    return ["num_reels", "num_posts", "num_stories", "num_videos", "num_blogs"].reduce((s, k) => s + (Number(form[k]) || 0), 0);
   }, [form.num_reels, form.num_posts, form.num_stories, form.num_videos, form.num_blogs]);
 
   const compressImage = async (file, maxEdge = 1920, quality = 0.85) => {
@@ -226,14 +198,10 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       canvas.height = h;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(bitmap, 0, 0, w, h);
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/jpeg", quality)
-      );
+      const blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", quality));
       bitmap.close?.();
       if (!blob) return file;
-      return blob.size < file.size
-        ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" })
-        : file;
+      return blob.size < file.size ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }) : file;
     } catch {
       return file;
     }
@@ -244,10 +212,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     const fd = new FormData();
     fd.append("file", compressed);
     fd.append("folder", folder);
-    const { data, error: err } = await supabase.functions.invoke(
-      "upload-campaign-image",
-      { body: fd }
-    );
+    const { data, error: err } = await supabase.functions.invoke("upload-campaign-image", { body: fd });
     if (err) throw new Error(err.message);
     if (data?.error) throw new Error(data.error);
     return data.url;
@@ -262,11 +227,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     if (!form.campaign_start_date) return setError("Start date is required");
     if (!form.application_deadline) return setError("Application deadline is required");
     if (!form.campaign_end_date) return setError("Campaign end date is required");
-    if (
-      form.application_deadline &&
-      form.campaign_end_date &&
-      new Date(form.application_deadline) > new Date(form.campaign_end_date)
-    ) {
+    if (form.application_deadline && form.campaign_end_date && new Date(form.application_deadline) > new Date(form.campaign_end_date)) {
       return setError("Application deadline must be on or before the campaign end date");
     }
     if (totalDeliverables < 1) return setError("Add at least 1 deliverable (reels, posts, stories, videos or blogs)");
@@ -292,27 +253,24 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       }
 
       setStage(publish ? "Publishing campaign..." : "Saving draft...");
-      const { data, error: err } = await supabase.functions.invoke(
-        "brand-campaigns",
-        {
-          body: {
-            action: "create",
-            brandId,
-            campaign: {
-              ...form,
-              target_categories: categories,
-              target_cities: allIndia ? ["All India"] : cities,
-              banner_image_url: bannerUrl,
-              gallery_image_urls: galleryUrls,
-              status: publish ? "active" : "draft",
-              // Extended audit fields packed into description metadata
-              platforms,
-              target_gender: genders,
-              target_languages: languages,
-            },
+      const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
+        body: {
+          action: "create",
+          brandId,
+          campaign: {
+            ...form,
+            target_categories: categories,
+            target_cities: allIndia ? ["All India"] : cities,
+            banner_image_url: bannerUrl,
+            gallery_image_urls: galleryUrls,
+            status: publish ? "active" : "draft",
+            // Extended audit fields packed into description metadata
+            platforms,
+            target_gender: genders,
+            target_languages: languages,
           },
-        }
-      );
+        },
+      });
 
       if (err) throw new Error(err.message);
       if (data?.error) throw new Error(data.error);
@@ -335,52 +293,26 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const content = (
     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-            {error}
-          </div>
-        )}
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
         {/* Basic Info */}
         <Section title="Basic info">
           <Field label="Title" required>
-            <input
-              value={form.title}
-              onChange={(e) => update("title", e.target.value)}
-              placeholder="e.g. Summer Fashion 2026"
-              className="input"
-            />
+            <input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Summer Fashion 2026" className="input" />
           </Field>
           <Field label="Description" hint="Helps creators understand what you need">
-            <textarea
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              rows={5}
-              placeholder={DESCRIPTION_TEMPLATE}
-              className="input resize-none"
-            />
+            <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} placeholder={DESCRIPTION_TEMPLATE} className="input resize-none" />
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Campaign Type" required>
-              <select
-                value={form.campaign_type}
-                onChange={(e) => update("campaign_type", e.target.value)}
-                className="input"
-              >
+              <select value={form.campaign_type} onChange={(e) => update("campaign_type", e.target.value)} className="input">
                 <option value="barter">Barter</option>
                 <option value="paid">Paid</option>
                 <option value="hybrid">Hybrid</option>
               </select>
             </Field>
             <Field label="Slots" hint="Number of creators">
-              <input
-                type="number"
-                min="1"
-                value={form.max_influencers}
-                onChange={(e) => update("max_influencers", e.target.value)}
-                placeholder="10"
-                className="input"
-              />
+              <input type="number" min="1" value={form.max_influencers} onChange={(e) => update("max_influencers", e.target.value)} placeholder="10" className="input" />
             </Field>
           </div>
 
@@ -388,24 +320,10 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           {showBudget && (
             <div className="grid grid-cols-2 gap-4">
               <Field label="Budget (Total)">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.budget_total}
-                  onChange={(e) => update("budget_total", e.target.value)}
-                  placeholder="50000"
-                  className="input"
-                />
+                <input type="number" min="0" value={form.budget_total} onChange={(e) => update("budget_total", e.target.value)} placeholder="50000" className="input" />
               </Field>
               <Field label="Budget / Influencer" hint="Auto-calculated">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.budget_per_influencer}
-                  readOnly
-                  placeholder="—"
-                  className="input bg-gray-100 cursor-not-allowed"
-                />
+                <input type="number" min="0" value={form.budget_per_influencer} readOnly placeholder="—" className="input bg-gray-100 cursor-not-allowed" />
               </Field>
             </div>
           )}
@@ -413,14 +331,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           {/* Product value — when barter or hybrid */}
           {showProductValue && (
             <Field label="Product value (approx.)" hint="Helps creators evaluate the offer">
-              <input
-                type="number"
-                min="0"
-                value={form.product_value}
-                onChange={(e) => update("product_value", e.target.value)}
-                placeholder="3500"
-                className="input"
-              />
+              <input type="number" min="0" value={form.product_value} onChange={(e) => update("product_value", e.target.value)} placeholder="3500" className="input" />
             </Field>
           )}
         </Section>
@@ -433,9 +344,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 type="button"
                 onClick={() => update("offering_type", "product")}
                 className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
-                  form.offering_type === "product"
-                    ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  form.offering_type === "product" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 📦 Product
@@ -444,9 +353,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 type="button"
                 onClick={() => update("offering_type", "service")}
                 className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
-                  form.offering_type === "service"
-                    ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  form.offering_type === "service" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 🛎️ Service / Experience
@@ -455,11 +362,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             <input
               value={form.product_name}
               onChange={(e) => update("product_name", e.target.value)}
-              placeholder={
-                form.offering_type === "product"
-                  ? 'e.g. "Moisturizing cream — 50ml tube"'
-                  : 'e.g. "Weekend stay at our Mussoorie resort"'
-              }
+              placeholder={form.offering_type === "product" ? 'e.g. "Moisturizing cream — 50ml tube"' : 'e.g. "Weekend stay at our Mussoorie resort"'}
               className="input"
             />
           </Field>
@@ -468,11 +371,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           {form.offering_type === "product" && (
             <div className="grid grid-cols-2 gap-4">
               <Field label="Will product be shipped?">
-                <select
-                  value={form.shipping_required}
-                  onChange={(e) => update("shipping_required", e.target.value)}
-                  className="input"
-                >
+                <select value={form.shipping_required} onChange={(e) => update("shipping_required", e.target.value)} className="input">
                   <option value="no">No</option>
                   <option value="yes">Yes</option>
                   <option value="pickup">Pickup required</option>
@@ -480,14 +379,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               </Field>
               {form.shipping_required === "yes" && (
                 <Field label="Shipping timeline (days)">
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.shipping_timeline_days}
-                    onChange={(e) => update("shipping_timeline_days", e.target.value)}
-                    placeholder="3"
-                    className="input"
-                  />
+                  <input type="number" min="1" value={form.shipping_timeline_days} onChange={(e) => update("shipping_timeline_days", e.target.value)} placeholder="3" className="input" />
                 </Field>
               )}
             </div>
@@ -496,12 +388,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           {/* Service-only fields */}
           {form.offering_type === "service" && (
             <Field label="Service location" hint="Where the influencer experiences the service">
-              <input
-                value={form.service_location}
-                onChange={(e) => update("service_location", e.target.value)}
-                placeholder='e.g. "Mussoorie, India" or "Online / virtual"'
-                className="input"
-              />
+              <input value={form.service_location} onChange={(e) => update("service_location", e.target.value)} placeholder='e.g. "Mussoorie, India" or "Online / virtual"' className="input" />
             </Field>
           )}
 
@@ -511,11 +398,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 value={form.barter_compensation}
                 onChange={(e) => update("barter_compensation", e.target.value)}
                 rows={2}
-                placeholder={
-                  form.offering_type === "product"
-                    ? 'e.g. "Full skincare kit worth ₹3,500"'
-                    : 'e.g. "Free 2-night stay + meals + spa session"'
-                }
+                placeholder={form.offering_type === "product" ? 'e.g. "Full skincare kit worth ₹3,500"' : 'e.g. "Free 2-night stay + meals + spa session"'}
                 className="input resize-none"
               />
             </Field>
@@ -526,16 +409,8 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         <Section title="Banner image">
           {bannerFile ? (
             <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
-              <img
-                src={URL.createObjectURL(bannerFile)}
-                alt="Banner preview"
-                className="w-full h-full object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setBannerFile(null)}
-                className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-red-500 cursor-pointer shadow"
-              >
+              <img src={URL.createObjectURL(bannerFile)} alt="Banner preview" className="w-full h-full object-cover" />
+              <button type="button" onClick={() => setBannerFile(null)} className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-red-500 cursor-pointer shadow">
                 <Trash2 size={16} />
               </button>
             </div>
@@ -565,26 +440,22 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         {/* Gallery */}
         <Section
           title="Gallery"
-          right={galleryFiles.length > 0 && (
-            <span className="text-[10px] text-gray-400">
-              {galleryFiles.length} image{galleryFiles.length > 1 ? "s" : ""}
-            </span>
-          )}
+          right={
+            galleryFiles.length > 0 && (
+              <span className="text-[10px] text-gray-400">
+                {galleryFiles.length} image{galleryFiles.length > 1 ? "s" : ""}
+              </span>
+            )
+          }
         >
           {galleryFiles.length > 0 && (
             <div className="grid grid-cols-3 gap-2">
               {galleryFiles.map((f, i) => (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img
-                    src={URL.createObjectURL(f)}
-                    alt={`Gallery ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={URL.createObjectURL(f)} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() =>
-                      setGalleryFiles((prev) => prev.filter((_, x) => x !== i))
-                    }
+                    onClick={() => setGalleryFiles((prev) => prev.filter((_, x) => x !== i))}
                     className="absolute top-1.5 right-1.5 p-1.5 bg-white/90 rounded-full text-red-500 cursor-pointer shadow"
                   >
                     <X size={12} />
@@ -614,19 +485,13 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         </Section>
 
         {/* Platforms */}
-        <Section
-          title="Platforms"
-          required
-          right={platforms.length > 0 && (
-            <span className="text-[10px] text-gray-400">{platforms.length} selected</span>
-          )}
-        >
+        <Section title="Platforms" required right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{platforms.length} selected</span>}>
           <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
         </Section>
 
         {/* Deliverables */}
         <Section
-          title="Content deliverables"
+          title="Content deliverables[per Creator]"
           required
           right={
             <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
@@ -643,14 +508,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               { k: "num_blogs", label: "Blogs" },
             ].map((d) => (
               <Field key={d.k} label={d.label}>
-                <input
-                  type="number"
-                  min="0"
-                  value={form[d.k]}
-                  onChange={(e) => update(d.k, e.target.value)}
-                  placeholder="0"
-                  className="input text-center"
-                />
+                <input type="number" min="0" value={form[d.k]} onChange={(e) => update(d.k, e.target.value)} placeholder="0" className="input text-center" />
               </Field>
             ))}
           </div>
@@ -673,11 +531,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         <Section title="Influencer requirements">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Influencer Tier" hint="Auto-fills follower range">
-              <select
-                value={form.target_influencer_tier}
-                onChange={(e) => update("target_influencer_tier", e.target.value)}
-                className="input"
-              >
+              <select value={form.target_influencer_tier} onChange={(e) => update("target_influencer_tier", e.target.value)} className="input">
                 <option value="all">All Tiers</option>
                 <option value="nano">Nano (1K-10K)</option>
                 <option value="micro">Micro (10K-100K)</option>
@@ -686,37 +540,15 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
               </select>
             </Field>
             <Field label="Min. Engagement Rate (%)">
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={form.min_engagement_rate}
-                onChange={(e) => update("min_engagement_rate", e.target.value)}
-                placeholder="2.5"
-                className="input"
-              />
+              <input type="number" min="0" step="0.1" value={form.min_engagement_rate} onChange={(e) => update("min_engagement_rate", e.target.value)} placeholder="2.5" className="input" />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Min. Followers">
-              <input
-                type="number"
-                min="0"
-                value={form.target_follower_min}
-                onChange={(e) => update("target_follower_min", e.target.value)}
-                placeholder="1000"
-                className="input"
-              />
+              <input type="number" min="0" value={form.target_follower_min} onChange={(e) => update("target_follower_min", e.target.value)} placeholder="1000" className="input" />
             </Field>
             <Field label="Max. Followers">
-              <input
-                type="number"
-                min="0"
-                value={form.target_follower_max}
-                onChange={(e) => update("target_follower_max", e.target.value)}
-                placeholder="100000"
-                className="input"
-              />
+              <input type="number" min="0" value={form.target_follower_max} onChange={(e) => update("target_follower_max", e.target.value)} placeholder="100000" className="input" />
             </Field>
           </div>
         </Section>
@@ -726,24 +558,13 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           title="Locations"
           right={
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allIndia}
-                onChange={(e) => setAllIndia(e.target.checked)}
-                className="w-3.5 h-3.5 accent-[#5851DB]"
-              />
+              <input type="checkbox" checked={allIndia} onChange={(e) => setAllIndia(e.target.checked)} className="w-3.5 h-3.5 accent-[#5851DB]" />
               All India
             </label>
           }
         >
-          {!allIndia && (
-            <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />
-          )}
-          {allIndia && (
-            <p className="text-[11px] text-gray-500 italic">
-              Open to all creators across India.
-            </p>
-          )}
+          {!allIndia && <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />}
+          {allIndia && <p className="text-[11px] text-gray-500 italic">Open to all creators across India.</p>}
         </Section>
 
         {/* Audience preferences */}
@@ -777,67 +598,49 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
             />
           </Field>
           <Field label="Required hashtags">
-            <input
-              value={form.required_hashtags}
-              onChange={(e) => update("required_hashtags", e.target.value)}
-              placeholder="#RGossips #Ad #Paidpartnership"
-              className="input"
-            />
+            <input value={form.required_hashtags} onChange={(e) => update("required_hashtags", e.target.value)} placeholder="#RGossips #Ad #Paidpartnership" className="input" />
           </Field>
           <Field label="Brand handle(s) to tag">
-            <input
-              value={form.brand_handles_to_tag}
-              onChange={(e) => update("brand_handles_to_tag", e.target.value)}
-              placeholder="@yourbrand"
-              className="input"
-            />
+            <input value={form.brand_handles_to_tag} onChange={(e) => update("brand_handles_to_tag", e.target.value)} placeholder="@yourbrand" className="input" />
           </Field>
         </Section>
 
         {/* Terms */}
         <Section title="Terms & rights">
           <Field label="Content usage rights">
-            <select
-              value={form.usage_rights}
-              onChange={(e) => update("usage_rights", e.target.value)}
-              className="input"
-            >
+            <select value={form.usage_rights} onChange={(e) => update("usage_rights", e.target.value)} className="input">
               {USAGE_RIGHTS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </Field>
           <Field label="Content keep-up duration">
-            <select
-              value={form.keepup_duration}
-              onChange={(e) => update("keepup_duration", e.target.value)}
-              className="input"
-            >
+            <select value={form.keepup_duration} onChange={(e) => update("keepup_duration", e.target.value)} className="input">
               {KEEPUP_DURATIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </Field>
           <Field label="Exclusivity (no competing brands)">
-            <select
-              value={form.exclusivity_days}
-              onChange={(e) => update("exclusivity_days", e.target.value)}
-              className="input"
-            >
+            <select value={form.exclusivity_days} onChange={(e) => update("exclusivity_days", e.target.value)} className="input">
               {EXCLUSIVITY_PERIODS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </Field>
           {!isBarter && (
             <Field label="Payment timeline">
-              <select
-                value={form.payment_timeline}
-                onChange={(e) => update("payment_timeline", e.target.value)}
-                className="input"
-              >
+              <select value={form.payment_timeline} onChange={(e) => update("payment_timeline", e.target.value)} className="input">
                 {PAYMENT_TIMELINES.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </Field>
@@ -848,33 +651,16 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         <Section title="Schedule">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Start Date" required>
-              <input
-                type="date"
-                value={form.campaign_start_date}
-                onChange={(e) => update("campaign_start_date", e.target.value)}
-                className="input"
-              />
+              <input type="date" value={form.campaign_start_date} onChange={(e) => update("campaign_start_date", e.target.value)} className="input" />
             </Field>
             <Field label="Application Deadline" required>
-              <input
-                type="date"
-                value={form.application_deadline}
-                onChange={(e) => update("application_deadline", e.target.value)}
-                className="input"
-              />
+              <input type="date" value={form.application_deadline} onChange={(e) => update("application_deadline", e.target.value)} className="input" />
             </Field>
             <Field label="Campaign End Date" required>
-              <input
-                type="date"
-                value={form.campaign_end_date}
-                onChange={(e) => update("campaign_end_date", e.target.value)}
-                className="input"
-              />
+              <input type="date" value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
             </Field>
           </div>
-          <p className="text-[10px] text-gray-400">
-            Application deadline is the last day to apply. Campaign end date is when all content must be delivered.
-          </p>
+          <p className="text-[10px] text-gray-400">Application deadline is the last day to apply. Campaign end date is when all content must be delivered.</p>
         </Section>
 
         <style jsx>{`
@@ -911,9 +697,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           disabled={submitting}
           className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting && stage.startsWith("Saving draft") ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : null}
+          {submitting && stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
           Save Draft
         </button>
         <button
@@ -922,9 +706,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
           disabled={submitting}
           className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting && !stage.startsWith("Saving draft") ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : null}
+          {submitting && !stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
           {submitting && stage ? stage.split(" ")[0] : "Publish"}
         </button>
       </div>
@@ -956,10 +738,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          showCloseButton={false}
-          className="sm:max-w-[720px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl"
-        >
+        <DialogContent showCloseButton={false} className="sm:max-w-[720px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl">
           {header}
           {content}
         </DialogContent>
@@ -1001,11 +780,7 @@ function Field({ label, required, hint, children }) {
       <label className="block text-[11px] font-bold text-gray-700">
         {label} {required && <span className="text-red-400">*</span>}
       </label>
-      {hint ? (
-        <p className="text-[10px] font-medium text-gray-400 mt-0.5 mb-1.5 leading-tight">{hint}</p>
-      ) : (
-        <div className="mb-1.5" />
-      )}
+      {hint ? <p className="text-[10px] font-medium text-gray-400 mt-0.5 mb-1.5 leading-tight">{hint}</p> : <div className="mb-1.5" />}
       {children}
     </div>
   );
@@ -1022,9 +797,7 @@ function ChipGroup({ options, selected, onToggle }) {
             type="button"
             onClick={() => onToggle(opt)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
-              on
-                ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]"
-                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+              on ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
             }`}
           >
             {on && <Check size={12} />}
