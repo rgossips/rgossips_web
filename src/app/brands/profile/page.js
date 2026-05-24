@@ -19,12 +19,15 @@ import {
   Check,
   Plus,
   RotateCcw,
+  UserMinus,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import BrandAccountActionsModal from "@/components/brands/BrandAccountActionsModal";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
@@ -62,6 +65,7 @@ const BrandProfile = () => {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [brandInfoOpen, setBrandInfoOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [accountAction, setAccountAction] = useState(null); // "deactivate" | "delete" | null
 
   // Cropper state for new logo upload
   const [imageSrc, setImageSrc] = useState(null);
@@ -644,19 +648,56 @@ const BrandProfile = () => {
           </Section>
         )}
 
-        {/* Logout */}
+        {/* Account */}
         <Section title="Account">
-          <button
-            onClick={() => setLogoutOpen(true)}
-            className="w-full bg-white p-5 rounded-3xl flex items-center gap-4 text-red-500 font-bold border border-gray-100/50 shadow-sm active:scale-95 transition-transform cursor-pointer"
-          >
-            <div className="p-2 bg-red-50 rounded-xl">
-              <LogOut size={18} />
-            </div>
-            <span>Log Out</span>
-          </button>
+          <div className="bg-white rounded-3xl border border-gray-100/50 shadow-sm overflow-hidden divide-y divide-gray-50">
+            <button
+              onClick={() => setLogoutOpen(true)}
+              className="w-full p-5 flex items-center gap-4 text-red-500 font-bold active:scale-[0.98] transition-transform cursor-pointer"
+            >
+              <div className="p-2 bg-red-50 rounded-xl">
+                <LogOut size={18} />
+              </div>
+              <span>Log Out</span>
+            </button>
+
+            <button
+              onClick={() => setAccountAction("deactivate")}
+              className="w-full p-5 flex items-start gap-4 text-left active:scale-[0.98] transition-transform cursor-pointer hover:bg-amber-50/40"
+            >
+              <div className="p-2 bg-amber-50 rounded-xl text-amber-500">
+                <UserMinus size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">Deactivate Account</p>
+                <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                  Temporarily hide your brand. Sign back in to restore.
+                </p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAccountAction("delete")}
+              className="w-full p-5 flex items-start gap-4 text-left active:scale-[0.98] transition-transform cursor-pointer hover:bg-red-50/40"
+            >
+              <div className="p-2 bg-red-50 rounded-xl text-red-500">
+                <Trash2 size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-red-600">Delete Account</p>
+                <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                  Soft delete with a 30-day grace period — admin can restore on request.
+                </p>
+              </div>
+            </button>
+          </div>
         </Section>
         <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
+        <BrandAccountActionsModal
+          variant={accountAction}
+          open={accountAction !== null}
+          onClose={() => setAccountAction(null)}
+        />
         </div>
       </div>
 

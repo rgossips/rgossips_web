@@ -135,12 +135,35 @@ Deno.serve(async (req) => {
     // and so we can reject role-mismatch sign-ins. Also flip status back to
     // 'active' if the user previously soft-deactivated — signing in IS the
     // reactivation gesture per product design.
+    //
+    // `pending_deletion` is different: only admin can restore. We refuse the
+    // sign-in here so a user can't accidentally cancel their own deletion.
     let resolvedRole: string | null = null;
     try {
       const [{ data: inf }, { data: br }] = await Promise.all([
         supabaseAdmin.from("influencer_profiles").select("influencer_id, status").eq("influencer_id", userId).maybeSingle(),
-        supabaseAdmin.from("brand_profiles").select("brand_id, status").eq("brand_id", userId).maybeSingle(),
+        supabaseAdmin.from("brand_profiles").select("brand_id, status, deleted_at").eq("brand_id", userId).maybeSingle(),
       ]);
+
+      if (br?.status === "pending_deletion") {
+        return new Response(
+          JSON.stringify({
+            error: "pending_deletion",
+            message: "Your brand account is scheduled for deletion. Email grievance@rgossips.com to restore it before it's permanently removed.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      if (inf?.status === "pending_deletion") {
+        return new Response(
+          JSON.stringify({
+            error: "pending_deletion",
+            message: "Your account is scheduled for deletion. Email grievance@rgossips.com to restore it before it's permanently removed.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
       if (inf) {
         resolvedRole = "influencer";
         if (inf.status === "deactivated") {
