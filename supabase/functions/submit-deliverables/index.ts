@@ -64,8 +64,28 @@ Deno.serve(async (req) => {
       }
     };
 
+    // Figure out the flow up front so the duplicate rules can branch:
+    //  - submitted: initial drafts — any media URL is fine, only dup check.
+    //  - live_submitted: published Instagram posts — also enforces a
+    //    cross-application dup check (a reel can't power two campaigns).
+    let nextStatus: "submitted" | "live_submitted" = "submitted";
+    if (app.status === "accepted") {
+      nextStatus = "live_submitted";
+    } else if (app.status === "revision_needed") {
+      try {
+        const reason = typeof app.rejection_reason === "string"
+          ? JSON.parse(app.rejection_reason)
+          : app.rejection_reason;
+        if (reason?.from === "live_submitted") {
+          nextStatus = "live_submitted";
+        }
+      } catch {}
+    }
+    const isLiveFlow = nextStatus === "live_submitted";
+
     // Within-submission duplicates — client should already block these but
-    // re-check server-side in case the request was crafted manually.
+    // re-check server-side in case the request was crafted manually. Always
+    // enforced regardless of flow.
     const incoming = (Array.isArray(submissionLinks) ? submissionLinks : [])
       .map((s: any) => ({ ...s, _norm: normalise(s?.url) }))
       .filter((s: any) => s._norm);
@@ -81,10 +101,11 @@ Deno.serve(async (req) => {
       seen.add(item._norm);
     }
 
-    // Cross-application dup check — a creator can't reuse the same live post
-    // across two campaigns. Skip rows for this very application (revisions
-    // overwrite their own prior submission and that's fine).
-    if (incoming.length > 0) {
+    // Cross-application dup check — only relevant on the live-links stage.
+    // A creator can't reuse the same published reel for two campaigns. We
+    // skip this on initial drafts because a Drive folder etc. might
+    // legitimately be reused while shaping the work.
+    if (isLiveFlow && incoming.length > 0) {
       const { data: priorApps } = await supabaseAdmin
         .from("campaign_applications")
         .select("id, submission_links, campaign_id")
@@ -107,32 +128,10 @@ Deno.serve(async (req) => {
         const sample = reused[0];
         return new Response(
           JSON.stringify({
-            error: `This URL has already been submitted on another campaign (${sample.url}). Please post fresh content for this campaign.`,
+            error: `This live post has already been submitted on another campaign (${sample.url}). Please post fresh content for this campaign.`,
           }),
           { status: 200, headers: jsonHeaders }
         );
-      }
-    }
-
-    // Determine next status:
-    //  - accepted → live_submitted (initial live links submission)
-    //  - approved → submitted (initial deliverables submission)
-    //  - revision_needed → submitted OR live_submitted, depending on which
-    //    stage we were in before. The `from` field is set by
-    //    update-application-status when the brand requests a revision.
-    let nextStatus: "submitted" | "live_submitted" = "submitted";
-    if (app.status === "accepted") {
-      nextStatus = "live_submitted";
-    } else if (app.status === "revision_needed") {
-      try {
-        const reason = typeof app.rejection_reason === "string"
-          ? JSON.parse(app.rejection_reason)
-          : app.rejection_reason;
-        if (reason?.from === "live_submitted") {
-          nextStatus = "live_submitted";
-        }
-      } catch {
-        // Legacy reason without `from` — default to "submitted"
       }
     }
 

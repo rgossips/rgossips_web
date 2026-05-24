@@ -25,7 +25,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const FeaturesSection = () => {
-  const { type, setType } = useGlobal();
+  const { type, setType, setScrollTo } = useGlobal();
   const [activeTab, setActiveTab] = useState("brands");
   const router = useRouter();
 
@@ -301,7 +301,7 @@ const FeaturesSection = () => {
                 ))}
               </div>
 
-              <div className="flex gap-4 pt-6 items-center justify-center">
+              <div className="flex gap-4 pt-6 items-center justify-center flex-wrap">
                 <Button
                   onClick={() => {
                     router.push("/login");
@@ -314,14 +314,19 @@ const FeaturesSection = () => {
                 >
                   Get Started Free
                 </Button>
-                {activeTab === "influencers" && (
-                  <Button
-                    variant="outline"
-                    className="cursor-pointer h-14 px-10 rounded-2xl text-lg font-bold border-slate-200"
-                  >
-                    Learn More
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Pin the global `type` so HowItWorks opens on the right
+                    // tab, then trigger the home-page scroll-to handler that
+                    // matches the section id="works".
+                    setType(activeTab);
+                    setScrollTo("works");
+                  }}
+                  className="cursor-pointer h-14 px-10 rounded-2xl text-lg font-bold border-slate-200"
+                >
+                  Learn More
+                </Button>
               </div>
             </div>
           </motion.div>

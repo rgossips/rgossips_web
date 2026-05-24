@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserPlus, Rocket, Users, CheckCircle2 } from "lucide-react";
+import { useGlobal } from "@/context/GlobalContext";
 
 const brandSteps = [
   {
@@ -65,7 +66,18 @@ const influencerSteps = [
 ];
 
 export default function HowItWorks() {
+  const { type } = useGlobal();
   const [activeTab, setActiveTab] = useState("brands");
+
+  // FeatureSection writes "brands" / "influencers" into the global context
+  // when the user clicks Learn More from either tab. Mirror it here so the
+  // timeline opens on the right side after the scroll.
+  useEffect(() => {
+    if (type === "brands" || type === "influencers") {
+      setActiveTab(type);
+    }
+  }, [type]);
+
   const currentSteps = activeTab === "brands" ? brandSteps : influencerSteps;
 
   return (

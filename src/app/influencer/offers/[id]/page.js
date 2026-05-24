@@ -1830,9 +1830,12 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   // All deliverables must have links — non-revision ones are prefilled so they pass
   const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
 
-  // Per-input link analysis: detected type, expected type, type-mismatch flag,
-  // plus a per-key flag set when this URL collides with another row in the
-  // same submission. Memoised so onChange doesn't recompute everything.
+  // Per-input link analysis. We split it into two passes:
+  //   - Duplicates always count (any flow): two deliverables can't share a URL.
+  //   - Reel / post / story type detection is ONLY meaningful on the live
+  //     links stage. Initial deliverable uploads accept any media URL —
+  //     drafts can be Google Drive folders, WeTransfer links, watermarked
+  //     mp4s on Notion, whatever — so we skip the type badges there.
   const linkAnalysis = useMemo(() => {
     const counts = new Map();
     deliverables.forEach((d) => {
@@ -1845,6 +1848,13 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     const out = {};
     deliverables.forEach((d) => {
       const url = links[d.key]?.trim();
+      const norm = url ? normaliseInstagramUrl(url) : "";
+      const duplicate = !!norm && (counts.get(norm) || 0) > 1;
+      if (!isLiveLinksFlow) {
+        // Initial submission: skip type/expected entirely.
+        out[d.key] = { detected: null, expected: null, mismatch: false, duplicate };
+        return;
+      }
       if (!url) {
         out[d.key] = { detected: null, expected: expectedLinkType(d.type), mismatch: false, duplicate: false };
         return;
@@ -1852,12 +1862,10 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
       const detected = detectInstagramLinkType(url);
       const expected = expectedLinkType(d.type);
       const mismatch = expected && detected !== "unknown" && detected !== expected;
-      const norm = normaliseInstagramUrl(url);
-      const duplicate = !!norm && (counts.get(norm) || 0) > 1;
       out[d.key] = { detected, expected, mismatch, duplicate };
     });
     return out;
-  }, [links, deliverables]);
+  }, [links, deliverables, isLiveLinksFlow]);
 
   const hasDuplicates = Object.values(linkAnalysis).some((a) => a.duplicate);
 
@@ -1935,18 +1943,22 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           <p className="text-xs text-slate-500">
             {isRevision
               ? "Update the highlighted deliverables below and resubmit."
-              : "Provide the link for each deliverable. All links are required before submitting."}
+              : isLiveLinksFlow
+                ? "Paste the live Instagram post link for each deliverable. All links are required before submitting."
+                : "Paste any link to your draft media (Drive, Dropbox, WeTransfer, watermarked file, etc). Each deliverable needs its own unique URL."}
           </p>
 
           {deliverables.map((d) => {
             const analysis = linkAnalysis[d.key] || {};
             const { detected, expected, mismatch, duplicate } = analysis;
             const hasUrl = !!links[d.key]?.trim();
-            const placeholder = expected === "story"
-              ? "https://www.instagram.com/stories/..."
-              : expected === "post"
-                ? "https://www.instagram.com/p/..."
-                : "https://www.instagram.com/reel/...";
+            const placeholder = !isLiveLinksFlow
+              ? "https://… (any media link)"
+              : expected === "story"
+                ? "https://www.instagram.com/stories/..."
+                : expected === "post"
+                  ? "https://www.instagram.com/p/..."
+                  : "https://www.instagram.com/reel/...";
             return (
               <div key={d.key} className={`space-y-1.5 ${isRevision && d.needsRevision ? "p-3 -mx-3 bg-amber-50/50 rounded-xl border border-amber-100" : ""}`}>
                 <label className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2 flex-wrap">
@@ -1976,7 +1988,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                           : "bg-slate-50 border-slate-100 focus:border-pink-200 focus:bg-white"
                   }`}
                 />
-                {hasUrl && (
+                {hasUrl && (detected || mismatch || duplicate) && (
                   <div className="flex items-center gap-2 text-[10px] font-bold flex-wrap">
                     {detected && detected !== "unknown" && !mismatch && (
                       <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
