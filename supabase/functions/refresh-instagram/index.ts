@@ -270,6 +270,41 @@ Deno.serve(async (req) => {
       // Non-blocking — continue without demographics
     }
 
+    // Migrate the IG-CDN profile picture into Supabase storage so the URL
+    // doesn't expire after 24-48 hours like the raw cdninstagram.com /
+    // fbcdn.net URLs do. create-profile already does this on signup;
+    // doing it here keeps the cached copy in sync with the live picture.
+    let storedProfilePictureUrl = igProfile.profile_picture_url || "";
+    const igCdnUrl = igProfile.profile_picture_url;
+    if (igCdnUrl && (igCdnUrl.includes("cdninstagram.com") || igCdnUrl.includes("fbcdn.net"))) {
+      try {
+        const bucket = "influencer-photos";
+        await supabaseAdmin.storage.createBucket(bucket, {
+          public: true,
+          fileSizeLimit: 5 * 1024 * 1024,
+          allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+        });
+
+        const imgRes = await fetch(igCdnUrl);
+        if (imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+          const buffer = new Uint8Array(await imgRes.arrayBuffer());
+          const path = `profiles/${userId}.jpg`;
+          const { error: uploadErr } = await supabaseAdmin.storage
+            .from(bucket)
+            .upload(path, buffer, { contentType, upsert: true });
+          if (!uploadErr) {
+            const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
+            // Cache-bust so the browser picks up the new copy.
+            storedProfilePictureUrl = `${data.publicUrl}?t=${Date.now()}`;
+          }
+        }
+      } catch (e) {
+        console.error("Profile picture migration failed:", e);
+        // Keep the IG CDN URL as a fallback — better a short-lived image than none.
+      }
+    }
+
     // Step 5: Update DB with fresh data
     const updateData: Record<string, unknown> = {
       top_reels: topReels,
@@ -278,7 +313,7 @@ Deno.serve(async (req) => {
       followers_count: igProfile.followers_count || 0,
       follows_count: igProfile.follows_count || 0,
       media_count: igProfile.media_count || 0,
-      profile_photo_url: igProfile.profile_picture_url || "",
+      profile_photo_url: storedProfilePictureUrl,
       instagram_access_token: accessToken,
       instagram_token_expires_at: tokenExpiresAt,
       instagram_refreshed_at: new Date().toISOString(),
