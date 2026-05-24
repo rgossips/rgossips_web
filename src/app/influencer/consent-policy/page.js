@@ -1,16 +1,8 @@
-import ConsentPolicyPage from "@/components/ConsentPolicyPage";
-import { consentHtml } from "@/lib/consent-influencer";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Influencer Consent Policy · RGossips",
-};
-
-export default function InfluencerConsentPolicyRoute() {
-  return (
-    <ConsentPolicyPage
-      title="Influencer Consent Policy"
-      subtitle="Recent Gossips — Influencer Marketing Portal · operated by RUDE LABS Private Limited"
-      html={consentHtml}
-    />
-  );
+// Moved to a public route at /consent/influencer so it's accessible without
+// signing in. This redirect keeps old bookmarks and the in-app links from
+// the signup flow working.
+export default function LegacyInfluencerConsentRedirect() {
+  redirect("/consent/influencer");
 }

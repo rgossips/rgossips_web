@@ -1,16 +1,7 @@
-import ConsentPolicyPage from "@/components/ConsentPolicyPage";
-import { consentHtml } from "@/lib/consent-brand";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Brand Consent Policy · RGossips",
-};
-
-export default function BrandConsentPolicyRoute() {
-  return (
-    <ConsentPolicyPage
-      title="Brand Consent Policy"
-      subtitle="Recent Gossips — Brand Portal · operated by RUDE LABS Private Limited"
-      html={consentHtml}
-    />
-  );
+// Moved to a public route at /consent/brand. See /influencer/consent-policy
+// for the rationale.
+export default function LegacyBrandConsentRedirect() {
+  redirect("/consent/brand");
 }

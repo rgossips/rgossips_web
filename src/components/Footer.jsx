@@ -21,8 +21,8 @@ const Footer = () => {
       { name: "Pricing", href: "/influencer/pricing" },
     ],
     legal: [
-      { name: "Influencer Consent Policy", href: "/influencer/consent-policy" },
-      { name: "Brand Consent Policy", href: "/brands/consent-policy" },
+      { name: "Influencer Consent Policy", href: "/consent/influencer" },
+      { name: "Brand Consent Policy", href: "/consent/brand" },
     ],
     social: [
       { Icon: FaInstagram, href: "https://www.instagram.com/rgossips.agency/" },

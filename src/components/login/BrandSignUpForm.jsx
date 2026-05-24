@@ -293,7 +293,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
         <span className="text-[12px] text-slate-600 leading-snug">
           I have read and agree to the{" "}
           <a
-            href="/brands/consent-policy"
+            href="/consent/brand"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[#6347F9] font-bold hover:underline"
