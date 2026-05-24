@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SectionTitle from "./SectionTitle";
 import {
   Carousel,
@@ -9,6 +8,39 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
+// list-brands returns rows with empty logo_url for the majority of pending
+// brand_invitations (88% of them today) and the occasional Google Drive
+// link that 200s but renders unreliably. Falls back to a gradient initial
+// tile so the section never shows a broken image.
+function BrandLogo({ logo, name }) {
+  const [failed, setFailed] = useState(false);
+  const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
+
+  if (!logo || failed) {
+    return (
+      <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-md border-2 border-transparent bg-gradient-to-br from-pink-400 via-fuchsia-500 to-purple-500 flex items-center justify-center text-white text-4xl font-black">
+        {initial}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-md border-2 border-transparent bg-white">
+      {/* Using a plain <img> here — next/image bails hard when the upstream
+          URL 404s (especially Google Drive lh3 links), and we'd rather just
+          swap to the initial fallback via onError. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logo}
+        alt={name}
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="w-full h-full object-contain p-4 transition-transform hover:scale-105"
+      />
+    </div>
+  );
+}
 
 export default function BrandsCarousel() {
   const [brands, setBrands] = useState([]);
@@ -162,6 +194,17 @@ export default function BrandsCarousel() {
     fetchBrands();
   }, []);
 
+  // Prefer brands that have an actual logo first; the initial-tile fallback
+  // handles the rest. Without this nudge, the carousel often opens on a run
+  // of letter-tiles, which looks low-effort.
+  const sortedBrands = useMemo(() => {
+    return [...brands].sort((a, b) => {
+      const aHasLogo = a.logo ? 1 : 0;
+      const bHasLogo = b.logo ? 1 : 0;
+      return bHasLogo - aHasLogo;
+    });
+  }, [brands]);
+
   // Updated Auto-slide effect
   useEffect(() => {
     if (!api) return;
@@ -198,7 +241,7 @@ export default function BrandsCarousel() {
         >
           {/* FIX: Removed lg:ml-0 and lg:gap-6 (gap-6 can break Embla's offset math) */}
           <CarouselContent className="-ml-4">
-            {brands.map((b) => (
+            {sortedBrands.map((b) => (
               <CarouselItem
                 key={b.id}
                 className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/4"
@@ -211,14 +254,7 @@ export default function BrandsCarousel() {
                   }}
                   className="flex flex-col items-center w-full group cursor-pointer"
                 >
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden shadow-md border-2 border-transparent group-hover:border-pink-500 transition-all bg-white">
-                    <Image
-                      src={b.logo}
-                      alt={b.name}
-                      fill
-                      className="object-contain p-4 group-hover:scale-105 transition-transform"
-                    />
-                  </div>
+                  <BrandLogo logo={b.logo} name={b.name} />
                   <p className="text-sm font-bold mt-3 text-center text-slate-700">
                     {b.name}
                   </p>
