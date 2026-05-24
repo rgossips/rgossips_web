@@ -24,11 +24,7 @@ const NotificationSettings = ({ onBack }) => {
     if (!user?.id) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("user_preferences")
-        .select("notification_prefs")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data } = await supabase.from("user_preferences").select("notification_prefs").eq("user_id", user.id).maybeSingle();
       if (cancelled) return;
       if (data?.notification_prefs) {
         setSettings({ ...DEFAULT_PREFS, ...data.notification_prefs });
@@ -48,16 +44,14 @@ const NotificationSettings = ({ onBack }) => {
     if (!user?.id) return;
     setSaving(true);
     try {
-      await supabase
-        .from("user_preferences")
-        .upsert(
-          {
-            user_id: user.id,
-            notification_prefs: settings,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        );
+      await supabase.from("user_preferences").upsert(
+        {
+          user_id: user.id,
+          notification_prefs: settings,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
       setSavedAt(Date.now());
     } finally {
       setSaving(false);
@@ -74,19 +68,12 @@ const NotificationSettings = ({ onBack }) => {
     <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
       {/* Header */}
       <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
-        <button
-          onClick={onBack}
-          className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform"
-        >
+        <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
           <ArrowLeft size={20} strokeWidth={3} />
         </button>
         <div className="flex-1">
-          <h1 className="text-lg lg:text-2xl font-black tracking-tight">
-            Notification Settings
-          </h1>
-          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">
-            Manage your notification preferences and communication settings
-          </p>
+          <h1 className="text-lg lg:text-2xl font-black tracking-tight">Notification Settings</h1>
+          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage your notification preferences and communication settings</p>
         </div>
         <button
           onClick={handleRestoreDefaults}
@@ -123,9 +110,7 @@ const NotificationSettings = ({ onBack }) => {
 
       {/* Global Save Button - Desktop Floating / Mobile Fixed */}
       <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 p-4 z-40 lg:bg-transparent lg:border-none lg:relative lg:flex lg:justify-end lg:px-6 lg:pb-10 lg:items-center lg:gap-4">
-        {justSaved && (
-          <p className="hidden lg:block text-xs font-bold text-emerald-600">Saved ✓</p>
-        )}
+        {justSaved ? <p className="hidden lg:block text-xs font-bold text-emerald-600">Saved ✓</p> : <p></p>}
         <button
           onClick={handleSave}
           disabled={saving || !loaded}
@@ -147,30 +132,13 @@ const NotificationSections = ({ settings, toggleSetting }) => (
         <div className="p-2 bg-pink-500 text-white rounded-xl">
           <TrendingUp size={18} />
         </div>
-        <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
-          Campaign Notifications
-        </h3>
+        <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">Campaign Notifications</h3>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-xl p-6 space-y-6 shadow-md">
-        <ToggleRow
-          title="Campaign Updates"
-          description="New campaigns matching your profile"
-          isEnabled={settings.campaignUpdates}
-          onToggle={() => toggleSetting("campaignUpdates")}
-        />
-        <ToggleRow
-          title="Application Status"
-          description="Updates on your applications"
-          isEnabled={settings.applicationStatus}
-          onToggle={() => toggleSetting("applicationStatus")}
-        />
-        <ToggleRow
-          title="Deadline Reminders"
-          description="Content submission deadlines"
-          isEnabled={settings.deadlineReminders}
-          onToggle={() => toggleSetting("deadlineReminders")}
-        />
+        <ToggleRow title="Campaign Updates" description="New campaigns matching your profile" isEnabled={settings.campaignUpdates} onToggle={() => toggleSetting("campaignUpdates")} />
+        <ToggleRow title="Application Status" description="Updates on your applications" isEnabled={settings.applicationStatus} onToggle={() => toggleSetting("applicationStatus")} />
+        <ToggleRow title="Deadline Reminders" description="Content submission deadlines" isEnabled={settings.deadlineReminders} onToggle={() => toggleSetting("deadlineReminders")} />
       </div>
     </section>
 
@@ -180,18 +148,11 @@ const NotificationSections = ({ settings, toggleSetting }) => (
         <div className="p-2 bg-emerald-500 text-white rounded-xl">
           <Bell size={18} />
         </div>
-        <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">
-          Financial
-        </h3>
+        <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">Financial</h3>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-md">
-        <ToggleRow
-          title="Payment Alerts"
-          description="Payment received notifications"
-          isEnabled={settings.paymentAlerts}
-          onToggle={() => toggleSetting("paymentAlerts")}
-        />
+        <ToggleRow title="Payment Alerts" description="Payment received notifications" isEnabled={settings.paymentAlerts} onToggle={() => toggleSetting("paymentAlerts")} />
       </div>
     </section>
   </>
@@ -207,17 +168,11 @@ const ToggleRow = ({ title, description, isEnabled, onToggle }) => (
     <button
       onClick={onToggle}
       className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 outline-none border-2 ${
-        isEnabled
-          ? "bg-pink-500 border-pink-500"
-          : "bg-gray-100 border-gray-200"
+        isEnabled ? "bg-pink-500 border-pink-500" : "bg-gray-100 border-gray-200"
       }`}
       aria-pressed={isEnabled}
     >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
-          isEnabled ? "translate-x-5" : "translate-x-1"
-        }`}
-      />
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ${isEnabled ? "translate-x-5" : "translate-x-1"}`} />
     </button>
   </div>
 );
