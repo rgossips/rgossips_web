@@ -45,26 +45,63 @@ const SUBMISSION_STATUS_BADGE = {
   completed: { label: "Approved", cls: "bg-emerald-100 text-emerald-800" },
 };
 
-// One thumbnail per submitted live link — same visual language as the
-// existing "My Work" video tiles. We can't grab the actual Instagram
-// thumbnail without scraping, so we use the brand logo as the backdrop
-// and overlay the campaign + status. Clicking opens the live post.
+// Pull the public shortcode out of an Instagram URL so we can build an
+// embed iframe. Supports /p/, /reel/, /reels/, /tv/.
+const igShortcodeFrom = (rawUrl) => {
+  if (!rawUrl) return null;
+  try {
+    const u = new URL(rawUrl);
+    if (!u.hostname.toLowerCase().includes("instagram.com")) return null;
+    const m = u.pathname.match(/\/(?:p|reel|reels|tv)\/([^/?#]+)/i);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+};
+
+// Each tile renders the actual Instagram post via the public embed iframe
+// (no auth, no scraping). We scale + crop the iframe to fill the tile and
+// stack a transparent click-shield on top so taps open the live post in a
+// new tab instead of clicking into the embed itself. Falls back to a
+// thumbnail image (set by submit-deliverables for non-IG URLs) and finally
+// to the brand logo / gradient initial if neither is available.
 const submissionCard = (sub, isDesktop) => {
   const status = SUBMISSION_STATUS_BADGE[sub.applicationStatus];
+  const shortcode = igShortcodeFrom(sub.url);
+  const embedSrc = shortcode ? `https://www.instagram.com/p/${shortcode}/embed/captioned/` : null;
+
   return (
-    <a
+    <div
       key={`${sub.campaignId}-${sub.url}`}
-      href={sub.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`relative overflow-hidden shadow-sm group cursor-pointer border border-gray-100 bg-gradient-to-br from-slate-100 to-slate-200 block ${isDesktop ? "aspect-[3/4] rounded-2xl" : "aspect-[3/4.5] rounded-[1.8rem]"}`}
+      className={`relative overflow-hidden shadow-sm group border border-gray-100 bg-gradient-to-br from-slate-100 to-slate-200 ${isDesktop ? "aspect-[3/4] rounded-2xl" : "aspect-[3/4.5] rounded-[1.8rem]"}`}
     >
-      {sub.brandLogo ? (
+      {embedSrc ? (
+        // Scale the iframe up and shift it negative so Instagram's header
+        // + caption + actions fall outside the visible area, leaving just
+        // the media front-and-center.
+        <div className="absolute inset-0 overflow-hidden">
+          <iframe
+            src={embedSrc}
+            className="absolute left-0 right-0 w-full border-0 -top-[12%] h-[130%]"
+            scrolling="no"
+            allowTransparency="true"
+            loading="lazy"
+          />
+        </div>
+      ) : sub.thumbnail ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={sub.thumbnail}
+          alt={sub.label}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => { (e.target).style.display = "none"; }}
+        />
+      ) : sub.brandLogo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={sub.brandLogo}
           alt={sub.brandName}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => { (e.target).style.display = "none"; }}
         />
       ) : (
@@ -73,26 +110,33 @@ const submissionCard = (sub, isDesktop) => {
         </div>
       )}
 
-      {/* Type badge — top-left, matches the existing videoCard category badge */}
-      <div className="absolute top-3 left-3 bg-white/30 backdrop-blur-md border border-white/40 px-3 py-1 rounded-full text-[7px] font-black text-white uppercase tracking-wider">
+      {/* Click-shield — captures clicks above the iframe so tap = open post */}
+      <a
+        href={sub.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open ${sub.brandName} live post`}
+        className="absolute inset-0 z-10 cursor-pointer"
+      />
+
+      {/* Type badge — top-left */}
+      <div className="absolute top-3 left-3 z-20 bg-black/60 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-wider">
         {sub.label}
       </div>
 
       {/* Status pill — top-right */}
       {status && (
-        <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${status.cls}`}>
+        <div className={`absolute top-3 right-3 z-20 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${status.cls}`}>
           {status.label}
         </div>
       )}
 
       {/* Brand + campaign overlay at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none">
         <p className="text-[10px] font-bold text-white/80 truncate">{sub.brandName}</p>
-        <div className="flex items-center gap-1 text-[9px] font-black text-white truncate">
-          {sub.campaignTitle}
-        </div>
+        <p className="text-[10px] font-black text-white truncate">{sub.campaignTitle}</p>
       </div>
-    </a>
+    </div>
   );
 };
 

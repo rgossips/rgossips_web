@@ -101,6 +101,33 @@ Deno.serve(async (req) => {
       seen.add(item._norm);
     }
 
+    // Best-effort thumbnail fetch — we hit each live URL once, parse the
+    // og:image meta tag, and stash it alongside the URL in submission_links.
+    // Frontend then renders that thumbnail in the creator's "My Work" tiles.
+    // We only do this for live posts (the draft stage might point at Drive
+    // or anything else where the OG image isn't representative).
+    const extractOgImage = async (url: string): Promise<string | null> => {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            // Mimic a desktop browser — Instagram aggressively blocks bare
+            // requests, but it serves the standard meta tags to a normal UA.
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        const m =
+          html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+          html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+        return m ? m[1].replace(/&amp;/g, "&") : null;
+      } catch {
+        return null;
+      }
+    };
+
     // Cross-application dup check — only relevant on the live-links stage.
     // A creator can't reuse the same published reel for two campaigns. We
     // skip this on initial drafts because a Drive folder etc. might
@@ -135,10 +162,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Enrich each live link with its og:image thumbnail (parallel, capped
+    // by submission size). On the draft stage we skip the fetch and just
+    // pass the link through untouched.
+    let enrichedLinks: any[] = submissionLinks;
+    if (isLiveFlow && Array.isArray(submissionLinks)) {
+      enrichedLinks = await Promise.all(
+        submissionLinks.map(async (l: any) => {
+          if (!l?.url) return l;
+          const thumbnail = await extractOgImage(l.url);
+          return { ...l, thumbnail: thumbnail || l.thumbnail || "" };
+        })
+      );
+    }
+
     const { error: updateErr } = await supabaseAdmin
       .from("campaign_applications")
       .update({
-        submission_links: submissionLinks,
+        submission_links: enrichedLinks,
         status: nextStatus,
         rejection_reason: null,
         updated_at: new Date().toISOString(),
