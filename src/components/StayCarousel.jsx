@@ -7,43 +7,13 @@ import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-const DUMMY_STAYS = [
-  {
-    id: "stay-1",
-    displayTitle: "The Azure Glass Resort",
-    location: "Maldives, Indian Ocean",
-    imageUrl:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800",
-    priceType: "Full Collab",
-    brand: { instagramFollowers: "120K" },
-  },
-  {
-    id: "stay-2",
-    displayTitle: "Urban Oasis Suites",
-    location: "Downtown Tokyo, Japan",
-    imageUrl:
-      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800",
-    priceType: "Gifting",
-    brand: { instagramFollowers: "45K" },
-  },
-  {
-    id: "stay-3",
-    displayTitle: "Alpine Heritage Lodge",
-    location: "Zermatt, Switzerland",
-    imageUrl:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800",
-    priceType: "Paid Stay",
-    brand: { instagramFollowers: "88K" },
-  },
-  {
-    id: "stay-4",
-    displayTitle: "Terrace Palms Boutique",
-    location: "Marrakech, Morocco",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800",
-    priceType: "Full Collab",
-    brand: { instagramFollowers: "250K" },
-  },
+// Fallback shown while featured_campaigns has no active rows — same list
+// the Deal Of The Day carousels fall back to.
+const FALLBACK_STAYS = [
+  { id: "stay-1", displayTitle: "The Azure Glass Resort", location: "Maldives, Indian Ocean", imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800", priceType: "Full Collab", brand: { instagramFollowers: "120K" } },
+  { id: "stay-2", displayTitle: "Urban Oasis Suites", location: "Downtown Tokyo, Japan", imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800", priceType: "Gifting", brand: { instagramFollowers: "45K" } },
+  { id: "stay-3", displayTitle: "Alpine Heritage Lodge", location: "Zermatt, Switzerland", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800", priceType: "Paid Stay", brand: { instagramFollowers: "88K" } },
+  { id: "stay-4", displayTitle: "Terrace Palms Boutique", location: "Marrakech, Morocco", imageUrl: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800", priceType: "Full Collab", brand: { instagramFollowers: "250K" } },
 ];
 
 export default function StayCarousel() {
@@ -54,15 +24,43 @@ export default function StayCarousel() {
   const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
 
+  // Same list-featured-campaigns response feeds Stay + the Deal Of The Day
+  // carousels above so the influencer home stays internally consistent.
   useEffect(() => {
-    const init = async () => {
+    let cancelled = false;
+    (async () => {
       setLoading(true);
-      setTimeout(() => {
-        setStays(DUMMY_STAYS);
-        setLoading(false);
-      }, 600);
-    };
-    init();
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-featured-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data?.campaigns) && data.campaigns.length > 0) {
+          setStays(
+            data.campaigns.map((c) => ({
+              id: c.id,
+              displayTitle: c.title,
+              location: c.location,
+              imageUrl: c.bannerImage || c.brandLogo || "",
+              priceType: c.priceType,
+              brand: { instagramFollowers: c.brandInstagram ? `@${c.brandInstagram}` : "" },
+            }))
+          );
+        } else {
+          setStays(FALLBACK_STAYS);
+        }
+      } catch {
+        if (!cancelled) setStays(FALLBACK_STAYS);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // Sync current state with carousel
@@ -126,7 +124,7 @@ export default function StayCarousel() {
                   className="pl-2 md:pl-4 basis-[92%] sm:basis-2/3 lg:basis-[60%]"
                 >
                   <div
-                    onClick={() => router.push(`/offers/${stay.id}`)}
+                    onClick={() => router.push(`/influencer/offers/${stay.id}`)}
                     className={`relative w-full rounded-[40px] bg-white border border-slate-100 overflow-hidden transition-all duration-500 cursor-pointer shadow-lg
                       ${current === i ? "scale-100 opacity-100 shadow-2xl" : "scale-95 opacity-60 grayscale-[40%]"}
                     `}

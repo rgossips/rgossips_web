@@ -9,6 +9,17 @@ import {
 } from "framer-motion";
 import Image from "next/image";
 import { FaChevronDown } from "react-icons/fa";
+import { useRouter } from "next/navigation";
+
+// Built-in fallback for when the admin hasn't picked any featured campaigns
+// yet. Same shape as the rows from list-featured-campaigns so the rest of
+// the component doesn't need to branch.
+const FALLBACK_DEALS = [
+  { id: 1, img: "https://images.pexels.com/photos/27127418/pexels-photo-27127418.jpeg" },
+  { id: 2, img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800" },
+  { id: 3, img: "https://images.pexels.com/photos/22922098/pexels-photo-22922098.jpeg" },
+  { id: 4, img: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800" },
+];
 
 // --- RollingTimer (Unchanged) ---
 const RollingTimer = memo(() => {
@@ -103,25 +114,36 @@ function CardRotate({
 
 // --- Main Component ---
 export default function StackedDeals({ sensitivity = 120 }) {
-  const [stack, setStack] = useState([
-    {
-      id: 1,
-      img: "https://images.pexels.com/photos/27127418/pexels-photo-27127418.jpeg",
-    },
-    {
-      id: 2,
-      img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800",
-    },
-    {
-      id: 3,
-      img: "https://images.pexels.com/photos/22922098/pexels-photo-22922098.jpeg",
-    },
-    {
-      id: 4,
-      img: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800",
-    },
-  ]);
+  const router = useRouter();
+  const [stack, setStack] = useState(FALLBACK_DEALS);
   const [isCompact, setIsCompact] = useState(false);
+
+  // Pull the admin-curated list — empty list keeps the hardcoded fallback.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-featured-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data?.campaigns) && data.campaigns.length > 0) {
+          setStack(
+            data.campaigns.slice(0, 6).map((c) => ({
+              id: c.id,
+              img: c.bannerImage || c.brandLogo || "",
+            }))
+          );
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const sendToBack = useCallback((id) => {
     setStack((prev) => {
@@ -207,7 +229,14 @@ export default function StackedDeals({ sensitivity = 120 }) {
                     <RollingTimer />
                   </div>
                   {/* pointer-events-auto allows the button to be clickable while the rest of the card is draggable */}
-                  <button className="relative z-10 w-full cursor-pointer lg:w-auto bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 lg:py-2 lg:px-6 rounded-xl font-black text-xs uppercase shadow-xl active:scale-95 transition-transform pointer-events-auto">
+                  <button
+                    onClick={() => {
+                      // Numeric ids on the fallback list have nowhere to go;
+                      // real campaign UUIDs deep-link to the offer detail.
+                      if (typeof card.id === "string") router.push(`/influencer/offers/${card.id}`);
+                    }}
+                    className="relative z-10 w-full cursor-pointer lg:w-auto bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 lg:py-2 lg:px-6 rounded-xl font-black text-xs uppercase shadow-xl active:scale-95 transition-transform pointer-events-auto"
+                  >
                     Apply Now
                   </button>
                 </div>

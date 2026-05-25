@@ -6,44 +6,43 @@ import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-const DUMMY_STAYS = [
-  {
-    id: "stay-1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800",
-  },
-  {
-    id: "stay-2",
-    imageUrl:
-      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800",
-  },
-  {
-    id: "stay-3",
-    imageUrl:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800",
-  },
-  {
-    id: "stay-4",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800",
-  },
-  {
-    id: "stay-5",
-    imageUrl:
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800",
-  },
-  {
-    id: "stay-6",
-    imageUrl:
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=800",
-  },
+// Fallback shown until admin publishes rows to featured_campaigns.
+const FALLBACK_DEALS = [
+  { id: "stay-1", imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=800" },
+  { id: "stay-2", imageUrl: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=800" },
+  { id: "stay-3", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=800" },
+  { id: "stay-4", imageUrl: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=800" },
+  { id: "stay-5", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800" },
+  { id: "stay-6", imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=800" },
 ];
 
 export default function DealsLaptop() {
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [deals, setDeals] = useState(FALLBACK_DEALS);
   const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-featured-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data?.campaigns) && data.campaigns.length > 0) {
+          setDeals(data.campaigns.map((c) => ({ id: c.id, imageUrl: c.bannerImage || c.brandLogo || "" })));
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Update current index when Embla scrolls
   const onSelect = useCallback(() => {
@@ -76,7 +75,7 @@ export default function DealsLaptop() {
   }, [api, isHovered]);
 
   const getCardStyles = (index) => {
-    const total = DUMMY_STAYS.length;
+    const total = deals.length;
     let diff = index - current;
 
     // Handle loop math for 3D stack
@@ -109,7 +108,7 @@ export default function DealsLaptop() {
         <div className="absolute opacity-0 pointer-events-none h-0 w-0 overflow-hidden">
           <Carousel setApi={setApi} opts={{ loop: true, align: "center" }}>
             <CarouselContent>
-              {DUMMY_STAYS.map((stay) => (
+              {deals.map((stay) => (
                 <CarouselItem key={stay.id} className="basis-full">
                   <div className="h-1 w-1" />
                 </CarouselItem>
@@ -120,14 +119,14 @@ export default function DealsLaptop() {
 
         {/* VISUAL STACK */}
         <div className="relative h-[450px] flex items-center justify-center">
-          {DUMMY_STAYS.map((stay, i) => {
+          {deals.map((stay, i) => {
             const styles = getCardStyles(i);
             const isActive = current === i;
 
             return (
               <div
                 key={stay.id}
-                onClick={() => router.push(`/offers/${stay.id}`)}
+                onClick={() => router.push(`/influencer/offers/${stay.id}`)}
                 className="absolute w-[650px] aspect-[16/10] transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] cursor-pointer"
                 style={{
                   transform: `translateX(${styles.x}px) scale(${styles.scale})`,
@@ -181,7 +180,7 @@ export default function DealsLaptop() {
           </button>
 
           <div className="flex gap-3">
-            {DUMMY_STAYS.map((_, i) => (
+            {deals.map((_, i) => (
               <button
                 key={i}
                 onClick={() => api?.scrollTo(i)}
