@@ -21,12 +21,7 @@ const PLACEHOLDER_IMAGES = [
 // "Beauty & Skincare" etc.).
 const tagsMatchCategories = (tags, categories) => {
   if (!categories?.length || !tags?.length) return false;
-  return categories.some((cat) =>
-    tags.some((t) =>
-      String(t).toLowerCase().includes(String(cat).toLowerCase()) ||
-      String(cat).toLowerCase().includes(String(t).toLowerCase())
-    )
-  );
+  return categories.some((cat) => tags.some((t) => String(t).toLowerCase().includes(String(cat).toLowerCase()) || String(cat).toLowerCase().includes(String(t).toLowerCase())));
 };
 
 export default function RecommendedCampaigns() {
@@ -59,9 +54,7 @@ export default function RecommendedCampaigns() {
   // categories yet (otherwise the section reads as if it were broken).
   const filteredOffers = useMemo(() => {
     const active = allCampaigns.filter((c) => c.status === "Active");
-    const base = userCategories.length > 0
-      ? active.filter((c) => tagsMatchCategories(c.tags, userCategories))
-      : active;
+    const base = userCategories.length > 0 ? active.filter((c) => tagsMatchCategories(c.tags, userCategories)) : active;
     return base.slice(0, 6).map((c, i) => ({
       id: c.id,
       imageUrl: c.bannerImage || PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
@@ -79,18 +72,14 @@ export default function RecommendedCampaigns() {
 
   // View All carries the creator's categories through to the campaigns page
   // so the filtered view there opens pre-narrowed.
-  const viewAllHref = userCategories.length > 0
-    ? `/influencer/campaigns?categories=${encodeURIComponent(userCategories.join(","))}`
-    : "/influencer/campaigns";
+  const viewAllHref = userCategories.length > 0 ? `/influencer/campaigns?categories=${encodeURIComponent(userCategories.join(","))}` : "/influencer/campaigns";
 
   return (
     <section className="w-full py-10 px-6 lg:px-12 bg-white">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-            Recommended Campaigns
-          </h2>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Recommended Campaigns</h2>
           <p className="text-sm text-slate-400 font-medium">
             {userCategories.length > 0
               ? `Matched to your niche — ${userCategories.slice(0, 3).join(", ")}${userCategories.length > 3 ? ` +${userCategories.length - 3}` : ""}`
@@ -98,10 +87,7 @@ export default function RecommendedCampaigns() {
           </p>
         </div>
 
-        <button
-          onClick={() => router.push(viewAllHref)}
-          className="text-[#D61F69] cursor-pointer text-sm font-bold hover:underline"
-        >
+        <button onClick={() => router.push(viewAllHref)} className="text-[#D61F69] cursor-pointer text-sm font-bold hover:underline">
           View all ›
         </button>
       </div>
@@ -118,30 +104,22 @@ export default function RecommendedCampaigns() {
             {/* Image Section */}
             <div className="relative h-60 w-full p-4">
               <div className="relative h-full w-full rounded-4xl overflow-hidden">
-                <Image
-                  src={item.imageUrl}
-                  alt={item.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                <Image src={item.imageUrl} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
 
                 {/* Overlay Badges */}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="bg-white/90 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                    {item.category}
-                  </span>
+                  <span className="bg-white/90 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">{item.category}</span>
                 </div>
                 <div className="absolute top-4 right-4">
                   <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />{" "}
-                    {item.badge}
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full" /> {item.badge}
                   </span>
                 </div>
-                <div className="absolute bottom-4 left-4">
+                {/* <div className="absolute bottom-4 left-4">
                   <span className="bg-[#22C55E] text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg">
                     {item.match}
                   </span>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -150,26 +128,16 @@ export default function RecommendedCampaigns() {
               <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600">
-                      {item.brand[0]}
-                    </div>
-                    <span className="text-xs font-bold text-slate-400">
-                      {item.brand} •
-                    </span>
+                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600">{item.brand[0]}</div>
+                    <span className="text-xs font-bold text-slate-400">{item.brand} •</span>
                     <div className="flex items-center text-slate-400 gap-0.5">
                       <MapPin size={10} />
-                      <span className="text-[10px] font-bold">
-                        {item.location}
-                      </span>
+                      <span className="text-[10px] font-bold">{item.location}</span>
                     </div>
                   </div>
                 </div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 group-hover:text-[#D61F69] transition-colors">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                  {item.desc}
-                </p>
+                <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 group-hover:text-[#D61F69] transition-colors">{item.title}</h3>
+                <p className="text-xs text-slate-400 font-medium leading-relaxed">{item.desc}</p>
               </div>
 
               {/* Pay & Req Boxes */}
@@ -178,17 +146,13 @@ export default function RecommendedCampaigns() {
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
                     <DollarSign size={10} className="text-green-500" /> Pay
                   </p>
-                  <p className="text-xs font-black text-slate-800">
-                    {item.pay}
-                  </p>
+                  <p className="text-xs font-black text-slate-800">{item.pay}</p>
                 </div>
                 <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
                     <Users size={10} className="text-blue-500" /> Req
                   </p>
-                  <p className="text-xs font-black text-slate-800">
-                    {item.req}
-                  </p>
+                  <p className="text-xs font-black text-slate-800">{item.req}</p>
                 </div>
               </div>
 

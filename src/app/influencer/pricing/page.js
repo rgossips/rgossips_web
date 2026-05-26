@@ -7,19 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import {
-  PLAN_IDS,
-  PLAN_PRICING,
-  PLAN_STRIPE_PRICES,
-  FEATURE_GROUPS,
-  FEATURE_MATRIX,
-  formatFeatureValue,
-} from "@/lib/plans";
-import {
-  getEffectivePlan,
-  isWithinTrial,
-  trialDaysLeft,
-} from "@/lib/plans";
+import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
+import { getEffectivePlan, isWithinTrial, trialDaysLeft } from "@/lib/plans";
 
 const PLAN_META = {
   starter: {
@@ -66,13 +55,7 @@ export default function PricingPage() {
     }
     const priceId = PLAN_STRIPE_PRICES[planId]?.[billing];
     if (!priceId) {
-      alert(
-        "Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_" +
-          planId.toUpperCase() +
-          "_" +
-          billing.toUpperCase() +
-          " in env."
-      );
+      alert("Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_" + planId.toUpperCase() + "_" + billing.toUpperCase() + " in env.");
       return;
     }
 
@@ -120,33 +103,23 @@ export default function PricingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-bold text-slate-900 capitalize">
-                    {onTrial ? "Free Trial" : effectivePlan}
-                  </h2>
-                  <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">
-                    CURRENT
-                  </Badge>
-                  {onTrial && (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">
-                      Elite features unlocked
-                    </Badge>
-                  )}
+                  <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? "Free Trial" : effectivePlan}</h2>
+                  <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">CURRENT</Badge>
+                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">Elite features unlocked</Badge>}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {onTrial
                     ? `${daysLeft} days remaining on your 30-day free trial`
                     : effectivePlan === "starter"
-                    ? "Upgrade to unlock more applications, analytics, and visibility"
-                    : `Active ${profile?.billing_cycle || "monthly"} subscription`}
+                      ? "Upgrade to unlock more applications, analytics, and visibility"
+                      : `Active ${profile?.billing_cycle || "monthly"} subscription`}
                 </p>
               </div>
             </div>
             {onTrial && (
               <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl">
                 <Sparkles size={16} className="text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">
-                  Pick a plan before day 30 to keep your features
-                </span>
+                <span className="text-sm font-semibold text-amber-700">Pick a plan before day 30 to keep your features</span>
               </div>
             )}
           </div>
@@ -157,17 +130,13 @@ export default function PricingPage() {
           <div className="inline-flex bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${
-                billing === "monthly" ? "bg-[#5851DB] text-white" : "text-slate-500"
-              }`}
+              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${billing === "monthly" ? "bg-[#5851DB] text-white" : "text-slate-500"}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBilling("annual")}
-              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${
-                billing === "annual" ? "bg-[#5851DB] text-white" : "text-slate-500"
-              }`}
+              className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${billing === "annual" ? "bg-[#5851DB] text-white" : "text-slate-500"}`}
             >
               Annual <span className="text-[10px] text-emerald-500">(save up to 32%)</span>
             </button>
@@ -185,12 +154,7 @@ export default function PricingPage() {
             const isPopular = meta.popular;
 
             return (
-              <Card
-                key={planId}
-                className={`relative p-6 rounded-3xl border-2 transition-all ${
-                  isPopular ? "border-[#5851DB] shadow-xl" : "border-slate-100"
-                }`}
-              >
+              <Card key={planId} className={`relative p-6 rounded-3xl border-2 transition-all ${isPopular ? "border-[#5851DB] shadow-xl" : "border-slate-100"}`}>
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
                     Most popular
@@ -207,15 +171,9 @@ export default function PricingPage() {
                 <div className="mt-5">
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-slate-900">₹{price}</span>
-                    <span className="text-sm text-slate-400 font-medium">
-                      /{billing === "annual" ? "yr" : "mo"}
-                    </span>
+                    <span className="text-sm text-slate-400 font-medium">/{billing === "annual" ? "yr" : "mo"}</span>
                   </div>
-                  {billing === "annual" && (
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-                      ≈ ₹{monthEquiv}/mo
-                    </p>
-                  )}
+                  {billing === "annual" && <p className="text-[11px] text-emerald-600 font-semibold mt-1">≈ ₹{monthEquiv}/mo</p>}
                 </div>
 
                 <button
@@ -225,8 +183,8 @@ export default function PricingPage() {
                     isCurrent
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                       : isPopular
-                      ? "bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white shadow-lg shadow-purple-100"
-                      : "bg-slate-900 text-white"
+                        ? "bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white shadow-lg shadow-purple-100"
+                        : "bg-slate-900 text-white"
                   } disabled:opacity-50`}
                 >
                   {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
@@ -249,9 +207,7 @@ export default function PricingPage() {
                           <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
                           <span className="text-xs text-slate-700 leading-snug">
                             {f.label}
-                            {showValue && (
-                              <span className="ml-1 font-bold text-slate-900">— {valueText}</span>
-                            )}
+                            {showValue && <span className="ml-1 font-bold text-slate-900">— {valueText}</span>}
                           </span>
                         </div>
                       );
@@ -266,7 +222,7 @@ export default function PricingPage() {
             row backgrounds, blue checks for included features, orange
             checks for features that are exclusive to higher tiers. */}
         <Card className="p-0 rounded-3xl border-0 bg-transparent shadow-none overflow-hidden">
-          <div className="bg-orange-500 rounded-3xl p-4 lg:p-6">
+          <div className="rounded-3xl lg:p-6">
             <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs min-w-[760px]">
@@ -274,12 +230,8 @@ export default function PricingPage() {
                   <thead>
                     <tr className="bg-[#1E2A66]">
                       <th className="py-7 px-6 text-left align-middle">
-                        <p className="text-white text-lg lg:text-xl font-black tracking-wide uppercase">
-                          Pricing Table
-                        </p>
-                        <p className="text-blue-200 text-[10px] font-bold mt-1">
-                          Compare every feature
-                        </p>
+                        <p className="text-white text-lg lg:text-xl font-black tracking-wide uppercase">Pricing Table</p>
+                        <p className="text-blue-200 text-[10px] font-bold mt-1">Compare every feature</p>
                       </th>
                       {PLAN_ORDER.map((p) => {
                         const meta = PLAN_META[p];
@@ -287,12 +239,8 @@ export default function PricingPage() {
                         const monthlyPrice = pricing.monthly;
                         return (
                           <th key={p} className="py-7 px-3 text-center align-middle">
-                            <p className="text-white text-2xl lg:text-3xl font-black tracking-tight">
-                              ₹{monthlyPrice}
-                            </p>
-                            <p className="text-blue-200 text-[10px] font-bold mt-1 uppercase tracking-wider">
-                              {meta.label}
-                            </p>
+                            <p className="text-white text-2xl lg:text-3xl font-black tracking-tight">₹{monthlyPrice}</p>
+                            <p className="text-blue-200 text-[10px] font-bold mt-1 uppercase tracking-wider">{meta.label}</p>
                           </th>
                         );
                       })}
@@ -306,25 +254,18 @@ export default function PricingPage() {
                         {/* Group header row */}
                         <tr className="bg-slate-100">
                           <td colSpan={PLAN_ORDER.length + 1} className="py-2 px-6">
-                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
-                              {group.title}
-                            </p>
+                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">{group.title}</p>
                           </td>
                         </tr>
                         {group.features.map((f, fi) => {
                           // Build a quick "premium-only" flag — if only the
                           // top tier has it, the orange-check styling kicks in.
                           const valuesByPlan = PLAN_ORDER.map((p) => FEATURE_MATRIX[f.key]?.[p]);
-                          const onlyTopTier =
-                            valuesByPlan[2] &&
-                            !valuesByPlan[0] &&
-                            !valuesByPlan[1];
+                          const onlyTopTier = valuesByPlan[2] && !valuesByPlan[0] && !valuesByPlan[1];
                           const zebra = fi % 2 === 0 ? "bg-white" : "bg-slate-50";
                           return (
                             <tr key={f.key} className={zebra}>
-                              <td className="py-4 px-6 text-[13px] font-semibold text-slate-700 uppercase tracking-wide">
-                                {f.label}
-                              </td>
+                              <td className="py-4 px-6 text-[13px] font-semibold text-slate-700 uppercase tracking-wide">{f.label}</td>
                               {PLAN_ORDER.map((p, pi) => {
                                 const v = FEATURE_MATRIX[f.key]?.[p];
                                 const text = formatFeatureValue(v);
@@ -335,11 +276,7 @@ export default function PricingPage() {
                                     {hasValue ? (
                                       text === "✓" ? (
                                         <span
-                                          className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${
-                                            accentOrange
-                                              ? "bg-orange-500 text-white"
-                                              : "bg-[#1E2A66] text-white"
-                                          }`}
+                                          className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${accentOrange ? "bg-orange-500 text-white" : "bg-[#1E2A66] text-white"}`}
                                           aria-label="Included"
                                         >
                                           <Check size={14} strokeWidth={3} />
@@ -347,9 +284,7 @@ export default function PricingPage() {
                                       ) : (
                                         <span
                                           className={`inline-flex items-center justify-center min-w-[64px] px-3 py-1.5 rounded-full text-[11px] font-black ${
-                                            accentOrange
-                                              ? "bg-orange-100 text-orange-700"
-                                              : "bg-[#1E2A66] text-white"
+                                            accentOrange ? "bg-orange-100 text-orange-700" : "bg-[#1E2A66] text-white"
                                           }`}
                                         >
                                           {text}

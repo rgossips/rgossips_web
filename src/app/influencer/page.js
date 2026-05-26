@@ -25,7 +25,9 @@ const CATEGORIES = [
   { id: 2, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
   { id: 3, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
   { id: 4, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
+  { id: 5, label: "Campaigns For You", icon: <Star size={20} />, active: false, action: "scroll", target: "section-recommended-campaigns" },
 ];
+
 export default function HomePage() {
   const router = useRouter();
   const { loading } = useAuth();
