@@ -26,16 +26,20 @@ const ICON_MAP = {
   campaign_approved: <CheckCircle className="w-5 h-5 text-emerald-500" />,
 };
 
+// Same as the navbar popover — prefer body.link so service-marketplace
+// notifications jump straight to their order detail page.
 const getNotifLink = (notif) => {
+  try {
+    const data = JSON.parse(notif.body);
+    if (data?.link) return data.link;
+    if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
+      if (data?.campaignId) return `/influencer/offers/${data.campaignId}`;
+    }
+  } catch {}
   if (notif.type === "welcome") return "/influencer";
   if (notif.type === "profile_incomplete") return "/influencer/profile";
-  if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
-    try {
-      const data = JSON.parse(notif.body);
-      if (data.campaignId) return `/influencer/offers/${data.campaignId}`;
-    } catch {}
-    return "/influencer/campaigns";
-  }
+  if (notif.type === "campaign_status" || notif.type === "campaign_approved") return "/influencer/campaigns";
+  if (notif.type?.startsWith("service_")) return "/influencer/services/orders";
   return "/influencer";
 };
 

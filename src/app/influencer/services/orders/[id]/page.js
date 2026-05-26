@@ -14,6 +14,7 @@ import {
   Info,
   CheckCircle2,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -327,12 +328,21 @@ export default function ServiceOrderDetailPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-24 lg:pb-12 lg:pt-24 font-sans">
       <div className="max-w-[1100px] mx-auto px-4 lg:px-8 py-6 space-y-5">
-        <button
-          onClick={() => router.push("/influencer/services")}
-          className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
-        >
-          <ArrowLeft size={14} /> Back to Services
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push("/influencer/services")}
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
+          >
+            <ArrowLeft size={14} /> Back to Services
+          </button>
+          <button
+            onClick={() => refresh()}
+            title="Refresh status"
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-pink-500 px-3 py-1.5 rounded-full hover:bg-white transition-all cursor-pointer"
+          >
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
 
         {/* Status banner */}
         <div className={`rounded-2xl bg-gradient-to-r ${banner.accent} text-white p-5 lg:p-6 flex items-center gap-4 shadow-md`}>
@@ -446,7 +456,7 @@ export default function ServiceOrderDetailPage() {
 
                 <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-[12px]">
                   <Row label="Subtotal" value={formatINR(order.quoted_amount || 0)} />
-                  <Row label="Platform fee" value={formatINR(order.platform_fee_amount || 0)} />
+                  {/* Platform fee removed — service orders don't charge one. */}
                   <div className="border-t border-slate-200 pt-1.5">
                     <Row label="Total" value={formatINR(order.total_amount || 0)} bold />
                   </div>
@@ -497,7 +507,7 @@ export default function ServiceOrderDetailPage() {
                       type="number"
                       value={counterAmount}
                       onChange={(e) => setCounterAmount(e.target.value)}
-                      placeholder={`Your counter (₹), excl. ${order.platform_fee_amount ? "platform fee" : ""}`}
+                      placeholder="Your counter (₹)"
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
                     />
                     <textarea

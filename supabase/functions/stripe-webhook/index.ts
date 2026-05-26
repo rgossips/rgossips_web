@@ -36,6 +36,16 @@ const supabase = createClient(
 
 async function setUserPlan(userId: string, plan: string, extras: Record<string, unknown> = {}) {
   if (!userId) return;
+  // Read the existing plan so we can fire a thank-you notification only on
+  // an actual upgrade, not on every webhook event that re-asserts the same
+  // plan or downgrades on cancellation.
+  const { data: prior } = await supabase
+    .from("influencer_profiles")
+    .select("subscription_plan")
+    .eq("influencer_id", userId)
+    .maybeSingle();
+  const previousPlan = prior?.subscription_plan || "";
+
   const { error } = await supabase
     .from("influencer_profiles")
     .update({
@@ -44,7 +54,34 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
       updated_at: new Date().toISOString(),
     })
     .eq("influencer_id", userId);
-  if (error) console.error("Failed to update plan:", error.message);
+  if (error) {
+    console.error("Failed to update plan:", error.message);
+    return;
+  }
+
+  // Notify on upgrade (anything moving off trial/starter/free into a paid
+  // tier, OR moving up between paid tiers). Skip when the plan didn't
+  // actually change.
+  const planRank: Record<string, number> = { free: 0, trial: 1, starter: 2, pro: 3, elite: 4 };
+  const prevRank = planRank[previousPlan] ?? 0;
+  const nextRank = planRank[plan] ?? 0;
+  if (nextRank > prevRank && nextRank >= planRank.pro) {
+    const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+    try {
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "plan_upgraded",
+        title: `Welcome to ${planLabel} 🎉`,
+        body: JSON.stringify({
+          text: `Thanks for upgrading! Your ${planLabel} features are unlocked — head to your dashboard to explore what's new.`,
+          link: "/influencer",
+        }),
+        is_read: false,
+      });
+    } catch (e) {
+      console.error("plan_upgraded notification insert failed:", (e as any)?.message);
+    }
+  }
 }
 
 // ── Service marketplace payment handlers ────────────────────────────────

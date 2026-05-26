@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Search, ChevronRight } from "lucide-react";
+import { ArrowLeft, Loader2, Search, ChevronRight, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/services";
@@ -49,24 +49,38 @@ export default function ServiceRequestsHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Pulled out of the effect so the refresh button can re-fetch without
+  // toggling the loading skeleton on every click.
+  const loadOrders = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("service_orders")
+      .select("id, order_number, service_title, status, total_amount, quoted_amount, advance_pct, created_at, updated_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    setOrders(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user?.id) return;
     let cancelled = false;
+    if (!user?.id) return;
     (async () => {
-      const { data } = await supabase
-        .from("service_orders")
-        .select("id, order_number, service_title, status, total_amount, quoted_amount, advance_pct, created_at, updated_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      await loadOrders();
       if (cancelled) return;
-      setOrders(data || []);
-      setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, supabase]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await loadOrders(); } finally { setRefreshing(false); }
+  };
 
   const counts = useMemo(() => {
     const out = { all: orders.length, active: 0, completed: 0, declined: 0 };
@@ -103,7 +117,7 @@ export default function ServiceRequestsHistoryPage() {
           >
             <ArrowLeft size={16} />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl lg:text-2xl font-black text-slate-900 leading-tight tracking-tight">
               Service Requests
             </h1>
@@ -111,6 +125,14 @@ export default function ServiceRequestsHistoryPage() {
               Every brief you've sent — quote, in progress or done
             </p>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Refresh status"
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-white transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
+          </button>
         </div>
 
         {/* Search */}

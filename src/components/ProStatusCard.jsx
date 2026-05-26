@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ChevronRight, Crown, Sparkles, Zap } from "lucide-react";
 import Image from "next/image";
@@ -21,11 +22,76 @@ function getTrialInfo(profile) {
   return { daysLeft, progress, expired: daysLeft === 0 };
 }
 
+// Approximation while we don't surface `subscription_current_period_end`
+// from Stripe: assume the active subscription renews `cycle_days` after the
+// last profile update (which is bumped on plan change). Good enough to
+// give the user a real number without a backend schema change.
+function getPlanRenewalInfo(profile) {
+  if (!profile?.updated_at) return { daysLeft: null };
+  const cycleDays = profile.billing_cycle === "annual" ? 365 : 30;
+  const start = new Date(profile.updated_at);
+  const elapsed = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.max(0, cycleDays - elapsed);
+  return { daysLeft, cycleDays };
+}
+
+// Tags vs categories with sloppy substring matching — same pattern as
+// TopPicksCarousel so "Beauty & Skincare" matches "Beauty" and vice-versa.
+const tagsMatchCategories = (tags, categories) => {
+  if (!categories?.length || !tags?.length) return false;
+  return categories.some((cat) =>
+    tags.some((t) =>
+      String(t).toLowerCase().includes(String(cat).toLowerCase()) ||
+      String(cat).toLowerCase().includes(String(t).toLowerCase())
+    )
+  );
+};
+
+const scrollToRecommendedCampaigns = () => {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById("section-recommended-campaigns");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
 export function ProStatusCard() {
   const { profile } = useAuth();
   const { daysLeft, progress, expired } = getTrialInfo(profile);
+  const renewal = getPlanRenewalInfo(profile);
   const currentPlan = profile?.subscription_plan || "free";
-  const hasPaidPlan = currentPlan !== "free";
+  const hasPaidPlan = currentPlan !== "free" && currentPlan !== "trial" && currentPlan !== "starter";
+
+  // Real count of brands with active campaigns matching the creator's
+  // chosen categories. Mirrors the Recommended Campaigns filter so the
+  // number lines up with what the section actually shows.
+  const [matchingBrandsCount, setMatchingBrandsCount] = useState(null);
+  const userCategories = useMemo(() => profile?.categories || [], [profile?.categories]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: "{}",
+        });
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data?.campaigns)) return;
+        const matching = data.campaigns.filter((c) => {
+          if (c.status !== "Active") return false;
+          if (userCategories.length === 0) return true;
+          return tagsMatchCategories(c.tags, userCategories);
+        });
+        const brandIds = new Set(matching.map((c) => c.brandId || c.brandName).filter(Boolean));
+        setMatchingBrandsCount(brandIds.size);
+      } catch {
+        if (!cancelled) setMatchingBrandsCount(0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userCategories]);
 
   return (
     <div className="lg:px-10 pb-6 w-full flex items-center justify-center">
@@ -66,8 +132,13 @@ export function ProStatusCard() {
           {/* Vertical Divider - Desktop Only */}
           <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />
 
-          {/* Section 2: Brands CTA Card */}
-          <div className="flex-1 group cursor-pointer">
+          {/* Section 2: Brands CTA Card — clicks scroll to the Recommended
+              Campaigns section below. */}
+          <button
+            type="button"
+            onClick={scrollToRecommendedCampaigns}
+            className="flex-1 group cursor-pointer text-left"
+          >
             <div className="flex items-center justify-between p-4 lg:p-0 lg:px-3 lg:py-2 bg-white border border-slate-100 rounded-2xl shadow-sm lg:shadow-lg hover:bg-slate-50 lg:hover:bg-transparent transition-all">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-purple-50 lg:bg-slate-50 rounded-full">
@@ -75,11 +146,17 @@ export function ProStatusCard() {
                 </div>
                 <p className="text-sm font-semibold text-slate-600 leading-snug">
                   <span className=" bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text font-bold">
-                    142 brands
+                    {matchingBrandsCount == null
+                      ? "…"
+                      : matchingBrandsCount === 0
+                      ? "0 brands"
+                      : `${matchingBrandsCount} brand${matchingBrandsCount === 1 ? "" : "s"}`}
                   </span>
                   <br className="block lg:hidden" />
                   <span className="lg:ml-1">
-                    are looking for creators in your niche
+                    {userCategories.length > 0
+                      ? "are looking for creators in your niche"
+                      : "have active campaigns right now"}
                   </span>
                 </p>
               </div>
@@ -90,7 +167,7 @@ export function ProStatusCard() {
                 />
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Vertical Divider - Desktop Only */}
           <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />
@@ -99,11 +176,26 @@ export function ProStatusCard() {
           <div className="flex items-center gap-3">
             {hasPaidPlan ? (
               <div className="p-4 lg:p-0 lg:px-3 lg:py-2 bg-white border border-slate-100 rounded-2xl shadow-sm lg:shadow-lg flex-1">
-                <div className="flex items-center gap-2">
-                  <Zap size={14} className="text-purple-600 fill-purple-600" />
-                  <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
-                    Active Plan
-                  </span>
+                <div className="flex items-center justify-between lg:gap-6">
+                  <div className="flex-1 lg:w-36">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap size={14} className="text-purple-600 fill-purple-600" />
+                      <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
+                        Active Plan
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                      {profile?.billing_cycle === "annual" ? "Annual" : "Monthly"} · renews in
+                    </p>
+                  </div>
+                  <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
+                    <span className="text-3xl lg:text-3xl font-black leading-none bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text">
+                      {renewal.daysLeft != null ? renewal.daysLeft : "—"}
+                    </span>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                      days
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (

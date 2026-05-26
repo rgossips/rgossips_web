@@ -7,6 +7,7 @@ import {
   Clock,
   CheckCircle,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,9 +28,14 @@ export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState("Active");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Accept either ?category=Beauty (single, legacy) or
+  // ?categories=Beauty,Fashion (multi, used by Recommended Campaigns'
+  // "View all" link) — both pre-fill the category filter on load.
   const [selectedCategories, setSelectedCategories] = useState(() => {
-    const cat = searchParams?.get("category");
-    return cat ? [cat] : [];
+    const single = searchParams?.get("category");
+    const multi = searchParams?.get("categories");
+    if (multi) return multi.split(",").map((c) => c.trim()).filter(Boolean);
+    return single ? [single] : [];
   });
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
   const [selectedBrands, setSelectedBrands] = useState(() => {
@@ -113,13 +119,22 @@ export default function CampaignsPage() {
                 Track and manage collaborations
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setIsFiltersOpen(true)}
-              className="h-10 w-10 rounded-xl border-none bg-white shadow-sm shrink-0"
-            >
-              <SlidersHorizontal size={18} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                title="Refresh status"
+                className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-500 hover:text-pink-500 cursor-pointer"
+              >
+                <RefreshCw size={16} />
+              </button>
+              <Button
+                variant="outline"
+                onClick={() => setIsFiltersOpen(true)}
+                className="h-10 w-10 rounded-xl border-none bg-white shadow-sm shrink-0"
+              >
+                <SlidersHorizontal size={18} />
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />

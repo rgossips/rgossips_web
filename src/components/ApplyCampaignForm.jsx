@@ -76,10 +76,13 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       }
 
       if (data?.error === "plan_limit_reached") {
-        setError(
-          (data.message || "Plan application limit reached.") +
-            " Visit /influencer/pricing to upgrade."
-        );
+        // Surface a structured marker so the renderer can show an inline
+        // Upgrade button next to the message instead of asking the user
+        // to copy a path.
+        setError({
+          kind: "plan_limit_reached",
+          message: data.message || "You've reached your plan's monthly application limit.",
+        });
         return;
       }
 
@@ -148,9 +151,27 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
 
         {/* Scrollable Form */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
-          )}
+          {error && typeof error === "object" && error.kind === "plan_limit_reached" ? (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+              <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-amber-800">{error.message}</p>
+                <p className="text-[11px] text-amber-700/80 mt-1">
+                  Upgrade your plan to apply to more campaigns this month.
+                </p>
+                <Link
+                  href="/influencer/pricing"
+                  className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-[#9810fa] to-[#e60076] text-white text-xs font-bold shadow-md hover:opacity-90 cursor-pointer"
+                >
+                  Upgrade plan →
+                </Link>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+              {typeof error === "string" ? error : error.message}
+            </div>
+          ) : null}
 
           {/* Campaign briefing — what you're committing to */}
           <CampaignBriefing campaign={campaignData} />

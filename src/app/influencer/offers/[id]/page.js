@@ -37,6 +37,7 @@ import {
   X,
   Copy,
   Check,
+  RefreshCw,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -748,10 +749,19 @@ export default function CampaignDetailsPage() {
         )}
       </AnimatePresence>
 
-      {/* Back link */}
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer mb-4 lg:mb-6">
+      {/* Back link + manual refresh — status updates (brand approval,
+          revision requests, payment release) lag the polling, so a quick
+          refresh button keeps the page honest. */}
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8 flex items-center justify-between mb-4 lg:mb-6">
+        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
           <ChevronLeft size={16} /> Back to Campaigns
+        </button>
+        <button
+          onClick={() => refetch?.()}
+          title="Refresh status"
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+        >
+          <RefreshCw size={14} /> Refresh
         </button>
       </div>
 

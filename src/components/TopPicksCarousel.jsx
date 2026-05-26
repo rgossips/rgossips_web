@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-
-import { CATEGORIES as ALL_CATEGORIES } from "@/utils/categories";
-const CATEGORIES = ["All", ...ALL_CATEGORIES.slice(0, 5)];
+import { useAuth } from "@/context/AuthContext";
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
@@ -18,10 +16,24 @@ const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
 ];
 
+// Matches the brand-side search filter logic — a campaign tag matches when
+// either side substring-contains the other (covers "Beauty" vs
+// "Beauty & Skincare" etc.).
+const tagsMatchCategories = (tags, categories) => {
+  if (!categories?.length || !tags?.length) return false;
+  return categories.some((cat) =>
+    tags.some((t) =>
+      String(t).toLowerCase().includes(String(cat).toLowerCase()) ||
+      String(cat).toLowerCase().includes(String(t).toLowerCase())
+    )
+  );
+};
+
 export default function RecommendedCampaigns() {
-  const [activeTab, setActiveTab] = useState("All");
-  const [offers, setOffers] = useState([]);
+  const { profile } = useAuth();
+  const [allCampaigns, setAllCampaigns] = useState([]);
   const router = useRouter();
+  const userCategories = useMemo(() => profile?.categories || [], [profile?.categories]);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -34,22 +46,7 @@ export default function RecommendedCampaigns() {
           body: "{}",
         });
         const data = await res.json();
-        if (data?.campaigns) {
-          const active = data.campaigns.filter((c) => c.status === "Active").slice(0, 6);
-          setOffers(active.map((c, i) => ({
-            id: c.id,
-            imageUrl: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
-            category: c.tags?.[0]?.split(" ")?.[0] || "General",
-            badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? "Ending Soon" : "Active",
-            match: "",
-            brand: c.brandName,
-            title: c.title,
-            location: c.location || "Pan India",
-            desc: c.description?.slice(0, 80) || "Apply to collaborate with this brand.",
-            pay: c.budget,
-            req: c.deliverables || "Not specified",
-          })));
-        }
+        if (Array.isArray(data?.campaigns)) setAllCampaigns(data.campaigns);
       } catch (err) {
         console.error("Failed to fetch campaigns:", err);
       }
@@ -57,44 +54,56 @@ export default function RecommendedCampaigns() {
     fetchCampaigns();
   }, []);
 
-  const filteredOffers = activeTab === "All"
-    ? offers
-    : offers.filter((o) => o.category.toLowerCase().includes(activeTab.toLowerCase()));
+  // Match the active set against the creator's chosen categories. Falls
+  // back to "all active campaigns" only when the user hasn't picked any
+  // categories yet (otherwise the section reads as if it were broken).
+  const filteredOffers = useMemo(() => {
+    const active = allCampaigns.filter((c) => c.status === "Active");
+    const base = userCategories.length > 0
+      ? active.filter((c) => tagsMatchCategories(c.tags, userCategories))
+      : active;
+    return base.slice(0, 6).map((c, i) => ({
+      id: c.id,
+      imageUrl: c.bannerImage || PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
+      category: c.tags?.[0] || "General",
+      badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? "Ending Soon" : "Active",
+      match: "",
+      brand: c.brandName,
+      title: c.title,
+      location: c.location || "Pan India",
+      desc: c.description?.slice(0, 80) || "Apply to collaborate with this brand.",
+      pay: c.budget,
+      req: c.deliverables || "Not specified",
+    }));
+  }, [allCampaigns, userCategories]);
+
+  // View All carries the creator's categories through to the campaigns page
+  // so the filtered view there opens pre-narrowed.
+  const viewAllHref = userCategories.length > 0
+    ? `/influencer/campaigns?categories=${encodeURIComponent(userCategories.join(","))}`
+    : "/influencer/campaigns";
 
   return (
     <section className="w-full py-10 px-6 lg:px-12 bg-white">
-      {/* Header & Tabs */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
             Recommended Campaigns
           </h2>
           <p className="text-sm text-slate-400 font-medium">
-            Opportunities matched to your creator profile
+            {userCategories.length > 0
+              ? `Matched to your niche — ${userCategories.slice(0, 3).join(", ")}${userCategories.length > 3 ? ` +${userCategories.length - 3}` : ""}`
+              : "Opportunities matched to your creator profile"}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-          {CATEGORIES.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 cursor-pointer rounded-xl text-xs font-bold transition-all ${
-                activeTab === tab
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-          <button
-            onClick={() => router.push("/influencer/campaigns")}
-            className="text-[#D61F69] cursor-pointer text-xs font-bold px-4 hover:underline"
-          >
-            View All ›
-          </button>
-        </div>
+        <button
+          onClick={() => router.push(viewAllHref)}
+          className="text-[#D61F69] cursor-pointer text-sm font-bold hover:underline"
+        >
+          View all ›
+        </button>
       </div>
 
       {/* Grid */}

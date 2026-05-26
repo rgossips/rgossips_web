@@ -66,11 +66,16 @@ const BUDGET_OPTIONS = [
   "₹50,000+",
 ];
 
+// 7 days out from today — keeps the user one full work-week ahead without
+// being unrealistic. The HTML <input type="date" min={...}> guard below
+// stops them from picking a past date.
 const defaultDeliveryISO = () => {
   const d = new Date();
-  d.setDate(d.getDate() + 14);
+  d.setDate(d.getDate() + 7);
   return d.toISOString().slice(0, 10);
 };
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function QuoteRequestPage() {
   const router = useRouter();
@@ -299,6 +304,7 @@ export default function QuoteRequestPage() {
               <input
                 type="date"
                 value={deliveryDate}
+                min={todayISO()}
                 onChange={(e) => setDeliveryDate(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
               />

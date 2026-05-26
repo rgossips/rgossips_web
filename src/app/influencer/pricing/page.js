@@ -262,54 +262,114 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* Full feature matrix */}
-        <Card className="p-5 lg:p-8 rounded-3xl border bg-white">
-          <h2 className="text-base lg:text-lg font-extrabold text-slate-900 mb-1">Compare all features</h2>
-          <p className="text-xs text-slate-500 mb-6">Everything included on each tier.</p>
-
-          <div className="space-y-7">
-            {FEATURE_GROUPS.map((group) => (
-              <div key={group.title}>
-                <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">
-                  {group.title}
-                </p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[560px]">
-                    <thead>
-                      <tr className="border-b border-slate-100">
-                        <th className="py-2.5 pr-4 font-bold text-slate-500">Feature</th>
-                        {PLAN_ORDER.map((p) => (
-                          <th key={p} className="py-2.5 px-3 text-center font-bold text-slate-700 capitalize">
-                            {p}
+        {/* Comparison table — pricing-card-style header on top, alternating
+            row backgrounds, blue checks for included features, orange
+            checks for features that are exclusive to higher tiers. */}
+        <Card className="p-0 rounded-3xl border-0 bg-transparent shadow-none overflow-hidden">
+          <div className="bg-orange-500 rounded-3xl p-4 lg:p-6">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[760px]">
+                  {/* Header row — colored cards per plan, "Pricing Table" label on the left */}
+                  <thead>
+                    <tr className="bg-[#1E2A66]">
+                      <th className="py-7 px-6 text-left align-middle">
+                        <p className="text-white text-lg lg:text-xl font-black tracking-wide uppercase">
+                          Pricing Table
+                        </p>
+                        <p className="text-blue-200 text-[10px] font-bold mt-1">
+                          Compare every feature
+                        </p>
+                      </th>
+                      {PLAN_ORDER.map((p) => {
+                        const meta = PLAN_META[p];
+                        const pricing = PLAN_PRICING[p];
+                        const monthlyPrice = pricing.monthly;
+                        return (
+                          <th key={p} className="py-7 px-3 text-center align-middle">
+                            <p className="text-white text-2xl lg:text-3xl font-black tracking-tight">
+                              ₹{monthlyPrice}
+                            </p>
+                            <p className="text-blue-200 text-[10px] font-bold mt-1 uppercase tracking-wider">
+                              {meta.label}
+                            </p>
                           </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.features.map((f) => (
-                        <tr key={f.key} className="border-b border-slate-50 last:border-0">
-                          <td className="py-2.5 pr-4 text-slate-700">{f.label}</td>
-                          {PLAN_ORDER.map((p) => {
-                            const v = FEATURE_MATRIX[f.key]?.[p];
-                            const text = formatFeatureValue(v);
-                            return (
-                              <td
-                                key={p}
-                                className={`py-2.5 px-3 text-center font-bold ${
-                                  text === "—" ? "text-slate-300" : "text-slate-700"
-                                }`}
-                              >
-                                {text}
-                              </td>
-                            );
-                          })}
+                        );
+                      })}
+                    </tr>
+                  </thead>
+
+                  {/* Body — alternating row backgrounds, check icons per column */}
+                  <tbody>
+                    {FEATURE_GROUPS.map((group, gi) => (
+                      <React.Fragment key={group.title}>
+                        {/* Group header row */}
+                        <tr className="bg-slate-100">
+                          <td colSpan={PLAN_ORDER.length + 1} className="py-2 px-6">
+                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
+                              {group.title}
+                            </p>
+                          </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                        {group.features.map((f, fi) => {
+                          // Build a quick "premium-only" flag — if only the
+                          // top tier has it, the orange-check styling kicks in.
+                          const valuesByPlan = PLAN_ORDER.map((p) => FEATURE_MATRIX[f.key]?.[p]);
+                          const onlyTopTier =
+                            valuesByPlan[2] &&
+                            !valuesByPlan[0] &&
+                            !valuesByPlan[1];
+                          const zebra = fi % 2 === 0 ? "bg-white" : "bg-slate-50";
+                          return (
+                            <tr key={f.key} className={zebra}>
+                              <td className="py-4 px-6 text-[13px] font-semibold text-slate-700 uppercase tracking-wide">
+                                {f.label}
+                              </td>
+                              {PLAN_ORDER.map((p, pi) => {
+                                const v = FEATURE_MATRIX[f.key]?.[p];
+                                const text = formatFeatureValue(v);
+                                const hasValue = v && v !== false;
+                                const accentOrange = onlyTopTier && hasValue;
+                                return (
+                                  <td key={p} className="py-4 px-3 text-center">
+                                    {hasValue ? (
+                                      text === "✓" ? (
+                                        <span
+                                          className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${
+                                            accentOrange
+                                              ? "bg-orange-500 text-white"
+                                              : "bg-[#1E2A66] text-white"
+                                          }`}
+                                          aria-label="Included"
+                                        >
+                                          <Check size={14} strokeWidth={3} />
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={`inline-flex items-center justify-center min-w-[64px] px-3 py-1.5 rounded-full text-[11px] font-black ${
+                                            accentOrange
+                                              ? "bg-orange-100 text-orange-700"
+                                              : "bg-[#1E2A66] text-white"
+                                          }`}
+                                        >
+                                          {text}
+                                        </span>
+                                      )
+                                    ) : (
+                                      <span className="text-slate-300 text-[18px]">—</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            </div>
           </div>
         </Card>
       </div>

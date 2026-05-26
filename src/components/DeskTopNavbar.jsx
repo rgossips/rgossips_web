@@ -45,17 +45,22 @@ const NOTIF_BG = {
   campaign_approved: "bg-emerald-50",
 };
 
+// Prefer the link the emitter packed into the body — that's where every
+// service-marketplace notification (quote ready, draft ready, completed,
+// etc.) points at a specific order detail page. Fall back to a sensible
+// per-type destination so old rows still route reasonably.
 const getNotifLink = (notif) => {
+  try {
+    const data = JSON.parse(notif.body);
+    if (data?.link) return data.link;
+    if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
+      if (data?.campaignId) return `/influencer/offers/${data.campaignId}`;
+    }
+  } catch {}
   if (notif.type === "welcome") return "/influencer";
   if (notif.type === "profile_incomplete") return "/influencer/profile";
-  // Campaign notifications: parse campaignId from body JSON
-  if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
-    try {
-      const data = JSON.parse(notif.body);
-      if (data.campaignId) return `/influencer/offers/${data.campaignId}`;
-    } catch {}
-    return "/influencer/campaigns";
-  }
+  if (notif.type === "campaign_status" || notif.type === "campaign_approved") return "/influencer/campaigns";
+  if (notif.type?.startsWith("service_")) return "/influencer/services/orders";
   return "/influencer";
 };
 

@@ -80,12 +80,23 @@ const TopServices = () => {
             Professional marketing services to grow your brand
           </p>
         </div>
-        <button
-          onClick={() => router.push("/influencer/services")}
-          className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1 cursor-pointer"
-        >
-          View All Services <span className="text-lg">›</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <button
+            onClick={() => {
+              const el = document.getElementById("section-recommended-campaigns");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="text-sm font-bold text-[#5851DB] hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            Campaigns For You <span className="text-lg">↓</span>
+          </button>
+          <button
+            onClick={() => router.push("/influencer/services")}
+            className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            View All Services <span className="text-lg">›</span>
+          </button>
+        </div>
       </div>
 
       {/* ── MOBILE: auto-scroll carousel ── */}

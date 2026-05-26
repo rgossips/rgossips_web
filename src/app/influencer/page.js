@@ -168,13 +168,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="max-w-[1440px] mx-auto">
-          <div id="section-for-you">
-            <JourneyCarousel />
-          </div>
-        </div>
-
-        <PerformanceDashboard />
+        {/* "For You" (JourneyCarousel) and the PerformanceDashboard
+            section that used to sit between it and "Brands You'll Love"
+            were intentionally removed — the recommended campaigns flow
+            covers the same ground without the dead-data placeholders. */}
 
         {/* Constrained content */}
         <div className="max-w-[1440px] mx-auto space-y-8">
@@ -182,7 +179,9 @@ export default function HomePage() {
           <div id="section-top-services">
             <TopServices />
           </div>
-          <TopPicksCarousel />
+          <div id="section-recommended-campaigns">
+            <TopPicksCarousel />
+          </div>
           <StayCarousel />
           <div id="section-top-creators">
             <CreatorsCarouselWithLink />
