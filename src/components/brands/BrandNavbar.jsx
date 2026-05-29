@@ -50,13 +50,29 @@ const NOTIF_BG = {
 const parseBody = (n) => {
   try {
     const data = JSON.parse(n.body);
-    return { text: data.text || n.body, link: data.link || null };
+    return { text: data.text || n.body, link: data.link || null, campaignId: data.campaignId || null };
   } catch {
-    return { text: n.body || "", link: null };
+    return { text: n.body || "", link: null, campaignId: null };
   }
 };
 
-const getNotifLink = (n) => parseBody(n).link || "/brands";
+// Prefer the explicit link in the body. Older rows (created before the
+// link field existed) fall back to a campaignId → campaign page, then a
+// per-type default, so every brand notification lands somewhere useful.
+const getNotifLink = (n) => {
+  const { link, campaignId } = parseBody(n);
+  if (link) return link;
+  if (campaignId) return `/brands/campaign/${campaignId}`;
+  if (
+    n.type === "new_application" ||
+    n.type === "deliverables_submitted" ||
+    n.type === "live_submitted" ||
+    (typeof n.type === "string" && n.type.startsWith("app_"))
+  ) {
+    return "/brands/campaigns";
+  }
+  return "/brands";
+};
 const getNotifText = (n) => parseBody(n).text;
 
 const formatTime = (dateStr) => {

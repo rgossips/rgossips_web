@@ -78,6 +78,9 @@ Deno.serve(async (req) => {
       // influencer side; consumers should Number()-coerce before compare.
       services: r.services || [],
       service_rates: r.service_rates || {},
+      // Gender + languages power the brand-side search filters.
+      gender: r.gender || "",
+      languages: Array.isArray(r.languages) ? r.languages : [],
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,
@@ -119,6 +122,10 @@ Deno.serve(async (req) => {
         media_count: r.media_count || 0,
         categories: Array.isArray(meta.categories) ? meta.categories : [],
         city: meta.city || r.city || "",
+        // Admin bulk-invite form packs gender + languages into the notes
+        // blob (see admin actions.ts), so surface them the same way.
+        gender: meta.gender || "",
+        languages: Array.isArray(meta.languages) ? meta.languages : [],
       };
     });
 

@@ -194,7 +194,35 @@ const InfluencerDirectory = () => {
     }
     const locations = f.Location || [];
     if (locations.length) {
-      if (!inf.city || !locations.includes(inf.city)) return false;
+      // Fuzzy match — a stored city like "Mumbai, Maharashtra" should match
+      // the "Mumbai" filter chip, and vice-versa.
+      const city = (inf.city || "").toLowerCase();
+      if (!city) return false;
+      const hit = locations.some((loc) => {
+        const l = loc.toLowerCase();
+        return city.includes(l) || l.includes(city);
+      });
+      if (!hit) return false;
+    }
+    const genders = f.Gender || [];
+    if (genders.length) {
+      const g = (inf.gender || "").toLowerCase();
+      if (!g) return false;
+      // Normalise "M"/"male"/"F"/"female" style values to the chip labels.
+      const hit = genders.some((sel) => {
+        const s = sel.toLowerCase();
+        if (s.startsWith("male")) return g === "male" || g === "m";
+        if (s.startsWith("female")) return g === "female" || g === "f";
+        return g.includes(s) || s.includes(g);
+      });
+      if (!hit) return false;
+    }
+    const languages = f["Content Language"] || [];
+    if (languages.length) {
+      const infLangs = (Array.isArray(inf.languages) ? inf.languages : []).map((x) => String(x).toLowerCase());
+      if (infLangs.length === 0) return false;
+      const hit = languages.some((sel) => infLangs.some((il) => il.includes(sel.toLowerCase()) || sel.toLowerCase().includes(il)));
+      if (!hit) return false;
     }
     return true;
   };
@@ -213,7 +241,11 @@ const InfluencerDirectory = () => {
     if (sort === "Followers (High to Low)") {
       list = [...list].sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
     } else if (sort === "Followers (Low to High)") {
-      list = [...list].sort((a, b) => (a.followers_count || 0) - (b.followers_count || 0));
+      // Treat unknown / 0-follower profiles (mostly un-enriched invitations)
+      // as +Infinity so they sink to the bottom instead of dominating the
+      // top of a low-to-high sort with meaningless zeros.
+      const lowKey = (n) => (n && n > 0 ? n : Infinity);
+      list = [...list].sort((a, b) => lowKey(a.followers_count) - lowKey(b.followers_count));
     } else if (sort === "Alphabetical") {
       list = [...list].sort((a, b) =>
         (a.full_name || a.username || "").localeCompare(b.full_name || b.username || "")

@@ -47,16 +47,24 @@ const BG_MAP = {
 const parseBody = (notif) => {
   try {
     const data = JSON.parse(notif.body);
-    return { text: data.text || notif.body, link: data.link || null };
+    return { text: data.text || notif.body, link: data.link || null, campaignId: data.campaignId || null };
   } catch {
-    return { text: notif.body || "", link: null };
+    return { text: notif.body || "", link: null, campaignId: null };
   }
 };
 
 const getLink = (notif) => {
-  const { link } = parseBody(notif);
+  const { link, campaignId } = parseBody(notif);
   if (link) return link;
-  if (notif.type === "welcome") return "/brands";
+  if (campaignId) return `/brands/campaign/${campaignId}`;
+  if (
+    notif.type === "new_application" ||
+    notif.type === "deliverables_submitted" ||
+    notif.type === "live_submitted" ||
+    (typeof notif.type === "string" && notif.type.startsWith("app_"))
+  ) {
+    return "/brands/campaigns";
+  }
   return "/brands";
 };
 

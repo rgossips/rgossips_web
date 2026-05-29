@@ -233,6 +233,11 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     if (totalDeliverables < 1) return setError("Add at least 1 deliverable (reels, posts, stories, videos or blogs)");
     if (categories.length < 1) return setError("Select at least 1 category");
     if (platforms.length < 1) return setError("Select at least 1 platform");
+    // A published campaign must carry a banner — it's the hero image
+    // creators see in every listing. Drafts can be saved without one.
+    if (publish && !bannerFile && !form.banner_image_url) {
+      return setError("Add a campaign banner before publishing — it's the cover image creators see.");
+    }
 
     setSubmitting(true);
     startLoading(publish ? "Publishing campaign..." : "Saving draft...");

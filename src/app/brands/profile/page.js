@@ -21,6 +21,7 @@ import {
   RotateCcw,
   UserMinus,
   Trash2,
+  Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -65,7 +66,17 @@ const BrandProfile = () => {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [brandInfoOpen, setBrandInfoOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [trustInfoOpen, setTrustInfoOpen] = useState(false);
   const [accountAction, setAccountAction] = useState(null); // "deactivate" | "delete" | null
+
+  // Maps a profile-completion field label to the modal that lets the brand
+  // fill it in — so the missing-field chips in the completion card are
+  // actionable rather than just informational.
+  const openFieldEditor = (label) => {
+    if (label === "Contact email") setContactOpen(true);
+    else if (label === "Categories") setCategoriesOpen(true);
+    else if (label === "GST / PAN") setBrandInfoOpen(true);
+  };
 
   // Cropper state for new logo upload
   const [imageSrc, setImageSrc] = useState(null);
@@ -357,9 +368,18 @@ const BrandProfile = () => {
           {completion.missing.length > 0 ? (
             <p className="text-[11px] text-gray-500 leading-snug">
               Add{" "}
-              <span className="font-semibold text-gray-700">
-                {completion.missing.join(", ")}
-              </span>{" "}
+              {completion.missing.map((label, i) => (
+                <React.Fragment key={label}>
+                  {i > 0 && ", "}
+                  <button
+                    type="button"
+                    onClick={() => openFieldEditor(label)}
+                    className="font-semibold text-[#5851DB] underline decoration-dotted underline-offset-2 hover:text-[#4338CA] cursor-pointer"
+                  >
+                    {label}
+                  </button>
+                </React.Fragment>
+              ))}{" "}
               to complete your profile.
             </p>
           ) : (
@@ -369,11 +389,22 @@ const BrandProfile = () => {
           )}
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
+        <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm relative">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Trust score
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                Trust score
+              </p>
+              <button
+                type="button"
+                onClick={() => setTrustInfoOpen((v) => !v)}
+                aria-label="How is the trust score calculated?"
+                title="How is this calculated?"
+                className="text-gray-300 hover:text-[#5851DB] transition-colors cursor-pointer"
+              >
+                <Info size={13} />
+              </button>
+            </div>
             <span
               className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                 trust.band === "HIGH"
@@ -386,42 +417,90 @@ const BrandProfile = () => {
               {trust.band}
             </span>
           </div>
-          <p className="text-2xl font-black text-gray-900 mb-3">
+          <p className="text-2xl font-black text-gray-900 mb-1">
             {trust.score}
             <span className="text-sm font-bold text-gray-400 ml-1">/1000</span>
           </p>
-          <div className="space-y-1.5 text-[11px] text-gray-500">
-            <p>
-              <span className="font-semibold text-gray-700">
-                {trust.breakdown.influencerRating.percent}%
-              </span>{" "}
-              from influencer ratings ({trust.breakdown.influencerRating.count})
-            </p>
-            {trust.breakdown.influencerRating.count > 0 && (
-              <p className="text-[10px] text-gray-400 pl-1">
-                avg {trust.breakdown.influencerRating.avgRating.toFixed(1)}★
-                {trust.breakdown.influencerRating.briefCount > 0 && (
-                  <> · brief {trust.breakdown.influencerRating.avgBriefClarity.toFixed(1)}★</>
-                )}
-                {trust.breakdown.influencerRating.fairnessCount > 0 && (
-                  <> · fairness {trust.breakdown.influencerRating.avgFairness.toFixed(1)}★</>
-                )}
-              </p>
-            )}
-            <p>
-              <span className="font-semibold text-gray-700">
-                {trust.breakdown.campaignDelivery.percent}%
-              </span>{" "}
-              campaigns delivered ({trust.breakdown.campaignDelivery.completedCount}/
-              {trust.breakdown.campaignDelivery.total})
-            </p>
-            <p>
-              <span className="font-semibold text-gray-700">
-                {trust.breakdown.profileCompleteness.percent}%
-              </span>{" "}
-              profile complete
-            </p>
-          </div>
+          <p className="text-[11px] text-gray-400 leading-snug">
+            A blend of influencer ratings, campaign delivery and profile
+            completeness. Tap the{" "}
+            <Info size={11} className="inline -translate-y-px" /> to see the
+            breakdown.
+          </p>
+
+          {trustInfoOpen && (
+            <>
+              {/* Click-away layer so the popover dismisses on an outside tap. */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setTrustInfoOpen(false)}
+              />
+              <div className="absolute left-4 right-4 top-16 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-black text-gray-800">
+                    How your trust score is calculated
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setTrustInfoOpen(false)}
+                    className="p-1 -mr-1 cursor-pointer"
+                    aria-label="Close"
+                  >
+                    <X size={14} className="text-gray-400" />
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-gray-400 leading-relaxed mb-3">
+                  Your score (0–1000) is a weighted blend of three signals:
+                </p>
+
+                <div className="space-y-3">
+                  <TrustComponent
+                    label="Influencer ratings"
+                    weight="50%"
+                    percent={trust.breakdown.influencerRating.percent}
+                    detail={
+                      trust.breakdown.influencerRating.count > 0
+                        ? `avg ${trust.breakdown.influencerRating.avgRating.toFixed(
+                            1
+                          )}★ over ${trust.breakdown.influencerRating.count} rating${
+                            trust.breakdown.influencerRating.count === 1 ? "" : "s"
+                          }${
+                            trust.breakdown.influencerRating.briefCount > 0
+                              ? ` · brief ${trust.breakdown.influencerRating.avgBriefClarity.toFixed(
+                                  1
+                                )}★`
+                              : ""
+                          }${
+                            trust.breakdown.influencerRating.fairnessCount > 0
+                              ? ` · fairness ${trust.breakdown.influencerRating.avgFairness.toFixed(
+                                  1
+                                )}★`
+                              : ""
+                          }`
+                        : "No influencer ratings yet"
+                    }
+                  />
+                  <TrustComponent
+                    label="Campaigns delivered"
+                    weight="25%"
+                    percent={trust.breakdown.campaignDelivery.percent}
+                    detail={
+                      trust.breakdown.campaignDelivery.total > 0
+                        ? `${trust.breakdown.campaignDelivery.completedCount} of ${trust.breakdown.campaignDelivery.total} campaigns completed`
+                        : "No completed campaigns yet"
+                    }
+                  />
+                  <TrustComponent
+                    label="Profile completeness"
+                    weight="25%"
+                    percent={trust.breakdown.profileCompleteness.percent}
+                    detail="GST / PAN, contact email and categories"
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -832,6 +911,24 @@ const Detail = ({ label, value }) => (
       {label}
     </p>
     <p className="text-[10px] font-bold text-gray-900">{value}</p>
+  </div>
+);
+
+const TrustComponent = ({ label, weight, percent, detail }) => (
+  <div>
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] font-bold text-gray-700">{label}</span>
+      <span className="text-[10px] font-bold text-[#5851DB] shrink-0">
+        {percent}% · {weight} weight
+      </span>
+    </div>
+    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+      <div
+        className="h-full rounded-full bg-[#5851DB] transition-all"
+        style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+      />
+    </div>
+    <p className="text-[10px] text-gray-400 mt-1">{detail}</p>
   </div>
 );
 
