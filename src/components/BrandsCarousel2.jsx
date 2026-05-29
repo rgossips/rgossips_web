@@ -8,6 +8,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { createClient } from "@/utils/supabase/client";
 
 // list-brands returns rows with empty logo_url for the majority of pending
 // brand_invitations (88% of them today) and the occasional Google Drive
@@ -176,8 +177,32 @@ export default function BrandsCarousel() {
   ];
 
   useEffect(() => {
+    let cancelled = false;
     const fetchBrands = async () => {
       try {
+        const supabase = createClient();
+        // Admin-curated list first (public.featured_brands). When the admin
+        // hasn't pinned any, fall back to the full brand directory so the
+        // section never goes empty.
+        const { data: featured } = await supabase
+          .from("featured_brands")
+          .select("id, name, logo_url, instagram_url")
+          .eq("is_active", true)
+          .order("position", { ascending: true });
+
+        if (cancelled) return;
+        if (featured && featured.length > 0) {
+          setBrands(
+            featured.map((b) => ({
+              id: b.id,
+              name: b.name,
+              logo: b.logo_url || "",
+              instagram_url: b.instagram_url || "",
+            }))
+          );
+          return;
+        }
+
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
         const res = await fetch(`${supabaseUrl}/functions/v1/list-brands`, {
@@ -186,12 +211,13 @@ export default function BrandsCarousel() {
           body: "{}",
         });
         const data = await res.json();
-        if (data?.brands) setBrands(data.brands);
+        if (!cancelled && data?.brands) setBrands(data.brands);
       } catch (err) {
         console.error("Failed to fetch brands:", err);
       }
     };
     fetchBrands();
+    return () => { cancelled = true; };
   }, []);
 
   // Prefer brands that have an actual logo first; the initial-tile fallback
@@ -249,7 +275,14 @@ export default function BrandsCarousel() {
                 <button
                   type="button"
                   onClick={() => {
-                    const el = document.getElementById("section-for-you");
+                    // Featured brands carry an Instagram URL — open it.
+                    // Otherwise nudge the user toward the campaigns they can
+                    // actually act on.
+                    if (b.instagram_url) {
+                      window.open(b.instagram_url, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    const el = document.getElementById("section-recommended-campaigns");
                     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   className="flex flex-col items-center w-full group cursor-pointer"
