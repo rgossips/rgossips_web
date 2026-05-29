@@ -6,6 +6,7 @@ import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { scoreCampaignForUser } from "@/utils/matchScore";
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
@@ -16,16 +17,8 @@ const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600",
 ];
 
-// Matches the brand-side search filter logic — a campaign tag matches when
-// either side substring-contains the other (covers "Beauty" vs
-// "Beauty & Skincare" etc.).
-const tagsMatchCategories = (tags, categories) => {
-  if (!categories?.length || !tags?.length) return false;
-  return categories.some((cat) => tags.some((t) => String(t).toLowerCase().includes(String(cat).toLowerCase()) || String(cat).toLowerCase().includes(String(t).toLowerCase())));
-};
-
 export default function RecommendedCampaigns() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [allCampaigns, setAllCampaigns] = useState([]);
   const router = useRouter();
   const userCategories = useMemo(() => profile?.categories || [], [profile?.categories]);
@@ -38,7 +31,9 @@ export default function RecommendedCampaigns() {
         const res = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-          body: "{}",
+          // Pass influencerId so list-campaigns annotates each row with the
+          // user's applicationStatus — we use that to hide applied campaigns.
+          body: JSON.stringify({ influencerId: user?.id || null }),
         });
         const data = await res.json();
         if (Array.isArray(data?.campaigns)) setAllCampaigns(data.campaigns);
@@ -47,20 +42,38 @@ export default function RecommendedCampaigns() {
       }
     };
     fetchCampaigns();
-  }, []);
+  }, [user?.id]);
 
-  // Match the active set against the creator's chosen categories. Falls
-  // back to "all active campaigns" only when the user hasn't picked any
-  // categories yet (otherwise the section reads as if it were broken).
+  // Rank by the tiered fit score: exact-category matches first, then
+  // partial, then indirect, and within each tier by overall match %.
+  // Campaigns the creator has already applied to are dropped entirely.
   const filteredOffers = useMemo(() => {
-    const active = allCampaigns.filter((c) => c.status === "Active");
-    const base = userCategories.length > 0 ? active.filter((c) => tagsMatchCategories(c.tags, userCategories)) : active;
-    return base.slice(0, 6).map((c, i) => ({
+    const eligible = allCampaigns.filter(
+      (c) => c.status === "Active" && !c.applicationStatus && !c.isExpired
+    );
+
+    const scored = eligible.map((c) => {
+      const { score, categoryTier } = scoreCampaignForUser(profile, c);
+      return { c, score, categoryTier };
+    });
+
+    // When the user has categories, keep only campaigns with *some* category
+    // relationship (tier ≥ 1). Without categories we can't rank, so show all.
+    const visible = userCategories.length > 0
+      ? scored.filter((s) => s.categoryTier >= 1)
+      : scored;
+
+    visible.sort((a, b) => {
+      if (b.categoryTier !== a.categoryTier) return b.categoryTier - a.categoryTier;
+      return b.score - a.score;
+    });
+
+    return visible.slice(0, 6).map(({ c, score }, i) => ({
       id: c.id,
       imageUrl: c.bannerImage || PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
       category: c.tags?.[0] || "General",
       badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? "Ending Soon" : "Active",
-      match: "",
+      match: score,
       brand: c.brandName,
       title: c.title,
       location: c.location || "Pan India",
@@ -68,7 +81,7 @@ export default function RecommendedCampaigns() {
       pay: c.budget,
       req: c.deliverables || "Not specified",
     }));
-  }, [allCampaigns, userCategories]);
+  }, [allCampaigns, userCategories, profile]);
 
   // View All carries the creator's categories through to the campaigns page
   // so the filtered view there opens pre-narrowed.
@@ -115,11 +128,19 @@ export default function RecommendedCampaigns() {
                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full" /> {item.badge}
                   </span>
                 </div>
-                {/* <div className="absolute bottom-4 left-4">
-                  <span className="bg-[#22C55E] text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg">
-                    {item.match}
-                  </span>
-                </div> */}
+                {/* Match % — green = strong fit, amber = moderate. Driven by
+                    category tier + budget vs the creator's reel rate. */}
+                {item.match > 0 && (
+                  <div className="absolute bottom-4 left-4">
+                    <span
+                      className={`text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg ${
+                        item.match >= 75 ? "bg-[#22C55E]" : item.match >= 50 ? "bg-amber-500" : "bg-slate-500"
+                      }`}
+                    >
+                      {item.match}% match
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
