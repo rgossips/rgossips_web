@@ -92,7 +92,7 @@ export default function RecommendedCampaigns() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Recommended Campaigns</h2>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Campaigns for you</h2>
           <p className="text-sm text-slate-400 font-medium">
             {userCategories.length > 0
               ? `Matched to your niche — ${userCategories.slice(0, 3).join(", ")}${userCategories.length > 3 ? ` +${userCategories.length - 3}` : ""}`
