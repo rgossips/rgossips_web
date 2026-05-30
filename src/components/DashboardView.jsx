@@ -365,6 +365,25 @@ const DashboardView = ({
             </div>
           </section>
 
+          {/* Media Kit — shown only after the user has published a kit. */}
+          {profile?.media_kit_published && (
+            <Link
+              href="/influencer/media-kit"
+              className="bg-white p-4 rounded-xl shadow border border-gray-100 flex items-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <div className="p-2 bg-purple-50 rounded-lg text-purple-500">
+                <FileText size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-[#1A1A1A]">Media Kit</p>
+                <p className="text-[11px] text-gray-400 font-semibold">
+                  View or share your published kit
+                </p>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </Link>
+          )}
+
           {/* Profile Completion */}
           <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
 
@@ -639,6 +658,25 @@ const DashboardView = ({
             </div>
           </div>
         </section>
+
+        {/* Media Kit — shown only after the user has published a kit. */}
+        {profile?.media_kit_published && (
+          <Link
+            href="/influencer/media-kit"
+            className="bg-white p-4 rounded-xl shadow border border-gray-100 flex items-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <div className="p-2 bg-purple-50 rounded-lg text-purple-500">
+              <FileText size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[#1A1A1A]">Media Kit</p>
+              <p className="text-[11px] text-gray-400 font-semibold">
+                View or share your published kit
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-gray-300" />
+          </Link>
+        )}
 
         {/* Profile Completion */}
         <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
