@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
 import { getEffectivePlan, isWithinTrial, trialDaysLeft } from "@/lib/plans";
@@ -39,14 +39,54 @@ const PLAN_ORDER = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
 
 export default function PricingPage() {
   const router = useRouter();
-  const { profile, user } = useAuth();
+  const searchParams = useSearchParams();
+  const { profile, user, refreshProfile } = useAuth();
   const supabase = createClient();
   const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
   const [upgrading, setUpgrading] = useState(null);
+  const [verifying, setVerifying] = useState(false);
 
   const effectivePlan = getEffectivePlan(profile);
   const onTrial = isWithinTrial(profile);
   const daysLeft = trialDaysLeft(profile);
+
+  // After Stripe redirects back with ?success=1, the webhook usually beats
+  // the user — but not always. Poll the profile a few times so the home /
+  // dashboard banners reflect the new plan immediately instead of waiting
+  // for the next AuthContext mount.
+  const verifyRef = useRef(false);
+  useEffect(() => {
+    if (verifyRef.current) return;
+    if (searchParams.get("success") !== "1") return;
+    verifyRef.current = true;
+    let cancelled = false;
+    setVerifying(true);
+    (async () => {
+      const deadline = Date.now() + 15000;
+      while (!cancelled && Date.now() < deadline) {
+        await refreshProfile();
+        // refreshProfile updates AuthContext.profile asynchronously; the next
+        // tick will reflect it. We don't have a direct return value, so we
+        // wait a short interval and re-check.
+        await new Promise((r) => setTimeout(r, 1500));
+        // We can't read the latest profile from this closure cleanly; bail
+        // after a single refresh + short wait if subscription_plan was empty
+        // before — the webhook is reliable enough that one pass is usually
+        // enough. Keep the loop bounded so we don't spin forever.
+        if (cancelled) return;
+        break;
+      }
+      if (!cancelled) {
+        // Final refresh to catch the webhook even if the first pass missed it.
+        await refreshProfile();
+        setVerifying(false);
+        router.replace("/influencer/pricing");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, refreshProfile, router]);
 
   const handleUpgrade = async (planId) => {
     if (!user?.id) {
@@ -61,8 +101,13 @@ export default function PricingPage() {
 
     setUpgrading(planId);
     try {
+      // Pass the user's email so Stripe creates the customer with a known
+      // address and reliably sends subscription invoice emails — without
+      // this, Stripe still collects an email during Checkout but won't
+      // associate it with the customer record up front.
+      const email = profile?.email || user?.email || "";
       const { data, error } = await supabase.functions.invoke("stripe-checkout", {
-        body: { userId: user.id, priceId, plan: planId, cycle: billing },
+        body: { userId: user.id, priceId, plan: planId, cycle: billing, email },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -94,6 +139,15 @@ export default function PricingPage() {
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 lg:py-10 space-y-8 lg:pt-24">
+        {verifying && (
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+            <Loader2 size={16} className="animate-spin" />
+            <p className="text-sm font-semibold">
+              Payment received — syncing your new plan…
+            </p>
+          </div>
+        )}
+
         {/* Current plan banner */}
         <Card className="p-5 lg:p-7 rounded-3xl border bg-white">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

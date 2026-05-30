@@ -6,8 +6,7 @@ import { ChevronRight, Crown, Sparkles, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-
-const TRIAL_DAYS = 30;
+import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
 
 function getTrialInfo(profile) {
   const createdAt = profile?.created_at || profile?.updated_at;
@@ -57,8 +56,13 @@ export function ProStatusCard() {
   const { profile } = useAuth();
   const { daysLeft, progress, expired } = getTrialInfo(profile);
   const renewal = getPlanRenewalInfo(profile);
-  const currentPlan = profile?.subscription_plan || "free";
-  const hasPaidPlan = currentPlan !== "free" && currentPlan !== "trial" && currentPlan !== "starter";
+  const currentPlan = (profile?.subscription_plan || "").toLowerCase();
+  // Any explicit non-empty plan (other than the placeholder "free"/"trial"
+  // strings) counts as a paid subscription — that includes Starter, which is
+  // a paid tier (₹99/mo). Previously this card excluded "starter" and showed
+  // "Free Trial" to users who'd actually upgraded.
+  const hasPaidPlan = !!currentPlan && currentPlan !== "free" && currentPlan !== "trial";
+  const onTrial = !hasPaidPlan && isWithinTrial(profile);
 
   // Real count of brands with active campaigns matching the creator's
   // chosen categories. Mirrors the Recommended Campaigns filter so the

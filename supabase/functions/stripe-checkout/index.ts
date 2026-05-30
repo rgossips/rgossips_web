@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, priceId, plan, cycle } = await req.json();
+    const { userId, priceId, plan, cycle, email } = await req.json();
 
     if (!userId || !priceId) {
       return new Response(
@@ -54,6 +54,14 @@ Deno.serve(async (req) => {
     params.append("allow_promotion_codes", "true");
     params.append("subscription_data[metadata][user_id]", userId);
     params.append("subscription_data[metadata][plan]", plan || "");
+    // Pre-fill the email on the customer record so Stripe can email the
+    // subscription invoice / receipt automatically. Without this, Checkout
+    // still collects an email but it isn't always attached to the Customer
+    // object up front, and the "successful payment" email setting in the
+    // Stripe Dashboard has nothing to send to.
+    if (typeof email === "string" && email.trim()) {
+      params.append("customer_email", email.trim());
+    }
 
     const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
