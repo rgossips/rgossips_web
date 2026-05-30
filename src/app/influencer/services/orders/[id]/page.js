@@ -325,15 +325,27 @@ export default function ServiceOrderDetailPage() {
   const BannerIcon = banner.icon;
   const isQuoted = order.status === "quoted";
 
+  // Prefer the browser's history so the user lands wherever they came from
+  // (notifications, the Services list, a chat link, etc.). When the order
+  // page is opened directly (history of one entry) we fall back to the
+  // Services list so the button is never a dead-end.
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/influencer/services");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-24 lg:pb-12 lg:pt-24 font-sans">
       <div className="max-w-[1100px] mx-auto px-4 lg:px-8 py-6 space-y-5">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push("/influencer/services")}
+            onClick={handleBack}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
           >
-            <ArrowLeft size={14} /> Back to Services
+            <ArrowLeft size={14} /> Back
           </button>
           <button
             onClick={() => refresh()}

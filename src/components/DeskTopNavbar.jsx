@@ -13,6 +13,7 @@ import {
   Award,
   UserPlus,
   FileText,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,7 @@ const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
   { label: "Brands", icon: <Compass size={20} />, href: "/influencer/brands" },
   { label: "Campaigns", icon: <Briefcase size={20} />, href: "/influencer/campaigns" },
+  { label: "Services", icon: <Sparkles size={20} />, href: "/influencer/services" },
   { label: "Profile", icon: <User size={20} />, href: "/influencer/profile" },
 ];
 
