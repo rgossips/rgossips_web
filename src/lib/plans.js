@@ -224,3 +224,59 @@ export function profileHasFeature(profile, key) {
 export function profileFeatureValue(profile, key) {
   return getFeatureValue(getEffectivePlan(profile), key);
 }
+
+/* ─────────── media-kit template tiers ─────────── */
+// Each template is gated on the lowest plan that can pick it. The two
+// designer / showcase templates sit behind Elite so the upgrade has a
+// visible payoff on a page brands actually look at.
+export const MEDIA_KIT_TEMPLATES = [
+  {
+    id: "classic",
+    label: "Classic Gradient",
+    description: "The default RGossips two-column layout — friendly and balanced.",
+    minPlan: PLAN_IDS.STARTER,
+    preview: "linear-gradient(135deg,#9810FA 0%,#E60076 55%,#f472b6 100%)",
+  },
+  {
+    id: "glass_blue",
+    label: "Glass Blue",
+    description: "Frosted-glass cards over an editorial blue gradient — clean and modern.",
+    minPlan: PLAN_IDS.PRO,
+    preview: "linear-gradient(160deg,#dce9f8 0%,#bcd6ef 50%,#1564d6 100%)",
+  },
+  {
+    id: "editorial_noir",
+    label: "Editorial Noir",
+    description: "Magazine-style serif typography on warm paper — premium and considered.",
+    minPlan: PLAN_IDS.PRO,
+    preview: "linear-gradient(135deg,#f4efe6 0%,#ddd2c0 60%,#16130f 100%)",
+  },
+  {
+    id: "bento_sunset",
+    label: "Bento Sunset",
+    description: "Bento-grid tiles with a sunset gradient — playful and high-energy.",
+    minPlan: PLAN_IDS.ELITE,
+    preview: "linear-gradient(135deg,#ff9a56 0%,#ff5d73 50%,#c850c0 100%)",
+  },
+  {
+    id: "neo_brutalist",
+    label: "Neo-Brutalist",
+    description: "Hard borders, mono type and chunky shadows — loud and unforgettable.",
+    minPlan: PLAN_IDS.ELITE,
+    preview: "linear-gradient(135deg,#ffd23f 0%,#E94560 55%,#7F47CD 100%)",
+  },
+];
+
+const PLAN_RANK = { [PLAN_IDS.STARTER]: 1, [PLAN_IDS.PRO]: 2, [PLAN_IDS.ELITE]: 3 };
+
+/** True when the given effective plan unlocks the template. Trial counts as Elite. */
+export function canUseMediaKitTemplate(plan, templateId) {
+  const tmpl = MEDIA_KIT_TEMPLATES.find((t) => t.id === templateId);
+  if (!tmpl) return false;
+  return (PLAN_RANK[plan] || 0) >= (PLAN_RANK[tmpl.minPlan] || 0);
+}
+
+/** Convenience wrapper for the common "is this user allowed to pick X" check. */
+export function profileCanUseMediaKitTemplate(profile, templateId) {
+  return canUseMediaKitTemplate(getEffectivePlan(profile), templateId);
+}

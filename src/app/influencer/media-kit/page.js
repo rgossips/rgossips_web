@@ -1,17 +1,57 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import MediaKitLayout from "@/components/MediaKitLayout";
-import { Share2, Copy, Check, Loader2 } from "lucide-react";
+import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate } from "lucide-react";
+import Link from "next/link";
+import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan } from "@/lib/plans";
 
 export default function MediaKitPage() {
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bio, setBio] = useState(profile?.bio || "");
   const [published, setPublished] = useState(!!profile?.media_kit_published);
   const [publishing, setPublishing] = useState(false);
+  // The saved template lives on the profile; `previewTemplate` is a local
+  // override so the creator can flip through layouts before committing.
+  const savedTemplate = profile?.media_kit_template || "classic";
+  const [previewTemplate, setPreviewTemplate] = useState(savedTemplate);
+  const [savingTemplate, setSavingTemplate] = useState(null);
+
+  useEffect(() => {
+    // If the profile refreshes (e.g. after a save) sync the local preview
+    // to whatever the DB now says is current.
+    setPreviewTemplate(savedTemplate);
+  }, [savedTemplate]);
+
+  const handleTemplateSave = useCallback(async (templateId) => {
+    if (!user?.id) return;
+    setSavingTemplate(templateId);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          table: "influencer_profiles",
+          mediaKitTemplate: templateId,
+        }),
+      });
+      await refreshProfile?.();
+    } catch (err) {
+      console.error("Failed to save template:", err);
+    } finally {
+      setSavingTemplate(null);
+    }
+  }, [user, refreshProfile]);
 
   const handleBioSave = useCallback(async (newBio) => {
     setBio(newBio);
@@ -163,12 +203,26 @@ export default function MediaKitPage() {
           {/* Main Preview */}
           <div className="flex-1">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-              <MediaKitLayout profile={{ ...profile, bio }} onBioSave={handleBioSave} onTopReelsSave={handleTopReelsSave} editable />
+              <MediaKitLayout
+                profile={{ ...profile, bio }}
+                onBioSave={handleBioSave}
+                onTopReelsSave={handleTopReelsSave}
+                editable
+                templateOverride={previewTemplate}
+              />
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="lg:w-80 space-y-4 lg:sticky lg:top-44 lg:self-start">
+            <TemplatePicker
+              profile={profile}
+              previewTemplate={previewTemplate}
+              savedTemplate={savedTemplate}
+              savingTemplate={savingTemplate}
+              onPreview={setPreviewTemplate}
+              onSave={handleTemplateSave}
+            />
             {published ? (
               <>
                 {/* Share Card — only after publish */}
@@ -297,6 +351,108 @@ export default function MediaKitPage() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Lets the creator preview + adopt one of the five media-kit templates.
+// Plan-locked options are visible (so the upsell is obvious) but disabled
+// until the user upgrades.
+function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplate, onPreview, onSave }) {
+  const effectivePlan = getEffectivePlan(profile);
+  const hasUnsavedPreview = previewTemplate !== savedTemplate;
+  const previewMeta = MEDIA_KIT_TEMPLATES.find((t) => t.id === previewTemplate);
+  const canUsePreview = profileCanUseMediaKitTemplate(profile, previewTemplate);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <LayoutTemplate size={16} className="text-purple-500" />
+        <h3 className="text-sm font-bold text-slate-900">Templates</h3>
+        <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-wider">{effectivePlan}</span>
+      </div>
+      <p className="text-[11px] text-slate-500 leading-snug">
+        Tap a template to preview. Pick the one you want shareable to brands and creators.
+      </p>
+
+      <div className="space-y-2">
+        {MEDIA_KIT_TEMPLATES.map((t) => {
+          const locked = !profileCanUseMediaKitTemplate(profile, t.id);
+          const isSaved = savedTemplate === t.id;
+          const isPreviewing = previewTemplate === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                if (locked) return;
+                onPreview(t.id);
+              }}
+              disabled={locked}
+              className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all ${
+                isPreviewing
+                  ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40"
+                  : "border-slate-100 hover:border-slate-200"
+              } ${locked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <div
+                className="w-12 h-12 rounded-lg shrink-0 border border-slate-100"
+                style={{ background: t.preview }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-800 truncate">{t.label}</p>
+                  {isSaved && (
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">
+                      Live
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 truncate">{t.description}</p>
+              </div>
+              {locked ? (
+                <span className="flex items-center gap-1 shrink-0 text-[9px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  <Lock size={9} /> {t.minPlan}
+                </span>
+              ) : isPreviewing ? (
+                <Check size={14} className="text-purple-500 shrink-0" />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Save / status footer */}
+      {hasUnsavedPreview && canUsePreview && (
+        <button
+          onClick={() => onSave(previewTemplate)}
+          disabled={savingTemplate === previewTemplate}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+        >
+          {savingTemplate === previewTemplate ? <Loader2 size={14} className="animate-spin" /> : null}
+          {savingTemplate === previewTemplate ? "Saving..." : `Use ${previewMeta?.label || "this template"}`}
+        </button>
+      )}
+      {!hasUnsavedPreview && (
+        <p className="text-[10px] text-slate-400 text-center">{previewMeta?.label} is your live template.</p>
+      )}
+
+      {/* Upgrade nudge if any template above is locked */}
+      {MEDIA_KIT_TEMPLATES.some((t) => !profileCanUseMediaKitTemplate(profile, t.id)) && (
+        <Link
+          href="/influencer/pricing"
+          className="block w-full text-center py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-[11px] font-bold hover:bg-amber-100 transition-colors"
+        >
+          <Crown size={12} className="inline -translate-y-px mr-1" /> Upgrade to unlock more templates
+        </Link>
+      )}
+
+      {previewTemplate !== "classic" && (
+        <p className="text-[10px] text-slate-400 leading-snug text-center pt-1">
+          Edit your bio + top reels on the <button type="button" onClick={() => onPreview("classic")} className="font-bold text-purple-500 hover:underline cursor-pointer">Classic</button> template, then switch back.
+        </p>
       )}
     </div>
   );

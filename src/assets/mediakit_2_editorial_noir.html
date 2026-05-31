@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saquib Siddiqui — Media Kit | RGossips</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4efe6; --ink:#16130f; --ink2:#43392f; --muted:#8a7d6d;
+    --line:#ddd2c0; --pink:#E94560; --purple:#7F47CD; --gold:#b08545;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Archivo',sans-serif;background:var(--paper);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E")}
+  .wrap{max-width:980px;margin:0 auto;padding:46px 28px 70px;position:relative;z-index:1}
+
+  .ser{font-family:'Fraunces',serif}
+  .masthead{border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:6px;
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .masthead .kit{font-size:11px;letter-spacing:.35em;text-transform:uppercase;font-weight:700}
+  .masthead .iss{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .rule-thin{border:none;border-top:1px solid var(--ink);margin:0 0 30px}
+
+  /* HERO */
+  .hero{display:grid;grid-template-columns:200px 1fr;gap:34px;align-items:center;margin-bottom:18px}
+  @media(max-width:640px){.hero{grid-template-columns:1fr;text-align:center}}
+  .portrait{width:200px;height:240px;object-fit:cover;background:linear-gradient(160deg,#cdbfa9,#9b8a72);
+    filter:grayscale(.2) contrast(1.05);box-shadow:8px 8px 0 var(--ink)}
+  @media(max-width:640px){.portrait{margin:0 auto}}
+  .kicker{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--pink);font-weight:700;margin-bottom:8px}
+  h1.name{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(46px,9vw,84px);line-height:.92;
+    letter-spacing:-.02em}
+  .loc{font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:20px;color:var(--ink2);margin-top:10px}
+  .loc span{color:var(--pink);font-style:normal}
+
+  .lede{font-family:'Fraunces',serif;font-style:italic;font-size:26px;line-height:1.4;color:var(--ink2);
+    border-left:4px solid var(--pink);padding:4px 0 4px 22px;margin:30px 0}
+  .lede::first-letter{font-size:1.1em;font-weight:600;color:var(--ink)}
+
+  .sec-title{font-family:'Fraunces',serif;font-weight:600;font-size:13px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:14px;margin:0 0 22px}
+  .sec-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+  @media(max-width:740px){.cols2{grid-template-columns:1fr;gap:36px}}
+  .block{margin-bottom:44px}
+
+  /* expertise */
+  .exp{font-family:'Fraunces',serif;font-size:22px;line-height:1.7;color:var(--ink)}
+  .exp .sep{color:var(--pink);margin:0 8px}
+
+  /* socials */
+  .soc-list{border-top:1px solid var(--line)}
+  .soc{display:flex;align-items:baseline;justify-content:space-between;padding:15px 0;
+    border-bottom:1px solid var(--line)}
+  .soc-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600}
+  .soc-tag{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-left:10px}
+  .soc-val{font-family:'Fraunces',serif;font-weight:900;font-size:28px}
+  .soc-val.dash{color:var(--line);font-weight:600}
+
+  /* services */
+  .svc{border-top:2px solid var(--ink)}
+  .svc-row{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;
+    border-bottom:1px solid var(--line)}
+  .svc-name{font-size:16px;font-weight:500;letter-spacing:.02em}
+  .svc-dots{flex:1;border-bottom:1.5px dotted var(--muted);margin:0 12px;transform:translateY(-4px)}
+  .svc-price{font-family:'Fraunces',serif;font-weight:600;font-size:19px;color:var(--ink)}
+  .svc-price.req{font-style:italic;color:var(--gold);font-size:16px}
+
+  /* stats — editorial figures */
+  .figs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid var(--ink)}
+  .fig{padding:26px 22px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .fig:nth-child(2n){border-right:none}
+  .fig:nth-last-child(-n+2){border-bottom:none}
+  .fig.hl{background:var(--ink);color:var(--paper)}
+  .fig-lbl{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .fig.hl .fig-lbl{color:rgba(244,239,230,.7)}
+  .fig-num{font-family:'Fraunces',serif;font-weight:900;font-size:54px;line-height:1;margin:6px 0}
+  .fig.hl .fig-num{color:#fff}
+  .fig-sub{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--ink2)}
+  .fig.hl .fig-sub{color:rgba(244,239,230,.85)}
+
+  /* audience bars */
+  .sub-h{font-family:'Fraunces',serif;font-style:italic;font-size:18px;margin:26px 0 14px}
+  .sub-h:first-child{margin-top:0}
+  .bar-row{display:grid;grid-template-columns:118px 1fr 46px;align-items:center;gap:12px;margin-bottom:10px}
+  .bar-lbl{font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{height:7px;background:var(--line)}
+  .bar-fill{height:100%;background:var(--ink);transform-origin:left;animation:grow 1s ease both}
+  .bar-fill.pk{background:var(--pink)}
+  @keyframes grow{from{transform:scaleX(0)}}
+  .bar-val{font-family:'Fraunces',serif;font-weight:600;font-size:14px;text-align:right}
+
+  .donut-wrap{display:flex;align-items:center;gap:24px;margin-top:6px;flex-wrap:wrap}
+  .donut{width:120px;height:120px;flex:none}
+  .legend{display:flex;flex-direction:column;gap:9px}
+  .leg{font-family:'Fraunces',serif;font-size:15px;display:flex;align-items:center;gap:10px;color:var(--ink2)}
+  .dot{width:11px;height:11px;flex:none}
+
+  /* content */
+  .content-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:560px){.content-grid{grid-template-columns:1fr 1fr}.figs{grid-template-columns:1fr 1fr}}
+  .post{position:relative;aspect-ratio:4/5;overflow:hidden;background-size:cover;background-position:center;
+    box-shadow:5px 5px 0 var(--ink);border:1.5px solid var(--ink)}
+  .post::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(22,19,15,.85),transparent 50%)}
+  .post-cap{position:absolute;left:10px;right:10px;bottom:28px;z-index:2;font-family:'Fraunces',serif;
+    font-size:14px;color:#fff;line-height:1.2}
+  .post-eng{position:absolute;left:10px;bottom:9px;z-index:2;font-size:11px;color:rgba(255,255,255,.9);
+    display:flex;gap:12px;font-weight:600}
+
+  .colophon{margin-top:50px;border-top:3px solid var(--ink);padding-top:18px;text-align:center}
+  .colophon .big{font-family:'Fraunces',serif;font-weight:900;font-size:30px;margin-bottom:6px}
+  .colophon p{font-style:italic;font-family:'Fraunces',serif;color:var(--ink2);font-size:15px}
+  .foot{text-align:center;margin-top:28px;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <span class="kit">The Media Kit</span>
+    <span class="iss">Vol. 01 — Travel &amp; Photography</span>
+  </div>
+  <hr class="rule-thin">
+
+  <!-- HERO -->
+  <div class="hero">
+    <img class="portrait" src="" alt="Saquib Siddiqui">
+    <div>
+      <div class="kicker">Creator Profile</div>
+      <h1 class="name ser">Saquib<br>Siddiqui</h1>
+      <div class="loc">Travel &amp; Photography <span>— Dehradun</span></div>
+    </div>
+  </div>
+
+  <div class="lede">"Carpe Diem" — a lens turned toward the mountains, the road, and the small spontaneous moments worth keeping.</div>
+
+  <div class="cols2">
+    <!-- LEFT COLUMN -->
+    <div>
+      <div class="block">
+        <div class="sec-title">Expertise</div>
+        <div class="exp">Travel<span class="sep">·</span>Photography<span class="sep">·</span>Tech<span class="sep">·</span>Lifestyle</div>
+      </div>
+
+      <div class="block">
+        <div class="sec-title">On the Channels</div>
+        <div class="soc-list">
+          <div class="soc"><div><span class="soc-name">Instagram</span><span class="soc-tag">Followers</span></div><span class="soc-val">328</span></div>
+          <div class="soc"><div><span class="soc-name">TikTok</span><span class="soc-tag">Followers</span></div><span class="soc-val dash">—</span></div>
+          <div class="soc"><div><span class="soc-name">YouTube</span><span class="soc-tag">Subscribers</span></div><span class="soc-val dash">—</span></div>
+          <div class="soc"><div><span class="soc-name">Facebook</span><span class="soc-tag">Followers</span></div><span class="soc-val dash">—</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="sec-title">Services &amp; Rates</div>
+        <div class="svc">
+          <div class="svc-row"><span class="svc-name">Reels</span><span class="svc-dots"></span><span class="svc-price">₹4,000</span></div>
+          <div class="svc-row"><span class="svc-name">Stories</span><span class="svc-dots"></span><span class="svc-price">₹500</span></div>
+          <div class="svc-row"><span class="svc-name">YouTube Shorts</span><span class="svc-dots"></span><span class="svc-price">₹4,000</span></div>
+          <div class="svc-row"><span class="svc-name">Static Posts</span><span class="svc-dots"></span><span class="svc-price">₹2,000</span></div>
+          <div class="svc-row"><span class="svc-name">UGC Videos</span><span class="svc-dots"></span><span class="svc-price req">On request</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <div class="block">
+        <div class="sec-title">The Number That Matters</div>
+        <div class="figs">
+          <div class="fig"><div class="fig-lbl">Accounts Reached</div><div class="fig-num ser">214</div><div class="fig-sub">last 30 days</div></div>
+          <div class="fig hl"><div class="fig-lbl">Engagement Rate</div><div class="fig-num ser">17.83%</div><div class="fig-sub">vs 1.0% category avg</div></div>
+          <div class="fig"><div class="fig-lbl">Non-Follower Reach</div><div class="fig-num ser">65%</div><div class="fig-sub">organic discovery</div></div>
+          <div class="fig"><div class="fig-lbl">Interactions</div><div class="fig-num ser">59</div><div class="fig-sub">avg per post</div></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="sec-title">Who's Watching</div>
+        <div class="sub-h">Top Cities</div>
+        <div id="cities"></div>
+        <div class="sub-h">Age Brackets</div>
+        <div id="ages"></div>
+        <div class="donut-wrap">
+          <svg class="donut" viewBox="0 0 120 120" id="donut"></svg>
+          <div class="legend">
+            <div class="leg"><span class="dot" style="background:var(--purple)"></span>Female &nbsp;31.7%</div>
+            <div class="leg"><span class="dot" style="background:var(--pink)"></span>Male &nbsp;55%</div>
+            <div class="leg"><span class="dot" style="background:var(--gold)"></span>Other &nbsp;13.4%</div>
+          </div>
+        </div>
+        <div class="sub-h">Top Countries</div>
+        <div id="countries"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="sec-title">Top Content</div>
+    <div class="content-grid" id="posts"></div>
+  </div>
+
+  <div class="colophon">
+    <div class="big ser">Open for Collaborations</div>
+    <p>Interested in working together? Reach out via Instagram or through the RGossips platform.</p>
+  </div>
+  <div class="foot">Generated on RGossips</div>
+</div>
+
+<script>
+  const cities=[["Dehradun, UK",37.8],["Delhi, Delhi",8.8],["Noida, UP",6.4],["Gurugram, HR",5.6],["Greater Noida",5.6],["Mumbai, MH",4]];
+  const ages=[["18-24",5.9],["25-34",82.6],["35-44",9.3],["45-54",0.9],["55-64",1.2]];
+  const countries=[["IN",89.1],["CA",1.6],["AE",1.2],["SA",1.2],["AU",1.2]];
+  const bar=(l,v,max,i,pk)=>`<div class="bar-row"><div class="bar-lbl">${l}</div><div class="bar-track"><div class="bar-fill ${pk?'pk':''}" style="width:${(v/max*100).toFixed(1)}%;animation-delay:${i*.06}s"></div></div><div class="bar-val">${v}%</div></div>`;
+  document.getElementById('cities').innerHTML=cities.map((c,i)=>bar(c[0],c[1],37.8,i,i===0)).join('');
+  document.getElementById('ages').innerHTML=ages.map((c,i)=>bar(c[0],c[1],82.6,i,c[0]==='25-34')).join('');
+  document.getElementById('countries').innerHTML=countries.map((c,i)=>bar(c[0],c[1],89.1,i,i===0)).join('');
+
+  const C=2*Math.PI*46, seg=[[31.7,'#7F47CD'],[55,'#E94560'],[13.4,'#b08545']];
+  let off=0, svg='';
+  seg.forEach(s=>{const len=C*s[0]/100;
+    svg+=`<circle cx="60" cy="60" r="46" fill="none" stroke="${s[1]}" stroke-width="14" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`;
+    off+=len;});
+  document.getElementById('donut').innerHTML=svg;
+
+  const posts=[
+    ["It's been a while",66,7,"#4a6573"],["Universal dreams",77,8,"#b7923f"],["Winter pines",49,11,"#6a857f"],
+    ["The Subtle Soul",86,9,"#3f4f3c"],["Can this Glow?",47,26,"#2c2c2c"],["Good Old Days",61,2,"#7593ad"]
+  ];
+  document.getElementById('posts').innerHTML=posts.map(p=>
+    `<div class="post" style="background-image:linear-gradient(155deg,${p[3]},#16130f)">
+       <div class="post-cap">${p[0]}</div>
+       <div class="post-eng"><span>♥ ${p[1]}</span><span>💬 ${p[2]}</span></div>
+     </div>`).join('');
+</script>
+</body>
+</html>

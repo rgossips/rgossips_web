@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
     if (fields.billingCycle !== undefined) updateData.billing_cycle = fields.billingCycle;
     if (fields.bio !== undefined) updateData.bio = fields.bio;
     if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
+    if (fields.mediaKitTemplate !== undefined) updateData.media_kit_template = fields.mediaKitTemplate || "classic";
     if (fields.customProfilePhotoUrl !== undefined) updateData.custom_profile_photo_url = fields.customProfilePhotoUrl || null;
     if (fields.location !== undefined) updateData.location = fields.location;
     if (fields.email !== undefined) updateData.email = fields.email;
