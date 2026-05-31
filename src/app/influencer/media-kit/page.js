@@ -449,11 +449,9 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
         </Link>
       )}
 
-      {previewTemplate !== "classic" && (
-        <p className="text-[10px] text-slate-400 leading-snug text-center pt-1">
-          Edit your bio + top reels on the <button type="button" onClick={() => onPreview("classic")} className="font-bold text-purple-500 hover:underline cursor-pointer">Classic</button> template, then switch back.
-        </p>
-      )}
+      <p className="text-[10px] text-slate-400 leading-snug text-center pt-1">
+        Use the floating <span className="font-bold text-purple-500">Edit Bio</span> / <span className="font-bold text-purple-500">Edit Top Reels</span> buttons in the bottom-right to update content on any template.
+      </p>
     </div>
   );
 }

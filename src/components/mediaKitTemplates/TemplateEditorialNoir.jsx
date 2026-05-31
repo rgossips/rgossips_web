@@ -138,31 +138,35 @@ export default function TemplateEditorialNoir({ profile }) {
               )}
             </Block>
 
-            {p.topReels.length > 0 && (
-              <Block>
-                <SecTitle>Top Content</SecTitle>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-                  {p.topReels.map((reel, i) => {
-                    const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
-                    return (
-                      <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative aspect-[4/5] block overflow-hidden" style={{ border: `1.5px solid ${ink}`, boxShadow: `5px 5px 0 ${ink}` }}>
-                        {thumb
-                          ? <img src={thumb} alt={reel.caption || "Reel"} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#9b8a72,#1a2a3a)" }} />}
-                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(22,19,15,.85),transparent 50%)" }} />
-                        {reel.caption && <div style={SER} className="absolute left-2.5 right-2.5 bottom-7 text-[14px] text-white leading-tight">{reel.caption.slice(0, 60)}</div>}
-                        <div className="absolute left-2.5 bottom-2 flex gap-3 text-[11px] text-white/90 font-semibold">
-                          <span>❤ {reel.likes || 0}</span>
-                          <span>💬 {reel.comments || 0}</span>
-                        </div>
-                      </a>
-                    );
-                  })}
-                </div>
-              </Block>
-            )}
           </div>
         </div>
+
+        {/* Top Content — promoted to a full-width centered block below the
+            two columns so the grid breathes and the editorial layout reads
+            symmetrically. */}
+        {p.topReels.length > 0 && (
+          <div className="mt-11 mx-auto" style={{ maxWidth: 760 }}>
+            <SecTitleCenter>Top Content</SecTitleCenter>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 justify-items-center">
+              {p.topReels.map((reel, i) => {
+                const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
+                return (
+                  <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative aspect-[4/5] block overflow-hidden w-full" style={{ border: `1.5px solid ${ink}`, boxShadow: `5px 5px 0 ${ink}` }}>
+                    {thumb
+                      ? <img src={thumb} alt={reel.caption || "Reel"} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#9b8a72,#1a2a3a)" }} />}
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(22,19,15,.85),transparent 50%)" }} />
+                    {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-7 text-[14px] text-white leading-tight" style={SER}>{reel.caption.slice(0, 60)}</div>}
+                    <div className="absolute left-2.5 bottom-2 flex gap-3 text-[11px] text-white/90 font-semibold">
+                      <span>❤ {reel.likes || 0}</span>
+                      <span>💬 {reel.comments || 0}</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Colophon */}
         <div className="mt-12 pt-5 text-center" style={{ borderTop: `3px solid ${ink}` }}>
@@ -185,6 +189,15 @@ export default function TemplateEditorialNoir({ profile }) {
   }
   function SubH({ children }) {
     return <div style={SER} className="italic text-[18px] mt-6 mb-3 first:mt-0">{children}</div>;
+  }
+  function SecTitleCenter({ children }) {
+    return (
+      <div className="flex items-center gap-3.5 justify-center mb-5">
+        <span className="h-px w-16" style={{ background: line }} />
+        <span className="font-semibold text-[13px] tracking-[.28em] uppercase" style={{ ...SER, color: ink }}>{children}</span>
+        <span className="h-px w-16" style={{ background: line }} />
+      </div>
+    );
   }
   function Fig({ label, value, sub, hl, last }) {
     return (
