@@ -99,7 +99,67 @@ Deno.serve(async (req) => {
     if (fields.billingCycle !== undefined) updateData.billing_cycle = fields.billingCycle;
     if (fields.bio !== undefined) updateData.bio = fields.bio;
     if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
-    if (fields.mediaKitTemplate !== undefined) updateData.media_kit_template = fields.mediaKitTemplate || "classic";
+    // Media-kit template change is plan-gated and counted server-side so a
+    // determined client can't bypass the cap. Starter → Classic only;
+    // Pro → all 5 with a 3-save lifetime cap; Elite/trial → unlimited.
+    if (table === "influencer_profiles" && fields.mediaKitTemplate !== undefined) {
+      const nextTemplate = String(fields.mediaKitTemplate || "classic");
+
+      const TEMPLATE_MIN_PLAN: Record<string, "starter" | "pro" | "elite"> = {
+        classic: "starter",
+        glass_blue: "pro",
+        editorial_noir: "pro",
+        bento_sunset: "pro",
+        neo_brutalist: "pro",
+      };
+      const PLAN_RANK: Record<string, number> = { starter: 1, pro: 2, elite: 3 };
+      const TEMPLATE_LIMITS: Record<string, number> = { starter: 0, pro: 3, elite: Infinity };
+
+      const { data: current } = await supabaseAdmin
+        .from("influencer_profiles")
+        .select("subscription_plan, media_kit_template, media_kit_template_changes, created_at")
+        .eq("influencer_id", userId)
+        .maybeSingle();
+
+      // Trial users (no explicit plan, within 30 days of signup) get Elite
+      // perks, matching getEffectivePlan on the client.
+      const TRIAL_DAYS = 30;
+      const createdMs = current?.created_at ? new Date(current.created_at).getTime() : 0;
+      const inTrial = createdMs > 0 && (Date.now() - createdMs) / 86_400_000 < TRIAL_DAYS;
+      const rawPlan = String(current?.subscription_plan || "").toLowerCase();
+      const effectivePlan = rawPlan === "pro" || rawPlan === "elite" || rawPlan === "starter"
+        ? rawPlan
+        : inTrial ? "elite" : "starter";
+
+      const requiredRank = PLAN_RANK[TEMPLATE_MIN_PLAN[nextTemplate] || "starter"] || 0;
+      if ((PLAN_RANK[effectivePlan] || 0) < requiredRank) {
+        return new Response(
+          JSON.stringify({ error: `Your plan doesn't include the "${nextTemplate}" template. Upgrade to unlock it.` }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
+      const limit = TEMPLATE_LIMITS[effectivePlan] ?? 0;
+      const used = current?.media_kit_template_changes || 0;
+      const sameAsCurrent = current?.media_kit_template === nextTemplate;
+      // Re-selecting the template you're already on is a no-op — don't burn
+      // a change. Only a real switch increments the counter.
+      if (!sameAsCurrent && isFinite(limit) && used >= limit) {
+        return new Response(
+          JSON.stringify({
+            error: `You've used your ${limit} template change${limit === 1 ? "" : "s"} on the Pro plan. Upgrade to Elite for unlimited switches.`,
+            templateChangesUsed: used,
+            templateChangesLimit: limit,
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
+      updateData.media_kit_template = nextTemplate;
+      if (!sameAsCurrent) {
+        updateData.media_kit_template_changes = used + 1;
+      }
+    }
     if (fields.customProfilePhotoUrl !== undefined) updateData.custom_profile_photo_url = fields.customProfilePhotoUrl || null;
     if (fields.location !== undefined) updateData.location = fields.location;
     if (fields.email !== undefined) updateData.email = fields.email;

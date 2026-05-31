@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import MediaKitLayout from "@/components/MediaKitLayout";
 import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
-import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan } from "@/lib/plans";
+import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage } from "@/lib/plans";
 
 export default function MediaKitPage() {
   const { profile, user, refreshProfile } = useAuth();
@@ -19,6 +19,7 @@ export default function MediaKitPage() {
   const savedTemplate = profile?.media_kit_template || "classic";
   const [previewTemplate, setPreviewTemplate] = useState(savedTemplate);
   const [savingTemplate, setSavingTemplate] = useState(null);
+  const [templateError, setTemplateError] = useState("");
 
   useEffect(() => {
     // If the profile refreshes (e.g. after a save) sync the local preview
@@ -26,96 +27,114 @@ export default function MediaKitPage() {
     setPreviewTemplate(savedTemplate);
   }, [savedTemplate]);
 
-  const handleTemplateSave = useCallback(async (templateId) => {
-    if (!user?.id) return;
-    setSavingTemplate(templateId);
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          table: "influencer_profiles",
-          mediaKitTemplate: templateId,
-        }),
-      });
-      await refreshProfile?.();
-    } catch (err) {
-      console.error("Failed to save template:", err);
-    } finally {
-      setSavingTemplate(null);
-    }
-  }, [user, refreshProfile]);
-
-  const handleBioSave = useCallback(async (newBio) => {
-    setBio(newBio);
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          table: "influencer_profiles",
-          bio: newBio,
-        }),
-      });
-    } catch (err) {
-      console.error("Failed to save bio:", err);
-    }
-  }, [user]);
-
-  const handleTopReelsSave = useCallback(async (newReels) => {
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      const headers = { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
-
-      // Resolve thumbnails from Instagram API
-      const links = newReels.map((r) => r.permalink).filter(Boolean);
-      let resolvedReels = newReels;
-
-      if (links.length > 0) {
-        try {
-          const resolveRes = await fetch(`${supabaseUrl}/functions/v1/resolve-reel-thumbnails`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ userId: user.id, reelLinks: links }),
-          });
-          const resolveData = await resolveRes.json();
-          if (resolveData?.reels) {
-            resolvedReels = resolveData.reels;
-          }
-        } catch (e) {
-          console.error("Failed to resolve thumbnails:", e);
+  const handleTemplateSave = useCallback(
+    async (templateId) => {
+      if (!user?.id) return;
+      setSavingTemplate(templateId);
+      setTemplateError("");
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const res = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            table: "influencer_profiles",
+            mediaKitTemplate: templateId,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data?.error) {
+          // Server enforced the plan / change-cap limit. Surface the message
+          // so the user understands why the save was refused.
+          setTemplateError(data.error);
+        } else {
+          await refreshProfile?.();
         }
+      } catch (err) {
+        console.error("Failed to save template:", err);
+        setTemplateError("Failed to save — please try again.");
+      } finally {
+        setSavingTemplate(null);
       }
+    },
+    [user, refreshProfile],
+  );
 
-      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          userId: user.id,
-          table: "influencer_profiles",
-          topReels: resolvedReels,
-        }),
-      });
-    } catch (err) {
-      console.error("Failed to save top reels:", err);
-    }
-  }, [user]);
+  const handleBioSave = useCallback(
+    async (newBio) => {
+      setBio(newBio);
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+        await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            table: "influencer_profiles",
+            bio: newBio,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save bio:", err);
+      }
+    },
+    [user],
+  );
+
+  const handleTopReelsSave = useCallback(
+    async (newReels) => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+        const headers = { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+
+        // Resolve thumbnails from Instagram API
+        const links = newReels.map((r) => r.permalink).filter(Boolean);
+        let resolvedReels = newReels;
+
+        if (links.length > 0) {
+          try {
+            const resolveRes = await fetch(`${supabaseUrl}/functions/v1/resolve-reel-thumbnails`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ userId: user.id, reelLinks: links }),
+            });
+            const resolveData = await resolveRes.json();
+            if (resolveData?.reels) {
+              resolvedReels = resolveData.reels;
+            }
+          } catch (e) {
+            console.error("Failed to resolve thumbnails:", e);
+          }
+        }
+
+        await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            userId: user.id,
+            table: "influencer_profiles",
+            topReels: resolvedReels,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save top reels:", err);
+      }
+    },
+    [user],
+  );
 
   const handlePublish = async () => {
     if (publishing || published) return;
@@ -149,9 +168,7 @@ export default function MediaKitPage() {
   };
 
   const kitSlug = profile?.username || profile?.instagram_handle || user?.id || "";
-  const shareUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/kit/${kitSlug}`
-    : "";
+  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/kit/${kitSlug}` : "";
 
   const handleCopyLink = async () => {
     try {
@@ -196,31 +213,25 @@ export default function MediaKitPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F7FB] pb-20 lg:pb-0">
-
       {/* Media Kit Preview */}
-      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 lg:py-10">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-[120px]">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
           {/* Main Preview */}
           <div className="flex-1">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-              <MediaKitLayout
-                profile={{ ...profile, bio }}
-                onBioSave={handleBioSave}
-                onTopReelsSave={handleTopReelsSave}
-                editable
-                templateOverride={previewTemplate}
-              />
+              <MediaKitLayout profile={{ ...profile, bio }} onBioSave={handleBioSave} onTopReelsSave={handleTopReelsSave} editable templateOverride={previewTemplate} />
             </div>
           </div>
 
           {/* Sidebar */}
-          <div className="lg:w-80 space-y-4 lg:sticky lg:top-44 lg:self-start">
+          <div className="lg:w-80 space-y-4 lg:sticky lg:self-start">
             <TemplatePicker
               profile={profile}
               previewTemplate={previewTemplate}
               savedTemplate={savedTemplate}
               savingTemplate={savingTemplate}
-              onPreview={setPreviewTemplate}
+              templateError={templateError}
+              onPreview={(id) => { setTemplateError(""); setPreviewTemplate(id); }}
               onSave={handleTemplateSave}
             />
             {published ? (
@@ -228,24 +239,13 @@ export default function MediaKitPage() {
                 {/* Share Card — only after publish */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
                   <h3 className="text-sm font-bold text-slate-900">Share Your Media Kit</h3>
-                  <p className="text-xs text-slate-500">
-                    Share this link with brands and collaborators to showcase your profile.
-                  </p>
+                  <p className="text-xs text-slate-500">Share this link with brands and collaborators to showcase your profile.</p>
 
                   {/* Copy Link */}
                   <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="flex-1 text-xs text-slate-600 truncate font-mono">
-                      {shareUrl}
-                    </p>
-                    <button
-                      onClick={handleCopyLink}
-                      className="p-2 hover:bg-slate-200 rounded-lg transition-colors shrink-0"
-                    >
-                      {copied ? (
-                        <Check size={16} className="text-green-600" />
-                      ) : (
-                        <Copy size={16} className="text-slate-400" />
-                      )}
+                    <p className="flex-1 text-xs text-slate-600 truncate font-mono">{shareUrl}</p>
+                    <button onClick={handleCopyLink} className="p-2 hover:bg-slate-200 rounded-lg transition-colors shrink-0">
+                      {copied ? <Check size={16} className="text-green-600" /> : <Copy size={16} className="text-slate-400" />}
                     </button>
                   </div>
 
@@ -315,23 +315,15 @@ export default function MediaKitPage() {
           <div className="bg-white w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900">Share Media Kit</h3>
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="p-2 hover:bg-slate-100 rounded-xl"
-              >
+              <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-slate-100 rounded-xl">
                 ✕
               </button>
             </div>
 
             {/* Copy Link */}
             <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border">
-              <p className="flex-1 text-xs text-slate-600 truncate font-mono">
-                {shareUrl}
-              </p>
-              <button
-                onClick={handleCopyLink}
-                className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg"
-              >
+              <p className="flex-1 text-xs text-slate-600 truncate font-mono">{shareUrl}</p>
+              <button onClick={handleCopyLink} className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg">
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
@@ -359,11 +351,17 @@ export default function MediaKitPage() {
 // Lets the creator preview + adopt one of the five media-kit templates.
 // Plan-locked options are visible (so the upsell is obvious) but disabled
 // until the user upgrades.
-function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplate, onPreview, onSave }) {
+function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplate, templateError, onPreview, onSave }) {
   const effectivePlan = getEffectivePlan(profile);
   const hasUnsavedPreview = previewTemplate !== savedTemplate;
   const previewMeta = MEDIA_KIT_TEMPLATES.find((t) => t.id === previewTemplate);
   const canUsePreview = profileCanUseMediaKitTemplate(profile, previewTemplate);
+  const usage = getProfileTemplateChangeUsage(profile);
+  const isUnlimited = !isFinite(usage.limit);
+  const isCapped = !isUnlimited && usage.remaining <= 0;
+  // Re-picking the live template is a no-op server-side, so it doesn't count
+  // against the cap and stays allowed even when the user is at the limit.
+  const previewIsLive = previewTemplate === savedTemplate;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
@@ -372,9 +370,7 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
         <h3 className="text-sm font-bold text-slate-900">Templates</h3>
         <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-wider">{effectivePlan}</span>
       </div>
-      <p className="text-[11px] text-slate-500 leading-snug">
-        Tap a template to preview. Pick the one you want shareable to brands and creators.
-      </p>
+      <p className="text-[11px] text-slate-500 leading-snug">Tap a template to preview. Pick the one you want shareable to brands and creators.</p>
 
       <div className="space-y-2">
         {MEDIA_KIT_TEMPLATES.map((t) => {
@@ -391,23 +387,14 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
               }}
               disabled={locked}
               className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all ${
-                isPreviewing
-                  ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40"
-                  : "border-slate-100 hover:border-slate-200"
+                isPreviewing ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40" : "border-slate-100 hover:border-slate-200"
               } ${locked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
-              <div
-                className="w-12 h-12 rounded-lg shrink-0 border border-slate-100"
-                style={{ background: t.preview }}
-              />
+              <div className="w-12 h-12 rounded-lg shrink-0 border border-slate-100" style={{ background: t.preview }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-xs font-bold text-slate-800 truncate">{t.label}</p>
-                  {isSaved && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">
-                      Live
-                    </span>
-                  )}
+                  {isSaved && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">Live</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 truncate">{t.description}</p>
               </div>
@@ -427,30 +414,49 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
       {hasUnsavedPreview && canUsePreview && (
         <button
           onClick={() => onSave(previewTemplate)}
-          disabled={savingTemplate === previewTemplate}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 disabled:opacity-60"
+          disabled={savingTemplate === previewTemplate || (isCapped && !previewIsLive)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
           {savingTemplate === previewTemplate ? <Loader2 size={14} className="animate-spin" /> : null}
           {savingTemplate === previewTemplate ? "Saving..." : `Use ${previewMeta?.label || "this template"}`}
         </button>
       )}
-      {!hasUnsavedPreview && (
-        <p className="text-[10px] text-slate-400 text-center">{previewMeta?.label} is your live template.</p>
+      {!hasUnsavedPreview && <p className="text-[10px] text-slate-400 text-center">{previewMeta?.label} is your live template.</p>}
+
+      {/* Surface the server's reason (plan lock or change-cap exhausted) */}
+      {templateError && (
+        <p className="text-[11px] text-rose-600 font-bold bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 leading-snug">
+          {templateError}
+        </p>
       )}
 
-      {/* Upgrade nudge if any template above is locked */}
-      {MEDIA_KIT_TEMPLATES.some((t) => !profileCanUseMediaKitTemplate(profile, t.id)) && (
+      {/* Lifetime change cap — visible to anyone on a non-unlimited plan so
+          they know the budget before they spend it. */}
+      {!isUnlimited && (
+        <div className={`rounded-lg px-3 py-2 border text-[11px] font-bold leading-snug ${isCapped ? "border-rose-100 bg-rose-50 text-rose-600" : "border-slate-100 bg-slate-50 text-slate-600"}`}>
+          {isCapped
+            ? `You've used all ${usage.limit} template change${usage.limit === 1 ? "" : "s"}. Upgrade to Elite for unlimited switches.`
+            : `${usage.remaining} of ${usage.limit} template change${usage.limit === 1 ? "" : "s"} remaining on ${effectivePlan}.`}
+        </div>
+      )}
+      {isUnlimited && effectivePlan === "elite" && (
+        <p className="text-[10px] text-emerald-600 font-bold text-center">Unlimited template switches — go wild.</p>
+      )}
+
+      {/* Upgrade nudge if any template above is locked OR the cap is hit */}
+      {(MEDIA_KIT_TEMPLATES.some((t) => !profileCanUseMediaKitTemplate(profile, t.id)) || isCapped) && (
         <Link
           href="/influencer/pricing"
           className="block w-full text-center py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-[11px] font-bold hover:bg-amber-100 transition-colors"
         >
-          <Crown size={12} className="inline -translate-y-px mr-1" /> Upgrade to unlock more templates
+          <Crown size={12} className="inline -translate-y-px mr-1" /> {isCapped ? "Upgrade for unlimited switches" : "Upgrade to unlock more templates"}
         </Link>
       )}
 
       <p className="text-[10px] text-slate-400 leading-snug text-center pt-1">
-        Use the floating <span className="font-bold text-purple-500">Edit Bio</span> / <span className="font-bold text-purple-500">Edit Top Reels</span> buttons in the bottom-right to update content on any template.
+        Use the floating <span className="font-bold text-purple-500">Edit Bio</span> / <span className="font-bold text-purple-500">Edit Top Reels</span> buttons in the bottom-right to update content
+        on any template.
       </p>
     </div>
   );

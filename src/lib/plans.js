@@ -76,6 +76,11 @@ export const FEATURE_MATRIX = {
   analytics_fake_follower_audit:  { starter: false, pro: "monthly", elite: "monthly" },
   analytics_roi_report:           { starter: false, pro: false, elite: true },
 
+  // Media Kit
+  media_kit_designer_templates: { starter: "Classic only",  pro: "All 5 designs", elite: "All 5 designs" },
+  media_kit_template_switches:  { starter: false,           pro: "3 lifetime",    elite: "Unlimited" },
+  media_kit_share_link:         { starter: true,            pro: true,            elite: true },
+
   // Payouts (display string)
   payout_speed: { starter: "7–10 days", pro: "3–5 days", elite: "Within 48 hrs" },
 
@@ -118,6 +123,14 @@ export const FEATURE_GROUPS = [
       { key: "analytics_deep_audience",        label: "Deep audience analytics + psychographics" },
       { key: "analytics_fake_follower_audit",  label: "Fake follower & engagement audit" },
       { key: "analytics_roi_report",           label: "Campaign ROI report for brand partners" },
+    ],
+  },
+  {
+    title: "Media Kit",
+    features: [
+      { key: "media_kit_designer_templates", label: "Designer templates" },
+      { key: "media_kit_template_switches",  label: "Template switches" },
+      { key: "media_kit_share_link",         label: "Shareable media-kit link" },
     ],
   },
   {
@@ -226,9 +239,12 @@ export function profileFeatureValue(profile, key) {
 }
 
 /* ─────────── media-kit template tiers ─────────── */
-// Each template is gated on the lowest plan that can pick it. The two
-// designer / showcase templates sit behind Elite so the upgrade has a
-// visible payoff on a page brands actually look at.
+// Plan rules requested by product:
+//   Starter — Classic only; everything else is visible but locked
+//   Pro     — all five templates available, capped at 3 lifetime saves
+//   Elite   — all five, unlimited saves
+// Trial users get Elite features (see getEffectivePlan), which includes
+// unlimited template changes during the 30-day trial window.
 export const MEDIA_KIT_TEMPLATES = [
   {
     id: "classic",
@@ -255,19 +271,29 @@ export const MEDIA_KIT_TEMPLATES = [
     id: "bento_sunset",
     label: "Bento Sunset",
     description: "Bento-grid tiles with a sunset gradient — playful and high-energy.",
-    minPlan: PLAN_IDS.ELITE,
+    minPlan: PLAN_IDS.PRO,
     preview: "linear-gradient(135deg,#ff9a56 0%,#ff5d73 50%,#c850c0 100%)",
   },
   {
     id: "neo_brutalist",
     label: "Neo-Brutalist",
     description: "Hard borders, mono type and chunky shadows — loud and unforgettable.",
-    minPlan: PLAN_IDS.ELITE,
+    minPlan: PLAN_IDS.PRO,
     preview: "linear-gradient(135deg,#ffd23f 0%,#E94560 55%,#7F47CD 100%)",
   },
 ];
 
 const PLAN_RANK = { [PLAN_IDS.STARTER]: 1, [PLAN_IDS.PRO]: 2, [PLAN_IDS.ELITE]: 3 };
+
+// Per-plan cap on how many distinct template saves a creator can do over
+// the lifetime of the account. Pro is intentionally tight so Elite has a
+// meaningful upgrade story; Starter can only ever stay on Classic so the
+// cap is moot.
+export const MEDIA_KIT_TEMPLATE_CHANGE_LIMITS = {
+  [PLAN_IDS.STARTER]: 0,
+  [PLAN_IDS.PRO]: 3,
+  [PLAN_IDS.ELITE]: Infinity,
+};
 
 /** True when the given effective plan unlocks the template. Trial counts as Elite. */
 export function canUseMediaKitTemplate(plan, templateId) {
@@ -279,4 +305,22 @@ export function canUseMediaKitTemplate(plan, templateId) {
 /** Convenience wrapper for the common "is this user allowed to pick X" check. */
 export function profileCanUseMediaKitTemplate(profile, templateId) {
   return canUseMediaKitTemplate(getEffectivePlan(profile), templateId);
+}
+
+/** Lifetime cap for the given effective plan. Infinity for Elite/trial. */
+export function getMediaKitTemplateChangeLimit(plan) {
+  if (plan in MEDIA_KIT_TEMPLATE_CHANGE_LIMITS) return MEDIA_KIT_TEMPLATE_CHANGE_LIMITS[plan];
+  return 0;
+}
+
+/**
+ * Returns `{ used, limit, remaining }` for the profile. `remaining` is
+ * Infinity for unlimited plans so callers can render that case explicitly.
+ */
+export function getProfileTemplateChangeUsage(profile) {
+  const plan = getEffectivePlan(profile);
+  const limit = getMediaKitTemplateChangeLimit(plan);
+  const used = profile?.media_kit_template_changes || profile?.mediaKitTemplateChanges || 0;
+  const remaining = isFinite(limit) ? Math.max(0, limit - used) : Infinity;
+  return { used, limit, remaining, plan };
 }
