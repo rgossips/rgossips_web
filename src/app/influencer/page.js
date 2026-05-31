@@ -21,7 +21,6 @@ import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 
 const CATEGORIES = [
-  { id: 1, label: "For You", icon: <Star size={20} />, active: true, action: "scroll", target: "section-for-you" },
   { id: 2, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
   { id: 3, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
   { id: 4, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
