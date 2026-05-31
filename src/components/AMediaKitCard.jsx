@@ -96,14 +96,16 @@ export function AiMediaKitCard() {
           </div>
         </div>
 
-        {/* 3. CTA Button */}
+        {/* 3. CTA Button — swap copy once the kit has been published so the
+            card stops nagging users to "generate" something that already
+            exists. */}
         <button
           onClick={() => router.push("/influencer/media-kit")}
           className="group relative w-full py-4 px-6 rounded-2xl font-black text-white cursor-pointer transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-[#7c3aed] to-[#ec4899] transition-opacity group-hover:opacity-90" />
           <span className="relative flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
-            Generate Media Kit
+            {profile?.media_kit_published ? "View Media Kit" : "Generate Media Kit"}
             <ArrowRight
               size={18}
               className="transition-transform group-hover:translate-x-1"
