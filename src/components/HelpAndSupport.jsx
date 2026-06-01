@@ -145,7 +145,7 @@ const HelpSupport = ({ onBack }) => {
         </h1>
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 lg:px-8 pt-6 space-y-8">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 pt-6 space-y-8">
         {/* Search */}
         <div className="relative group">
           <Search
