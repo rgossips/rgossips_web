@@ -7,7 +7,7 @@
  *
  * Helpers:
  *  - `getEffectivePlan(profile)` — returns the plan a user is currently on,
- *    treating an active 30-day trial as Elite per product spec.
+ *    treating an active 30-day trial as Pro per product spec.
  *  - `hasFeature(plan, key)` — boolean gate for UI/edge-function checks.
  *  - `getFeatureValue(plan, key)` — for tiered values like
  *    "campaign_applications_limit" (number, or Infinity for Unlimited).
@@ -195,7 +195,7 @@ export function trialDaysLeft(profile) {
 
 /**
  * Returns the plan ID a user is effectively on.
- * Order: explicit subscription_plan → trial-as-Elite → starter (default).
+ * Order: explicit subscription_plan → trial-as-Pro → starter (default).
  */
 export function getEffectivePlan(profile) {
   if (!profile) return PLAN_IDS.STARTER;
@@ -203,8 +203,10 @@ export function getEffectivePlan(profile) {
   if (plan === PLAN_IDS.PRO || plan === PLAN_IDS.ELITE || plan === PLAN_IDS.STARTER) {
     return plan;
   }
-  // Per spec: 30-day free trial = Elite features
-  if (isWithinTrial(profile)) return PLAN_IDS.ELITE;
+  // Per spec: 30-day free trial = Pro features (all 5 templates, 3-change
+  // cap, etc.) — so the trial gives a realistic preview of the paid tier
+  // most creators would land on, without giving away the Elite perks.
+  if (isWithinTrial(profile)) return PLAN_IDS.PRO;
   return PLAN_IDS.STARTER;
 }
 
@@ -243,8 +245,8 @@ export function profileFeatureValue(profile, key) {
 //   Starter — Classic only; everything else is visible but locked
 //   Pro     — all five templates available, capped at 3 lifetime saves
 //   Elite   — all five, unlimited saves
-// Trial users get Elite features (see getEffectivePlan), which includes
-// unlimited template changes during the 30-day trial window.
+// Trial users get Pro features (see getEffectivePlan): all five
+// templates with the 3-change cap during the 30-day trial window.
 export const MEDIA_KIT_TEMPLATES = [
   {
     id: "classic",
@@ -307,7 +309,7 @@ export function profileCanUseMediaKitTemplate(profile, templateId) {
   return canUseMediaKitTemplate(getEffectivePlan(profile), templateId);
 }
 
-/** Lifetime cap for the given effective plan. Infinity for Elite/trial. */
+/** Lifetime cap for the given effective plan. Infinity for Elite only. */
 export function getMediaKitTemplateChangeLimit(plan) {
   if (plan in MEDIA_KIT_TEMPLATE_CHANGE_LIMITS) return MEDIA_KIT_TEMPLATE_CHANGE_LIMITS[plan];
   return 0;

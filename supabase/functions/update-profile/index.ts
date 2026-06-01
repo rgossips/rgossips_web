@@ -101,7 +101,8 @@ Deno.serve(async (req) => {
     if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
     // Media-kit template change is plan-gated and counted server-side so a
     // determined client can't bypass the cap. Starter → Classic only;
-    // Pro → all 5 with a 3-save lifetime cap; Elite/trial → unlimited.
+    // Pro → all 5 with a 3-save lifetime cap; Elite → unlimited.
+    // Trial users inherit Pro (mirrors getEffectivePlan on the client).
     if (table === "influencer_profiles" && fields.mediaKitTemplate !== undefined) {
       const nextTemplate = String(fields.mediaKitTemplate || "classic");
 
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
         .eq("influencer_id", userId)
         .maybeSingle();
 
-      // Trial users (no explicit plan, within 30 days of signup) get Elite
+      // Trial users (no explicit plan, within 30 days of signup) get Pro
       // perks, matching getEffectivePlan on the client.
       const TRIAL_DAYS = 30;
       const createdMs = current?.created_at ? new Date(current.created_at).getTime() : 0;
@@ -129,7 +130,7 @@ Deno.serve(async (req) => {
       const rawPlan = String(current?.subscription_plan || "").toLowerCase();
       const effectivePlan = rawPlan === "pro" || rawPlan === "elite" || rawPlan === "starter"
         ? rawPlan
-        : inTrial ? "elite" : "starter";
+        : inTrial ? "pro" : "starter";
 
       const requiredRank = PLAN_RANK[TEMPLATE_MIN_PLAN[nextTemplate] || "starter"] || 0;
       if ((PLAN_RANK[effectivePlan] || 0) < requiredRank) {

@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     }
 
     // Plan-based application limit (mirrors src/lib/plans.js values):
-    //   starter → 3/month, pro → 15/month, elite/trial → unlimited
+    //   starter → 3/month, pro/trial → 15/month, elite → unlimited
     try {
       const { data: profile } = await supabaseAdmin
         .from("influencer_profiles")
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
         plan = explicit;
       } else if (profile?.created_at) {
         const days = (Date.now() - new Date(profile.created_at).getTime()) / 86_400_000;
-        plan = days < TRIAL_DAYS ? "elite" : "starter";
+        plan = days < TRIAL_DAYS ? "pro" : "starter";
       } else {
         plan = "starter";
       }

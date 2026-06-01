@@ -159,7 +159,7 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? "Free Trial" : effectivePlan}</h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">CURRENT</Badge>
-                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">Elite features unlocked</Badge>}
+                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">Pro features unlocked</Badge>}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {onTrial
