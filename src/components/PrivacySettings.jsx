@@ -8,7 +8,6 @@ const DEFAULT_PREFS = {
   publicProfile: true,
   showEmail: false,
   searchIndexing: true,
-  twoFactor: true,
 };
 
 const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) => {
@@ -104,10 +103,6 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-[2rem] p-8 space-y-6 shadow-sm">
-              <ToggleRow title="Two-Factor Authentication" description="Extra security for your account login" isEnabled={settings.twoFactor} onToggle={() => toggleSetting("twoFactor")} />
-
-              <div className="h-[1px] bg-gray-50 w-full" />
-
               <SecurityLink onClick={onTrustedDevices} icon={<Smartphone size={18} />} title="Trusted Devices" description="Manage your active login sessions" />
               <SecurityLink onClick={onDeactiveAccount} icon={<UserMinus size={18} />} title="Deactivate Account" description="Temporarily disable your account" isDestructive />
             </div>
@@ -146,7 +141,7 @@ const SecurityTipsCard = () => (
       <div>
         <h4 className="text-sm font-black text-amber-900 mb-2">Security Tips</h4>
         <ul className="space-y-1.5">
-          {["Use a strong, unique password", "Enable two-factor authentication", "Review trusted devices regularly", "Never share your password"].map((tip, i) => (
+          {["Use a strong, unique password", "Review trusted devices regularly", "Never share your password"].map((tip, i) => (
             <li key={i} className="flex items-center gap-2 text-[11px] font-bold text-amber-700/80">
               <div className="w-1 h-1 rounded-full bg-amber-400" />
               {tip}

@@ -53,6 +53,30 @@ Deno.serve(async (req) => {
     }
     const profilesRes = { data: profilesData };
 
+    // Honour the "Public Profile" toggle from Privacy & Security
+    // (user_preferences.privacy_prefs.publicProfile). When false, the
+    // creator should be invisible to brand search. We default to public
+    // so creators who never opened the setting page are still listed —
+    // matches the DEFAULT_PREFS shape in src/components/PrivacySettings.jsx.
+    const privateIds = new Set<string>();
+    try {
+      const prefRows = await pageThrough("user_preferences", (q) =>
+        q.select("user_id, privacy_prefs")
+      );
+      for (const r of prefRows as any[]) {
+        if (r?.privacy_prefs && r.privacy_prefs.publicProfile === false) {
+          privateIds.add(String(r.user_id));
+        }
+      }
+    } catch (e) {
+      // Pref lookup is best-effort — if it fails we fall back to "everyone
+      // visible" rather than denying the whole directory.
+      console.error("user_preferences page error:", e);
+    }
+    if (privateIds.size > 0) {
+      profilesData = profilesData.filter((r) => !privateIds.has(String(r.influencer_id)));
+    }
+
     // Admin-invited (not yet registered) influencers
     let invitesData: any[] = [];
     try {
