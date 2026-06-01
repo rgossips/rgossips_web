@@ -36,20 +36,44 @@ const supabase = createClient(
 
 async function setUserPlan(userId: string, plan: string, extras: Record<string, unknown> = {}) {
   if (!userId) return;
-  // Read the existing plan so we can fire a thank-you notification only on
-  // an actual upgrade, not on every webhook event that re-asserts the same
-  // plan or downgrades on cancellation.
+  // Read the existing plan + current template so we can (a) fire a thank-you
+  // notification only on an actual upgrade and (b) force the kit back to
+  // Classic when the new plan can't legally use whatever template they
+  // had picked under their trial / previous plan.
   const { data: prior } = await supabase
     .from("influencer_profiles")
-    .select("subscription_plan")
+    .select("subscription_plan, media_kit_template")
     .eq("influencer_id", userId)
     .maybeSingle();
   const previousPlan = prior?.subscription_plan || "";
+  const previousTemplate = prior?.media_kit_template || "classic";
+
+  // Template → minimum plan needed to *save* it (Starter only gets Classic;
+  // everything else is Pro+). Trial users get Pro features, so when they
+  // upgrade to a paid Starter plan their fancy template suddenly isn't
+  // allowed any more — reset to Classic instead of leaving an orphaned
+  // selection that the picker would silently reject on the next save.
+  const TEMPLATE_MIN_PLAN: Record<string, string> = {
+    classic: "starter",
+    glass_blue: "pro",
+    editorial_noir: "pro",
+    bento_sunset: "pro",
+    neo_brutalist: "pro",
+  };
+  const PLAN_RANK: Record<string, number> = { starter: 1, pro: 2, elite: 3 };
+  const requiredRank = PLAN_RANK[TEMPLATE_MIN_PLAN[previousTemplate] || "starter"] || 0;
+  const nextPlanRank = PLAN_RANK[plan] || 0;
+  const templateNoLongerAllowed = requiredRank > nextPlanRank;
+
+  const templateReset: Record<string, unknown> = templateNoLongerAllowed
+    ? { media_kit_template: "classic" }
+    : {};
 
   const { error } = await supabase
     .from("influencer_profiles")
     .update({
       subscription_plan: plan,
+      ...templateReset,
       ...extras,
       updated_at: new Date().toISOString(),
     })
@@ -65,6 +89,23 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
   const planRank: Record<string, number> = { free: 0, trial: 1, starter: 2, pro: 3, elite: 4 };
   const prevRank = planRank[previousPlan] ?? 0;
   const nextRank = planRank[plan] ?? 0;
+  if (templateNoLongerAllowed) {
+    try {
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "media_kit_template_reset",
+        title: "Media kit reset to Classic",
+        body: JSON.stringify({
+          text: `Your ${plan.charAt(0).toUpperCase() + plan.slice(1)} plan only includes the Classic media-kit template, so your kit was switched back. Pick another any time from /influencer/media-kit.`,
+          link: "/influencer/media-kit",
+        }),
+        is_read: false,
+      });
+    } catch (e) {
+      console.error("media_kit_template_reset notification insert failed:", (e as any)?.message);
+    }
+  }
+
   if (nextRank > prevRank && nextRank >= planRank.pro) {
     const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
     try {
