@@ -196,8 +196,9 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
         {/* Reactivation hint */}
         <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
           <p className="text-[11px] font-bold text-emerald-700 leading-relaxed">
-            Want to come back? Just sign in again with the same phone number
-            and your account is reactivated automatically.
+            Want to come back? Sign in with the same phone number and you'll
+            be asked to confirm reactivation before your account turns
+            on again.
           </p>
         </div>
 

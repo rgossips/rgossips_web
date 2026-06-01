@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     );
 
     // Try influencer profile first
-    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template";
+    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status";
 
     let influencer = null;
 
@@ -62,6 +62,18 @@ Deno.serve(async (req) => {
         .eq("influencer_id", userId)
         .maybeSingle();
       influencer = data;
+    }
+
+    // A deactivated / pending-deletion creator shouldn't have a live
+    // shareable media-kit page either. Pretend the kit doesn't exist.
+    if (influencer) {
+      const status = String((influencer as any).status || "").toLowerCase();
+      if (status === "deactivated" || status === "pending_deletion") {
+        return new Response(
+          JSON.stringify({ error: "Profile not found" }),
+          { status: 404, headers: jsonHeaders }
+        );
+      }
     }
 
     if (influencer) {

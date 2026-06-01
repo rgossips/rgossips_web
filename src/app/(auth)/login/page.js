@@ -71,6 +71,10 @@ const Login = () => {
   const [otp, setOtp] = useState("");
   const [pendingSession, setPendingSession] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
+  // Set when the server tells us the account is deactivated. We hold onto
+  // the OTP the user already typed so the reactivation click can replay it
+  // with reactivate:true instead of forcing a fresh OTP round-trip.
+  const [reactivationPending, setReactivationPending] = useState(null); // { otpCode, role } | null
 
   // --- INSTAGRAM STATE (shared between signin/signup) ---
   const [instaProfile, setInstaProfile] = useState(null);
@@ -146,18 +150,21 @@ const Login = () => {
   // --- SHARED: Verify OTP & create session ---
   // mode="signin" makes the backend refuse to auto-create a user — sign-in
   // shouldn't silently spin up accounts.
-  const verifyOtp = async (phoneNumber, otpCode, mode = "signup") => {
+  // reactivate=true is sent on the second pass when the user explicitly
+  // confirms they want to bring a deactivated account back online.
+  const verifyOtp = async (phoneNumber, otpCode, mode = "signup", reactivate = false) => {
     const rawDigits = phoneNumber.replace(/\D/g, "");
     const fullPhone = `+${rawDigits.startsWith("91") ? rawDigits : `91${rawDigits}`}`;
 
-    const { data, error: authError } = await supabase.functions.invoke("whatsapp-otp-verifier", { body: { phone: fullPhone, otp: otpCode, mode } });
+    const { data, error: authError } = await supabase.functions.invoke("whatsapp-otp-verifier", { body: { phone: fullPhone, otp: otpCode, mode, reactivate } });
 
     if (authError) throw new Error(authError.message);
     if (data?.error) {
       // Surface a structured error object so callers can branch on `no_user`
-      // without parsing a string.
+      // / `deactivated` without parsing a string.
       const err = new Error(data.message || data.error);
       err.code = data.error;
+      err.role = data.role;
       throw err;
     }
 
@@ -214,12 +221,12 @@ const Login = () => {
     }
   };
 
-  const handleSignInVerifyOtp = async (otpCode) => {
+  const handleSignInVerifyOtp = async (otpCode, reactivate = false) => {
     setLoading(true);
-    setLoadingMsg("Verifying…");
+    setLoadingMsg(reactivate ? "Reactivating your account…" : "Verifying…");
     setError("");
     try {
-      const data = await verifyOtp(phone, otpCode, "signin");
+      const data = await verifyOtp(phone, otpCode, "signin", reactivate);
 
       // Role-mismatch guard: if the user picked "Brand" but the phone is
       // registered as an influencer (or vice-versa), reject the sign-in
@@ -236,6 +243,7 @@ const Login = () => {
         return;
       }
 
+      setReactivationPending(null);
       setLoadingMsg("Setting up your session…");
       await supabase.auth.setSession({
         access_token: data.session.access_token,
@@ -251,10 +259,26 @@ const Login = () => {
         setStep(1);
         return;
       }
+      if (err.code === "deactivated") {
+        // Hold the typed OTP so the user only has to confirm reactivation,
+        // not re-enter the code.
+        setReactivationPending({ otpCode, role: err.role });
+        setError("");
+        return;
+      }
       setError(err.message || "Failed to verify OTP");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReactivateConfirm = () => {
+    if (!reactivationPending) return;
+    handleSignInVerifyOtp(reactivationPending.otpCode, true);
+  };
+  const handleReactivateCancel = () => {
+    setReactivationPending(null);
+    setError("");
   };
 
   // ========================
@@ -457,8 +481,17 @@ const Login = () => {
                 <>
                   {step === 1 && <RoleSelection onNext={handleSignInRoleSelected} mode="signin" onSwitchMode={switchToSignUp} />}
                   {step === 2 && <SignInPhone onNext={handleSignInSendOtp} loading={loading} error={error} phone={phone} setPhone={setPhone} mode="signin" role={signupData.role} />}
-                  {step === 3 && (
+                  {step === 3 && !reactivationPending && (
                     <VerifyOTP onNext={handleSignInVerifyOtp} onResend={() => sendOtp(phone)} loading={loading} error={error} otp={otp} setOtp={setOtp} phoneNumber={formatDisplayPhone(phone)} />
+                  )}
+                  {step === 3 && reactivationPending && (
+                    <ReactivatePrompt
+                      role={reactivationPending.role}
+                      phone={formatDisplayPhone(phone)}
+                      loading={loading}
+                      onConfirm={handleReactivateConfirm}
+                      onCancel={handleReactivateCancel}
+                    />
                   )}
                 </>
               )}
@@ -510,3 +543,41 @@ const Login = () => {
 };
 
 export default Login;
+
+// Shown when the OTP succeeds but the matching account is in the
+// "deactivated" state. Keeps reactivation behind an explicit confirmation
+// so signing in doesn't silently undo the user's last action.
+function ReactivatePrompt({ role, phone, loading, onConfirm, onCancel }) {
+  const label = role === "brand" ? "brand account" : "account";
+  return (
+    <div className="w-full max-w-sm mx-auto space-y-5">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-black text-slate-900">Your {label} is deactivated</h2>
+        <p className="text-sm text-slate-500 leading-relaxed">
+          We verified the OTP sent to <span className="font-bold text-slate-700">{phone}</span>, but this {label} is currently deactivated. Reactivate to sign back in?
+        </p>
+      </div>
+
+      <button
+        onClick={onConfirm}
+        disabled={loading}
+        className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90 disabled:opacity-60"
+        style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+      >
+        {loading ? "Reactivating…" : "Reactivate & sign in"}
+      </button>
+      <button
+        onClick={onCancel}
+        disabled={loading}
+        className="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 border border-slate-200 cursor-pointer disabled:opacity-50"
+      >
+        Cancel
+      </button>
+
+      <p className="text-[11px] text-slate-400 leading-snug text-center">
+        Reactivating restores your profile, settings and history exactly as
+        they were when you deactivated.
+      </p>
+    </div>
+  );
+}

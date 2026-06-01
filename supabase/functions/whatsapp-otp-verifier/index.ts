@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   };
 
   try {
-    const { phone, otp, mode } = await req.json();
+    const { phone, otp, mode, reactivate } = await req.json();
 
     if (!phone || !otp) {
       return new Response(
@@ -78,11 +78,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 3: Mark OTP as verified
-    await supabaseAdmin
-      .from("otp_verifications")
-      .update({ verified: true })
-      .eq("id", otpRecord.id);
+    // NOTE: we used to mark the OTP verified here, but that consumed it
+    // even for outcomes that short-circuit below (e.g. deactivated accounts
+    // requiring an explicit Reactivate confirmation). The OTP is now marked
+    // verified just before we issue the session, so the client can re-send
+    // the same OTP value with reactivate: true.
 
     // Step 4: Resolve auth user by phone.
     // Supabase stores phone WITHOUT '+' prefix (e.g., "917204909749").
@@ -167,6 +167,19 @@ Deno.serve(async (req) => {
       if (inf) {
         resolvedRole = "influencer";
         if (inf.status === "deactivated") {
+          // Reactivation is now an explicit gesture, not a silent side-effect
+          // of signing in. The login UI catches this error and re-submits
+          // the same OTP with reactivate: true after the user confirms.
+          if (!reactivate) {
+            return new Response(
+              JSON.stringify({
+                error: "deactivated",
+                role: "influencer",
+                message: "Your account is deactivated. Confirm to reactivate it and sign back in.",
+              }),
+              { status: 200, headers: jsonHeaders }
+            );
+          }
           await supabaseAdmin
             .from("influencer_profiles")
             .update({ status: "active", updated_at: new Date().toISOString() })
@@ -175,6 +188,16 @@ Deno.serve(async (req) => {
       } else if (br) {
         resolvedRole = "brand";
         if (br.status === "deactivated") {
+          if (!reactivate) {
+            return new Response(
+              JSON.stringify({
+                error: "deactivated",
+                role: "brand",
+                message: "Your brand account is deactivated. Confirm to reactivate it and sign back in.",
+              }),
+              { status: 200, headers: jsonHeaders }
+            );
+          }
           await supabaseAdmin
             .from("brand_profiles")
             .update({ status: "active", updated_at: new Date().toISOString() })
@@ -184,6 +207,13 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.error("Role lookup / reactivation failed (non-fatal):", e);
     }
+
+    // OTP is being honoured for a real sign-in (or confirmed reactivation)
+    // — mark it consumed now so a stale client can't reuse it.
+    await supabaseAdmin
+      .from("otp_verifications")
+      .update({ verified: true })
+      .eq("id", otpRecord.id);
 
     // Step 5: Generate session — set temp password, sign in, clear it
     const tempPassword = crypto.randomUUID();

@@ -53,6 +53,15 @@ Deno.serve(async (req) => {
     }
     const profilesRes = { data: profilesData };
 
+    // Hide creators whose account is no longer active. "deactivated" is the
+    // soft-paused state (a sign-in with explicit reactivation brings them
+    // back). "pending_deletion" is the 30-day grace window before admin
+    // permadeletes. Either way, brand search shouldn't surface them.
+    profilesData = profilesData.filter((r) => {
+      const s = String(r?.status || "").toLowerCase();
+      return s !== "deactivated" && s !== "pending_deletion";
+    });
+
     // Honour the "Public Profile" toggle from Privacy & Security
     // (user_preferences.privacy_prefs.publicProfile). When false, the
     // creator should be invisible to brand search. We default to public
