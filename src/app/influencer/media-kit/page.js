@@ -374,6 +374,9 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
 
       <div className="space-y-2">
         {MEDIA_KIT_TEMPLATES.map((t) => {
+          // "Locked" still means the plan can't *save* this template, but we
+          // let every plan preview every template so the upgrade upsell is
+          // tangible — you see the design you'd be paying for before paying.
           const locked = !profileCanUseMediaKitTemplate(profile, t.id);
           const isSaved = savedTemplate === t.id;
           const isPreviewing = previewTemplate === t.id;
@@ -381,14 +384,10 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
             <button
               key={t.id}
               type="button"
-              onClick={() => {
-                if (locked) return;
-                onPreview(t.id);
-              }}
-              disabled={locked}
-              className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all ${
+              onClick={() => onPreview(t.id)}
+              className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all cursor-pointer ${
                 isPreviewing ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40" : "border-slate-100 hover:border-slate-200"
-              } ${locked ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              }`}
             >
               <div className="w-12 h-12 rounded-lg shrink-0 border border-slate-100" style={{ background: t.preview }} />
               <div className="flex-1 min-w-0">
@@ -410,7 +409,21 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
         })}
       </div>
 
-      {/* Save / status footer */}
+      {/* Save / status footer.
+          Three states for the action row:
+            1. Previewing a template the plan can't save → upgrade CTA
+            2. Previewing a save-able template that differs from Live → Use button
+               (disabled when Pro has hit the 3-change cap, unless re-saving Live)
+            3. Preview matches Live → "X is your live template." copy */}
+      {hasUnsavedPreview && !canUsePreview && (
+        <Link
+          href="/influencer/pricing"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90"
+          style={{ background: "linear-gradient(135deg, #f59e0b 0%, #e60076 100%)" }}
+        >
+          <Crown size={12} /> Upgrade to {previewMeta?.minPlan} to use {previewMeta?.label}
+        </Link>
+      )}
       {hasUnsavedPreview && canUsePreview && (
         <button
           onClick={() => onSave(previewTemplate)}
@@ -431,9 +444,10 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
         </p>
       )}
 
-      {/* Lifetime change cap — visible to anyone on a non-unlimited plan so
-          they know the budget before they spend it. */}
-      {!isUnlimited && (
+      {/* Lifetime change cap — only meaningful for plans whose cap is finite
+          and non-zero (i.e. Pro). Starter (cap 0) shouldn't see a "0 of 0
+          changes" line; the upgrade CTAs already tell that story. */}
+      {!isUnlimited && usage.limit > 0 && (
         <div className={`rounded-lg px-3 py-2 border text-[11px] font-bold leading-snug ${isCapped ? "border-rose-100 bg-rose-50 text-rose-600" : "border-slate-100 bg-slate-50 text-slate-600"}`}>
           {isCapped
             ? `You've used all ${usage.limit} template change${usage.limit === 1 ? "" : "s"}. Upgrade to Elite for unlimited switches.`
