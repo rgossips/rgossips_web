@@ -132,17 +132,21 @@ const HelpSupport = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 font-sans lg:pt-24">
-      {/* Header */}
-      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 px-6 py-5 flex items-center gap-4 border-b border-gray-50">
-        <button
-          onClick={onBack}
-          className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-xl active:scale-90 transition-transform"
-        >
-          <ArrowLeft size={20} strokeWidth={3} />
-        </button>
-        <h1 className="text-xl font-black tracking-tight text-gray-900">
-          Help & Support
-        </h1>
+      {/* Header — same max-width + padding as the body below, so the
+          back arrow and title line up with the search / content columns
+          instead of hugging the screen edge. */}
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-20 border-b border-gray-50">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-5 flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-xl active:scale-90 transition-transform"
+          >
+            <ArrowLeft size={20} strokeWidth={3} />
+          </button>
+          <h1 className="text-xl font-black tracking-tight text-gray-900">
+            Help & Support
+          </h1>
+        </div>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 lg:px-10 pt-6 space-y-8">
