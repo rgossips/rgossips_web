@@ -65,23 +65,25 @@ const NotificationSettings = ({ onBack }) => {
   const justSaved = savedAt && Date.now() - savedAt < 3000;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
+    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24">
       {/* Header */}
-      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
-        <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
-          <ArrowLeft size={20} strokeWidth={3} />
-        </button>
-        <div className="flex-1">
-          <h1 className="text-lg lg:text-2xl font-black tracking-tight">Notification Settings</h1>
-          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage your notification preferences and communication settings</p>
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 border-b border-gray-100">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-4 flex items-center gap-4">
+          <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
+            <ArrowLeft size={20} strokeWidth={3} />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg lg:text-2xl font-black tracking-tight">Notification Settings</h1>
+            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage your notification preferences and communication settings</p>
+          </div>
+          <button
+            onClick={handleRestoreDefaults}
+            className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full cursor-pointer transition-colors"
+            title="Restore default settings"
+          >
+            <RotateCcw size={13} /> Restore defaults
+          </button>
         </div>
-        <button
-          onClick={handleRestoreDefaults}
-          className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-black text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full cursor-pointer transition-colors"
-          title="Restore default settings"
-        >
-          <RotateCcw size={13} /> Restore defaults
-        </button>
       </div>
 
       {!loaded ? (
@@ -91,7 +93,7 @@ const NotificationSettings = ({ onBack }) => {
       ) : (
         <>
           {/* Desktop Layout - 2 Column Grid */}
-          <div className="hidden lg:grid grid-cols-2 gap-x-8 gap-y-2 max-w-6xl mx-auto px-8 py-8">
+          <div className="hidden lg:grid grid-cols-2 gap-x-8 gap-y-2 max-w-[1440px] mx-auto px-4 lg:px-10 py-8">
             <NotificationSections settings={settings} toggleSetting={toggleSetting} />
           </div>
 

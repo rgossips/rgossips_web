@@ -96,18 +96,20 @@ const PaymentMethods = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
-      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
-        <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
-          <ArrowLeft size={20} strokeWidth={3} />
-        </button>
-        <div>
-          <h1 className="text-lg lg:text-2xl font-black tracking-tight">Payments</h1>
-          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage payment methods you use to receive earnings</p>
+    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24">
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 border-b border-gray-100">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-4 flex items-center gap-4">
+          <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
+            <ArrowLeft size={20} strokeWidth={3} />
+          </button>
+          <div>
+            <h1 className="text-lg lg:text-2xl font-black tracking-tight">Payments</h1>
+            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage payment methods you use to receive earnings</p>
+          </div>
         </div>
       </div>
 
-      <div className="px-5 lg:px-0 mt-6 space-y-6 max-w-6xl mx-auto">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 mt-6 space-y-6">
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2">

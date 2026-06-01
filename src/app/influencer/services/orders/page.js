@@ -108,7 +108,7 @@ export default function ServiceRequestsHistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-24 lg:pb-12 lg:pt-24 font-sans">
-      <div className="max-w-[960px] mx-auto px-4 lg:px-8 py-6 space-y-5">
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-6 space-y-5">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/influencer/profile")}

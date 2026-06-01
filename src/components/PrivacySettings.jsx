@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthContext";
 const DEFAULT_PREFS = {
   publicProfile: true,
   showEmail: false,
-  searchIndexing: true,
 };
 
 const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) => {
@@ -59,15 +58,17 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
   const justSaved = savedAt && Date.now() - savedAt < 3000;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24 lg:px-40">
+    <div className="min-h-screen bg-gray-50 pb-32 font-sans text-gray-900 lg:pt-24">
       {/* Header */}
-      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 px-6 py-4 flex items-center gap-4 border-b border-gray-100">
-        <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
-          <ArrowLeft size={20} strokeWidth={3} />
-        </button>
-        <div>
-          <h1 className="text-lg font-black tracking-tight">Privacy & Security</h1>
-          <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Control your account privacy and security settings</p>
+      <div className="sticky top-0 bg-white lg:bg-gray-50 z-30 border-b border-gray-100">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-4 flex items-center gap-4">
+          <button onClick={onBack} className="p-2 cursor-pointer bg-pink-50 text-pink-500 rounded-full active:scale-90 transition-transform">
+            <ArrowLeft size={20} strokeWidth={3} />
+          </button>
+          <div>
+            <h1 className="text-lg font-black tracking-tight">Privacy & Security</h1>
+            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Control your account privacy and security settings</p>
+          </div>
         </div>
       </div>
 
@@ -76,7 +77,7 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
           <Loader2 size={24} className="animate-spin text-pink-500" />
         </div>
       ) : (
-        <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
+        <div className="max-w-[1440px] mx-auto px-4 lg:px-10 py-5 grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6">
           {/* Privacy Section */}
           <section className="space-y-4">
             <div className="flex items-center gap-3 px-1">
@@ -89,7 +90,6 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
             <div className="bg-white border border-gray-100 rounded-[2rem] p-8 space-y-6 shadow-sm">
               <ToggleRow title="Public Profile" description="Allow brands to find your profile" isEnabled={settings.publicProfile} onToggle={() => toggleSetting("publicProfile")} />
               <ToggleRow title="Show Email" description="Display email on public profile" isEnabled={settings.showEmail} onToggle={() => toggleSetting("showEmail")} />
-              <ToggleRow title="Search Indexing" description="Allow search engines to index profile" isEnabled={settings.searchIndexing} onToggle={() => toggleSetting("searchIndexing")} />
             </div>
           </section>
 
