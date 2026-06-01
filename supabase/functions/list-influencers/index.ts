@@ -73,8 +73,23 @@ Deno.serve(async (req) => {
       // visible" rather than denying the whole directory.
       console.error("user_preferences page error:", e);
     }
+    // Build a handle-blocklist *before* we drop rows from profilesData, so
+    // we can also suppress any orphan invitation row for the same creator
+    // — otherwise hiding the registered profile would just unveil the
+    // pre-signup invitation row in the merge step below.
+    const hiddenHandles = new Set<string>();
     if (privateIds.size > 0) {
+      for (const r of profilesData) {
+        if (privateIds.has(String(r.influencer_id))) {
+          const h = (r.instagram_handle || r.username || "").toLowerCase().trim();
+          if (h) hiddenHandles.add(h);
+        }
+      }
       profilesData = profilesData.filter((r) => !privateIds.has(String(r.influencer_id)));
+      // profilesRes was built before the filter ran, so its `.data`
+      // reference still pointed at the unfiltered array. Re-sync it so the
+      // .map below sees the filtered list.
+      profilesRes.data = profilesData;
     }
 
     // Admin-invited (not yet registered) influencers
@@ -132,7 +147,15 @@ Deno.serve(async (req) => {
       }
     };
 
-    const invites = (invitesRes.data || []).map((r: any) => {
+    const invites = (invitesRes.data || [])
+      // Drop any invitation whose handle belongs to a creator we just hid
+      // for privacy — otherwise the pre-signup invite row would still
+      // surface them on the brand-side directory.
+      .filter((r: any) => {
+        const h = String(r.instagram_username || "").toLowerCase().trim();
+        return !hiddenHandles.has(h);
+      })
+      .map((r: any) => {
       const meta = parseNotes(r.notes);
       return {
         // Prefix invitation IDs to avoid collisions with registered profiles
