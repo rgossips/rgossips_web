@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
+import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
 import { getEffectivePlan, isWithinTrial, trialDaysLeft } from "@/lib/plans";
 
 const PLAN_META = {
@@ -43,6 +43,7 @@ export default function PricingPage() {
   const { profile, user, refreshProfile } = useAuth();
   const supabase = createClient();
   const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
+  const [gateway, setGateway] = useState("stripe");  // "stripe" | "razorpay"
   const [upgrading, setUpgrading] = useState(null);
   const [verifying, setVerifying] = useState(false);
 
@@ -57,7 +58,9 @@ export default function PricingPage() {
   const verifyRef = useRef(false);
   useEffect(() => {
     if (verifyRef.current) return;
-    if (searchParams.get("success") !== "1") return;
+    // Either gateway can ship us back here on success; both poll the same
+    // profile column so the banner / dashboard reflect the new plan.
+    if (searchParams.get("success") !== "1" && searchParams.get("razorpay_success") !== "1") return;
     verifyRef.current = true;
     let cancelled = false;
     setVerifying(true);
@@ -93,19 +96,47 @@ export default function PricingPage() {
       alert("Please sign in first");
       return;
     }
-    const priceId = PLAN_STRIPE_PRICES[planId]?.[billing];
-    if (!priceId) {
-      alert("Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_" + planId.toUpperCase() + "_" + billing.toUpperCase() + " in env.");
-      return;
-    }
 
     setUpgrading(planId);
     try {
+      const email = profile?.email || user?.email || "";
+
+      if (gateway === "razorpay") {
+        const razorpayPlanId = PLAN_RAZORPAY_IDS[planId]?.[billing];
+        if (!razorpayPlanId) {
+          alert("Razorpay plan not configured. Set NEXT_PUBLIC_RAZORPAY_PLAN_" + planId.toUpperCase() + "_" + billing.toUpperCase() + " in env.");
+          return;
+        }
+        const { data, error } = await supabase.functions.invoke("razorpay-checkout", {
+          body: {
+            userId: user.id,
+            planId: razorpayPlanId,
+            plan: planId,
+            cycle: billing,
+            email,
+            name: profile?.full_name || "",
+            contact: profile?.phone || "",
+          },
+        });
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.error);
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+        throw new Error("No checkout URL returned");
+      }
+
+      // Default: Stripe.
+      const priceId = PLAN_STRIPE_PRICES[planId]?.[billing];
+      if (!priceId) {
+        alert("Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_" + planId.toUpperCase() + "_" + billing.toUpperCase() + " in env.");
+        return;
+      }
       // Pass the user's email so Stripe creates the customer with a known
       // address and reliably sends subscription invoice emails — without
       // this, Stripe still collects an email during Checkout but won't
       // associate it with the customer record up front.
-      const email = profile?.email || user?.email || "";
       const { data, error } = await supabase.functions.invoke("stripe-checkout", {
         body: { userId: user.id, priceId, plan: planId, cycle: billing, email },
       });
@@ -179,8 +210,8 @@ export default function PricingPage() {
           </div>
         </Card>
 
-        {/* Billing toggle */}
-        <div className="flex justify-center">
+        {/* Billing + gateway toggles */}
+        <div className="flex flex-col items-center gap-3">
           <div className="inline-flex bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
@@ -193,6 +224,26 @@ export default function PricingPage() {
               className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${billing === "annual" ? "bg-[#5851DB] text-white" : "text-slate-500"}`}
             >
               Annual <span className="text-[10px] text-emerald-500">(save up to 32%)</span>
+            </button>
+          </div>
+
+          {/* Payment-gateway toggle. Both routes hit the same plan; the
+              webhook for whichever one charged us is what flips
+              subscription_plan, so the user can't end up double-billed. */}
+          <div className="inline-flex bg-white border border-slate-200 rounded-full p-1 shadow-sm text-[11px] font-bold">
+            <button
+              onClick={() => setGateway("stripe")}
+              className={`px-3.5 py-1.5 rounded-full transition cursor-pointer ${gateway === "stripe" ? "bg-slate-900 text-white" : "text-slate-500"}`}
+              title="Card payments via Stripe"
+            >
+              Pay with Stripe
+            </button>
+            <button
+              onClick={() => setGateway("razorpay")}
+              className={`px-3.5 py-1.5 rounded-full transition cursor-pointer ${gateway === "razorpay" ? "bg-[#0c2451] text-white" : "text-slate-500"}`}
+              title="UPI / Cards / Netbanking via Razorpay"
+            >
+              Pay with Razorpay
             </button>
           </div>
         </div>
@@ -242,7 +293,9 @@ export default function PricingPage() {
                   } disabled:opacity-50`}
                 >
                   {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
-                  {isCurrent ? "Current plan" : `Upgrade to ${meta.label}`}
+                  {isCurrent
+                    ? "Current plan"
+                    : `Upgrade to ${meta.label}${gateway === "razorpay" ? " · Razorpay" : ""}`}
                 </button>
 
                 <div className="mt-6 space-y-2">

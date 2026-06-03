@@ -47,6 +47,31 @@ export const PLAN_STRIPE_PRICES = {
   },
 };
 
+// Razorpay subscription plan IDs (also env-driven for parity with Stripe).
+// Test-mode IDs are checked in as defaults so the local + staging flows
+// work without needing every dev to set six env vars. Production overrides
+// via NEXT_PUBLIC_RAZORPAY_PLAN_<PLAN>_<CYCLE> in Netlify.
+export const PLAN_RAZORPAY_IDS = {
+  starter: {
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY || "plan_Sx2KLtMQLMl7ww",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL  || "plan_Sx2KOvqPxpOf1U",
+  },
+  pro: {
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_MONTHLY     || "plan_Sx2KPjvpVfbr8Y",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_ANNUAL      || "plan_Sx2KQLSPUyUWs1",
+  },
+  elite: {
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_MONTHLY   || "plan_Sx2KRr5ctaQO1d",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_ANNUAL    || "plan_Sx2KSYS5t0EUKW",
+  },
+};
+
+// Public Razorpay key surfaced to the browser checkout. Server-side
+// secret + webhook secret live in Supabase Edge Function secrets only.
+export const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_Sx2JHhGirFSZa5";
+
+export const PAYMENT_GATEWAYS = ["stripe", "razorpay"];
+
 // Feature matrix. Values:
 //   true  → included
 //   false → not included
