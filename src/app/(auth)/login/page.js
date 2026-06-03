@@ -291,6 +291,14 @@ const Login = () => {
   };
 
   const handleSignUpInstagramConnect = (profile) => {
+    // Refuse to advance past the Instagram step without a usable profile.
+    // The route is supposed to surface an error before we ever get here,
+    // but defending in the UI too means the row never lands with an empty
+    // username + token-only state that breaks the next sign-in.
+    if (!profile?.username) {
+      setError("Instagram didn't return your username. Please reconnect Instagram before continuing.");
+      return;
+    }
     setInstaProfile(profile);
     nextStep(); // → step 3 (profile form)
   };
