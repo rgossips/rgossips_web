@@ -34,19 +34,114 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// Cancel any "other" active subscriptions on the user's profile so we
+// never end up double-billing across gateways or across upgrade chains.
+// The newly-paid subscription id is passed so we never cancel ourselves.
+async function cancelPriorSubscriptions(opts: {
+  userId: string;
+  skipStripeSubId?: string | null;
+  priorStripe: string | null;
+  priorRazorpay: string | null;
+}) {
+  const { skipStripeSubId, priorStripe, priorRazorpay } = opts;
+
+  // Stripe: ignore if the prior sub IS the one we just activated (Stripe
+  // re-issues the same id on a checkout for the same customer; we don't
+  // want to cancel something we're trying to keep).
+  if (priorStripe && priorStripe !== skipStripeSubId) {
+    try {
+      await stripe.subscriptions.cancel(priorStripe, { invoice_now: false, prorate: false });
+      console.log("Cancelled prior Stripe subscription", priorStripe);
+    } catch (e: any) {
+      // 404 / "No such subscription" / "already canceled" → the prior
+      // one is already inactive on Stripe's side, so we don't care.
+      const msg = e?.message || String(e);
+      if (!/No such subscription|already canceled|resource_missing/i.test(msg)) {
+        console.error("Failed to cancel prior Stripe subscription", priorStripe, msg);
+      }
+    }
+  }
+
+  if (priorRazorpay) {
+    try {
+      const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+      const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      if (keyId && keySecret) {
+        const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
+        const res = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(priorRazorpay)}/cancel`, {
+          method: "POST",
+          headers: { Authorization: auth, "Content-Type": "application/json" },
+          // cancel_at_cycle_end: 0 → immediate cancellation so the next
+          // billing date doesn't fire a charge for an obsolete plan.
+          body: JSON.stringify({ cancel_at_cycle_end: 0 }),
+        });
+        const out = await res.json();
+        if (out?.error) {
+          // Already cancelled / completed is fine.
+          const desc = out?.error?.description || "";
+          if (!/already|status/i.test(desc)) {
+            console.error("Razorpay cancel returned error:", JSON.stringify(out));
+          }
+        } else {
+          console.log("Cancelled prior Razorpay subscription", priorRazorpay);
+        }
+      }
+    } catch (e: any) {
+      console.error("Failed to cancel prior Razorpay subscription", priorRazorpay, e?.message || String(e));
+    }
+  }
+}
+
+// True when `subId` is the user's currently-billing Stripe sub.
+// Ignores cancellation events when:
+//   - the user has since switched to a different gateway (e.g. paid via
+//     Razorpay after this Stripe sub) — payment_gateway tells us that
+//   - the sub id on the row doesn't match (typically a prior Stripe sub
+//     we cancelled as part of an upgrade chain)
+async function isCurrentStripeSub(userId: string, subId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("influencer_profiles")
+    .select("stripe_subscription_id, payment_gateway")
+    .eq("influencer_id", userId)
+    .maybeSingle();
+  // Cross-gateway switch: the user is now on a different gateway, so
+  // this Stripe cancellation event is for a stale sub from before they
+  // moved. Don't downgrade them.
+  if (data?.payment_gateway && data.payment_gateway !== "stripe") return false;
+  if (data?.stripe_subscription_id) return data.stripe_subscription_id === subId;
+  // No sub on file and gateway is empty/stripe — be permissive; the
+  // cancellation should still flow through.
+  return true;
+}
+
 async function setUserPlan(userId: string, plan: string, extras: Record<string, unknown> = {}) {
   if (!userId) return;
   // Read the existing plan + current template so we can (a) fire a thank-you
-  // notification only on an actual upgrade and (b) force the kit back to
+  // notification only on an actual upgrade, (b) force the kit back to
   // Classic when the new plan can't legally use whatever template they
-  // had picked under their trial / previous plan.
+  // had picked, and (c) cancel any prior subscription so a user can never
+  // be billed by two gateways simultaneously.
   const { data: prior } = await supabase
     .from("influencer_profiles")
-    .select("subscription_plan, media_kit_template")
+    .select("subscription_plan, media_kit_template, stripe_subscription_id, razorpay_subscription_id")
     .eq("influencer_id", userId)
     .maybeSingle();
   const previousPlan = prior?.subscription_plan || "";
   const previousTemplate = prior?.media_kit_template || "classic";
+
+  // Single-active-subscription rule. The user just paid through Stripe;
+  // cancel anything that was previously active either on Stripe (a
+  // different sub id — happens on tier change) or on Razorpay (gateway
+  // switch). Non-fatal on failure: we still proceed with activating the
+  // newly-paid sub so the customer gets what they bought; orphaned subs
+  // can be cleaned up manually if cancellation ever fails.
+  const newStripeSubId = (extras as any).stripe_subscription_id as string | undefined;
+  await cancelPriorSubscriptions({
+    userId,
+    skipStripeSubId: newStripeSubId,
+    priorStripe: prior?.stripe_subscription_id || null,
+    priorRazorpay: prior?.razorpay_subscription_id || null,
+  });
 
   // Template → minimum plan needed to *save* it (Starter only gets Classic;
   // everything else is Pro+). Trial users get Pro features, so when they
@@ -269,6 +364,13 @@ Deno.serve(async (req) => {
             billing_cycle: cycle,
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
+            // Mark this gateway as the user's current billing gateway and
+            // null out the other gateway's ids so a stray webhook from
+            // there (legitimately cancelling the prior sub) doesn't get
+            // counted as the user's current state.
+            payment_gateway: "stripe",
+            razorpay_subscription_id: null,
+            razorpay_customer_id: null,
           });
         }
         break;
@@ -278,14 +380,36 @@ Deno.serve(async (req) => {
         const sub = event.data.object as Stripe.Subscription;
         const userId = (sub.metadata?.user_id as string) || "";
         const plan = (sub.metadata?.plan as string) || "";
-        // If the subscription was cancelled-at-period-end and is now ended,
-        // drop the user back to starter.
+        const cycle = (sub.metadata?.cycle as string) || "";
         const status = sub.status;
         if (userId) {
           if (status === "active" || status === "trialing") {
-            if (plan) await setUserPlan(userId, plan);
+            // CRITICAL: pass the sub id + customer id in extras. setUserPlan
+            // uses stripe_subscription_id from extras as skipStripeSubId on
+            // cancelPriorSubscriptions; without it, this handler would
+            // happily cancel the very subscription whose activation we're
+            // processing. (Happened on Pro → Elite upgrades where this
+            // event fires alongside checkout.session.completed.)
+            if (plan) {
+              await setUserPlan(userId, plan, {
+                stripe_subscription_id: sub.id,
+                stripe_customer_id: sub.customer as string,
+                payment_gateway: "stripe",
+                razorpay_subscription_id: null,
+                razorpay_customer_id: null,
+                ...(cycle ? { billing_cycle: cycle } : {}),
+              });
+            }
           } else if (status === "canceled" || status === "unpaid" || status === "incomplete_expired") {
-            await setUserPlan(userId, "starter");
+            // Only downgrade if this sub IS the user's current one. If
+            // it's a stale id (typically because we just cancelled the
+            // prior sub during an upgrade), ignore — the new active sub
+            // on the profile should stand.
+            if (await isCurrentStripeSub(userId, sub.id)) {
+              await setUserPlan(userId, "starter");
+            } else {
+              console.log("Ignoring updated/canceled for stale Stripe sub", sub.id);
+            }
           }
         }
         break;
@@ -294,7 +418,13 @@ Deno.serve(async (req) => {
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         const userId = (sub.metadata?.user_id as string) || "";
-        if (userId) await setUserPlan(userId, "starter");
+        if (userId) {
+          if (await isCurrentStripeSub(userId, sub.id)) {
+            await setUserPlan(userId, "starter");
+          } else {
+            console.log("Ignoring deletion of stale Stripe sub", sub.id);
+          }
+        }
         break;
       }
     }

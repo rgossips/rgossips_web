@@ -5,8 +5,25 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
 
-const publicPaths = ["/", "/login", "/register", "/instagram-callback"];
-const publicPrefixes = ["/kit/"];
+const publicPaths = [
+  "/",
+  "/login",
+  "/register",
+  "/instagram-callback",
+  // Consent policies — must load without auth so brands / influencers
+  // can read them before they decide to sign up. The role-scoped
+  // /influencer/consent-policy and /brands/consent-policy paths still
+  // exist for historic bookmarks but should *also* not require auth;
+  // they get added as prefixes below.
+  "/consent/influencer",
+  "/consent/brand",
+];
+const publicPrefixes = [
+  "/kit/",
+  "/consent/",
+  "/influencer/consent-policy",
+  "/brands/consent-policy",
+];
 
 const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions
 

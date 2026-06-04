@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, priceId, plan, cycle, email } = await req.json();
+    const { userId, priceId, plan, cycle, email, origin } = await req.json();
 
     if (!userId || !priceId) {
       return new Response(
@@ -37,7 +37,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    const appUrl = Deno.env.get("APP_URL") || "https://rgossips.com";
+    // Stripe Checkout needs the absolute redirect URL up front; without
+    // the client's actual origin we'd send everyone to APP_URL, which is
+    // production by default. Accept the origin from the caller (validated
+    // to a small allow-list to avoid open-redirect abuse) and fall back
+    // to APP_URL only when none is provided.
+    const fallbackUrl = Deno.env.get("APP_URL") || "https://rgossips.com";
+    const ALLOWED_ORIGINS = [
+      "https://rgossips.com",
+      "https://www.rgossips.com",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ];
+    const requestedOrigin = typeof origin === "string" ? origin.trim().replace(/\/+$/, "") : "";
+    const appUrl = ALLOWED_ORIGINS.includes(requestedOrigin) ? requestedOrigin : fallbackUrl;
 
     // Stripe expects application/x-www-form-urlencoded for REST calls.
     const params = new URLSearchParams();
@@ -52,6 +65,16 @@ Deno.serve(async (req) => {
     params.append("success_url", `${appUrl}/influencer/pricing?success=1&session_id={CHECKOUT_SESSION_ID}`);
     params.append("cancel_url", `${appUrl}/influencer/pricing?canceled=1`);
     params.append("allow_promotion_codes", "true");
+    // RBI / India-export compliance — Stripe accounts registered in India
+    // require a customer name + billing address on every charge. Forcing
+    // Checkout to collect the billing address satisfies this rule and
+    // unblocks the "As per Indian regulations, export transactions
+    // require a customer name and address" error. Subscription mode
+    // implicitly creates the Customer object on Stripe, so the address
+    // is attached to it automatically and shows up on every future
+    // invoice — no need for customer_creation (which only applies to
+    // one-time payment mode).
+    params.append("billing_address_collection", "required");
     params.append("subscription_data[metadata][user_id]", userId);
     params.append("subscription_data[metadata][plan]", plan || "");
     // Pre-fill the email on the customer record so Stripe can email the

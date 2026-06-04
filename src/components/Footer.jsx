@@ -21,6 +21,7 @@ const Footer = () => {
       { name: "Pricing", href: "/influencer/pricing" },
     ],
     legal: [
+      { name: "Privacy & Cookie Policy", href: "/consent/privacy" },
       { name: "Influencer Consent Policy", href: "/consent/influencer" },
       { name: "Brand Consent Policy", href: "/consent/brand" },
     ],

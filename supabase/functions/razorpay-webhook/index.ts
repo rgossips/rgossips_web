@@ -32,6 +32,68 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// Cancel any "other" active subscriptions on the user's profile so a user
+// can never be billed by two gateways simultaneously. The newly-paid
+// subscription id is passed so we never cancel ourselves.
+async function cancelPriorSubscriptions(opts: {
+  userId: string;
+  skipRazorpaySubId?: string | null;
+  priorStripe: string | null;
+  priorRazorpay: string | null;
+}) {
+  const { skipRazorpaySubId, priorStripe, priorRazorpay } = opts;
+
+  // Razorpay: ignore if the prior sub IS the one we just activated.
+  if (priorRazorpay && priorRazorpay !== skipRazorpaySubId) {
+    try {
+      const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+      const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      if (keyId && keySecret) {
+        const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
+        const res = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(priorRazorpay)}/cancel`, {
+          method: "POST",
+          headers: { Authorization: auth, "Content-Type": "application/json" },
+          body: JSON.stringify({ cancel_at_cycle_end: 0 }),
+        });
+        const out = await res.json();
+        if (out?.error) {
+          const desc = out?.error?.description || "";
+          if (!/already|status/i.test(desc)) {
+            console.error("Razorpay cancel returned error:", JSON.stringify(out));
+          }
+        } else {
+          console.log("Cancelled prior Razorpay subscription", priorRazorpay);
+        }
+      }
+    } catch (e: any) {
+      console.error("Failed to cancel prior Razorpay subscription", priorRazorpay, e?.message || String(e));
+    }
+  }
+
+  if (priorStripe) {
+    try {
+      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+      if (stripeKey) {
+        const res = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(priorStripe)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${stripeKey}` },
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          // 404 / already canceled is fine.
+          if (!/No such subscription|resource_missing|already canceled/i.test(body)) {
+            console.error("Failed to cancel prior Stripe subscription", priorStripe, body);
+          }
+        } else {
+          console.log("Cancelled prior Stripe subscription", priorStripe);
+        }
+      }
+    } catch (e: any) {
+      console.error("Failed to cancel prior Stripe subscription", priorStripe, e?.message || String(e));
+    }
+  }
+}
+
 // HMAC-SHA256 signature check — Razorpay's standard webhook verification.
 async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
   const key = await crypto.subtle.importKey(
@@ -56,11 +118,24 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
 
   const { data: prior } = await supabase
     .from("influencer_profiles")
-    .select("subscription_plan, media_kit_template")
+    .select("subscription_plan, media_kit_template, stripe_subscription_id, razorpay_subscription_id")
     .eq("influencer_id", userId)
     .maybeSingle();
   const previousPlan = prior?.subscription_plan || "";
   const previousTemplate = prior?.media_kit_template || "classic";
+
+  // Single-active-subscription rule. The user just paid through Razorpay;
+  // cancel anything that was previously active either on Razorpay (a
+  // different sub id — happens on plan change) or on Stripe (gateway
+  // switch). Non-fatal on failure: we still activate the newly-paid sub
+  // so the customer gets what they bought.
+  const newRazorpaySubId = (extras as any).razorpay_subscription_id as string | undefined;
+  await cancelPriorSubscriptions({
+    userId,
+    skipRazorpaySubId: newRazorpaySubId,
+    priorStripe: prior?.stripe_subscription_id || null,
+    priorRazorpay: prior?.razorpay_subscription_id || null,
+  });
 
   const TEMPLATE_MIN_PLAN: Record<string, string> = {
     classic: "starter",
@@ -189,12 +264,19 @@ Deno.serve(async (req) => {
       case "subscription.activated":
       case "subscription.charged": {
         // First charge OR a successful renewal. Either way the user is on
-        // the paid plan right now.
+        // the paid plan right now. Also null out the Stripe ids — if the
+        // user just switched to Razorpay from Stripe, the Stripe sub was
+        // cancelled in cancelPriorSubscriptions but its id was still on
+        // the row; without clearing it a subsequent Stripe cancellation
+        // webhook would (mis)recognise the row as "currently on Stripe"
+        // and downgrade the user.
         if (plan) {
           await setUserPlan(userId, plan, {
             billing_cycle: cycle,
             razorpay_customer_id: customerId,
             razorpay_subscription_id: subscriptionId,
+            stripe_subscription_id: null,
+            stripe_customer_id: null,
           });
         }
         break;
@@ -204,9 +286,35 @@ Deno.serve(async (req) => {
       case "subscription.completed":
       case "subscription.halted": {
         // Cancelled = user cancelled. completed = total_count reached.
-        // halted = payment failure exhausted retries. All three mean the
-        // user is no longer paying, so we drop them back to starter — same
-        // behaviour as the Stripe cancel-at-period-end flow.
+        // halted = payment failure exhausted retries.
+        //
+        // Two skip conditions:
+        //   (a) The user has since switched gateways (payment_gateway
+        //       is no longer "razorpay") — this event is for a stale
+        //       sub from before the switch. Don't downgrade.
+        //   (b) The sub id on the row doesn't match — typically a
+        //       prior Razorpay sub we cancelled during an upgrade chain.
+        const { data: current } = await supabase
+          .from("influencer_profiles")
+          .select("razorpay_subscription_id, payment_gateway")
+          .eq("influencer_id", userId)
+          .maybeSingle();
+        if (current?.payment_gateway && current.payment_gateway !== "razorpay") {
+          console.log(
+            "Ignoring Razorpay cancellation — user switched gateways",
+            subscriptionId
+          );
+          break;
+        }
+        if (current?.razorpay_subscription_id && current.razorpay_subscription_id !== subscriptionId) {
+          console.log(
+            "Ignoring cancellation of stale Razorpay sub",
+            subscriptionId,
+            "— current is",
+            current.razorpay_subscription_id
+          );
+          break;
+        }
         await setUserPlan(userId, "starter");
         break;
       }

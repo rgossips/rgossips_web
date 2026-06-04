@@ -53,6 +53,36 @@ Deno.serve(async (req) => {
     // flips the subscription to cancelled-at-period-end on the webhook.
     const totalCount = cycle === "annual" ? 50 : 120;
 
+    // Razorpay's POST /v1/subscriptions does NOT accept a customer_info
+    // field on the subscription itself — sending it returns
+    // `customer_info is/are not required and should not be sent`. If we
+    // want to pre-fill the user's email/name/phone on Razorpay's hosted
+    // checkout, we first POST /v1/customers and attach the resulting
+    // customer_id to the subscription. Failures here are non-fatal — we
+    // fall back to letting Razorpay collect those details during checkout.
+    let customerId: string | undefined;
+    if (email || name || contact) {
+      try {
+        const custRes = await fetch("https://api.razorpay.com/v1/customers", {
+          method: "POST",
+          headers: { Authorization: auth, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email || undefined,
+            name: name || undefined,
+            contact: contact || undefined,
+            // fail_existing=0 makes Razorpay return the existing customer
+            // (by email/contact) instead of 400'ing on a re-upgrade.
+            fail_existing: 0,
+          }),
+        });
+        const cust = await custRes.json();
+        if (cust?.id) customerId = cust.id;
+        else console.warn("razorpay-customer create skipped:", cust?.error?.description || JSON.stringify(cust));
+      } catch (e) {
+        console.warn("razorpay-customer create threw:", (e as any)?.message);
+      }
+    }
+
     const body: Record<string, unknown> = {
       plan_id: planId,
       total_count: totalCount,
@@ -65,14 +95,7 @@ Deno.serve(async (req) => {
       },
       customer_notify: 1,
     };
-
-    if (email || name || contact) {
-      body.customer_info = {
-        email: email || undefined,
-        name: name || undefined,
-        contact: contact || undefined,
-      };
-    }
+    if (customerId) body.customer_id = customerId;
 
     const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
       method: "POST",
@@ -92,15 +115,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Razorpay hands back a `short_url` we can redirect the user to. That
-    // page hosts the checkout iframe + redirects back to APP_URL on
-    // success. The actual plan flip happens server-side via the webhook,
-    // so the return URL is just for UX.
+    // Hand the subscription id back so the client can open Razorpay's
+    // embedded Checkout modal (checkout.js) right on /influencer/pricing.
+    // The hosted page at sub.short_url is unreliable on test accounts
+    // (depends on dashboard branding state); the embedded checkout works
+    // as long as the Subscriptions API works, which it just did. The plan
+    // flip itself happens via the razorpay-webhook handler — handler() in
+    // the client is only used to navigate to ?razorpay_success=1.
     const returnUrl = `${appUrl}/influencer/pricing?razorpay_success=1&subscription_id=${encodeURIComponent(sub.id)}`;
     return new Response(
       JSON.stringify({
-        url: sub.short_url,
         id: sub.id,
+        subscription_id: sub.id,
+        key_id: keyId,
+        customer_id: customerId || null,
+        // Kept for any legacy callers; new clients should use the
+        // embedded checkout (subscription_id + key_id) instead.
+        url: sub.short_url,
         return_url: returnUrl,
       }),
       { status: 200, headers: jsonHeaders }

@@ -11,9 +11,13 @@ import {
   X,
   IndianRupee,
   Loader2,
+  Download,
+  Receipt,
+  ExternalLink,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { PLAN_PRICING } from "@/lib/plans";
 
 const labelForMethod = (m) => {
   if (m.type === "upi") return m.upi_id || "UPI";
@@ -24,6 +28,35 @@ const labelForMethod = (m) => {
   return m.label || "Payment Method";
 };
 
+// Derive plan + cycle from the invoice amount (in paise) using the same
+// price table the rest of the app uses. Razorpay's invoice notes don't
+// inherit from the subscription, so the server returns null plan/cycle
+// and we look it up here from the well-known amounts.
+function planFromAmount(amountPaise, currency) {
+  if (!amountPaise || currency !== "inr") return { plan: null, cycle: null };
+  const rupees = Math.round(amountPaise / 100);
+  for (const [planId, prices] of Object.entries(PLAN_PRICING)) {
+    if (prices.monthly === rupees) return { plan: planId, cycle: "monthly" };
+    if (prices.annual === rupees) return { plan: planId, cycle: "annual" };
+  }
+  return { plan: null, cycle: null };
+}
+
+const formatINR = (amountMinor) => {
+  if (amountMinor == null) return "—";
+  const rupees = Math.round(amountMinor / 100);
+  return "₹" + rupees.toLocaleString("en-IN");
+};
+
+const formatDate = (unixSeconds) => {
+  if (!unixSeconds) return "—";
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const PaymentMethods = ({ onBack }) => {
   const supabase = createClient();
   const { user } = useAuth();
@@ -31,6 +64,10 @@ const PaymentMethods = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  // Subscription history — invoices across Stripe + Razorpay, merged
+  // by the subscription-history edge function.
+  const [invoices, setInvoices] = useState([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(true);
 
   const fetchMethods = async () => {
     if (!user?.id) return;
@@ -46,8 +83,28 @@ const PaymentMethods = ({ onBack }) => {
     setLoading(false);
   };
 
+  const fetchInvoices = async () => {
+    if (!user?.id) return;
+    setInvoicesLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("subscription-history", {
+        body: { userId: user.id },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setInvoices(Array.isArray(data?.invoices) ? data.invoices : []);
+    } catch (e) {
+      console.error("subscription-history fetch failed:", e?.message);
+      setInvoices([]);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchMethods();
+    fetchInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const setPrimary = async (id) => {
@@ -191,6 +248,12 @@ const PaymentMethods = ({ onBack }) => {
           </div>
         </section>
 
+        <SubscriptionHistorySection
+          loading={invoicesLoading}
+          invoices={invoices}
+          onRefresh={fetchInvoices}
+        />
+
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 pt-5 pb-5">
             <div className="flex items-center gap-2 mb-4">
@@ -208,6 +271,154 @@ const PaymentMethods = ({ onBack }) => {
 
       {showAddModal && <AddPaymentModal onClose={() => setShowAddModal(false)} onAdd={addMethod} />}
     </div>
+  );
+};
+
+// Renders the merged Stripe + Razorpay invoice list. Each row has its
+// gateway badge, the plan + cycle (derived from amount), date, amount,
+// status, and a Download / View button that opens the gateway's hosted
+// PDF (Stripe) or hosted invoice page (Razorpay) in a new tab.
+const SubscriptionHistorySection = ({ loading, invoices, onRefresh }) => {
+  return (
+    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="flex items-center gap-2">
+          <Receipt size={18} className="text-indigo-500" />
+          <h2 className="font-black text-gray-900 text-base">Subscription History</h2>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="text-[10px] font-black text-indigo-600 border border-indigo-100 px-3 py-1.5 rounded-full hover:bg-indigo-50 transition-colors cursor-pointer"
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className="px-5 pb-5">
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={20} className="animate-spin text-indigo-500" />
+          </div>
+        ) : invoices.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+            <Receipt size={28} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-sm font-bold text-gray-400">No subscription invoices yet</p>
+            <p className="text-[11px] text-gray-300 mt-1">
+              Invoices for plan upgrades and renewals will show up here once you've made a payment.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-50">
+            {invoices.map((inv) => (
+              <InvoiceRow key={`${inv.gateway}-${inv.id}`} inv={inv} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const STATUS_STYLES = {
+  paid:           "bg-emerald-50 text-emerald-700",
+  open:           "bg-amber-50 text-amber-700",
+  draft:          "bg-gray-100 text-gray-500",
+  issued:         "bg-amber-50 text-amber-700",
+  partially_paid: "bg-amber-50 text-amber-700",
+  expired:        "bg-gray-100 text-gray-500",
+  cancelled:      "bg-rose-50 text-rose-700",
+  canceled:       "bg-rose-50 text-rose-700",
+  void:           "bg-gray-100 text-gray-500",
+  uncollectible:  "bg-rose-50 text-rose-700",
+  failed:         "bg-rose-50 text-rose-700",
+};
+
+const InvoiceRow = ({ inv }) => {
+  const { plan: derivedPlan, cycle: derivedCycle } = planFromAmount(inv.amount, inv.currency);
+  const plan = inv.plan || derivedPlan;
+  const cycle = inv.cycle || derivedCycle;
+  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "Subscription";
+  const cycleLabel = cycle === "annual" || cycle === "yearly" ? "Annual" : cycle === "monthly" ? "Monthly" : "";
+  const downloadUrl = inv.pdf_url || inv.hosted_url;
+  const isPdf = !!inv.pdf_url;
+  const statusKey = String(inv.status || "").toLowerCase();
+  const statusClass = STATUS_STYLES[statusKey] || "bg-gray-100 text-gray-500";
+
+  // Subscription-level state. The server collapses every Razorpay /
+  // Stripe state into "active" or "cancelled" for display purposes — UI
+  // doesn't care about the difference between halted vs completed vs
+  // past-due. If the sub is active we surface its next renewal date.
+  const subActive = inv.subscription_status === "active";
+  const renewalLabel = subActive && inv.next_charge_at
+    ? `Renews ${formatDate(inv.next_charge_at)}`
+    : null;
+
+  return (
+    <li className="py-3.5 flex items-center gap-4">
+      {/* Gateway chip */}
+      <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+        <span
+          className={`text-[9px] font-black uppercase tracking-wider ${
+            inv.gateway === "razorpay" ? "text-[#0c2451]" : "text-[#635BFF]"
+          }`}
+        >
+          {inv.gateway === "razorpay" ? "RZP" : "STRP"}
+        </span>
+      </div>
+
+      {/* Plan + meta */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-black text-gray-800 truncate">
+            {planLabel}{cycleLabel ? ` · ${cycleLabel}` : ""}
+          </p>
+          {/* Subscription-level status — the persistent answer to "is
+              this still billing me." Invoice-level status is shown
+              underneath. */}
+          <span
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              subActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            {subActive ? "Active" : "Cancelled"}
+          </span>
+          {/* Invoice-level status only adds info when it isn't simply
+              "paid" — paid is the expected case for active subs. */}
+          {statusKey && statusKey !== "paid" && (
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusClass}`}>
+              {statusKey}
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] text-gray-400 font-bold mt-0.5 truncate">
+          {formatDate(inv.paid_at || inv.created_at)}
+          {renewalLabel ? ` · ${renewalLabel}` : ""}
+          {inv.number ? ` · ${inv.number}` : ""}
+        </p>
+      </div>
+
+      {/* Amount */}
+      <div className="text-right shrink-0">
+        <p className="text-sm font-black text-gray-900">{formatINR(inv.amount)}</p>
+      </div>
+
+      {/* Action */}
+      {downloadUrl ? (
+        <a
+          href={downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          download={isPdf ? `${inv.number || inv.id}.pdf` : undefined}
+          className="flex items-center gap-1.5 text-[10px] font-black text-indigo-600 border border-indigo-100 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors cursor-pointer shrink-0"
+          title={isPdf ? "Download PDF" : "Open invoice"}
+        >
+          {isPdf ? <Download size={11} /> : <ExternalLink size={11} />}
+          {isPdf ? "PDF" : "Invoice"}
+        </a>
+      ) : (
+        <span className="text-[10px] font-bold text-gray-300 shrink-0">—</span>
+      )}
+    </li>
   );
 };
 
