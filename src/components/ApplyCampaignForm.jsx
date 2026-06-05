@@ -37,7 +37,16 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
   const mediaKitPublished = profile?.media_kit_published;
-  const mediaKitUrl = typeof window !== "undefined" ? `${window.location.origin}/kit/${instagramHandle}` : "";
+  // Slug fallback chain matches /influencer/media-kit so the share URL
+  // here lines up with the one the creator sees on their kit page.
+  // Phone-OTP signups land here with username + instagram_handle both
+  // blank — falling through to user.id keeps the URL valid AND stops
+  // the "not published" misread when the kit *is* published.
+  const mediaKitSlug = profile?.username || profile?.instagram_handle || user?.id || "";
+  const mediaKitUrl =
+    typeof window !== "undefined" && mediaKitSlug
+      ? `${window.location.origin}/kit/${mediaKitSlug}`
+      : "";
 
   const formatCount = (n) => {
     if (!n) return "0";
@@ -200,7 +209,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           {/* Media Kit */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold text-slate-900">Media Kit</h3>
-            {mediaKitPublished && instagramHandle ? (
+            {mediaKitPublished && mediaKitSlug ? (
               <Link
                 href={mediaKitUrl}
                 target="_blank"

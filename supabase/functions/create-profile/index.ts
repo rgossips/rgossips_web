@@ -5,6 +5,84 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ── Shared email helpers ───────────────────────────────────────────────
+// Edge Functions can't share Deno code through the local FS easily, so the
+// helpers are inlined in every function that needs them (create-profile,
+// stripe-webhook, razorpay-webhook, send-account-event-email). Keep them
+// byte-for-byte aligned across files — if you tweak one, mirror to the
+// others or the brand will drift email-to-email.
+
+async function invokeSendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  fromName?: string;
+}) {
+  if (!opts.to) return;
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) {
+      console.error("send-email skipped: missing SUPABASE_URL / SERVICE_ROLE_KEY");
+      return;
+    }
+    const res = await fetch(`${url}/functions/v1/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        apikey: key,
+      },
+      body: JSON.stringify(opts),
+    });
+    const data = await res.json();
+    if (data?.error) console.error("send-email returned:", data.error);
+  } catch (e) {
+    console.error("send-email invocation failed:", (e as any)?.message);
+  }
+}
+
+// Lightweight branded HTML wrapper. Tables / inline styles are used so
+// the email looks consistent in Gmail, Outlook and Apple Mail. preheader
+// is the hidden snippet inboxes show in the message-list preview.
+function renderEmailHtml(o: {
+  preheader?: string;
+  title: string;
+  body: string; // HTML
+  ctaLabel?: string;
+  ctaUrl?: string;
+  footerNote?: string;
+}): string {
+  const cta =
+    o.ctaUrl && o.ctaLabel
+      ? `<div style="margin:28px 0 8px;">
+           <a href="${o.ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#9810FA,#E60076);color:#ffffff !important;font-weight:700;font-size:14px;text-decoration:none;padding:13px 26px;border-radius:14px;">${o.ctaLabel}</a>
+         </div>`
+      : "";
+  const footer =
+    o.footerNote ||
+    "You're receiving this because you have an RGossips account. Questions? Just reply to this email.";
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F8F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  ${o.preheader ? `<div style="display:none;max-height:0;overflow:hidden;color:transparent;visibility:hidden;">${o.preheader}</div>` : ""}
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F8F7FB;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:32px;">
+        <tr><td>
+          <div style="font-weight:900;font-size:18px;letter-spacing:-0.3px;background:linear-gradient(135deg,#9810FA,#E60076);-webkit-background-clip:text;background-clip:text;color:#9810FA;margin-bottom:18px;">RGossips</div>
+          <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;line-height:1.3;color:#0f172a;">${o.title}</h1>
+          <div style="font-size:14px;line-height:1.65;color:#475569;">${o.body}</div>
+          ${cta}
+          <div style="font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:18px;margin-top:28px;line-height:1.6;">${footer}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -205,6 +283,73 @@ Deno.serve(async (req) => {
       });
     } catch (e) {
       console.error("Failed to send welcome notification:", e);
+    }
+
+    // Welcome email — only if we have an email to send to. New phone-OTP
+    // signups typically don't have one yet (it gets added later via the
+    // profile editor); when it lands the user sees the welcome email
+    // then. Lookup tries the profile row first, then auth.users.
+    try {
+      let email = "";
+      if (table === "influencer_profiles") {
+        const { data } = await supabaseAdmin
+          .from("influencer_profiles")
+          .select("email")
+          .eq("influencer_id", userId)
+          .maybeSingle();
+        email = data?.email || "";
+      } else {
+        const { data } = await supabaseAdmin
+          .from("brand_profiles")
+          .select("contact_email")
+          .eq("brand_id", userId)
+          .maybeSingle();
+        email = data?.contact_email || "";
+      }
+      if (!email) {
+        // Fall back to whatever's on auth.users — phone-OTP signups
+        // usually leave this blank but social-login flows can populate it.
+        try {
+          const authRes = await fetch(
+            `${Deno.env.get("SUPABASE_URL")!}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+            {
+              headers: {
+                apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+              },
+            }
+          );
+          const u = await authRes.json();
+          email = u?.email || "";
+        } catch (_) { /* non-fatal */ }
+      }
+
+      if (email) {
+        const isBrand = table === "brand_profiles";
+        const greeting = name ? `Hey ${name}` : "Welcome to RGossips";
+        const subject = isBrand
+          ? "Welcome to RGossips — let's get your first campaign live"
+          : "Welcome to RGossips — your creator profile is ready";
+        const intro = isBrand
+          ? "Your brand account is live on RGossips. Post your first campaign to start reaching India's verified creators."
+          : "Your creator account is live on RGossips. Complete your profile to unlock brand deals and your AI media kit.";
+        const ctaLabel = isBrand ? "Post a campaign" : "Open dashboard";
+        const ctaPath = isBrand ? "/brands/campaigns" : "/influencer";
+
+        await invokeSendEmail({
+          to: email,
+          subject,
+          html: renderEmailHtml({
+            preheader: subject,
+            title: greeting,
+            body: `<p>${intro}</p><p>If you have any questions, just reply to this email — we read every message.</p>`,
+            ctaLabel,
+            ctaUrl: `https://rgossips.com${ctaPath}`,
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("Welcome email send failed (non-fatal):", (e as any)?.message);
     }
 
     return new Response(

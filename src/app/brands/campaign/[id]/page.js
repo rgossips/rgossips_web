@@ -45,7 +45,11 @@ const appStatusConfig = {
   revision_needed: { bg: "bg-orange-50 text-orange-700", label: "Revision Needed" },
   accepted: { bg: "bg-emerald-50 text-emerald-700", label: "Accepted" },
   live_submitted: { bg: "bg-cyan-50 text-cyan-700", label: "Live" },
-  payment: { bg: "bg-amber-50 text-amber-700", label: "Payment" },
+  // From the brand's perspective, releasing payment is their final step —
+  // the campaign is effectively done for them. The influencer side still
+  // labels this stage as "Payment in Progress" because admin reconciliation
+  // happens on their payout pipeline.
+  payment: { bg: "bg-blue-50 text-blue-700", label: "Completed" },
   completed: { bg: "bg-blue-50 text-blue-700", label: "Completed" },
   rejected: { bg: "bg-red-50 text-red-700", label: "Rejected" },
   withdrawn: { bg: "bg-gray-100 text-gray-600", label: "Withdrawn" },
@@ -435,8 +439,10 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
 const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh }) => {
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
-  // Auto-expand actionable statuses so the brand can review immediately
-  const autoExpand = app.status === "pending" || app.status === "submitted" || app.status === "live_submitted";
+  // Auto-expand actionable statuses so the brand can review immediately.
+  // We also auto-expand "accepted" so the brand can re-verify what they
+  // just approved without an extra click.
+  const autoExpand = app.status === "pending" || app.status === "submitted" || app.status === "live_submitted" || app.status === "accepted";
   const [expanded, setExpanded] = useState(autoExpand);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState(null); // "approve" | "reject" | "revision" | null
@@ -503,8 +509,14 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 
   const btn = "inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border";
 
+  // "hasActions" is a misnomer at this point — it really means "the
+  // expanded panel has something worth showing." Accepted is the same
+  // shape as live_submitted for review purposes: the brand should still
+  // see Creator Details + the submitted deliverables. There are no
+  // action buttons at this stage (the next step is the creator posting
+  // live), so the action slot just shows a status line.
   const hasActions =
-    app.status === "pending" || app.status === "approved" || app.status === "submitted" || app.status === "revision_needed" || app.status === "live_submitted" || app.status === "payment";
+    app.status === "pending" || app.status === "approved" || app.status === "submitted" || app.status === "revision_needed" || app.status === "live_submitted" || app.status === "payment" || app.status === "accepted";
 
   return (
     <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
@@ -658,6 +670,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 </>
               )}
               {app.status === "revision_needed" && <span className="text-[11px] text-gray-400 italic px-1 py-1">Waiting for creator to re-submit…</span>}
+              {app.status === "accepted" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                  <Check size={12} /> Drafts accepted — waiting for the creator to post live.
+                </span>
+              )}
               {app.status === "live_submitted" && (
                 <>
                   <button onClick={() => setShowRating(true)} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
@@ -669,7 +686,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                   </button>
                 </>
               )}
-              {app.status === "payment" && <span className="text-[11px] text-gray-500 italic px-1 py-1">Payment released. Waiting for admin to mark this complete.</span>}
+              {app.status === "payment" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-blue-700 font-semibold bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg">
+                  <Check size={12} /> Campaign completed. Payment released to the creator.
+                </span>
+              )}
             </div>
           )}
 

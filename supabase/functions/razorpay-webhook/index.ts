@@ -32,6 +32,78 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// ── Shared email helpers ───────────────────────────────────────────────
+// Mirrored from create-profile / stripe-webhook / send-account-event-email.
+// If you tweak any of these, keep the others in sync.
+
+async function invokeSendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  fromName?: string;
+}) {
+  if (!opts.to) return;
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) {
+      console.error("send-email skipped: missing SUPABASE_URL / SERVICE_ROLE_KEY");
+      return;
+    }
+    const res = await fetch(`${url}/functions/v1/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+        apikey: key,
+      },
+      body: JSON.stringify(opts),
+    });
+    const data = await res.json();
+    if (data?.error) console.error("send-email returned:", data.error);
+  } catch (e) {
+    console.error("send-email invocation failed:", (e as any)?.message);
+  }
+}
+
+function renderEmailHtml(o: {
+  preheader?: string;
+  title: string;
+  body: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  footerNote?: string;
+}): string {
+  const cta =
+    o.ctaUrl && o.ctaLabel
+      ? `<div style="margin:28px 0 8px;">
+           <a href="${o.ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#9810FA,#E60076);color:#ffffff !important;font-weight:700;font-size:14px;text-decoration:none;padding:13px 26px;border-radius:14px;">${o.ctaLabel}</a>
+         </div>`
+      : "";
+  const footer =
+    o.footerNote ||
+    "You're receiving this because you have an RGossips account. Questions? Just reply to this email.";
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F8F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  ${o.preheader ? `<div style="display:none;max-height:0;overflow:hidden;color:transparent;visibility:hidden;">${o.preheader}</div>` : ""}
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F8F7FB;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:32px;">
+        <tr><td>
+          <div style="font-weight:900;font-size:18px;letter-spacing:-0.3px;color:#9810FA;margin-bottom:18px;">RGossips</div>
+          <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;line-height:1.3;color:#0f172a;">${o.title}</h1>
+          <div style="font-size:14px;line-height:1.65;color:#475569;">${o.body}</div>
+          ${cta}
+          <div style="font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:18px;margin-top:28px;line-height:1.6;">${footer}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
 // Cancel any "other" active subscriptions on the user's profile so a user
 // can never be billed by two gateways simultaneously. The newly-paid
 // subscription id is passed so we never cancel ourselves.
@@ -203,6 +275,68 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
       });
     } catch (e) {
       console.error("plan_upgraded notification insert failed:", (e as any)?.message);
+    }
+
+    // Email receipt — best-effort. Same shape as the Stripe one with
+    // "Razorpay" swapped in. Looks up the email from the profile row.
+    try {
+      const cycle = (extras as any).billing_cycle as string | undefined;
+      const cycleLabel = cycle === "annual" ? "Annual" : "Monthly";
+      const { data: row } = await supabase
+        .from("influencer_profiles")
+        .select("email, full_name")
+        .eq("influencer_id", userId)
+        .maybeSingle();
+      let to = row?.email || "";
+
+      // Phone-OTP signups can land here with email = null. Fall back to
+      // the customer record on Razorpay (created during the
+      // razorpay-checkout flow with the email we had at the time) and
+      // persist whatever we get on the profile so future emails Just Work.
+      const customerId = (extras as any).razorpay_customer_id as string | undefined;
+      if (!to && customerId) {
+        try {
+          const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+          const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+          if (keyId && keySecret) {
+            const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
+            const custRes = await fetch(
+              `https://api.razorpay.com/v1/customers/${encodeURIComponent(customerId)}`,
+              { headers: { Authorization: auth } }
+            );
+            const cust = await custRes.json();
+            const gatewayEmail = String(cust?.email || "");
+            if (gatewayEmail) {
+              to = gatewayEmail;
+              await supabase
+                .from("influencer_profiles")
+                .update({ email: gatewayEmail })
+                .eq("influencer_id", userId);
+            }
+          }
+        } catch (e) {
+          console.error("Razorpay customer lookup for email failed:", (e as any)?.message);
+        }
+      }
+
+      if (to) {
+        const firstName = (row?.full_name || "").split(" ")[0] || "there";
+        await invokeSendEmail({
+          to,
+          subject: `Your RGossips ${planLabel} subscription is active`,
+          html: renderEmailHtml({
+            preheader: `Your ${planLabel} plan is live — billed ${cycleLabel.toLowerCase()} via Razorpay.`,
+            title: `You're on ${planLabel}, ${firstName} 🎉`,
+            body: `<p>Thanks for upgrading. Your <strong>${planLabel} · ${cycleLabel}</strong> subscription is now active and billed through Razorpay.</p>
+                   <p>All your ${planLabel} features are unlocked right now — head to the dashboard to start using them.</p>
+                   <p style="font-size:12px;color:#94a3b8;margin-top:18px;">Razorpay will email a separate invoice with the tax breakdown. You can also pull every past invoice from <strong>Profile → Payments → Subscription History</strong>.</p>`,
+            ctaLabel: "Open dashboard",
+            ctaUrl: "https://rgossips.com/influencer",
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("Subscription receipt email failed (non-fatal):", (e as any)?.message);
     }
   }
 }

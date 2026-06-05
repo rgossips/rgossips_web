@@ -743,7 +743,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent showCloseButton={false} className="sm:max-w-[720px] h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden rounded-2xl">
+        <DialogContent showCloseButton={false} className="mt-[30px] sm:max-w-[720px] h-[87vh] max-h-[87vh] p-0 flex flex-col overflow-hidden rounded-2xl">
           {header}
           {content}
         </DialogContent>

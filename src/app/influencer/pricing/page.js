@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket } from "lucide-react";
+import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
@@ -69,6 +69,16 @@ export default function PricingPage() {
   const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
   const [upgrading, setUpgrading] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  // Locks the whole page while we're talking to the gateway between
+  // "user picked Stripe / Razorpay" and "checkout UI is visible." The
+  // little inline spinner on the upgrade button wasn't enough — the
+  // gateway round-trip can take a couple of seconds and the page felt
+  // unresponsive. This overlay matches the post-payment one.
+  const [preparingCheckout, setPreparingCheckout] = useState(null); // gateway label for the loader copy
+  // Set after the verifying poll finishes so we can show a celebration
+  // modal with payment + subscription ids that came back on the URL.
+  // Shape: { gateway, paymentId, subscriptionId, sessionId, plan, cycle }
+  const [successDetails, setSuccessDetails] = useState(null);
   // Gateway picker modal. Holds the planId the user wants to upgrade to so
   // the modal knows which plan to charge once they pick a gateway.
   const [gatewayPickerPlan, setGatewayPickerPlan] = useState(null);
@@ -104,7 +114,17 @@ export default function PricingPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const qs = new URLSearchParams(window.location.search);
-    if (qs.get("success") !== "1" && qs.get("razorpay_success") !== "1") return;
+    const isStripeReturn = qs.get("success") === "1";
+    const isRazorpayReturn = qs.get("razorpay_success") === "1";
+    if (!isStripeReturn && !isRazorpayReturn) return;
+
+    // Capture the ids from the URL *before* the polling loop runs the
+    // router.replace that strips them. The success modal renders them
+    // back to the user once the verifying overlay clears.
+    const capturedSession = qs.get("session_id") || null;
+    const capturedSubscription = qs.get("subscription_id") || null;
+    const capturedPayment = qs.get("razorpay_payment_id") || null;
+    const capturedGateway = isRazorpayReturn ? "razorpay" : "stripe";
 
     let unmounted = false;
     setVerifying(true);
@@ -127,6 +147,25 @@ export default function PricingPage() {
       // user-facing breakage. Same reasoning for the URL replace.
       if (!unmounted) {
         setVerifying(false);
+        // The latest profile (from refreshProfile) carries the just-paid
+        // plan + cycle the webhook wrote. AuthContext is async wrt this
+        // closure, so we read once more after the poll for the modal.
+        const latestProfile = refreshProfileRef.current
+          ? // refreshProfile returns void, so read from the latest snapshot via the ref.
+            // We use the most-current `profile` via React's render — but
+            // since we're inside the effect closure, we just trust the
+            // PLAN_PRICING + the URL data. The actual plan will reflow
+            // on the next render from AuthContext.
+            null
+          : null;
+        void latestProfile;
+        setSuccessDetails({
+          gateway: capturedGateway,
+          paymentId: capturedPayment,
+          subscriptionId: capturedSubscription,
+          sessionId: capturedSession,
+          when: new Date(),
+        });
         routerRef.current?.replace("/influencer/pricing");
       }
     })();
@@ -157,8 +196,14 @@ export default function PricingPage() {
 
     setUpgrading(planId);
     setGatewayPickerPlan(null);
+    setPreparingCheckout(gateway === "razorpay" ? "Razorpay" : "Stripe");
     try {
       const email = profile?.email || user?.email || "";
+      // Razorpay's prefill is finicky: it accepts E.164 (+91…), 10-digit
+      // (no prefix), or "91XXXXXXXXXX" but anything with whitespace,
+      // dashes, or a leading 0 silently fails to populate the field.
+      // Normalise to "+91XXXXXXXXXX" which is the most reliable.
+      const phoneForPrefill = normalizeIndianPhone(profile?.phone);
 
       if (gateway === "razorpay") {
         const razorpayPlanId = PLAN_RAZORPAY_IDS[planId]?.[billing];
@@ -177,7 +222,7 @@ export default function PricingPage() {
             cycle: billing,
             email,
             name: profile?.full_name || "",
-            contact: profile?.phone || "",
+            contact: phoneForPrefill,
           },
         });
         if (error) throw new Error(error.message);
@@ -203,7 +248,7 @@ export default function PricingPage() {
           description: `Upgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)} · ${billing}`,
           prefill: {
             email,
-            contact: profile?.phone || "",
+            contact: phoneForPrefill,
             name: profile?.full_name || "",
           },
           notes: {
@@ -216,10 +261,17 @@ export default function PricingPage() {
           // webhook (subscription.activated / subscription.charged) is
           // the source of truth that flips subscription_plan. Just route
           // back to the success polling state.
-          handler: () => {
+          handler: (resp) => {
+            // resp shape: { razorpay_payment_id, razorpay_subscription_id,
+            // razorpay_signature }. Surface the payment id on the URL so
+            // the success modal can display it next to the subscription
+            // id once the verifying poll completes.
             const url = new URL(window.location.href);
             url.searchParams.set("razorpay_success", "1");
             url.searchParams.set("subscription_id", data.subscription_id);
+            if (resp?.razorpay_payment_id) {
+              url.searchParams.set("razorpay_payment_id", resp.razorpay_payment_id);
+            }
             window.location.replace(url.toString());
           },
           modal: {
@@ -227,6 +279,7 @@ export default function PricingPage() {
               // User closed the modal without paying — clear the loading
               // state so they can try again.
               setUpgrading(null);
+              setPreparingCheckout(null);
             },
           },
         });
@@ -236,9 +289,13 @@ export default function PricingPage() {
             "Payment failed"
           );
           setUpgrading(null);
+          setPreparingCheckout(null);
         });
         rzp.open();
-        // Loading spinner stays on until ondismiss or handler fires.
+        // Razorpay's modal is full-viewport; once it's open the prep
+        // overlay is redundant. Drop it but keep the upgrading spinner
+        // on the plan card in case the user dismisses without paying.
+        setPreparingCheckout(null);
         return;
       }
 
@@ -278,6 +335,7 @@ export default function PricingPage() {
       throw new Error("No checkout URL returned");
     } catch (err) {
       showError(err.message || "We couldn't start the checkout. Please try again in a moment.");
+      setPreparingCheckout(null);
     } finally {
       setUpgrading(null);
     }
@@ -526,6 +584,17 @@ export default function PricingPage() {
       )}
 
       {verifying && <VerifyingOverlay />}
+      {preparingCheckout && !verifying && (
+        <PreparingCheckoutOverlay gateway={preparingCheckout} />
+      )}
+      {successDetails && !verifying && (
+        <PaymentSuccessModal
+          details={successDetails}
+          profile={profile}
+          billing={billing}
+          onClose={() => setSuccessDetails(null)}
+        />
+      )}
       {errorModal && (
         <ErrorModal
           title={errorModal.title}
@@ -602,6 +671,30 @@ function ErrorModal({ title, message, onClose }) {
 // another Upgrade button) while the sync is in flight.
 function VerifyingOverlay() {
   return (
+    <FullPageLoader
+      title="Payment received"
+      message="Syncing your new plan…"
+      hint="This usually takes a couple of seconds."
+    />
+  );
+}
+
+// Same visual shell as VerifyingOverlay but for the moment between
+// "user picked a gateway" and "checkout UI is on-screen." Locking the
+// whole page during the edge-function round-trip avoids accidental
+// double-taps on Upgrade and makes the wait feel intentional.
+function PreparingCheckoutOverlay({ gateway }) {
+  return (
+    <FullPageLoader
+      title="Opening checkout"
+      message={`Sending you to ${gateway}…`}
+      hint="Don't refresh — we're getting your payment session ready."
+    />
+  );
+}
+
+function FullPageLoader({ title, message, hint }) {
+  return (
     <div
       aria-busy="true"
       role="status"
@@ -619,16 +712,161 @@ function VerifyingOverlay() {
         />
       </div>
       <div className="text-center max-w-sm px-6">
-        <p className="text-lg font-black text-slate-900">Payment received</p>
-        <p className="text-sm font-semibold text-slate-500 mt-1">
-          Syncing your new plan…
-        </p>
-        <p className="text-[11px] font-semibold text-slate-400 mt-3">
-          This usually takes a couple of seconds.
-        </p>
+        <p className="text-lg font-black text-slate-900">{title}</p>
+        <p className="text-sm font-semibold text-slate-500 mt-1">{message}</p>
+        {hint && (
+          <p className="text-[11px] font-semibold text-slate-400 mt-3">
+            {hint}
+          </p>
+        )}
       </div>
     </div>
   );
+}
+
+// Celebratory popup that lands after the verifying overlay clears.
+// Shows plan / cycle (read off the now-refreshed profile), gateway
+// badge, the payment / subscription ids the gateway sent on the URL,
+// the date, and a Done button. Close affordance is a clear X in the
+// top-right corner per the requested spec.
+function PaymentSuccessModal({ details, profile, billing, onClose }) {
+  const plan = (profile?.subscription_plan || "").toLowerCase();
+  const cycle = profile?.billing_cycle || billing || "monthly";
+  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "your new plan";
+  const cycleLabel = cycle === "annual" ? "Annual" : "Monthly";
+  const price = PLAN_PRICING[plan]?.[cycle === "annual" ? "annual" : "monthly"];
+  const amount = price ? `₹${price.toLocaleString("en-IN")}` : "—";
+  const gatewayLabel = details.gateway === "razorpay" ? "Razorpay" : "Stripe";
+  const dateLabel = details.when.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="payment-success-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden relative">
+        {/* Close in the top-right, per spec. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 cursor-pointer text-slate-400 hover:text-slate-600 z-10"
+        >
+          <X size={18} strokeWidth={2.5} />
+        </button>
+
+        {/* Header strip */}
+        <div
+          className="px-6 pt-7 pb-6"
+          style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+        >
+          <div className="text-5xl mb-1" aria-hidden>🎉</div>
+          <h2
+            id="payment-success-title"
+            className="text-xl sm:text-2xl font-black text-white leading-tight"
+          >
+            You're on {planLabel}!
+          </h2>
+          <p className="text-[12px] font-semibold text-white/85 mt-1">
+            Payment received and your plan is live.
+          </p>
+        </div>
+
+        {/* Payment + subscription details */}
+        <div className="px-6 py-5 space-y-3">
+          <DetailRow label="Plan" value={`${planLabel} · ${cycleLabel}`} />
+          <DetailRow label="Amount" value={amount} />
+          <DetailRow
+            label="Paid via"
+            value={gatewayLabel}
+            valueClassName={
+              details.gateway === "razorpay" ? "text-[#0c2451]" : "text-[#635BFF]"
+            }
+          />
+          {details.paymentId && (
+            <DetailRow label="Payment ID" value={details.paymentId} mono />
+          )}
+          {details.subscriptionId && (
+            <DetailRow label="Subscription ID" value={details.subscriptionId} mono />
+          )}
+          {details.sessionId && (
+            <DetailRow label="Checkout session" value={details.sessionId} mono />
+          )}
+          <DetailRow label="Date" value={dateLabel} />
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 pb-6 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 rounded-2xl text-white text-sm font-bold cursor-pointer hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            Done
+          </button>
+          <p className="text-[10px] text-slate-400 font-semibold text-center mt-3 leading-relaxed">
+            Receipt + invoice will land in your email. View every past
+            invoice from <strong>Profile → Payments → Subscription History</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, valueClassName, mono }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 pt-0.5">
+        {label}
+      </span>
+      <span
+        className={`text-[13px] font-black text-slate-900 text-right min-w-0 truncate ${
+          mono ? "font-mono text-[11px] tracking-tight" : ""
+        } ${valueClassName || ""}`}
+        title={mono ? value : undefined}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// Razorpay's prefill is strict about phone formatting. It accepts E.164
+// (+91…), bare 10-digit, or "91XXXXXXXXXX" — but any whitespace, dash,
+// or leading 0 silently fails to populate. Normalise whatever's on the
+// profile to "+91XXXXXXXXXX" before sending.
+function normalizeIndianPhone(raw) {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return "";
+  // Strip a leading 0 (e.g. "09876543210") — landline-style local
+  // formats sometimes sneak in this way.
+  const noLeadingZero = digits.replace(/^0+/, "");
+  // "91" + 10 digits already? Use as-is.
+  if (noLeadingZero.length === 12 && noLeadingZero.startsWith("91")) {
+    return "+" + noLeadingZero;
+  }
+  // Bare 10 digits → assume India.
+  if (noLeadingZero.length === 10) {
+    return "+91" + noLeadingZero;
+  }
+  // Anything else (already a + prefix, international, etc.) — return
+  // raw with a + on the front if missing. Razorpay will surface a clear
+  // error if the result is genuinely invalid.
+  return raw.startsWith("+") ? raw.replace(/\s|-/g, "") : "+" + noLeadingZero;
 }
 
 // Asks the user which payment gateway to checkout through. Both routes
@@ -648,11 +886,13 @@ function GatewayPickerModal({ planId, planLabel, onCancel, onPick }) {
               Pick a payment method to continue
             </p>
           </div>
-          <button onClick={onCancel} aria-label="Close" className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer">
-            <span className="block w-3 h-3 relative">
-              <span className="absolute inset-0 rotate-45 border-t-2 border-slate-400" />
-              <span className="absolute inset-0 -rotate-45 border-t-2 border-slate-400" />
-            </span>
+          <button
+            onClick={onCancel}
+            aria-label="Close"
+            type="button"
+            className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-600"
+          >
+            <X size={18} strokeWidth={2.5} />
           </button>
         </div>
 

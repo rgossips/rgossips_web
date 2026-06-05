@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Check, X, Video, Smartphone, Youtube, Image as ImageIcon, Clapperboard, IndianRupee } from "lucide-react";
+import { Check, X, Video, Smartphone, Youtube, Image as ImageIcon, Clapperboard, IndianRupee, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 /**
  * Returns the influencer's onboarding completion as a percentage (0-100).
@@ -44,9 +45,108 @@ const SERVICE_OPTIONS = [
 ];
 
 export function CompleteProfileCard() {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile, refreshInstagram, setInstagramTokenMissing } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   const [showRatesModal, setShowRatesModal] = useState(false);
+  // Instagram OAuth state for the step-2 Connect button. Mirrors
+  // InstagramReconnectBanner's popup-based flow, except that on a
+  // first-time connect we also persist the freshly-fetched handle,
+  // username, follower count etc. to the profile row — the banner
+  // only updates the token because the user already has those fields.
+  const [connectingIg, setConnectingIg] = useState(false);
+  const [igError, setIgError] = useState("");
+
+  useEffect(() => {
+    const handleMessage = async (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "instagram-oauth") return;
+      if (event.data.error) {
+        setIgError(event.data.error || "Instagram connection was denied");
+        setConnectingIg(false);
+        return;
+      }
+      if (event.data.code) {
+        await exchangeAndSaveInstagram(event.data.code);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const exchangeAndSaveInstagram = async (code) => {
+    setConnectingIg(true);
+    setIgError("");
+    try {
+      const redirectUri = `${window.location.origin}/instagram-callback`;
+      const { data, error: funcError } = await supabase.functions.invoke(
+        "instagram-connect",
+        { body: { code, redirectUri } }
+      );
+      if (funcError) throw new Error(funcError.message);
+      if (data?.error) throw new Error(data.error);
+
+      // First-time connect: persist the full profile snapshot the OAuth
+      // flow handed back, not just the token. Without these the
+      // homepage card would still read hasInstagram === false until the
+      // next refresh-instagram round-trip.
+      const igProfile = data?.profile || {};
+      const updateBody = {
+        userId: user.id,
+        table: "influencer_profiles",
+        instagramAccessToken: data.accessToken,
+        instagramTokenExpiresAt: data.tokenExpiresAt,
+      };
+      if (igProfile.username) {
+        updateBody.username = igProfile.username;
+        updateBody.instagram = igProfile.username;
+      }
+      if (igProfile.profilePictureUrl) updateBody.profilePictureUrl = igProfile.profilePictureUrl;
+      if (typeof igProfile.followersCount === "number") updateBody.followersCount = igProfile.followersCount;
+      if (typeof igProfile.followsCount === "number") updateBody.followsCount = igProfile.followsCount;
+      if (typeof igProfile.mediaCount === "number") updateBody.mediaCount = igProfile.mediaCount;
+
+      const { data: updateData, error: updateError } = await supabase.functions.invoke(
+        "update-profile",
+        { body: updateBody }
+      );
+      if (updateError) throw new Error(updateError.message);
+      if (updateData?.error) throw new Error(updateData.error);
+
+      // Clear any stale "token missing" flag and refresh the analytics so
+      // the rest of the homepage (ProStatusCard, AnalyticsPage, etc.)
+      // sees the fresh data without a manual reload.
+      setInstagramTokenMissing?.(false);
+      await refreshInstagram?.(user.id);
+      await refreshProfile?.();
+    } catch (err) {
+      setIgError(err?.message || "Failed to connect Instagram");
+    } finally {
+      setConnectingIg(false);
+    }
+  };
+
+  const handleConnectInstagram = () => {
+    if (connectingIg) return;
+    setIgError("");
+    setConnectingIg(true);
+    const reconnectUrl = `/api/auth/instagram?mode=reconnect&popup=1`;
+    const width = 500;
+    const height = 650;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const w = window.open(
+      reconnectUrl,
+      "instagram-oauth",
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+    // If the browser blocked the popup, fall back to a same-tab nav —
+    // user lands back on this page after the callback page redirects.
+    if (!w) {
+      window.location.href = reconnectUrl.replace("&popup=1", "");
+    }
+  };
 
   const hasInstagram = !!profile?.instagram_handle;
   const hasMediaKit = !!profile?.media_kit_published;
@@ -65,10 +165,15 @@ export function CompleteProfileCard() {
       title: "Connect Instagram",
       subtitle: hasInstagram
         ? `@${profile.instagram_handle}`
-        : "Brands discover you instantly",
-      action: hasInstagram ? null : "Connect",
+        : igError
+          ? igError
+          : connectingIg
+            ? "Opening Instagram…"
+            : "Brands discover you instantly",
+      action: hasInstagram ? null : connectingIg ? "…" : "Connect",
       completed: hasInstagram,
       active: !hasInstagram,
+      onClick: handleConnectInstagram,
     },
     {
       id: 3,

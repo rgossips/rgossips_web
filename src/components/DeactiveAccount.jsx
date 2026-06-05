@@ -37,6 +37,16 @@ const DeactivateAccount = ({ onBack, onNavigateToPrivacy }) => {
         .update({ is_active: false })
         .eq("user_id", user.id);
 
+      // Best-effort confirmation email — fire-and-forget so a mail
+      // outage can't trap the user mid-deactivation. JWT is still valid
+      // at this point; send-account-event-email derives the recipient
+      // mailbox from the server, the client can't spoof another email.
+      try {
+        await supabase.functions.invoke("send-account-event-email", {
+          body: { event: "deactivated", role: role === "brand" ? "brand" : "influencer" },
+        });
+      } catch (_) { /* non-fatal */ }
+
       await signOut();
       router.replace("/login");
     } catch (e) {

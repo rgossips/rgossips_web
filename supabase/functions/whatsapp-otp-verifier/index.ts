@@ -184,6 +184,9 @@ Deno.serve(async (req) => {
             .from("influencer_profiles")
             .update({ status: "active", updated_at: new Date().toISOString() })
             .eq("influencer_id", userId);
+          // Best-effort welcome-back email. Server lookup of the
+          // recipient mailbox — fire-and-forget.
+          fireReactivationEmail(supabaseAdmin, userId, "influencer").catch(() => {});
         }
       } else if (br) {
         resolvedRole = "brand";
@@ -202,6 +205,7 @@ Deno.serve(async (req) => {
             .from("brand_profiles")
             .update({ status: "active", updated_at: new Date().toISOString() })
             .eq("brand_id", userId);
+          fireReactivationEmail(supabaseAdmin, userId, "brand").catch(() => {});
         }
       }
     } catch (e) {
@@ -285,3 +289,77 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Fires a "welcome back" email when a deactivated account is reactivated
+// during sign-in. Pure best-effort — caller doesn't await the result so
+// a mail outage can't break the sign-in flow.
+async function fireReactivationEmail(
+  admin: any,
+  userId: string,
+  role: "influencer" | "brand"
+) {
+  try {
+    let to = "";
+    let displayName = "";
+    if (role === "influencer") {
+      const { data } = await admin
+        .from("influencer_profiles")
+        .select("email, full_name")
+        .eq("influencer_id", userId)
+        .maybeSingle();
+      to = data?.email || "";
+      displayName = data?.full_name || "";
+    } else {
+      const { data } = await admin
+        .from("brand_profiles")
+        .select("contact_email, contact_name, brand_name")
+        .eq("brand_id", userId)
+        .maybeSingle();
+      to = data?.contact_email || "";
+      displayName = data?.contact_name || data?.brand_name || "";
+    }
+    if (!to) return;
+    const firstName = (displayName || "").split(" ")[0] || "there";
+    const isBrand = role === "brand";
+    const accountLabel = isBrand ? "brand account" : "account";
+    const dashHref = isBrand ? "https://rgossips.com/brands" : "https://rgossips.com/influencer";
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#F8F7FB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#F8F7FB;padding:24px 12px;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:32px;">
+        <tr><td>
+          <div style="font-weight:900;font-size:18px;color:#9810FA;margin-bottom:18px;">RGossips</div>
+          <h1 style="font-size:22px;font-weight:800;margin:0 0 14px;color:#0f172a;">${firstName}, welcome back</h1>
+          <div style="font-size:14px;line-height:1.65;color:#475569;">
+            <p>Your RGossips ${accountLabel} is active again. Pick up where you left off — your profile, campaigns and history are exactly as you left them.</p>
+          </div>
+          <div style="margin:28px 0 8px;">
+            <a href="${dashHref}" style="display:inline-block;background:linear-gradient(135deg,#9810FA,#E60076);color:#ffffff !important;font-weight:700;font-size:14px;text-decoration:none;padding:13px 26px;border-radius:14px;">Open dashboard</a>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:18px;margin-top:28px;">If you didn't reactivate this account, reply to this email straight away.</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/send-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+        apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      },
+      body: JSON.stringify({
+        to,
+        subject: "Welcome back to RGossips",
+        html,
+      }),
+    });
+  } catch (e) {
+    console.error("Reactivation email failed:", (e as any)?.message);
+  }
+}

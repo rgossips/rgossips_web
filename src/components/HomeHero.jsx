@@ -32,22 +32,16 @@ const HomeHero = () => {
             {/* <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             </span> */}
-            <span className="flex items-center gap-1.5 flex-wrap">
-              🚀 Now live: AI-powered Influencer Matching: Try it free →
-            </span>
+            <span className="flex items-center gap-1.5 flex-wrap">Now live: AI-powered Influencer Matching: Try it free →</span>
           </Badge>
 
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
             Where Global Brands Meet <br />
-            <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">
-              The Right Creators.
-            </span>
+            <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">The Right Creators.</span>
           </h1>
 
           <p className="text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-medium">
-            RGossips is the all-in-one influencer campaign platform that
-            connects brands with verified creators globally — no agencies, no
-            spreadsheets, no guesswork.
+            RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -129,13 +123,7 @@ const HomeHero = () => {
             {/* <div className="absolute inset-4 rounded-[3rem] bg-linear-to-b from-[#EFF6FF] to-[#FAF5FF] backdrop-blur-sm border border-white/50 flex items-center justify-center">
               
             </div> */}
-            <Image
-              src={one}
-              alt="Hero"
-              fill
-              className="object-cover"
-              priority
-            />
+            <Image src={one} alt="Hero" fill className="object-cover" priority />
 
             {/* Floating Stat Card 1 */}
             <motion.div
@@ -148,9 +136,7 @@ const HomeHero = () => {
               </div>
               <div>
                 <p className="text-xl font-bold text-slate-900">+245%</p>
-                <p className="text-xs text-slate-400 font-medium">
-                  ROI Increase
-                </p>
+                <p className="text-xs text-slate-400 font-medium">ROI Increase</p>
               </div>
             </motion.div>
 
@@ -165,9 +151,7 @@ const HomeHero = () => {
               </div>
               <div>
                 <p className="text-xl font-bold text-slate-900">50K+</p>
-                <p className="text-xs text-slate-400 font-medium">
-                  Active Users
-                </p>
+                <p className="text-xs text-slate-400 font-medium">Active Users</p>
               </div>
             </motion.div>
           </motion.div>

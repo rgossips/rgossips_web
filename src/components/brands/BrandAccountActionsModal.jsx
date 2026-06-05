@@ -85,6 +85,19 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
         .update({ is_active: false })
         .eq("user_id", user.id);
 
+      // Confirmation email (deactivate → "your account is paused";
+      // delete → "scheduled for deletion, 30-day grace"). Server-side
+      // function derives the recipient from the JWT — fire-and-forget so
+      // a mail outage can't block the sign-out path.
+      try {
+        await supabase.functions.invoke("send-account-event-email", {
+          body: {
+            event: isDelete ? "deletion_pending" : "deactivated",
+            role: "brand",
+          },
+        });
+      } catch (_) { /* non-fatal */ }
+
       await signOut();
       router.replace("/login");
     } catch (e) {
