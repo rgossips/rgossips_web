@@ -1,22 +1,38 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
+import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
+import InfoBadge from "@/components/brands/InfoBadge";
+
+// Band → ring color. Bands match the spec's five-tier ladder
+// (Excellent / Very Good / Good / Fair / Poor).
+const BAND_RING = {
+  "Excellent": "#10b981", // emerald
+  "Very Good": "#3b82f6", // blue
+  "Good":      "#5B3DF5", // indigo
+  "Fair":      "#f59e0b", // amber
+  "Poor":      "#ef4444", // rose
+};
 
 export const TrustSection = () => {
   const { trust } = useBrandTrustScore();
-  const score = trust?.score || 0;
-  const band = trust?.band || "LOW";
-  const ringPct = Math.min(100, Math.max(0, (score / 1000) * 100));
+  const [trustInfoOpen, setTrustInfoOpen] = useState(false);
+  const min = trust?.scaleMin ?? 300;
+  const max = trust?.scaleMax ?? 900;
+  const score = trust?.score || min;
+  const band = trust?.band || "Poor";
+  // Ring sweep tracks position within the 300–900 range, not score/max,
+  // so a 600 lands roughly half-way around the ring instead of two-thirds.
+  const ringPct = Math.min(100, Math.max(0, ((score - min) / (max - min)) * 100));
 
   // SVG ring (radius 26, circumference ≈ 163.4)
   const radius = 26;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (ringPct / 100) * circumference;
 
-  const ringColor =
-    band === "HIGH" ? "#10b981" : band === "GOOD" ? "#5B3DF5" : "#f59e0b";
+  const ringColor = BAND_RING[band] || "#f59e0b";
 
   return (
     <div className="flex items-center flex-col lg:flex-row w-full px-3 lg:px-0 gap-3 lg:gap-5">
@@ -33,13 +49,28 @@ export const TrustSection = () => {
       {/* Trust Score Card */}
       <div className="bg-[#1F1F1F] w-full lg:min-w-[280px] rounded-4xl p-6 flex justify-between items-center text-white">
         <div>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">
-            Your Trust Score
-          </p>
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+              Your Trust Score
+            </p>
+            <button
+              onClick={() => setTrustInfoOpen(true)}
+              className="cursor-pointer hover:scale-110 transition-transform inline-flex"
+              aria-label="How is the trust score calculated?"
+              title="How is this calculated?"
+            >
+              <InfoBadge size={16} />
+            </button>
+          </div>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-black">{score}</span>
-            <span className="text-slate-500 text-xs font-bold">/1000</span>
+            <span className="text-slate-500 text-xs font-bold">/{max}</span>
           </div>
+          {trust?.coldStart && (
+            <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">
+              Capped at {trust.coldStartCap} · 3 campaigns to lift
+            </p>
+          )}
         </div>
 
         {/* Score Ring */}
@@ -66,9 +97,11 @@ export const TrustSection = () => {
               transform="rotate(-90 32 32)"
             />
           </svg>
-          <span className="text-[10px] font-black italic">{band}</span>
+          <span className="text-[9px] font-black italic text-center leading-tight px-1">{band}</span>
         </div>
       </div>
+
+      <TrustScoreInfoModal open={trustInfoOpen} onClose={() => setTrustInfoOpen(false)} />
     </div>
   );
 };

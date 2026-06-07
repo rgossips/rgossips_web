@@ -14,6 +14,9 @@ import {
   Download,
   Receipt,
   ExternalLink,
+  AlertTriangle,
+  Clock,
+  Check,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -26,6 +29,35 @@ const labelForMethod = (m) => {
     return `${m.bank_name || "Bank"} ••••${last4 || "0000"}`;
   }
   return m.label || "Payment Method";
+};
+
+// Renders the verification badge next to the method type. Validation
+// happens server-side on register (RazorpayX fund-account validation
+// API); pending → verification webhook hasn't arrived yet, success →
+// safe to receive payouts, failed → name/account mismatch, fix needed.
+const ValidationChip = ({ status, reason }) => {
+  if (status === "success") {
+    return (
+      <span className="text-[8px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+        Verified
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <span
+        className="text-[8px] font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-full uppercase"
+        title={reason || "Could not verify the account holder"}
+      >
+        Verify failed
+      </span>
+    );
+  }
+  return (
+    <span className="text-[8px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase">
+      Verifying…
+    </span>
+  );
 };
 
 // Derive plan + cycle from the invoice amount (in paise) using the same
@@ -57,6 +89,26 @@ const formatDate = (unixSeconds) => {
   });
 };
 
+// NPCI's published VPA spec: <username>@<handle>. Username starts with
+// alphanumeric, allows ./_/-, 2–50 chars. Handle starts with alpha,
+// allows alphanumeric + dot, 2–30 chars. Total commonly < 50 chars.
+// Returns null when valid, or a human-readable reason string.
+const validateUpiId = (raw) => {
+  const id = (raw || "").trim();
+  if (!id) return "UPI ID is required.";
+  if (id.length > 50) return "UPI ID is too long.";
+  const at = id.indexOf("@");
+  if (at < 0 || id.indexOf("@", at + 1) !== -1) return "Must contain exactly one @ symbol.";
+  const [user, handle] = id.split("@");
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,49}$/.test(user)) {
+    return "The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.";
+  }
+  if (!/^[a-zA-Z][a-zA-Z0-9.]{1,29}$/.test(handle)) {
+    return "The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl.";
+  }
+  return null;
+};
+
 const PaymentMethods = ({ onBack }) => {
   const supabase = createClient();
   const { user } = useAuth();
@@ -68,6 +120,10 @@ const PaymentMethods = ({ onBack }) => {
   // by the subscription-history edge function.
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
+  // Campaign earnings — applications with a payout leg. Rendered in
+  // the existing "Credit History" section.
+  const [earnings, setEarnings] = useState([]);
+  const [earningsLoading, setEarningsLoading] = useState(true);
 
   const fetchMethods = async () => {
     if (!user?.id) return;
@@ -101,11 +157,42 @@ const PaymentMethods = ({ onBack }) => {
     }
   };
 
+  const fetchEarnings = async () => {
+    if (!user?.id) return;
+    setEarningsLoading(true);
+    // RLS gates campaign_applications by influencer ownership so the
+    // direct select is safe. We fetch the application + denormalised
+    // brand/campaign labels via the standard FK joins. Limit to 50 most
+    // recent; the user can scroll history elsewhere if we add it.
+    const { data, error } = await supabase
+      .from("campaign_applications")
+      .select(
+        "id, escrow_amount, payout_status, payout_release_at, payout_processed_at, payout_utr, payout_method, payout_failure_reason, campaigns(title, brand_id, brand_profiles:brand_id(brand_name, gstin_trade_name, logo_url))"
+      )
+      .eq("influencer_id", user.id)
+      .not("payout_status", "is", null)
+      .order("payout_release_at", { ascending: false })
+      .limit(50);
+    if (error) console.error("earnings read failed:", error.message);
+    setEarnings(data || []);
+    setEarningsLoading(false);
+  };
+
   useEffect(() => {
     fetchMethods();
     fetchInvoices();
+    fetchEarnings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Surface the pending_creator_info banner whenever an application is
+  // stuck waiting on payout info. Once any verified method exists, the
+  // register-payout-method auto-resume + cron flips these to scheduled.
+  const pendingEarnings = earnings.filter((e) => e.payout_status === "pending_creator_info");
+  const pendingTotalInr = pendingEarnings.reduce(
+    (sum, e) => sum + Math.round((e.escrow_amount || 0) / 100),
+    0
+  );
 
   const setPrimary = async (id) => {
     if (!user?.id) return;
@@ -132,24 +219,36 @@ const PaymentMethods = ({ onBack }) => {
     }
   };
 
+  // Save goes through the register-payout-method Edge Function, which:
+  //   (1) creates / reuses a RazorpayX Contact for this user,
+  //   (2) registers the UPI/bank as a Razorpay Fund Account,
+  //   (3) fires a name-match validation (test mode: synchronous),
+  //   (4) inserts payment_methods with the Razorpay IDs + validation result.
+  // Returns { ok, validation_status, resumed_payouts } so the modal can
+  // surface "Verified" / "Verify failed" + how many waiting payouts were
+  // released by adding this method.
   const addMethod = async (payload) => {
-    if (!user?.id) return;
-    // First method is automatically primary so payouts always have a target.
-    const isFirst = methods.length === 0;
-    const { error } = await supabase
-      .from("payment_methods")
-      .insert({
-        user_id: user.id,
-        ...payload,
-        is_primary: isFirst,
-      });
-    if (error) {
-      console.error("payment_methods insert failed:", error.message);
-      return false;
+    if (!user?.id) return { ok: false, error: "Not signed in" };
+    const { data, error } = await supabase.functions.invoke("register-payout-method", {
+      body: payload,
+    });
+    if (error || data?.error) {
+      const msg = error?.message || data?.error || "Failed to save";
+      console.error("register-payout-method failed:", msg);
+      return { ok: false, error: msg };
     }
     setShowAddModal(false);
+    // Refresh both lists. fetchEarnings is the important one for the
+    // pending-amount banner — register-payout-method auto-flips any
+    // 'pending_creator_info' rows to 'scheduled' as part of saving, so
+    // re-fetching pulls in the new statuses and the banner disappears.
     fetchMethods();
-    return true;
+    fetchEarnings();
+    return {
+      ok: true,
+      validation_status: data?.validation_status || "pending",
+      resumed_payouts: data?.resumed_payouts || 0,
+    };
   };
 
   return (
@@ -167,6 +266,26 @@ const PaymentMethods = ({ onBack }) => {
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 lg:px-10 mt-6 space-y-6">
+        {pendingEarnings.length > 0 && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer text-left"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+              <AlertTriangle size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black text-amber-900">
+                ₹{pendingTotalInr.toLocaleString("en-IN")} is waiting for you
+              </p>
+              <p className="text-[11px] font-bold text-amber-700 mt-0.5">
+                Add a UPI ID or bank account to receive your campaign earnings.
+              </p>
+            </div>
+            <Plus size={16} className="text-amber-700 shrink-0" />
+          </button>
+        )}
+
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2">
@@ -220,6 +339,7 @@ const PaymentMethods = ({ onBack }) => {
                             Primary
                           </span>
                         )}
+                        <ValidationChip status={m.validation_status} reason={m.validation_failure_reason} />
                       </div>
                       <p className="text-xs font-bold text-gray-400 mt-0.5 truncate">{labelForMethod(m)}</p>
                     </div>
@@ -254,23 +374,110 @@ const PaymentMethods = ({ onBack }) => {
           onRefresh={fetchInvoices}
         />
 
-        <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard size={18} className="text-pink-500" />
-              <h2 className="font-black text-gray-900 text-base">Credit History</h2>
-            </div>
-            <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
-              <IndianRupee size={28} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-gray-400">No payouts yet</p>
-              <p className="text-[11px] text-gray-300 mt-1">Once your campaign earnings are released they'll show up here.</p>
-            </div>
-          </div>
-        </section>
+        <CreditHistorySection loading={earningsLoading} earnings={earnings} />
+
       </div>
 
       {showAddModal && <AddPaymentModal onClose={() => setShowAddModal(false)} onAdd={addMethod} />}
     </div>
+  );
+};
+
+// Campaign earnings — applications whose escrow has been released by
+// the brand. Each row reflects the current payout_status:
+//   pending_creator_info → "Add details to receive"
+//   scheduled            → "Arriving by <date>"
+//   processing           → "Processing"
+//   processed            → "Paid · UTR …"
+//   failed / reversed    → "Failed — re-add method or contact support"
+const CreditHistorySection = ({ loading, earnings }) => {
+  return (
+    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-5 pt-5 pb-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard size={18} className="text-pink-500" />
+          <h2 className="font-black text-gray-900 text-base">Credit History</h2>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={20} className="animate-spin text-pink-500" />
+          </div>
+        ) : earnings.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+            <IndianRupee size={28} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-sm font-bold text-gray-400">No payouts yet</p>
+            <p className="text-[11px] text-gray-300 mt-1">Once your campaign earnings are released they'll show up here.</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-50">
+            {earnings.map((e) => (
+              <EarningRow key={e.id} earning={e} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const EARNING_STATUS = {
+  pending_creator_info: { label: "Add payout details to receive", chip: "bg-amber-50 text-amber-700", Icon: AlertTriangle },
+  scheduled:            { label: "Scheduled",                     chip: "bg-indigo-50 text-indigo-700", Icon: Clock },
+  processing:           { label: "Processing",                    chip: "bg-blue-50 text-blue-700",     Icon: Loader2 },
+  processed:            { label: "Paid",                          chip: "bg-emerald-50 text-emerald-700", Icon: Check },
+  failed:               { label: "Failed",                        chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
+  reversed:             { label: "Reversed",                      chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
+};
+
+const EarningRow = ({ earning }) => {
+  const status = EARNING_STATUS[earning.payout_status] || EARNING_STATUS.scheduled;
+  const Icon = status.Icon;
+  const brand = earning.campaigns?.brand_profiles || {};
+  const brandName = brand.brand_name || brand.gstin_trade_name || "Brand";
+  const campaignTitle = earning.campaigns?.title || "Campaign";
+  const amountInr = Math.round((earning.escrow_amount || 0) / 100);
+
+  // Date to show: processed → processed_at; everything else → release_at.
+  const subtitleDate =
+    earning.payout_status === "processed" && earning.payout_processed_at
+      ? `Paid on ${new Date(earning.payout_processed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+      : earning.payout_release_at
+      ? earning.payout_status === "scheduled"
+        ? `Arriving by ${new Date(earning.payout_release_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+        : new Date(earning.payout_release_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      : "";
+
+  return (
+    <li className="py-3.5 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+        {brand.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={brand.logo_url} alt={brandName} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-[10px] font-black text-gray-400">
+            {brandName.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-black text-gray-800 truncate">{campaignTitle}</p>
+          <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${status.chip}`}>
+            <Icon size={9} className={earning.payout_status === "processing" ? "animate-spin" : ""} />
+            {status.label}
+          </span>
+        </div>
+        <p className="text-[11px] text-gray-400 font-bold mt-0.5 truncate">
+          {brandName}
+          {subtitleDate ? ` · ${subtitleDate}` : ""}
+          {earning.payout_utr ? ` · UTR ${earning.payout_utr}` : ""}
+          {earning.payout_method ? ` · ${earning.payout_method.toUpperCase()}` : ""}
+        </p>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="text-sm font-black text-gray-900">₹{amountInr.toLocaleString("en-IN")}</p>
+      </div>
+    </li>
   );
 };
 
@@ -432,9 +639,14 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // For UPI we run the full VPA check so the user sees a meaningful
+  // reason inline (not just a disabled button). Bank still uses the
+  // simpler length checks since the IFSC + account number get
+  // server-side fuzzy-matched by Razorpay anyway.
+  const upiError = type === "upi" ? validateUpiId(upiId) : null;
   const isValid =
     type === "upi"
-      ? upiId.trim().includes("@") && upiId.trim().length > 3
+      ? !upiError
       : bankName.trim() && accountNumber.trim().length >= 6 && ifsc.trim().length >= 6 && holderName.trim();
 
   const handleSubmit = async () => {
@@ -452,11 +664,12 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
             account_holder_name: holderName.trim(),
             label: "Bank Account",
           };
-    const ok = await onAdd(payload);
-    if (!ok) {
-      setError("Failed to save. Please try again.");
+    const res = await onAdd(payload);
+    if (!res?.ok) {
+      setError(res?.error || "Failed to save. Please try again.");
       setSaving(false);
     }
+    // On success the parent closes the modal — no further state to set.
   };
 
   return (
@@ -498,11 +711,25 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
                 <label className="text-[10px] font-black text-gray-400 uppercase ml-1">UPI ID</label>
                 <input
                   type="text"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
                   placeholder="yourname@upi"
-                  className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
+                  className={`w-full p-4 bg-gray-50 border focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all ${
+                    upiId.trim() && upiError
+                      ? "border-rose-200 focus:border-rose-300"
+                      : "border-gray-100 focus:border-purple-300"
+                  }`}
                 />
+                {/* Inline validation — only nag once the user has typed
+                    something, otherwise an empty field shows "required"
+                    on first open which is noisy. */}
+                {upiId.trim() && upiError && (
+                  <p className="text-[11px] font-bold text-rose-500">{upiError}</p>
+                )}
               </div>
               <p className="text-[10px] font-bold text-gray-400">Enter your UPI ID linked to Google Pay, PhonePe, Paytm, etc.</p>
             </div>
@@ -541,7 +768,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? "Saving…" : "Add Method"}
+            {saving ? "Verifying with bank…" : "Add Method"}
           </button>
         </div>
       </div>

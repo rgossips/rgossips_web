@@ -1,12 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, memo, useCallback } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useMotionValue,
-  useTransform,
-} from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import Image from "next/image";
 import { FaChevronDown } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -21,17 +16,40 @@ const FALLBACK_DEALS = [
   { id: 4, img: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?q=80&w=800" },
 ];
 
-// --- RollingTimer (Unchanged) ---
-const RollingTimer = memo(() => {
-  const [secondsLeft, setSecondsLeft] = useState(23654);
+// --- RollingTimer ---
+// Live countdown to a campaign's application deadline. We render days
+// when the deadline is more than 24h away (the H:M:S display is misleading
+// at that scale) and roll to H:M:S once we cross under a day. Pass null
+// to hide the timer entirely (no deadline set).
+const RollingTimer = memo(({ deadline }) => {
+  const target = deadline ? new Date(deadline).getTime() : null;
+  const [secondsLeft, setSecondsLeft] = useState(() => (target ? Math.max(0, Math.floor((target - Date.now()) / 1000)) : 0));
 
   useEffect(() => {
-    const interval = setInterval(
-      () => setSecondsLeft((s) => (s > 0 ? s - 1 : 0)),
-      1000,
-    );
+    if (!target) return;
+    const tick = () => setSecondsLeft(Math.max(0, Math.floor((target - Date.now()) / 1000)));
+    tick();
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [target]);
+
+  if (!target) {
+    return <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Open</span>;
+  }
+
+  if (secondsLeft === 0) {
+    return <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">Closed</span>;
+  }
+
+  const days = Math.floor(secondsLeft / 86400);
+  if (days >= 1) {
+    return (
+      <div className="flex items-center gap-1 font-bold text-slate-800 tabular-nums">
+        <span className="text-lg font-black">{days}</span>
+        <span className="text-[10px] uppercase tracking-wider text-slate-500">{days === 1 ? "day left" : "days left"}</span>
+      </div>
+    );
+  }
 
   const h = Math.floor(secondsLeft / 3600)
     .toString()
@@ -48,14 +66,7 @@ const RollingTimer = memo(() => {
       </span>
       <div className="relative h-8 w-7 overflow-hidden bg-slate-50 rounded-lg flex flex-col items-center shadow-inner">
         <AnimatePresence mode="popLayout">
-          <motion.span
-            key={sec}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="text-pink-500"
-          >
+          <motion.span key={sec} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} transition={{ duration: 0.3 }} className="text-pink-500">
             {sec}
           </motion.span>
         </AnimatePresence>
@@ -66,22 +77,14 @@ const RollingTimer = memo(() => {
 RollingTimer.displayName = "RollingTimer";
 
 // --- Updated CardRotate Component ---
-function CardRotate({
-  children,
-  onSendToBack,
-  sensitivity,
-  disableDrag = false,
-}) {
+function CardRotate({ children, onSendToBack, sensitivity, disableDrag = false }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useTransform(y, [-100, 100], [10, -10]);
   const rotateY = useTransform(x, [-100, 100], [-10, 10]);
 
   function handleDragEnd(_, info) {
-    if (
-      Math.abs(info.offset.x) > sensitivity ||
-      Math.abs(info.offset.y) > sensitivity
-    ) {
+    if (Math.abs(info.offset.x) > sensitivity || Math.abs(info.offset.y) > sensitivity) {
       onSendToBack();
     } else {
       x.set(0);
@@ -115,10 +118,14 @@ function CardRotate({
 // --- Main Component ---
 export default function StackedDeals({ sensitivity = 120 }) {
   const router = useRouter();
-  const [stack, setStack] = useState(FALLBACK_DEALS);
+  // Start with no cards + loading=true so we render a spinner until the
+  // featured-campaigns response arrives. If the API fails or returns
+  // empty we fall back to the hardcoded list (set inside the catch /
+  // empty branch) instead of showing nothing.
+  const [stack, setStack] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isCompact, setIsCompact] = useState(false);
 
-  // Pull the admin-curated list — empty list keeps the hardcoded fallback.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -137,12 +144,22 @@ export default function StackedDeals({ sensitivity = 120 }) {
             data.campaigns.slice(0, 6).map((c) => ({
               id: c.id,
               img: c.bannerImage || c.brandLogo || "",
-            }))
+              brandName: c.brandName || c.title || "",
+              deadline: c.applicationDeadline || null,
+            })),
           );
+        } else {
+          setStack(FALLBACK_DEALS);
         }
-      } catch {}
+      } catch {
+        if (!cancelled) setStack(FALLBACK_DEALS);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const sendToBack = useCallback((id) => {
@@ -166,6 +183,15 @@ export default function StackedDeals({ sensitivity = 120 }) {
     return () => clearInterval(autoScroll);
   }, [stack, sendToBack]);
 
+  if (loading) {
+    return (
+      <div className="relative w-full h-[350px] lg:h-[500px] flex flex-col items-center justify-center gap-4 mb-12 lg:mb-0">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500" />
+        <p className="text-slate-400 font-medium animate-pulse">Loading featured campaigns…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-[350px] lg:h-[500px] flex items-start justify-center perspective-[1200px] overflow-hidden mb-12 lg:mb-0">
       <AnimatePresence initial={false}>
@@ -173,28 +199,17 @@ export default function StackedDeals({ sensitivity = 120 }) {
           const isTop = index === stack.length - 1;
           const positionFromTop = stack.length - index - 1;
 
-          const xOffset =
-            typeof window !== "undefined" && window.innerWidth >= 1024
-              ? positionFromTop * 40
-              : 0;
+          const xOffset = typeof window !== "undefined" && window.innerWidth >= 1024 ? positionFromTop * 40 : 0;
           const yOffset =
             typeof window !== "undefined" && window.innerWidth >= 1024
               ? positionFromTop * 10
               : isCompact
                 ? positionFromTop * 5 // Minimal spread
                 : positionFromTop * 35; // Full spread
-          const rotation =
-            typeof window !== "undefined" && window.innerWidth >= 1024
-              ? positionFromTop * 5
-              : 0;
+          const rotation = typeof window !== "undefined" && window.innerWidth >= 1024 ? positionFromTop * 5 : 0;
 
           return (
-            <CardRotate
-              key={card.id}
-              onSendToBack={() => sendToBack(card.id)}
-              sensitivity={sensitivity}
-              disableDrag={!isTop}
-            >
+            <CardRotate key={card.id} onSendToBack={() => sendToBack(card.id)} sensitivity={sensitivity} disableDrag={!isTop}>
               <motion.div
                 // pointer-events-none on the inner div ensures the drag surface gets the hits
                 className={`bg-white ${isCompact ? " rounded-t-[45px]" : " rounded-[45px]"} shadow-lg border border-slate-100 overflow-hidden w-[calc(100vw-48px)] max-w-[350px] lg:w-[500px] lg:max-w-[500px] aspect-[4/5] lg:aspect-square will-change-transform select-none`}
@@ -204,29 +219,18 @@ export default function StackedDeals({ sensitivity = 120 }) {
                   rotate: rotation,
                   scale: 1 - positionFromTop * 0.05,
                   zIndex: index,
-                  filter:
-                    positionFromTop > 0
-                      ? `blur(${positionFromTop * 1}px)`
-                      : "blur(0px)",
+                  filter: positionFromTop > 0 ? `blur(${positionFromTop * 1}px)` : "blur(0px)",
                 }}
                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
               >
                 <div className="relative h-[60%] lg:h-[75%] w-full pointer-events-none">
-                  <Image
-                    fill
-                    src={card.img}
-                    className="object-cover"
-                    alt="deal"
-                    draggable={false}
-                  />
+                  <Image fill src={card.img} className="object-cover" alt="deal" draggable={false} />
                 </div>
 
                 <div className="px-4 py-4 lg:p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between h-[40%] lg:h-[25%] gap-3">
-                  <div className="flex flex-row items-center justify-between w-full">
-                    <h3 className="text-base font-extrabold text-slate-800 leading-tight lg:text-xl">
-                      Deal Of The Day
-                    </h3>
-                    <RollingTimer />
+                  <div className="flex flex-row items-center justify-between w-full gap-3">
+                    <h3 className="text-base font-extrabold text-slate-800 leading-tight lg:text-xl line-clamp-1 flex-1 min-w-0">{card.brandName || "Featured Campaign"}</h3>
+                    <RollingTimer deadline={card.deadline} />
                   </div>
                   {/* pointer-events-auto allows the button to be clickable while the rest of the card is draggable */}
                   <button

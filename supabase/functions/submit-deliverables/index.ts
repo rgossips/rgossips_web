@@ -194,6 +194,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Status-history transition row — drives both the P4 SLA timing
+    // (e.g. how fast the brand replied to drafts) and the accurate
+    // revision-round count for P2.
+    if (app.status !== nextStatus) {
+      try {
+        await supabaseAdmin.from("application_status_history").insert({
+          application_id: applicationId,
+          from_status: app.status,
+          to_status: nextStatus,
+          changed_by: app.influencer_id || null,
+          changed_by_role: "influencer",
+        });
+      } catch (e) {
+        console.error("status-history insert failed:", e);
+      }
+    }
+
     // If the influencer just posted live links, kick off a metrics refresh in
     // the background so the analytics surface has real numbers without waiting
     // for the brand to act. Best-effort — never block the submit on it.

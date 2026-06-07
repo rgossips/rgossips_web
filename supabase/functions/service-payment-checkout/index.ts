@@ -114,6 +114,12 @@ Deno.serve(async (req) => {
     const params = new URLSearchParams();
     params.append("mode", "payment");
     params.append("payment_method_types[]", "card");
+    // RBI export-compliance: India regulations require us to collect the
+    // customer's name + address for cross-border card payments. Without
+    // this Stripe rejects the session creation with a 400. Same setting
+    // we apply on the subscription checkout (stripe-checkout/index.ts).
+    // See https://stripe.com/docs/india-exports.
+    params.append("billing_address_collection", "required");
     params.append("line_items[0][quantity]", "1");
     params.append("line_items[0][price_data][currency]", "inr");
     params.append("line_items[0][price_data][unit_amount]", String(amountPaise));

@@ -19,6 +19,31 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/services";
+import GatewayPickerModal from "@/components/GatewayPickerModal";
+
+// Razorpay Checkout SDK loader — same pattern used by the pricing page
+// and the brand-side escrow funding flow. Lazy so we don't ship the
+// SDK on every service-order page view.
+const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+function loadRazorpayCheckout() {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.Razorpay) return Promise.resolve();
+  const existing = document.querySelector(`script[src="${RAZORPAY_CHECKOUT_SRC}"]`);
+  if (existing) {
+    return new Promise((resolve) => {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => resolve());
+    });
+  }
+  return new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = RAZORPAY_CHECKOUT_SRC;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => resolve();
+    document.body.appendChild(s);
+  });
+}
 
 const STATUS_BANNER = {
   pending_quote: {
@@ -112,6 +137,10 @@ export default function ServiceOrderDetailPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [mode, setMode] = useState(null); // 'counter' | 'decline' | 'revision'
+  // Which phase the gateway picker is currently open for. `null` = picker
+  // closed. 'advance' = brand accepting & paying initial 50%; 'final' =
+  // approve & release the remaining balance after drafts are ready.
+  const [pickerPhase, setPickerPhase] = useState(null);
   const [myReview, setMyReview] = useState(null);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
@@ -165,20 +194,30 @@ export default function ServiceOrderDetailPage() {
     return `${d}d ${h}h`;
   }, [order?.quote_valid_until]);
 
-  // Kicks off the Stripe Checkout flow for the advance (50%) — or, when
-  // status is draft_ready, the final 50%. Redirects in-place to Stripe.
-  const payViaStripe = async (phase) => {
+  // Opens the gateway picker; the actual checkout call happens in
+  // payViaGateway once the user picks Razorpay or Stripe. Keeping the
+  // picker stateful + outside the dispatcher means the buttons get
+  // disabled (actionLoading) only after the user has chosen.
+  const openPayPicker = (phase) => {
+    setError("");
+    setPickerPhase(phase);
+  };
+
+  // Routes the actual checkout call. Stripe → hosted page redirect;
+  // Razorpay → embedded checkout modal opened in-page. Either way the
+  // webhook is the source of truth for status progression, so a user
+  // closing the modal mid-payment can't leave the order in a half-state.
+  const payViaGateway = async (phase, gateway) => {
+    setPickerPhase(null);
     setActionLoading(phase === "advance" ? "accept" : "approve");
     setError("");
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      // Status stays at 'quoted' while we hand off to Stripe. If the user
-      // cancels in the Checkout page the order remains 'quoted' and they
-      // can try again (or counter / decline). Only the webhook's successful
-      // payment event flips the order forward — preventing "accepted but
-      // never paid" zombie orders.
-      const res = await fetch(`${supabaseUrl}/functions/v1/service-payment-checkout`, {
+      const endpoint =
+        gateway === "razorpay" ? "razorpay-service-checkout" : "service-payment-checkout";
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -189,8 +228,41 @@ export default function ServiceOrderDetailPage() {
       });
       const data = await res.json();
       if (data?.error) throw new Error(data.error);
-      if (!data?.url) throw new Error("No checkout URL returned");
-      window.location.href = data.url; // hand off to Stripe
+
+      if (gateway === "stripe") {
+        if (!data?.url) throw new Error("No checkout URL returned");
+        window.location.href = data.url;
+        return;
+      }
+
+      // Razorpay path — open the embedded Checkout against the order.
+      await loadRazorpayCheckout();
+      if (typeof window === "undefined" || !window.Razorpay) {
+        throw new Error("Razorpay Checkout failed to load — check your network.");
+      }
+      const rzp = new window.Razorpay({
+        key: data.key_id,
+        order_id: data.order_id,
+        amount: data.amount_paise,
+        currency: data.currency || "INR",
+        name: "RGossips",
+        description: data.line_label || (phase === "advance" ? "Service advance" : "Service final"),
+        theme: { color: "#5851DB" },
+        handler: () => {
+          // Payment captured. The razorpay-webhook handler will flip the
+          // order's status; we hit the URL the Stripe path uses so the
+          // page picks up the payment-success state on next render.
+          window.location.href = `/influencer/services/orders/${id}?paid=${phase}`;
+        },
+        modal: {
+          ondismiss: () => setActionLoading(null),
+        },
+      });
+      rzp.on("payment.failed", (resp) => {
+        setError(resp?.error?.description || "Payment failed. Please try again.");
+        setActionLoading(null);
+      });
+      rzp.open();
     } catch (e) {
       setError(e.message || "Failed to start payment");
       setActionLoading(null);
@@ -489,7 +561,7 @@ export default function ServiceOrderDetailPage() {
                 {mode === null && (
                   <>
                     <button
-                      onClick={() => payViaStripe("advance")}
+                      onClick={() => openPayPicker("advance")}
                       disabled={!!actionLoading}
                       className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
                     >
@@ -601,7 +673,7 @@ export default function ServiceOrderDetailPage() {
             {order.status === "draft_ready" && (
               <DraftReviewSidebar
                 order={order}
-                payViaStripe={payViaStripe}
+                openPayPicker={openPayPicker}
                 actionLoading={actionLoading}
                 error={error}
                 mode={mode}
@@ -645,6 +717,15 @@ export default function ServiceOrderDetailPage() {
           </aside>
         </div>
       </div>
+
+      {pickerPhase && (
+        <GatewayPickerModal
+          title={pickerPhase === "advance" ? "Pay your advance" : "Pay the final balance"}
+          subtitle="Choose a payment method to continue"
+          onCancel={() => setPickerPhase(null)}
+          onPick={(g) => payViaGateway(pickerPhase, g)}
+        />
+      )}
     </div>
   );
 }
@@ -755,7 +836,7 @@ function DraftPreviewBlock({ order }) {
 
 function DraftReviewSidebar({
   order,
-  payViaStripe,
+  openPayPicker,
   actionLoading,
   error,
   mode,
@@ -793,7 +874,7 @@ function DraftReviewSidebar({
       </div>
 
       <button
-        onClick={() => payViaStripe("final")}
+        onClick={() => openPayPicker("final")}
         disabled={!!actionLoading}
         className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
       >

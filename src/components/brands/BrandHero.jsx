@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
+import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
+import InfoBadge from "@/components/brands/InfoBadge";
 
 const baseBrands = [
   "https://lh3.googleusercontent.com/d/16kk2EEAMw_Y0D3Jo4BCUKAwF2rE8ugLG",
@@ -19,15 +21,22 @@ const BrandHero = () => {
   const router = useRouter();
   const { profile } = useAuth();
   const { trust } = useBrandTrustScore();
+  const [trustInfoOpen, setTrustInfoOpen] = useState(false);
 
   const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
   const logoUrl = profile?.logo_url;
   const initials = brandName.charAt(0).toUpperCase();
 
-  const trustScore = trust?.score || 0;
-  const trustBand = trust?.band || "LOW";
+  const trustMin = trust?.scaleMin ?? 300;
+  const trustMax = trust?.scaleMax ?? 900;
+  const trustScore = trust?.score || trustMin;
+  const trustBand = trust?.band || "Poor";
   const trustBorder =
-    trustBand === "HIGH" ? "border-emerald-500" : trustBand === "GOOD" ? "border-indigo-500" : "border-amber-500";
+    trustBand === "Excellent" ? "border-emerald-500" :
+    trustBand === "Very Good" ? "border-blue-500" :
+    trustBand === "Good"      ? "border-indigo-500" :
+    trustBand === "Fair"      ? "border-amber-500" :
+                                "border-rose-500";
 
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
@@ -156,26 +165,43 @@ const BrandHero = () => {
             {/* Trust Score Card */}
             <div className="bg-black/80 border border-white/10 p-5 rounded-2xl w-[400px] flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 uppercase">
-                  Your Trust Score
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-gray-400 uppercase">
+                    Your Trust Score
+                  </p>
+                  <button
+                    onClick={() => setTrustInfoOpen(true)}
+                    className="cursor-pointer hover:scale-110 transition-transform inline-flex"
+                    aria-label="How is the trust score calculated?"
+                    title="How is this calculated?"
+                  >
+                    <InfoBadge size={16} />
+                  </button>
+                </div>
 
                 <div className="flex items-end gap-2 mt-1">
                   <span className="text-2xl font-bold">{trustScore}</span>
                   <span className="text-gray-400 text-xs font-semibold">
-                    /1000
+                    /{trustMax}
                   </span>
                 </div>
+                {trust?.coldStart && (
+                  <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">
+                    Capped at {trust.coldStartCap} · 3 campaigns to lift
+                  </p>
+                )}
               </div>
 
               {/* Circle indicator */}
-              <div className={`w-14 h-14 rounded-full border-4 ${trustBorder} flex items-center justify-center text-xs font-bold`}>
+              <div className={`w-14 h-14 rounded-full border-4 ${trustBorder} flex items-center justify-center text-[10px] font-bold text-center leading-tight px-1`}>
                 {trustBand}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <TrustScoreInfoModal open={trustInfoOpen} onClose={() => setTrustInfoOpen(false)} />
     </section>
   );
 };

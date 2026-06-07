@@ -29,6 +29,8 @@ import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import BrandAccountActionsModal from "@/components/brands/BrandAccountActionsModal";
+import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
+import InfoBadge from "@/components/brands/InfoBadge";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
@@ -400,18 +402,18 @@ const BrandProfile = () => {
                 onClick={() => setTrustInfoOpen((v) => !v)}
                 aria-label="How is the trust score calculated?"
                 title="How is this calculated?"
-                className="text-gray-300 hover:text-[#5851DB] transition-colors cursor-pointer"
+                className="cursor-pointer hover:scale-110 transition-transform inline-flex"
               >
-                <Info size={13} />
+                <InfoBadge size={18} />
               </button>
             </div>
             <span
               className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                trust.band === "HIGH"
-                  ? "bg-emerald-50 text-emerald-600"
-                  : trust.band === "GOOD"
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "bg-amber-50 text-amber-600"
+                trust.band === "Excellent" ? "bg-emerald-50 text-emerald-600" :
+                trust.band === "Very Good" ? "bg-blue-50 text-blue-600" :
+                trust.band === "Good"      ? "bg-indigo-50 text-indigo-600" :
+                trust.band === "Fair"      ? "bg-amber-50 text-amber-600" :
+                                             "bg-rose-50 text-rose-600"
               }`}
             >
               {trust.band}
@@ -419,88 +421,20 @@ const BrandProfile = () => {
           </div>
           <p className="text-2xl font-black text-gray-900 mb-1">
             {trust.score}
-            <span className="text-sm font-bold text-gray-400 ml-1">/1000</span>
+            <span className="text-sm font-bold text-gray-400 ml-1">/{trust.scaleMax ?? 900}</span>
           </p>
-          <p className="text-[11px] text-gray-400 leading-snug">
-            A blend of influencer ratings, campaign delivery and profile
-            completeness. Tap the{" "}
-            <Info size={11} className="inline -translate-y-px" /> to see the
-            breakdown.
-          </p>
-
-          {trustInfoOpen && (
-            <>
-              {/* Click-away layer so the popover dismisses on an outside tap. */}
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setTrustInfoOpen(false)}
-              />
-              <div className="absolute left-4 right-4 top-16 z-50 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-xs font-black text-gray-800">
-                    How your trust score is calculated
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setTrustInfoOpen(false)}
-                    className="p-1 -mr-1 cursor-pointer"
-                    aria-label="Close"
-                  >
-                    <X size={14} className="text-gray-400" />
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-gray-400 leading-relaxed mb-3">
-                  Your score (0–1000) is a weighted blend of three signals:
-                </p>
-
-                <div className="space-y-3">
-                  <TrustComponent
-                    label="Influencer ratings"
-                    weight="50%"
-                    percent={trust.breakdown.influencerRating.percent}
-                    detail={
-                      trust.breakdown.influencerRating.count > 0
-                        ? `avg ${trust.breakdown.influencerRating.avgRating.toFixed(
-                            1
-                          )}★ over ${trust.breakdown.influencerRating.count} rating${
-                            trust.breakdown.influencerRating.count === 1 ? "" : "s"
-                          }${
-                            trust.breakdown.influencerRating.briefCount > 0
-                              ? ` · brief ${trust.breakdown.influencerRating.avgBriefClarity.toFixed(
-                                  1
-                                )}★`
-                              : ""
-                          }${
-                            trust.breakdown.influencerRating.fairnessCount > 0
-                              ? ` · fairness ${trust.breakdown.influencerRating.avgFairness.toFixed(
-                                  1
-                                )}★`
-                              : ""
-                          }`
-                        : "No influencer ratings yet"
-                    }
-                  />
-                  <TrustComponent
-                    label="Campaigns delivered"
-                    weight="25%"
-                    percent={trust.breakdown.campaignDelivery.percent}
-                    detail={
-                      trust.breakdown.campaignDelivery.total > 0
-                        ? `${trust.breakdown.campaignDelivery.completedCount} of ${trust.breakdown.campaignDelivery.total} campaigns completed`
-                        : "No completed campaigns yet"
-                    }
-                  />
-                  <TrustComponent
-                    label="Profile completeness"
-                    weight="25%"
-                    percent={trust.breakdown.profileCompleteness.percent}
-                    detail="GST / PAN, contact email and categories"
-                  />
-                </div>
-              </div>
-            </>
+          {trust.coldStart && (
+            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
+              New brand · capped at {trust.coldStartCap} until {trust.coldStartThreshold} campaigns complete
+            </p>
           )}
+          <p className="text-[11px] text-gray-400 leading-snug">
+            A weighted blend of five pillars — influencer reviews, campaign
+            execution, verification, communication, and platform engagement.
+            Tap the <Info size={11} className="inline -translate-y-px" /> to see the breakdown.
+          </p>
+
+          <TrustScoreInfoModal open={trustInfoOpen} onClose={() => setTrustInfoOpen(false)} />
         </div>
       </div>
 

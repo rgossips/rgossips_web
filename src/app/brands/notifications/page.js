@@ -14,9 +14,10 @@ import {
   RotateCcw,
   XCircle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 
 const ICON_MAP = {
   welcome: <UserPlus className="w-5 h-5 text-purple-500" />,
@@ -72,6 +73,7 @@ const getText = (notif) => parseBody(notif).text;
 
 export default function BrandNotificationsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
@@ -106,7 +108,8 @@ export default function BrandNotificationsPage() {
   };
 
   const formatTime = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseUtc(dateStr);
+    if (!date) return "";
     const now = new Date();
     const diffMs = now - date;
     const diffMin = Math.floor(diffMs / 60000);
@@ -164,7 +167,7 @@ export default function BrandNotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              onClick={() => router.push(getLink(item))}
+              onClick={() => navigateOrRefresh(router, pathname, getLink(item))}
               className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"

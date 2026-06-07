@@ -133,6 +133,9 @@ Deno.serve(async (req) => {
         brandInstagram: brand.instagram,
         description: body || "",
         daysLeft,
+        // Client carousels render a live countdown — needs the raw ISO
+        // timestamp, not just daysLeft.
+        applicationDeadline: c.application_deadline || c.campaign_end_date || null,
         priceType: m.compensation_type || "Brand Collab",
       };
     });

@@ -412,6 +412,28 @@ async function handleServicePayment(session: Stripe.Checkout.Session) {
       }),
       is_read: false,
     });
+    // Admin fan-out — so ops knows to start work and upload the draft URL.
+    try {
+      const { data: admins } = await supabase.from("admin_profiles").select("id");
+      if (Array.isArray(admins) && admins.length > 0) {
+        await supabase.from("notifications").insert(
+          admins.map((a: { id: string }) => ({
+            user_id: a.id,
+            type: "service_advance_paid_admin",
+            priority: "high",
+            title: "Advance paid — upload the draft",
+            body: JSON.stringify({
+              text: `${order.service_title}: advance of ₹${amountRupees.toLocaleString("en-IN")} received. Start work and deliver the draft URL.`,
+              link: `/dashboard/quote-requests/${orderId}`,
+              orderId,
+            }),
+            is_read: false,
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("admin advance-paid fan-out failed:", e);
+    }
   } else if (phase === "final") {
     if (order.final_paid) return;
     const { error } = await supabase
@@ -445,6 +467,29 @@ async function handleServicePayment(session: Stripe.Checkout.Session) {
       }),
       is_read: false,
     });
+    // Admin fan-out — final payment cleared, ops needs to upload the
+    // final deliverable files via DeliverFinalForm.
+    try {
+      const { data: admins } = await supabase.from("admin_profiles").select("id");
+      if (Array.isArray(admins) && admins.length > 0) {
+        await supabase.from("notifications").insert(
+          admins.map((a: { id: string }) => ({
+            user_id: a.id,
+            type: "service_final_paid_admin",
+            priority: "high",
+            title: "Final paid — deliver the files",
+            body: JSON.stringify({
+              text: `${order.service_title}: final ₹${amountRupees.toLocaleString("en-IN")} received. Upload the deliverable files to complete the order.`,
+              link: `/dashboard/quote-requests/${orderId}`,
+              orderId,
+            }),
+            is_read: false,
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("admin final-paid fan-out failed:", e);
+    }
   }
 }
 

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import SharedGatewayPickerModal from "@/components/GatewayPickerModal";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -575,9 +576,16 @@ export default function PricingPage() {
       </div>
 
       {gatewayPickerPlan && (
-        <GatewayPickerModal
-          planId={gatewayPickerPlan}
-          planLabel={PLAN_META[gatewayPickerPlan]?.label || gatewayPickerPlan}
+        <SharedGatewayPickerModal
+          title={
+            <>
+              Pay for{" "}
+              <span className="text-[#5851DB]">
+                {PLAN_META[gatewayPickerPlan]?.label || gatewayPickerPlan}
+              </span>
+            </>
+          }
+          subtitle="Pick a payment method to continue"
           onCancel={() => setGatewayPickerPlan(null)}
           onPick={(g) => handleUpgrade(gatewayPickerPlan, g)}
         />

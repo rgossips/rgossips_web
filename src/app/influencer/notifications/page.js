@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Bell, CheckCircle, Award, UserPlus, FileText, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 
 // Mirror of the DB trigger in migration 014 — keeps this page in sync with
 // whatever the user toggled off in Notification Settings, even for rows that
@@ -32,6 +33,12 @@ const getNotifLink = (notif) => {
   try {
     const data = JSON.parse(notif.body);
     if (data?.link) return data.link;
+    // Any app_* notification (work accepted, revision requested, escrow
+    // funded, etc.) is tied to a specific campaign — route to its offer
+    // page whenever the body carries a campaignId.
+    if ((notif.type?.startsWith("app_") || notif.type === "escrow_funded") && data?.campaignId) {
+      return `/influencer/offers/${data.campaignId}`;
+    }
     if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
       if (data?.campaignId) return `/influencer/offers/${data.campaignId}`;
     }
@@ -40,6 +47,9 @@ const getNotifLink = (notif) => {
   if (notif.type === "profile_incomplete") return "/influencer/profile";
   if (notif.type === "campaign_status" || notif.type === "campaign_approved") return "/influencer/campaigns";
   if (notif.type?.startsWith("service_")) return "/influencer/services/orders";
+  // app_* notifications without a campaignId in body → land on the
+  // influencer's applied-campaigns list as the next-best destination.
+  if (notif.type?.startsWith("app_")) return "/influencer/campaigns";
   return "/influencer";
 };
 
@@ -61,6 +71,7 @@ const BG_MAP = {
 
 export default function NotificationsPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
@@ -120,7 +131,8 @@ export default function NotificationsPage() {
   };
 
   const formatTime = (dateStr) => {
-    const date = new Date(dateStr);
+    const date = parseUtc(dateStr);
+    if (!date) return "";
     const now = new Date();
     const diffMs = now - date;
     const diffMin = Math.floor(diffMs / 60000);
@@ -176,7 +188,7 @@ export default function NotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => router.push(getNotifLink(item))}
+              onClick={() => navigateOrRefresh(router, pathname, getNotifLink(item))}
               className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"

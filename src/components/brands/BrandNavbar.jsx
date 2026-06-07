@@ -16,9 +16,10 @@ import {
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 
 const NOTIF_ICON = {
@@ -76,8 +77,9 @@ const getNotifLink = (n) => {
 const getNotifText = (n) => parseBody(n).text;
 
 const formatTime = (dateStr) => {
-  if (!dateStr) return "";
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const date = parseUtc(dateStr);
+  if (!date) return "";
+  const diff = Date.now() - date.getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return "now";
   if (min < 60) return `${min}m`;
@@ -90,6 +92,7 @@ const formatTime = (dateStr) => {
 export function BrandNavbar() {
   const { user, profile } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
@@ -142,7 +145,7 @@ export function BrandNavbar() {
 
   const handleNotifClick = (n) => {
     setShowPopover(false);
-    router.push(getNotifLink(n));
+    navigateOrRefresh(router, pathname, getNotifLink(n));
   };
 
   const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";

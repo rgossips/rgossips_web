@@ -681,7 +681,7 @@ export default function CampaignDetailsPage() {
         const supabase = createClient();
         const { data } = await supabase
           .from("campaign_ratings")
-          .select("target_rating, brief_clarity, fairness")
+          .select("target_rating, brief_clarity, fairness, feedback_quality")
           .eq("application_id", campaign.applicationId)
           .eq("rater_role", "influencer")
           .maybeSingle();
@@ -835,8 +835,8 @@ export default function CampaignDetailsPage() {
                       ))}
                     </div>
                   </div>
-                  {(myRating.brief_clarity != null || myRating.fairness != null) && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/70 grid grid-cols-2 gap-3 text-[11px] text-slate-600">
+                  {(myRating.brief_clarity != null || myRating.fairness != null || myRating.feedback_quality != null) && (
+                    <div className="mt-3 pt-3 border-t border-amber-200/70 grid grid-cols-3 gap-3 text-[11px] text-slate-600">
                       {myRating.brief_clarity != null && (
                         <div>
                           <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Brief clarity</p>
@@ -847,6 +847,12 @@ export default function CampaignDetailsPage() {
                         <div>
                           <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Fairness</p>
                           <p className="font-bold text-slate-800">{myRating.fairness}/5</p>
+                        </div>
+                      )}
+                      {myRating.feedback_quality != null && (
+                        <div>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Feedback</p>
+                          <p className="font-bold text-slate-800">{myRating.feedback_quality}/5</p>
                         </div>
                       )}
                     </div>
@@ -935,8 +941,13 @@ export default function CampaignDetailsPage() {
             },
             {
               key: "fairness",
-              label: "Fairness",
-              helper: "Were revisions and rejections reasonable?",
+              label: "Negotiation fairness",
+              helper: "Were revisions, rejections and rate negotiations reasonable?",
+            },
+            {
+              key: "feedback_quality",
+              label: "Feedback quality",
+              helper: "Was the brand's feedback specific and actionable?",
             },
           ]}
           primaryCta="Submit Rating"

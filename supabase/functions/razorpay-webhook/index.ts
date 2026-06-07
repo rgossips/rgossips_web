@@ -341,6 +341,330 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
   }
 }
 
+// ── RazorpayX payout handler ───────────────────────────────────────────
+// Maps payout.processed → application.status='completed', payout.failed /
+// payout.reversed → payout_status='failed' for admin retry. We key on
+// notes.application_id (set by payouts-cron / admin-escrow-resolve) —
+// reference_id is also the bare application UUID but notes is the more
+// robust contract since RazorpayX trims/normalises reference_id.
+async function handlePayoutEvent(type: string, payout: any) {
+  if (!payout) return { received: true, skipped: "no payout payload" };
+  // Prefer the application_id stored in notes; fall back to a UUID-
+  // shaped reference_id for older payouts that pre-dated this change.
+  const applicationId =
+    payout?.notes?.application_id ||
+    (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(payout.reference_id || ""))
+      ? String(payout.reference_id)
+      : null);
+  if (!applicationId) return { received: true, skipped: "no application id on payout" };
+
+  const { data: app } = await supabase
+    .from("campaign_applications")
+    .select("id, influencer_id, escrow_amount, campaign_id, campaigns(title)")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (!app) return { received: true, skipped: "application not found" };
+
+  const utr = String(payout.utr || payout.fund_transfer?.utr || "");
+  const nowIso = new Date().toISOString();
+
+  if (type === "payout.processed") {
+    await supabase
+      .from("campaign_applications")
+      .update({
+        status: "completed",
+        payout_status: "processed",
+        payout_utr: utr || null,
+        payout_processed_at: nowIso,
+        escrow_status: "released",
+      })
+      .eq("id", applicationId);
+
+    // FINAL_ACCEPTED — record the transition so the trust-score
+    // cold-start cap counter and the P2 funnel see it.
+    try {
+      await supabase.from("application_status_history").insert({
+        application_id: applicationId,
+        from_status: "payment",
+        to_status: "completed",
+        changed_by_role: "system",
+        reason: utr ? `Payout processed · UTR ${utr}` : "Payout processed",
+      });
+    } catch (e) {
+      console.error("status-history insert failed:", e);
+    }
+
+    const amountInr = Math.round((app.escrow_amount || 0) / 100);
+    const campaignTitle = (app as any).campaigns?.title || "your campaign";
+    await supabase.from("notifications").insert({
+      user_id: app.influencer_id,
+      type: "payout_processed",
+      title: "Payment received",
+      body: JSON.stringify({
+        text: `₹${amountInr.toLocaleString("en-IN")} for "${campaignTitle}" has been transferred${utr ? ` (UTR ${utr})` : ""}.`,
+        link: `/influencer/profile/payments`,
+        applicationId,
+      }),
+      is_read: false,
+    });
+
+    // Receipt email — best-effort, mirrors the structure of escrow-funded.
+    try {
+      const { data: creatorAuth } = await supabase.auth.admin.getUserById(app.influencer_id);
+      const creatorEmail = creatorAuth?.user?.email;
+      if (creatorEmail) {
+        await invokeSendEmail({
+          to: creatorEmail,
+          subject: `₹${amountInr.toLocaleString("en-IN")} received for "${campaignTitle}"`,
+          html: renderEmailHtml({
+            title: "Your payout is in your account",
+            body: `<p>Your payout of <strong>₹${amountInr.toLocaleString("en-IN")}</strong> for the campaign "<strong>${campaignTitle}</strong>" has been transferred.</p>
+                   ${utr ? `<p><strong>UTR:</strong> ${utr}</p>` : ""}
+                   <p>It should reflect in your account within a few minutes (UPI) or a few hours depending on your bank.</p>`,
+            ctaLabel: "View in Payments",
+            ctaUrl: "https://rgossips.com/influencer/profile/payments",
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("payout receipt email failed:", e);
+    }
+
+    return { received: true, applicationId, status: "processed" };
+  }
+
+  if (type === "payout.failed" || type === "payout.reversed") {
+    const reason =
+      payout.failure_reason ||
+      payout.status_details?.description ||
+      payout.error?.description ||
+      "Payout failed";
+    await supabase
+      .from("campaign_applications")
+      .update({
+        payout_status: type === "payout.reversed" ? "reversed" : "failed",
+        payout_failure_reason: String(reason).slice(0, 500),
+      })
+      .eq("id", applicationId);
+
+    // Notify the creator AND admins so the queue surfaces the failure.
+    await supabase.from("notifications").insert({
+      user_id: app.influencer_id,
+      type: "payout_failed",
+      title: "Payout failed — please verify your details",
+      body: JSON.stringify({
+        text: `Your payout for this campaign failed: ${reason}. Re-check the payout details in your profile, or contact support.`,
+        link: `/influencer/profile/payments`,
+        applicationId,
+      }),
+      is_read: false,
+    });
+    const { data: admins } = await supabase.from("admin_profiles").select("id");
+    if (Array.isArray(admins) && admins.length) {
+      await supabase.from("notifications").insert(
+        admins.map((a: { id: string }) => ({
+          user_id: a.id,
+          type: "payout_failed_admin",
+          priority: "high",
+          title: "Payout failed",
+          body: JSON.stringify({
+            text: `Payout for application ${applicationId} failed: ${reason}`,
+            link: `/dashboard/disputes/${applicationId}`,
+            applicationId,
+          }),
+          is_read: false,
+        }))
+      );
+    }
+    return { received: true, applicationId, status: "failed", reason };
+  }
+
+  return { received: true, skipped: `unhandled payout event ${type}` };
+}
+
+// ── Razorpay service-order payment handler ─────────────────────────────
+// Mirrors stripe-webhook's handleServicePayment. Idempotent: re-checks
+// advance_paid / final_paid before mutating so a webhook retry can't
+// double-progress an order.
+async function handleServicePaymentCaptured(payment: any) {
+  const orderId = String(payment?.notes?.order_id || "");
+  const phase = String(payment?.notes?.phase || "advance");
+  if (!orderId) return { received: true, skipped: "service_payment: no order_id" };
+
+  const { data: order, error: oErr } = await supabase
+    .from("service_orders")
+    .select("id, user_id, status, service_title, advance_paid, final_paid")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (oErr || !order) {
+    return { received: true, skipped: `service_payment: order ${orderId} not found` };
+  }
+
+  const now = new Date().toISOString();
+  const paymentId = String(payment?.id || "");
+  const amountPaise = Number(payment?.amount || 0);
+  const amountRupees = Math.round(amountPaise / 100);
+
+  if (phase === "advance") {
+    if (order.advance_paid) return { received: true, skipped: "advance already paid" };
+    const { error } = await supabase
+      .from("service_orders")
+      .update({
+        advance_paid: true,
+        advance_paid_at: now,
+        // Same column shape as the Stripe path — we just stamp the
+        // razorpay payment id where stripe would have stamped its
+        // session id. Down-stream readers don't care which gateway
+        // produced the value.
+        advance_stripe_session_id: paymentId,
+        status: "in_progress",
+        updated_at: now,
+      })
+      .eq("id", orderId);
+    if (error) {
+      console.error("Advance payment update failed:", error.message);
+      return { received: true, error: error.message };
+    }
+    await supabase.from("service_order_events").insert({
+      order_id: orderId,
+      type: "advance_paid",
+      label: `Quote accepted & advance paid (₹${amountRupees.toLocaleString("en-IN")})`,
+      meta: { amount: amountRupees, payment_id: paymentId, gateway: "razorpay" },
+    });
+    await supabase.from("notifications").insert({
+      user_id: order.user_id,
+      type: "service_advance_paid",
+      title: "Advance received — work begins",
+      body: JSON.stringify({
+        text: `${order.service_title}: advance received, our team is on it.`,
+        link: `/influencer/services/orders/${orderId}`,
+        orderId,
+      }),
+      is_read: false,
+    });
+    // Admin fan-out — so ops knows to start work and upload the draft URL.
+    try {
+      const { data: admins } = await supabase.from("admin_profiles").select("id");
+      if (Array.isArray(admins) && admins.length > 0) {
+        await supabase.from("notifications").insert(
+          admins.map((a: { id: string }) => ({
+            user_id: a.id,
+            type: "service_advance_paid_admin",
+            priority: "high",
+            title: "Advance paid — upload the draft",
+            body: JSON.stringify({
+              text: `${order.service_title}: advance of ₹${amountRupees.toLocaleString("en-IN")} received. Start work and deliver the draft URL.`,
+              link: `/dashboard/quote-requests/${orderId}`,
+              orderId,
+            }),
+            is_read: false,
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("admin advance-paid fan-out failed:", e);
+    }
+  } else if (phase === "final") {
+    if (order.final_paid) return { received: true, skipped: "final already paid" };
+    const { error } = await supabase
+      .from("service_orders")
+      .update({
+        final_paid: true,
+        final_paid_at: now,
+        final_stripe_session_id: paymentId,
+        status: "paid_final",
+        updated_at: now,
+      })
+      .eq("id", orderId);
+    if (error) {
+      console.error("Final payment update failed:", error.message);
+      return { received: true, error: error.message };
+    }
+    await supabase.from("service_order_events").insert({
+      order_id: orderId,
+      type: "final_paid",
+      label: `Final payment received (₹${amountRupees.toLocaleString("en-IN")})`,
+      meta: { amount: amountRupees, payment_id: paymentId, gateway: "razorpay" },
+    });
+    await supabase.from("notifications").insert({
+      user_id: order.user_id,
+      type: "service_final_paid",
+      title: "Final payment received",
+      body: JSON.stringify({
+        text: `${order.service_title}: we'll deliver your final files shortly.`,
+        link: `/influencer/services/orders/${orderId}`,
+        orderId,
+      }),
+      is_read: false,
+    });
+    // Admin fan-out — final payment cleared, ops needs to upload the
+    // final deliverable files via DeliverFinalForm.
+    try {
+      const { data: admins } = await supabase.from("admin_profiles").select("id");
+      if (Array.isArray(admins) && admins.length > 0) {
+        await supabase.from("notifications").insert(
+          admins.map((a: { id: string }) => ({
+            user_id: a.id,
+            type: "service_final_paid_admin",
+            priority: "high",
+            title: "Final paid — deliver the files",
+            body: JSON.stringify({
+              text: `${order.service_title}: final ₹${amountRupees.toLocaleString("en-IN")} received. Upload the deliverable files to complete the order.`,
+              link: `/dashboard/quote-requests/${orderId}`,
+              orderId,
+            }),
+            is_read: false,
+          }))
+        );
+      }
+    } catch (e) {
+      console.error("admin final-paid fan-out failed:", e);
+    }
+  }
+
+  return { received: true, orderId, phase, gateway: "razorpay" };
+}
+
+// ── RazorpayX fund-account validation handler ──────────────────────────
+async function handleValidationEvent(type: string, validation: any) {
+  if (!validation) return { received: true, skipped: "no validation payload" };
+  const fundAccountId = validation.fund_account?.id;
+  if (!fundAccountId) return { received: true, skipped: "no fund_account id" };
+
+  const status = String(validation.status || "");
+  const ok = status === "completed" || status === "active";
+  const failed = status === "failed";
+  const updates: Record<string, unknown> = {};
+  if (ok) {
+    updates.validation_status = "success";
+    updates.validated_at = new Date().toISOString();
+  } else if (failed) {
+    updates.validation_status = "failed";
+    updates.validation_failure_reason =
+      validation.results?.account_status || validation.results?.registered_name || "Validation failed";
+  }
+  if (Object.keys(updates).length === 0) {
+    return { received: true, skipped: `validation in state ${status}` };
+  }
+
+  const { data: updatedRows } = await supabase
+    .from("payment_methods")
+    .update(updates)
+    .eq("razorpay_fund_account_id", fundAccountId)
+    .select("user_id");
+
+  // If validation just succeeded, auto-resume any waiting payouts for
+  // this user — same logic as register-payout-method's resume step.
+  if (ok && Array.isArray(updatedRows) && updatedRows[0]?.user_id) {
+    await supabase
+      .from("campaign_applications")
+      .update({ payout_status: "scheduled" })
+      .eq("influencer_id", updatedRows[0].user_id)
+      .eq("payout_status", "pending_creator_info");
+  }
+  return { received: true, fundAccountId, status };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -369,6 +693,50 @@ Deno.serve(async (req) => {
 
   try {
     const type = String(event?.event || "");
+
+    // ── Razorpay Payments: service-order advance / final payments ──────
+    // We branch on notes.kind so this single endpoint serves three
+    // distinct flows: subscriptions, service-order payments, and
+    // RazorpayX payouts. Notes are echoed back exactly as we set them.
+    if (type === "payment.captured") {
+      const payment = event?.payload?.payment?.entity;
+      const kind = String(payment?.notes?.kind || "");
+      if (kind === "service_payment") {
+        const result = await handleServicePaymentCaptured(payment);
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Fall through — other payment.captured events (escrow funding
+      // from brand approve) don't need a webhook flip because the
+      // client-side Razorpay handler callback already calls
+      // update-application-status with the signature.
+    }
+
+    // ── RazorpayX payout events (escrow release leg) ────────────────────
+    // Different payload shape from subscriptions — entity is payload.payout.
+    // Route + return here before the subscription path tries to parse them.
+    if (type.startsWith("payout.")) {
+      const result = await handlePayoutEvent(type, event?.payload?.payout?.entity);
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── RazorpayX fund-account validation events ───────────────────────
+    // Fired async when name-match completes (in prod). Test mode is
+    // synchronous and the result already lives on the row, but we still
+    // accept the webhook idempotently.
+    if (type.startsWith("fund_account.validation.")) {
+      const result = await handleValidationEvent(type, event?.payload?.fund_account?.validation?.entity);
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const sub = event?.payload?.subscription?.entity;
     if (!sub) {
       return new Response(JSON.stringify({ received: true, skipped: "no subscription payload" }), {

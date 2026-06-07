@@ -31,6 +31,31 @@ import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import RatingModal from "@/components/RatingModal";
 
+// Brand-side escrow funding uses the same Razorpay Checkout SDK as the
+// subscription flow. Loaded lazily on first Approve click to keep the
+// initial bundle lean.
+const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+function loadRazorpayCheckout() {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (window.Razorpay) return Promise.resolve();
+  const existing = document.querySelector(`script[src="${RAZORPAY_CHECKOUT_SRC}"]`);
+  if (existing) {
+    return new Promise((resolve) => {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => resolve());
+    });
+  }
+  return new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = RAZORPAY_CHECKOUT_SRC;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => resolve();
+    document.body.appendChild(s);
+  });
+}
+
 const statusStyles = {
   draft: "bg-gray-100 text-gray-700 border-gray-200",
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -484,14 +509,106 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     }
   };
 
-  const handleApprove = () => {
+  // Approve = fund escrow + flip status to approved. Flow:
+  //   1. escrow-fund creates a Razorpay Order for the agreed rate.
+  //   2. We open Razorpay Checkout against that order. The brand pays.
+  //   3. On payment success, Razorpay returns { payment_id, order_id,
+  //      signature } via the handler callback.
+  //   4. We pass those into update-application-status (status='approved'),
+  //      which verifies the signature server-side and flips
+  //      escrow_status='held' atomically with the status change.
+  // If the brand dismisses Checkout, the application stays in 'pending'.
+  const handleApprove = async () => {
     const rate = parseInt(payAmount || "0", 10);
     if (!rate || rate <= 0) return alert("Enter an agreed rate first");
-    updateStatus("approved", { agreedRate: rate });
+    setLoading(true);
+    startLoading("Preparing escrow…");
+    try {
+      const { data: fund, error: fundErr } = await supabase.functions.invoke("escrow-fund", {
+        body: { applicationId: app.id, agreedRate: rate },
+      });
+      if (fundErr || fund?.error) {
+        alert(fundErr?.message || fund?.error || "Could not create escrow");
+        return;
+      }
+      await loadRazorpayCheckout();
+      if (typeof window === "undefined" || !window.Razorpay) {
+        alert("Razorpay Checkout failed to load. Check your network and try again.");
+        return;
+      }
+
+      stopLoading();
+      const rzp = new window.Razorpay({
+        key: fund.key_id,
+        order_id: fund.order_id,
+        amount: fund.amount_paise,
+        currency: fund.currency || "INR",
+        name: "RGossips",
+        description: `Escrow for ${displayName}`,
+        theme: { color: "#5851DB" },
+        handler: async (response) => {
+          // Payment captured. Confirm to the server so escrow flips to held.
+          startLoading("Confirming payment…");
+          setLoading(true);
+          try {
+            await updateStatus("approved", {
+              agreedRate: rate,
+              escrowPaymentId: response.razorpay_payment_id,
+              escrowOrderId: response.razorpay_order_id,
+              escrowSignature: response.razorpay_signature,
+            });
+          } finally {
+            setLoading(false);
+            stopLoading();
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            stopLoading();
+          },
+        },
+      });
+      rzp.on("payment.failed", (resp) => {
+        console.error("Escrow payment failed:", resp?.error);
+        alert(resp?.error?.description || "Payment failed. Please try again.");
+        setLoading(false);
+        stopLoading();
+      });
+      rzp.open();
+    } catch (e) {
+      console.error("handleApprove failed:", e);
+      alert(e?.message || "Something went wrong");
+      setLoading(false);
+      stopLoading();
+    }
   };
 
   const handleReject = () => {
     updateStatus("rejected", { rejectionReason: reason || undefined });
+  };
+
+  // "Accept & Release Payment" — talks to escrow-release rather than
+  // update-application-status because the release leg has more state to
+  // manage (plan-tier delay, pending_creator_info routing, notifications,
+  // escrow_status flip). The escrow-release function takes over once the
+  // brand confirms the live submission is good.
+  const releaseEscrow = async () => {
+    setLoading(true);
+    startLoading("Releasing payment…");
+    try {
+      const { data, error } = await supabase.functions.invoke("escrow-release", {
+        body: { applicationId: app.id },
+      });
+      if (error || data?.error) {
+        alert(error?.message || data?.error || "Could not release payment");
+        return;
+      }
+      onRefresh?.();
+    } finally {
+      setLoading(false);
+      stopLoading();
+    }
   };
 
   const handleRevision = () => {
@@ -543,6 +660,12 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           </p>
         </div>
         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{st.label}</span>
+        {app.escrow_status === "held" && app.escrow_amount != null && (
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 text-[10px] font-bold shrink-0">
+            <IndianRupee size={9} />
+            {Math.round(app.escrow_amount / 100).toLocaleString("en-IN")} held
+          </span>
+        )}
         {rating && (
           <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold shrink-0">
             <Star size={10} className="fill-amber-400 text-amber-400" />
@@ -799,8 +922,8 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         primaryCta="Submit & Release Payment"
         secondaryCta="Skip & Approve"
         onSaved={(saved) => onRated?.(saved)}
-        onPrimary={() => updateStatus("payment")}
-        onSkip={() => updateStatus("payment")}
+        onPrimary={() => releaseEscrow()}
+        onSkip={() => releaseEscrow()}
       />
     </div>
   );

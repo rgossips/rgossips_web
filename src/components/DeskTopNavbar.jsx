@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import SupportChat from "@/components/SupportChat";
 import { createClient } from "@/utils/supabase/client";
+import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 
 const DESKTOP_NAV_ITEMS = [
   { label: "Home", icon: <Home size={20} />, href: "/influencer" },
@@ -55,6 +56,12 @@ const getNotifLink = (notif) => {
   try {
     const data = JSON.parse(notif.body);
     if (data?.link) return data.link;
+    // Any app_* notification (work accepted, revision requested, escrow
+    // funded, etc.) is tied to a specific campaign — route to its offer
+    // page whenever the body carries a campaignId.
+    if ((notif.type?.startsWith("app_") || notif.type === "escrow_funded") && data?.campaignId) {
+      return `/influencer/offers/${data.campaignId}`;
+    }
     if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
       if (data?.campaignId) return `/influencer/offers/${data.campaignId}`;
     }
@@ -63,6 +70,7 @@ const getNotifLink = (notif) => {
   if (notif.type === "profile_incomplete") return "/influencer/profile";
   if (notif.type === "campaign_status" || notif.type === "campaign_approved") return "/influencer/campaigns";
   if (notif.type?.startsWith("service_")) return "/influencer/services/orders";
+  if (notif.type?.startsWith("app_")) return "/influencer/campaigns";
   return "/influencer";
 };
 
@@ -172,12 +180,13 @@ export const DesktopNavbar = () => {
 
   const handleNotifClick = (notif) => {
     setShowPopover(false);
-    router.push(getNotifLink(notif));
+    navigateOrRefresh(router, pathname, getNotifLink(notif));
   };
 
   const formatTime = (dateStr) => {
-    if (!dateStr) return "";
-    const diff = Date.now() - new Date(dateStr).getTime();
+    const date = parseUtc(dateStr);
+    if (!date) return "";
+    const diff = Date.now() - date.getTime();
     const min = Math.floor(diff / 60000);
     if (min < 1) return "now";
     if (min < 60) return `${min}m`;

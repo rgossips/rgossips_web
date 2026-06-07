@@ -117,6 +117,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Status-history seed row — every later transition derives its SLA
+    // latency from the timestamp difference against the previous row.
+    try {
+      await supabaseAdmin.from("application_status_history").insert({
+        application_id: application.id,
+        from_status: null,
+        to_status: "pending",
+        changed_by: influencerId,
+        changed_by_role: "influencer",
+      });
+    } catch (e) {
+      console.error("status-history seed insert failed:", e);
+    }
+
     // Notify the brand owning this campaign (best-effort — never fail the apply)
     try {
       const { data: campaign } = await supabaseAdmin
