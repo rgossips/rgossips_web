@@ -484,95 +484,11 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* Comparison table — pricing-card-style header on top, alternating
-            row backgrounds, blue checks for included features, orange
-            checks for features that are exclusive to higher tiers. */}
-        <Card className="p-0 rounded-3xl border-0 bg-transparent shadow-none overflow-hidden">
-          <div className="rounded-3xl lg:p-6">
-            <div className="bg-white rounded-2xl overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs min-w-[760px]">
-                  {/* Header row — colored cards per plan, "Pricing Table" label on the left */}
-                  <thead>
-                    <tr className="bg-[#1E2A66]">
-                      <th className="py-7 px-6 text-left align-middle">
-                        <p className="text-white text-lg lg:text-xl font-black tracking-wide uppercase">Pricing Table</p>
-                        <p className="text-blue-200 text-[10px] font-bold mt-1">Compare every feature</p>
-                      </th>
-                      {PLAN_ORDER.map((p) => {
-                        const meta = PLAN_META[p];
-                        const pricing = PLAN_PRICING[p];
-                        const monthlyPrice = pricing.monthly;
-                        return (
-                          <th key={p} className="py-7 px-3 text-center align-middle">
-                            <p className="text-white text-2xl lg:text-3xl font-black tracking-tight">₹{monthlyPrice}</p>
-                            <p className="text-blue-200 text-[10px] font-bold mt-1 uppercase tracking-wider">{meta.label}</p>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-
-                  {/* Body — alternating row backgrounds, check icons per column */}
-                  <tbody>
-                    {FEATURE_GROUPS.map((group, gi) => (
-                      <React.Fragment key={group.title}>
-                        {/* Group header row */}
-                        <tr className="bg-slate-100">
-                          <td colSpan={PLAN_ORDER.length + 1} className="py-2 px-6">
-                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">{group.title}</p>
-                          </td>
-                        </tr>
-                        {group.features.map((f, fi) => {
-                          // Build a quick "premium-only" flag — if only the
-                          // top tier has it, the orange-check styling kicks in.
-                          const valuesByPlan = PLAN_ORDER.map((p) => FEATURE_MATRIX[f.key]?.[p]);
-                          const onlyTopTier = valuesByPlan[2] && !valuesByPlan[0] && !valuesByPlan[1];
-                          const zebra = fi % 2 === 0 ? "bg-white" : "bg-slate-50";
-                          return (
-                            <tr key={f.key} className={zebra}>
-                              <td className="py-4 px-6 text-[13px] font-semibold text-slate-700 uppercase tracking-wide">{f.label}</td>
-                              {PLAN_ORDER.map((p, pi) => {
-                                const v = FEATURE_MATRIX[f.key]?.[p];
-                                const text = formatFeatureValue(v);
-                                const hasValue = v && v !== false;
-                                const accentOrange = onlyTopTier && hasValue;
-                                return (
-                                  <td key={p} className="py-4 px-3 text-center">
-                                    {hasValue ? (
-                                      text === "✓" ? (
-                                        <span
-                                          className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${accentOrange ? "bg-orange-500 text-white" : "bg-[#1E2A66] text-white"}`}
-                                          aria-label="Included"
-                                        >
-                                          <Check size={14} strokeWidth={3} />
-                                        </span>
-                                      ) : (
-                                        <span
-                                          className={`inline-flex items-center justify-center min-w-[64px] px-3 py-1.5 rounded-full text-[11px] font-black ${
-                                            accentOrange ? "bg-orange-100 text-orange-700" : "bg-[#1E2A66] text-white"
-                                          }`}
-                                        >
-                                          {text}
-                                        </span>
-                                      )
-                                    ) : (
-                                      <span className="text-slate-300 text-[18px]">—</span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </Card>
+        {/* Comparison block — redesigned to match the marketing reference:
+            gradient header pill row, lavender category bands, purple
+            check circles + gradient "star" circles for top-tier-only
+            features, and Pro column highlighted as Most Popular. */}
+        <ComparisonTable openGatewayPicker={openGatewayPicker} effectivePlan={effectivePlan} onTrial={onTrial} upgrading={upgrading} />
       </div>
 
       {gatewayPickerPlan && (
@@ -974,5 +890,250 @@ function RazorpayLogo() {
         d="M0 24h7l3.4-13.1L0 24zm38.2-4.27V8.86h-3.3v.86c-.6-.7-1.6-1.13-2.8-1.13-2.9 0-5.27 2.4-5.27 5.36S29.2 19.3 32.1 19.3c1.2 0 2.2-.43 2.8-1.13v.93c-.04.36-.16 1.27-1.06 1.27-.62 0-1.04-.43-1.04-1.13h-3.3c0 1.95 1.5 3.4 4.34 3.4 1.97 0 4.36-1.03 4.36-4.91zm-5.5-3.4c-1.3 0-2.36-1.04-2.36-2.4 0-1.36 1.06-2.4 2.36-2.4 1.3 0 2.36 1.04 2.36 2.4 0 1.36-1.06 2.4-2.36 2.4zm9.18 2.66h-3.3V8.86h3.3v2.3c.5-1.66 1.5-2.46 2.86-2.46h.6v3.2h-.94c-1.6 0-2.52.83-2.52 2.46v4.63zm9.78-10.4c-2.96 0-5.36 2.4-5.36 5.4s2.4 5.4 5.36 5.4 5.36-2.4 5.36-5.4-2.4-5.4-5.36-5.4zm0 7.94c-1.36 0-2.46-1.13-2.46-2.54s1.1-2.54 2.46-2.54 2.46 1.13 2.46 2.54-1.1 2.54-2.46 2.54zm14.97-7.67h-7.94v2.86h4.04l-4.4 4.94v2.33h7.97v-2.86h-4.27l4.6-5.04V8.86zm6.42 10.7h-3.3V8.86h3.3v.86c.6-.7 1.6-1.13 2.8-1.13 2.9 0 5.27 2.4 5.27 5.36s-2.37 5.36-5.27 5.36c-1.2 0-2.2-.43-2.8-1.13v1.38zm2.36-3.27c1.3 0 2.36-1.04 2.36-2.4 0-1.36-1.06-2.4-2.36-2.4-1.3 0-2.36 1.04-2.36 2.4 0 1.36 1.06 2.4 2.36 2.4z"
       />
     </svg>
+  );
+}
+
+// ─── Comparison table ──────────────────────────────────────────────────
+// Marketing-style feature comparison. Same data as the plan cards above
+// (driven by FEATURE_GROUPS + FEATURE_MATRIX in @/lib/plans) but laid
+// out as a wide table — sticky purple→pink gradient header, Pro column
+// highlighted as "Most Popular", lavender category bands, purple check
+// circles for "included" and gradient star-circles for "Elite only".
+function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading }) {
+  const tier = (p) => {
+    if (p === PLAN_IDS.STARTER) return "Starter";
+    if (p === PLAN_IDS.PRO) return "Pro";
+    return "Elite";
+  };
+
+  return (
+    <div className="relative">
+      {/* Soft purple radial glow behind the card. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(40% 30% at 100% 0%, rgba(242,51,157,.10), transparent 60%), radial-gradient(40% 30% at 0% 4%, rgba(144,45,223,.10), transparent 60%)",
+        }}
+      />
+
+      <div className="relative max-w-[1120px] mx-auto">
+        {/* Eyebrow + title */}
+        <div className="text-center mb-7">
+          <p
+            className="text-[12px] font-extrabold tracking-[0.2em] uppercase mb-2.5 bg-gradient-to-r from-[#902ddf] to-[#f2339d] bg-clip-text text-transparent"
+          >
+            Membership Plans
+          </p>
+          <h2 className="text-2xl lg:text-[40px] font-extrabold text-[#241d33] tracking-tight leading-tight">
+            Choose the plan that grows with you
+          </h2>
+          <p className="text-[15px] text-[#7b7490] mt-2 font-medium">
+            Compare every feature across Starter, Pro and Elite.
+          </p>
+        </div>
+
+        {/* Card */}
+        <div
+          className="bg-white rounded-[22px] overflow-hidden"
+          style={{
+            boxShadow:
+              "0 24px 70px -30px rgba(124,58,237,.4), 0 2px 0 rgba(36,29,51,.03)",
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[840px]">
+              {/* ── Header ───────────────────────────────────────────── */}
+              <thead>
+                <tr
+                  style={{
+                    background:
+                      "linear-gradient(135deg,#902ddf 0%,#f2339d 100%)",
+                  }}
+                >
+                  <th className="sticky left-0 z-10 text-left text-white align-middle px-5 py-6 w-[38%] min-w-[280px] bg-gradient-to-br from-[#902ddf] to-[#f2339d]">
+                    <div className="text-[21px] font-extrabold tracking-tight">
+                      Pricing
+                    </div>
+                    <div className="text-[12.5px] font-medium opacity-85 mt-0.5">
+                      Compare every feature
+                    </div>
+                  </th>
+                  {PLAN_ORDER.map((p) => {
+                    const pricing = PLAN_PRICING[p];
+                    const isPop = PLAN_META[p].popular;
+                    return (
+                      <th
+                        key={p}
+                        className={`text-center text-white align-middle px-4 py-6 ${
+                          isPop ? "shadow-[inset_0_-4px_0_rgba(255,255,255,0.6)]" : ""
+                        }`}
+                      >
+                        <div className="text-[30px] font-extrabold tracking-tight leading-none">
+                          ₹{pricing.monthly}
+                          <span className="text-[14px] font-semibold opacity-80"> /mo</span>
+                        </div>
+                        <div className="text-[12px] font-bold tracking-[0.12em] uppercase opacity-90 mt-1.5">
+                          {tier(p)}
+                        </div>
+                        {isPop && (
+                          <span className="inline-block mt-2 text-[9.5px] font-extrabold tracking-[0.1em] whitespace-nowrap bg-white/95 text-[#902ddf] px-2.5 py-0.5 rounded-md">
+                            ★ MOST POPULAR
+                          </span>
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+
+              {/* ── Body ───────────────────────────────────────────── */}
+              <tbody>
+                {/* CTA row */}
+                <tr className="bg-white">
+                  <td className="sticky left-0 z-[2] bg-white border-b border-[#efeaf7] p-4" />
+                  {PLAN_ORDER.map((p) => {
+                    const isPop = PLAN_META[p].popular;
+                    const isCurrent = effectivePlan === p && !onTrial;
+                    const ctaLabel = isCurrent
+                      ? "Current plan"
+                      : isPop
+                      ? "Choose Pro"
+                      : p === PLAN_IDS.STARTER
+                      ? "Get Started"
+                      : "Choose Elite";
+                    return (
+                      <td
+                        key={p}
+                        className={`text-center border-b border-[#efeaf7] p-4 ${isPop ? "bg-[rgba(144,45,223,0.05)]" : ""}`}
+                      >
+                        <button
+                          onClick={() => !isCurrent && openGatewayPicker(p)}
+                          disabled={isCurrent || upgrading === p}
+                          className={`inline-flex items-center justify-center w-full max-w-[170px] px-3.5 py-2.5 rounded-[11px] text-[13.5px] font-bold cursor-pointer transition-all duration-150 active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isPop
+                              ? "text-white border-0"
+                              : "bg-white text-[#7c3aed] border-[1.6px] border-[#e2d6f7] hover:border-[#7c3aed] hover:bg-[#faf7fe]"
+                          }`}
+                          style={
+                            isPop
+                              ? {
+                                  background:
+                                    "linear-gradient(135deg,#902ddf 0%,#f2339d 100%)",
+                                  boxShadow:
+                                    "0 12px 24px -10px rgba(242,51,157,.55)",
+                                }
+                              : undefined
+                          }
+                        >
+                          {upgrading === p && <Loader2 size={13} className="animate-spin mr-1.5" />}
+                          {ctaLabel}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {FEATURE_GROUPS.map((group) => (
+                  <React.Fragment key={group.title}>
+                    {/* Category band */}
+                    <tr>
+                      <td
+                        colSpan={PLAN_ORDER.length + 1}
+                        className="sticky left-0 z-[1] bg-[#f6f2fd] py-3 px-6 text-[11.5px] font-extrabold tracking-[0.14em] uppercase text-[#7c3aed]"
+                      >
+                        {group.title}
+                      </td>
+                    </tr>
+
+                    {/* Feature rows */}
+                    {group.features.map((f) => {
+                      // If only Elite has this, use the gradient "star" check.
+                      const valuesByPlan = PLAN_ORDER.map(
+                        (p) => FEATURE_MATRIX[f.key]?.[p]
+                      );
+                      const onlyTopTier =
+                        !!valuesByPlan[2] && !valuesByPlan[0] && !valuesByPlan[1];
+
+                      return (
+                        <tr
+                          key={f.key}
+                          className="group hover:bg-[#fbf9fe] transition-colors"
+                        >
+                          <td className="sticky left-0 z-[1] bg-white group-hover:bg-[#fbf9fe] text-left font-semibold text-[14px] text-[#241d33] py-4 px-4 border-b border-[#efeaf7]">
+                            {f.label}
+                          </td>
+                          {PLAN_ORDER.map((p) => {
+                            const v = FEATURE_MATRIX[f.key]?.[p];
+                            const text = formatFeatureValue(v);
+                            const isPop = PLAN_META[p].popular;
+                            const hasValue = v && v !== false;
+                            return (
+                              <td
+                                key={p}
+                                className={`text-center py-4 px-4 border-b border-[#efeaf7] ${isPop ? "bg-[rgba(144,45,223,0.05)]" : ""}`}
+                              >
+                                {hasValue ? (
+                                  text === "✓" ? (
+                                    onlyTopTier ? (
+                                      <span
+                                        className="inline-grid place-items-center w-[26px] h-[26px] rounded-full text-white"
+                                        style={{
+                                          background:
+                                            "linear-gradient(135deg,#902ddf 0%,#f2339d 100%)",
+                                          boxShadow:
+                                            "0 6px 14px -4px rgba(242,51,157,.6)",
+                                        }}
+                                        aria-label="Elite only"
+                                      >
+                                        <Check size={14} strokeWidth={3} />
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className="inline-grid place-items-center w-[26px] h-[26px] rounded-full bg-[#7c3aed] text-white"
+                                        aria-label="Included"
+                                      >
+                                        <Check size={14} strokeWidth={3} />
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span
+                                      className={`inline-block px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap text-white`}
+                                      style={
+                                        isPop
+                                          ? {
+                                              background:
+                                                "linear-gradient(135deg,#902ddf 0%,#f2339d 100%)",
+                                              boxShadow:
+                                                "0 8px 18px -8px rgba(242,51,157,.5)",
+                                            }
+                                          : { background: "#6d28d9" }
+                                      }
+                                    >
+                                      {text}
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="inline-block w-4 h-[2.5px] rounded-sm bg-[#bcb5cc] align-middle" />
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p className="text-center text-[12.5px] text-[#7b7490] font-medium mt-4">
+          All plans are billed monthly. Prices are exclusive of applicable taxes (GST).
+        </p>
+      </div>
+    </div>
   );
 }
