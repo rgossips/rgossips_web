@@ -454,7 +454,7 @@ export default function PricingPage() {
                   } disabled:opacity-50`}
                 >
                   {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
-                  {isCurrent ? "Current plan" : `Upgrade to ${meta.label}`}
+                  {isCurrent ? "Current plan" : `Choose ${meta.label}`}
                 </button>
 
                 <div className="mt-6 space-y-2">
@@ -998,11 +998,7 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                     const isCurrent = effectivePlan === p && !onTrial;
                     const ctaLabel = isCurrent
                       ? "Current plan"
-                      : isPop
-                      ? "Choose Pro"
-                      : p === PLAN_IDS.STARTER
-                      ? "Get Started"
-                      : "Choose Elite";
+                      : `Choose ${PLAN_META[p].label}`;
                     return (
                       <td
                         key={p}

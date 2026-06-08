@@ -275,7 +275,29 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
 
   if (nextRank > prevRank && nextRank >= planRank.pro) {
     const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
-    try {
+    // Idempotency guard. Stripe fires checkout.session.completed AND
+    // customer.subscription.updated back-to-back on an upgrade, and they
+    // can both read `previousPlan` before either has written the new
+    // plan — so both pass the rank check and both insert the welcome
+    // notification. Dedupe by checking for a fresh notification of the
+    // same plan in the last 10 minutes.
+    const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: recent } = await supabase
+      .from("notifications")
+      .select("id, body")
+      .eq("user_id", userId)
+      .eq("type", "plan_upgraded")
+      .gte("created_at", tenMinAgo)
+      .limit(5);
+    const alreadyNotified = (recent || []).some((n: any) => {
+      try {
+        const parsed = typeof n.body === "string" ? JSON.parse(n.body) : n.body;
+        return (parsed?.text || "").includes(planLabel);
+      } catch {
+        return false;
+      }
+    });
+    if (!alreadyNotified) try {
       await supabase.from("notifications").insert({
         user_id: userId,
         type: "plan_upgraded",
@@ -290,11 +312,10 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
       console.error("plan_upgraded notification insert failed:", (e as any)?.message);
     }
 
-    // Email receipt — best-effort, non-blocking. Looks up the row's
-    // email; if blank, just skips. Stripe itself sends a tax receipt
-    // separately if you've enabled that on the dashboard, this is the
-    // RGossips-branded confirmation that points back at the dashboard.
-    try {
+    // Email receipt — also gated by the same dedupe so the user
+    // doesn't get two "your Pro subscription is active" emails when
+    // both Stripe events fire setUserPlan in quick succession.
+    if (!alreadyNotified) try {
       const cycle = (extras as any).billing_cycle as string | undefined;
       const cycleLabel = cycle === "annual" ? "Annual" : "Monthly";
       const { data: row } = await supabase

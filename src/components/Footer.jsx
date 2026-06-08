@@ -22,6 +22,7 @@ const Footer = () => {
     ],
     legal: [
       { name: "Privacy & Cookie Policy", href: "/consent/privacy" },
+      { name: "Payment & Refund Policy", href: "/consent/refund" },
       { name: "Influencer Consent Policy", href: "/consent/influencer" },
       { name: "Brand Consent Policy", href: "/consent/brand" },
     ],
