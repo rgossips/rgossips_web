@@ -37,7 +37,12 @@ function BrandLogo({ logo, name }) {
         alt={name}
         loading="lazy"
         onError={() => setFailed(true)}
-        className="w-full h-full object-contain p-4 transition-transform hover:scale-105"
+        // object-cover fills the circle edge-to-edge so square logos
+        // don't leave the obvious white gaps that object-contain + p-4
+        // produced. Wider wordmark logos get a centred crop, which is
+        // the right trade-off for the avatar-style look this carousel
+        // is going for.
+        className="w-full h-full object-cover transition-transform hover:scale-105"
       />
     </div>
   );

@@ -50,7 +50,7 @@ const CategorySelection = ({ onNext, onSkip }) => {
         })}
       </div>
 
-      <div className="space-y-3 pt-4">
+      <div className="sticky bottom-0 -mx-8 px-8 pt-3 pb-2 bg-white border-t border-slate-100 space-y-3 md:static md:mx-0 md:px-0 md:pt-4 md:pb-0 md:border-0">
         <Button
           disabled={selected.length < 1}
           onClick={() => onNext(selected)}

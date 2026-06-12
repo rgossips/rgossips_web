@@ -262,8 +262,8 @@ const ProfileDetails = ({ onNext }) => {
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="space-y-3 pt-2">
+      {/* Buttons — sticky on mobile so they stay visible without scrolling */}
+      <div className="sticky bottom-0 -mx-8 px-8 pt-3 pb-2 bg-white border-t border-slate-100 space-y-3 md:static md:mx-0 md:px-0 md:pt-2 md:pb-0 md:border-0">
         <Button
           onClick={handleContinue}
           className="w-full cursor-pointer btn-purple h-[54px] rounded-3xl text-base font-semibold shadow-lg shadow-purple-100"

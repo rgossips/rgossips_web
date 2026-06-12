@@ -213,8 +213,11 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
     classic: "starter",
     glass_blue: "pro",
     editorial_noir: "pro",
-    bento_sunset: "pro",
-    neo_brutalist: "pro",
+    // Bento Sunset + Neo-Brutalist are Elite-only — Pro is capped at
+    // the first three designs. Keep in sync with the other two copies
+    // of this map: update-profile and src/lib/plans.js.
+    bento_sunset: "elite",
+    neo_brutalist: "elite",
   };
   const PLAN_RANK: Record<string, number> = { starter: 1, pro: 2, elite: 3 };
   const requiredRank = PLAN_RANK[TEMPLATE_MIN_PLAN[previousTemplate] || "starter"] || 0;

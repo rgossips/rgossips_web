@@ -3,12 +3,16 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Search, Briefcase, User } from "lucide-react";
+import { Home, Compass, Briefcase, Sparkles, User } from "lucide-react";
 
+// Mirrors DeskTopNavbar's nav exactly (same 5 entries, same icons, same
+// order). Keeping them in sync means a user has the same mental model
+// regardless of breakpoint.
 const navItems = [
   { label: "Home", icon: Home, path: "/influencer" },
-  { label: "Brands", icon: Search, path: "/influencer/brands" },
+  { label: "Brands", icon: Compass, path: "/influencer/brands" },
   { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
+  { label: "Services", icon: Sparkles, path: "/influencer/services" },
   { label: "Profile", icon: User, path: "/influencer/profile" },
 ];
 
@@ -19,7 +23,14 @@ const BottomNav = () => {
     <div className="fixed lg:hidden bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div className="flex justify-around items-center h-16 max-w-md mx-auto relative">
         {navItems.map((item) => {
-          const isActive = pathname === item.path;
+          // Home is exact-match only (otherwise it'd light up for every
+          // /influencer/* sub-route). Everything else uses prefix match
+          // so sub-pages keep their parent tab highlighted — same rule
+          // DeskTopNavbar uses.
+          const isActive =
+            item.path === "/influencer"
+              ? pathname === "/influencer"
+              : pathname === item.path || pathname.startsWith(item.path + "/");
 
           return (
             <Link

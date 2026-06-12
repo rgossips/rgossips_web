@@ -14,7 +14,14 @@ export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsS
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-[200] flex flex-col gap-2.5 items-end">
+      {/* Vertical stack on the right edge. Mobile needs to clear two
+          other floating elements that share this corner:
+            BottomNav     occupies 0–64px from the viewport bottom
+            ScrollToTop   sits at bottom-20 (80px) with h-12 → top at 128px
+          So we start at bottom-36 (144px), leaving 16px above ScrollToTop.
+          On lg+ both BottomNav and ScrollToTop are out of the way and we
+          revert to the tighter bottom-6 offset. */}
+      <div className="fixed bottom-36 right-6 lg:bottom-6 z-[200] flex flex-col gap-2.5 items-end">
         <EditPill onClick={() => setOpen("bio")} label="Edit Bio" />
         <EditPill onClick={() => setOpen("reels")} label="Edit Top Reels" />
       </div>

@@ -102,7 +102,7 @@ export const FEATURE_MATRIX = {
   analytics_roi_report:           { starter: false, pro: false, elite: true },
 
   // Media Kit
-  media_kit_designer_templates: { starter: "Classic only",  pro: "All 5 designs", elite: "All 5 designs" },
+  media_kit_designer_templates: { starter: "Classic only",  pro: "3 designs",     elite: "All 5 designs" },
   media_kit_template_switches:  { starter: false,           pro: "3 lifetime",    elite: "Unlimited" },
   media_kit_share_link:         { starter: true,            pro: true,            elite: true },
 
@@ -268,10 +268,11 @@ export function profileFeatureValue(profile, key) {
 /* ─────────── media-kit template tiers ─────────── */
 // Plan rules requested by product:
 //   Starter — Classic only; everything else is visible but locked
-//   Pro     — all five templates available, capped at 3 lifetime saves
-//   Elite   — all five, unlimited saves
-// Trial users get Pro features (see getEffectivePlan): all five
-// templates with the 3-change cap during the 30-day trial window.
+//   Pro     — Classic + Glass Blue + Editorial Noir (3 designs),
+//             capped at 3 lifetime saves between them
+//   Elite   — all five designs, unlimited saves
+// Trial users get Pro features (see getEffectivePlan): the same 3
+// templates Pro has, with the 3-change cap during the 30-day trial.
 export const MEDIA_KIT_TEMPLATES = [
   {
     id: "classic",
@@ -298,14 +299,14 @@ export const MEDIA_KIT_TEMPLATES = [
     id: "bento_sunset",
     label: "Bento Sunset",
     description: "Bento-grid tiles with a sunset gradient — playful and high-energy.",
-    minPlan: PLAN_IDS.PRO,
+    minPlan: PLAN_IDS.ELITE,
     preview: "linear-gradient(135deg,#ff9a56 0%,#ff5d73 50%,#c850c0 100%)",
   },
   {
     id: "neo_brutalist",
     label: "Neo-Brutalist",
     description: "Hard borders, mono type and chunky shadows — loud and unforgettable.",
-    minPlan: PLAN_IDS.PRO,
+    minPlan: PLAN_IDS.ELITE,
     preview: "linear-gradient(135deg,#ffd23f 0%,#E94560 55%,#7F47CD 100%)",
   },
 ];

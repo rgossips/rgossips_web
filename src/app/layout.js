@@ -18,52 +18,143 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Recent Gossips | Global Influencer Marketing & Brand Collaboration",
+  metadataBase: new URL("https://rgossips.com"),
+  title: {
+    default: "RGossips | India's Trusted Influencer Marketing Platform",
+    template: "%s · RGossips",
+  },
   description:
-    "Rgossips is a performance-driven influencer marketing platform where brands connect with verified influencers for paid and barter campaigns. Find creators by niche, location, and engagement in minutes.",
+    "RGossips connects Indian brands with verified Instagram creators for paid and barter campaigns. Discover micro and macro influencers by niche, location, and engagement — fund campaigns through escrow, release payments only when work is approved.",
   keywords: [
-    "Influencer Marketing",
-    "Brand Collaborations",
-    "Social Media Marketing",
-    "Barter Campaigns",
+    "influencer marketing India",
+    "instagram influencers",
+    "creator marketing platform",
+    "brand collaborations",
+    "micro influencers",
+    "barter campaigns",
+    "influencer search",
+    "creator marketplace",
+    "social media marketing India",
+    "paid creator campaigns",
   ],
-  authors: [{ name: "Recent Gossips" }],
-  // Icon Setup
+  authors: [{ name: "Rude Labs Private Limited" }],
+  creator: "Rude Labs Private Limited",
+  publisher: "Rude Labs Private Limited",
+  applicationName: "RGossips",
+  category: "marketing",
+  // Tell crawlers we want to be indexed + give them image preview rights.
+  // Defaults are restrictive; this opens up rich snippets.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://rgossips.com",
+  },
   icons: {
-    icon: "/icon.svg", // Path to your public/icon.svg
+    icon: "/icon.svg",
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
-
-  metadataBase: new URL("https://rgossips.com"),
-  // Social Media / OpenGraph Setup
   openGraph: {
-    title: "Recent Gossips",
+    title: "RGossips | India's Trusted Influencer Marketing Platform",
     description:
-      "Connect with verified influencers for paid and barter campaigns.",
-    url: "https://rgossips.com", // Replace with your actual domain
-    siteName: "Recent Gossips",
+      "Connect with verified Indian creators for paid and barter campaigns. Escrow-backed, transparent, and built for trust.",
+    url: "https://rgossips.com",
+    siteName: "RGossips",
     images: [
       {
-        url: "/icon.svg", // Create a social sharing image in your public folder
+        url: "/og-image.png",
         width: 1200,
         height: 630,
+        alt: "RGossips — influencer marketing platform",
       },
     ],
-    locale: "en_US",
+    locale: "en_IN",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RGossips | India's Trusted Influencer Marketing Platform",
+    description:
+      "Connect with verified Indian creators for paid and barter campaigns. Escrow-backed, transparent, and built for trust.",
+    images: ["/og-image.png"],
+  },
+  verification: {
+    // Google Search Console — HTML-tag method. Belt-and-braces against
+    // the file-method verification (/google99c6b03955ca73e5.html). Either
+    // alone is enough; both make it harder to accidentally lose
+    // ownership if one source is misconfigured.
+    google: "PjCPmXuxXgubOOxwaNHm6SvAD_Jg0q4rZ7hGZy9VSq8",
+  },
+};
+
+// Sitewide structured data. Two schemas — Organization (who we are) +
+// WebSite (sitelinks search box eligibility). Inlined into <head> as
+// JSON-LD per Google's recommended approach.
+const ORGANIZATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "RGossips",
+  legalName: "Rude Labs Private Limited",
+  url: "https://rgossips.com",
+  logo: "https://rgossips.com/icon.svg",
+  description:
+    "India's trusted influencer marketing platform — connecting brands with verified Instagram creators through escrow-backed paid and barter campaigns.",
+  email: "info@rgossips.com",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Mughalsarai",
+    addressRegion: "Uttar Pradesh",
+    addressCountry: "IN",
+  },
+  sameAs: [
+    "https://www.instagram.com/rgossips.agency/",
+    "https://whatsapp.com/channel/0029VbBjpbKLo4hdMsZKc146",
+  ],
+};
+
+const WEBSITE_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "RGossips",
+  url: "https://rgossips.com",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://rgossips.com/?q={search_term_string}",
+    "query-input": "required name=search_term_string",
   },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Structured data — JSON-LD. Renders into <head> at build time
+            because it's a Server Component. Google reads this to power
+            Knowledge Panel / sitelinks search box / rich results. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#f8fafc] text-gray-800`}
       >
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-FRL0M0KYC8"
+          src="https://www.googletagmanager.com/gtag/js?id=G-EHKNXSHNB3"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -71,7 +162,7 @@ export default function RootLayout({ children }) {
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-FRL0M0KYC8');
+            gtag('config', 'G-EHKNXSHNB3');
           `}
         </Script>
 

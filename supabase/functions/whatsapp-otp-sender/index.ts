@@ -21,10 +21,18 @@ Deno.serve(async (req) => {
     // Initialize Supabase Admin client
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Generate a cryptographically secure 6-digit OTP
+    // Test-phone bypass — for QA test logins seeded by seed-test-users.
+    // Phone is already normalised on the client (+91…). We compare against
+    // the bare-digits form the verifier later reads from the row.
+    const TEST_PHONES = new Set(["919999999990", "919999999991"]);
+    const TEST_OTP = "123456";
+    const isTestPhone = TEST_PHONES.has(phone.replace(/\+/g, ""));
+
+    // Generate a cryptographically secure 6-digit OTP — replaced by the
+    // fixed test value for QA accounts so they don't need a real WhatsApp.
     const array = new Uint32Array(1);
     crypto.getRandomValues(array);
-    const otp = String(100000 + (array[0] % 900000));
+    const otp = isTestPhone ? TEST_OTP : String(100000 + (array[0] % 900000));
 
     // Store OTP in database with 5-minute expiry
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
@@ -43,6 +51,15 @@ Deno.serve(async (req) => {
     if (dbError) {
       console.error("DB Error:", dbError);
       return new Response(JSON.stringify({ error: "Failed to store OTP" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Skip the actual WhatsApp send for test phones — they're QA-only and
+    // we don't want to spend Meta credit on them.
+    if (isTestPhone) {
+      return new Response(
+        JSON.stringify({ success: true, message: "Test OTP ready (bypass)" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Send OTP via WhatsApp Cloud API

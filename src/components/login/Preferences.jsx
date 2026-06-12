@@ -60,7 +60,12 @@ const Preferences = ({ onNext, onSkip }) => {
         ))}
       </div>
 
-      <div className="space-y-3">
+      {/* Sticky footer on mobile — the parent scroll container has
+          overflow-y-auto, so this row pins to the bottom of the visible
+          card while the form above scrolls. The negative horizontal
+          margin + padding cancel the parent's px-8, so the white
+          background spans the full card width. */}
+      <div className="sticky bottom-0 -mx-8 px-8 pt-3 pb-2 bg-white border-t border-slate-100 space-y-3 md:static md:mx-0 md:px-0 md:pt-0 md:pb-0 md:border-0">
         <Button
           onClick={() => onNext({ services: selectedServices })}
           disabled={selectedServices.length === 0}

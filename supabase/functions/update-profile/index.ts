@@ -110,8 +110,11 @@ Deno.serve(async (req) => {
         classic: "starter",
         glass_blue: "pro",
         editorial_noir: "pro",
-        bento_sunset: "pro",
-        neo_brutalist: "pro",
+        // Bento Sunset + Neo-Brutalist are Elite-only — Pro is capped at
+        // the first three designs. Keep this map in sync with
+        // MEDIA_KIT_TEMPLATES in src/lib/plans.js.
+        bento_sunset: "elite",
+        neo_brutalist: "elite",
       };
       const PLAN_RANK: Record<string, number> = { starter: 1, pro: 2, elite: 3 };
       const TEMPLATE_LIMITS: Record<string, number> = { starter: 0, pro: 3, elite: Infinity };

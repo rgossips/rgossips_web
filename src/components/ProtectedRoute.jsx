@@ -23,6 +23,12 @@ const publicPrefixes = [
   "/consent/",
   "/influencer/consent-policy",
   "/brands/consent-policy",
+  // Meta probes /api/instagram/deauthorize and /api/instagram/data-deletion
+  // server-side; those are Route Handlers so they bypass this component
+  // anyway. The /instagram/deletion-status status page that users land
+  // on after Meta's "track my deletion" link MUST be reachable without
+  // auth — they won't be logged in to RGossips at that point.
+  "/instagram/",
 ];
 
 const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions
@@ -99,12 +105,20 @@ export default function ProtectedRoute({ children }) {
     }
   }, [user, profile, role, loading, isPublic, pathname, router, isInfluencerRoute, isBrandRoute]);
 
+  // Public pages render immediately, regardless of auth state. Without
+  // this guard, the BrandedLoader below would be the only HTML SSR
+  // produced for `/`, `/consent/*`, `/kit/*`, etc. — meaning crawlers
+  // (Googlebot, Facebook link preview, LinkedIn, etc.) would see a
+  // loading spinner instead of the marketing content. This was the
+  // root cause of the homepage looking uncrawlable.
+  if (isPublic) return children;
+
   if (loading) {
     return <BrandedLoader />;
   }
 
   // Block render of protected pages until user + profile are confirmed
-  if (!isPublic && (!user || !profile)) {
+  if (!user || !profile) {
     return <BrandedLoader />;
   }
 
