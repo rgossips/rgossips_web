@@ -368,13 +368,17 @@ const PaymentMethods = ({ onBack }) => {
           </div>
         </section>
 
+        {/* Credit History (campaign earnings) sits ABOVE Subscription
+            History because the creator's primary financial concern is
+            "did I get paid for my campaigns" — subscription billing is
+            secondary. */}
+        <CreditHistorySection loading={earningsLoading} earnings={earnings} />
+
         <SubscriptionHistorySection
           loading={invoicesLoading}
           invoices={invoices}
           onRefresh={fetchInvoices}
         />
-
-        <CreditHistorySection loading={earningsLoading} earnings={earnings} />
 
       </div>
 

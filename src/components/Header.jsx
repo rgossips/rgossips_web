@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { HiMenu, HiX } from "react-icons/hi";
 import logo from "@/assets/logo2.png";
 import { useGlobal } from "@/context/GlobalContext";
@@ -17,10 +18,11 @@ const Header = () => {
   const dashboardPath = role === "brand" ? "/brands" : "/influencer";
   const displayName = (profile?.full_name || profile?.contact_name || profile?.brand_name || "").split(" ")[0] || "";
 
-  // Prefetch login route so click is instant
-  useEffect(() => {
-    if (!user) router.prefetch("/login");
-  }, [user, router]);
+  // Header used to manually prefetch /login here on auth resolve, but
+  // the <Link> elements below now do it automatically (and earlier —
+  // they prefetch as soon as the link enters the viewport instead of
+  // waiting for the auth context to settle). Removing the manual call
+  // avoids a duplicate fetch.
 
   // Navigation items based on your reference images
   const navItems = [
@@ -71,20 +73,24 @@ const Header = () => {
 
           <div className="ml-6 border-l border-slate-200 pl-8">
             {!loading && user && displayName ? (
-              <button
-                onClick={() => router.push(dashboardPath)}
-                className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
+              <Link
+                href={dashboardPath}
+                className="inline-block px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
               >
                 Hi, {displayName}
-              </button>
+              </Link>
             ) : (
-              <button
-                onClick={() => router.push(user ? dashboardPath : "/login")}
-                onMouseEnter={() => !user && router.prefetch("/login")}
-                className="px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
+              <Link
+                href={user ? dashboardPath : "/login"}
+                // prefetch defaults to true on <Link> — Next.js starts
+                // fetching /login's JS chunk as soon as this link
+                // enters the viewport (i.e. on first render), so by the
+                // time the user clicks the bundle is already cached.
+                prefetch
+                className="inline-block px-7 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-[15px] rounded-2xl shadow-lg shadow-blue-200 hover:opacity-90 transition-all cursor-pointer"
               >
                 {loading ? "..." : "Login / Sign Up"}
-              </button>
+              </Link>
             )}
           </div>
         </nav>
@@ -120,25 +126,22 @@ const Header = () => {
 
             <div className="pt-4 border-t border-slate-100">
               {!loading && user && displayName ? (
-                <button
-                  onClick={() => {
-                    router.push(dashboardPath);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
+                <Link
+                  href={dashboardPath}
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
                 >
                   Hi, {displayName}
-                </button>
+                </Link>
               ) : (
-                <button
-                  onClick={() => {
-                    router.push(user ? dashboardPath : "/login");
-                    setMenuOpen(false);
-                  }}
-                  className="w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
+                <Link
+                  href={user ? dashboardPath : "/login"}
+                  prefetch
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold rounded-2xl text-center shadow-lg cursor-pointer"
                 >
                   {loading ? "..." : "Login / Sign Up"}
-                </button>
+                </Link>
               )}
             </div>
           </nav>

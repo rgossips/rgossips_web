@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import Bell from "@/assets/login/BellIllustration.png";
+import Bell from "@/assets/login/BellIllustration.webp";
 import Image from "next/image";
 
 const Notifications = ({ onNext }) => {

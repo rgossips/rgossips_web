@@ -234,15 +234,19 @@ export function ProStatusCard() {
               </div>
             )}
 
-            {/* Upgrade Button */}
-            <Link
-              href="/influencer/pricing"
-              className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-lg shadow-purple-200 transition-all hover:brightness-110"
-              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
-            >
-              <Crown size={16} />
-              <span className="hidden lg:inline">Upgrade</span>
-            </Link>
+            {/* Upgrade Button — hidden on Elite (top tier, nothing to
+                upgrade to). Starter, Pro, trial, and free users all see
+                it pointing them at the pricing page. */}
+            {currentPlan !== "elite" && (
+              <Link
+                href="/influencer/pricing"
+                className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-lg shadow-purple-200 transition-all hover:brightness-110"
+                style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+              >
+                <Crown size={16} />
+                <span className="hidden lg:inline">Upgrade</span>
+              </Link>
+            )}
           </div>
         </div>
       </Card>

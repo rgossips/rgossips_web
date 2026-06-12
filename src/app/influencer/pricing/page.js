@@ -454,7 +454,11 @@ export default function PricingPage() {
                   } disabled:opacity-50`}
                 >
                   {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
-                  {isCurrent ? "Current plan" : `Choose ${meta.label}`}
+                  {isCurrent
+                    ? "Current plan"
+                    : PLAN_ORDER.indexOf(planId) > PLAN_ORDER.indexOf(effectivePlan)
+                    ? `Upgrade to ${meta.label}`
+                    : `Choose ${meta.label}`}
                 </button>
 
                 <div className="mt-6 space-y-2">
@@ -996,8 +1000,16 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                   {PLAN_ORDER.map((p) => {
                     const isPop = PLAN_META[p].popular;
                     const isCurrent = effectivePlan === p && !onTrial;
+                    // Direction-aware CTA — "Upgrade to X" when X sits
+                    // above the user's current tier in PLAN_ORDER,
+                    // "Choose X" when it's a downgrade. Trial users
+                    // have effectivePlan="pro" via getEffectivePlan,
+                    // so the Pro column shows "Choose Pro" (they need
+                    // to actually subscribe) and Elite shows "Upgrade".
                     const ctaLabel = isCurrent
                       ? "Current plan"
+                      : PLAN_ORDER.indexOf(p) > PLAN_ORDER.indexOf(effectivePlan)
+                      ? `Upgrade to ${PLAN_META[p].label}`
                       : `Choose ${PLAN_META[p].label}`;
                     return (
                       <td

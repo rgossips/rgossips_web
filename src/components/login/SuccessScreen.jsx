@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import Tick from "@/assets/login/SuccessIllustration.png";
+import Tick from "@/assets/login/SuccessIllustration.webp";
 
 const SuccessScreen = ({ onNext, loading = false }) => (
   <div className="flex flex-col items-center justify-center text-center space-y-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">

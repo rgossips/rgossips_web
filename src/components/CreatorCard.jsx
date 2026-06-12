@@ -37,19 +37,14 @@ export default function CreatorCard({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex justify-between text-center w-full text-sm mt-1 pb-2">
+      {/* Followers only — `posts` and `following` are still received in
+          props but intentionally not rendered. The data source
+          (featured_creators table) doesn't expose them anyway, and we
+          want a cleaner, single-stat card on the influencer home. */}
+      <div className="flex justify-center text-center w-full text-sm mt-1 pb-2">
         <div>
-          <p className="font-semibold">{posts}</p>
-          <p className="text-gray-500 text-xs">posts</p>
-        </div>
-        <div>
-          <p className="font-semibold">{followers}</p>
+          <p className="font-semibold text-base">{followers}</p>
           <p className="text-gray-500 text-xs">followers</p>
-        </div>
-        <div>
-          <p className="font-semibold">{following}</p>
-          <p className="text-gray-500 text-xs">following</p>
         </div>
       </div>
 

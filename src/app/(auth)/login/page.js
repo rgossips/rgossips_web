@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useGlobal } from "@/context/GlobalContext";
 import { useAuth } from "@/context/AuthContext";
-import OnboardingCarousel from "@/components/login/OnboardingCarousel";
 import RoleSelection from "@/components/login/RoleSelection";
 import { createClient } from "@/utils/supabase/client";
 import { IoMdClose } from "react-icons/io";
@@ -16,6 +16,12 @@ const loadingFallback = () => (
     <Loader2 size={24} className="animate-spin text-purple-500" />
   </div>
 );
+
+// OnboardingCarousel pulls in framer-motion + 4 PNG illustrations
+// (~650KB total). Lazy-loading keeps that out of the initial login
+// bundle so the role/phone steps render fast; the carousel itself only
+// appears when flow === "onboarding" which is the landing state.
+const OnboardingCarousel = dynamic(() => import("@/components/login/OnboardingCarousel"), { ssr: false, loading: () => null });
 
 const InstagramConnect = dynamic(() => import("@/components/login/InstagramConnect"), { loading: loadingFallback });
 const SignUpForm = dynamic(() => import("@/components/login/SignUpForm"), { loading: loadingFallback });
@@ -442,16 +448,20 @@ const Login = () => {
 
   return (
     <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
-      {/* Back to landing — visible across onboarding + auth flows so the user
-          can always escape the login surface without hitting the browser back. */}
-      <button
-        onClick={() => router.push("/")}
+      {/* Back to landing — visible across onboarding + auth flows so the
+          user can always escape the login surface without hitting the
+          browser back. Uses <Link prefetch> so the home-page chunk
+          starts downloading as soon as this button hits the viewport
+          (which is on first render), making the click feel instant. */}
+      <Link
+        href="/"
+        prefetch
         aria-label="Back to home"
         className="absolute top-5 left-5 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 hover:bg-white text-slate-700 text-xs font-bold shadow-md backdrop-blur-sm transition-all cursor-pointer"
       >
         <ArrowLeft size={14} />
         Home
-      </button>
+      </Link>
 
       {/* Background */}
       <div className="absolute inset-0 z-0">

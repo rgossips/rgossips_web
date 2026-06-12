@@ -4,10 +4,13 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import one from "@/assets/login/BrandMessageCard.png";
-import two from "@/assets/login/DiscoverCampaignsCard.png";
-import three from "@/assets/login/CreatorWalletCard.png";
-import four from "@/assets/login/TodayCollaborationCard.png";
+// WebP versions (~66% smaller than the original PNGs). The .png files
+// are kept on disk as the source of truth in case we ever need to
+// regenerate at a different quality — see scripts/convert-login-assets.mjs.
+import one from "@/assets/login/BrandMessageCard.webp";
+import two from "@/assets/login/DiscoverCampaignsCard.webp";
+import three from "@/assets/login/CreatorWalletCard.webp";
+import four from "@/assets/login/TodayCollaborationCard.webp";
 
 const slides = [
   {

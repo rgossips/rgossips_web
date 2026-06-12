@@ -48,6 +48,12 @@ Deno.serve(async (req) => {
       "https://www.rgossips.com",
       "http://localhost:3000",
       "http://127.0.0.1:3000",
+      // Mobile app custom URL scheme — the React Native app sends this so
+      // InAppBrowser.openAuth() can intercept the post-payment redirect and
+      // hand control back to the app (instead of loading rgossips.com inside
+      // the in-app browser tab). The scheme is registered as a deep link in
+      // both AndroidManifest.xml and iOS Info.plist on the mobile side.
+      "com.rgossips://stripe-return",
     ];
     const requestedOrigin = typeof origin === "string" ? origin.trim().replace(/\/+$/, "") : "";
     const appUrl = ALLOWED_ORIGINS.includes(requestedOrigin) ? requestedOrigin : fallbackUrl;
