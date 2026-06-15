@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { scoreCampaignForUser } from "@/utils/matchScore";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
@@ -20,8 +21,24 @@ const PLACEHOLDER_IMAGES = [
 export default function RecommendedCampaigns() {
   const { profile, user } = useAuth();
   const [allCampaigns, setAllCampaigns] = useState([]);
+  const [api, setApi] = useState(null);
+  const [current, setCurrent] = useState(0);
   const router = useRouter();
   const userCategories = useMemo(() => profile?.categories || [], [profile?.categories]);
+
+  useEffect(() => {
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => api.off("select", onSelect);
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+    const interval = setInterval(() => api.scrollNext(), 5000);
+    return () => clearInterval(interval);
+  }, [api]);
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -105,92 +122,120 @@ export default function RecommendedCampaigns() {
         </button>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Mobile — one card per slide, auto-advancing carousel */}
+      <div className="md:hidden">
+        <Carousel opts={{ align: "center", loop: true }} setApi={setApi} className="w-full">
+          <CarouselContent className="-ml-3">
+            {filteredOffers.map((item) => (
+              <CarouselItem key={item.id} className="pl-3 basis-[88%]">
+                <CampaignCard item={item} onApply={() => router.push(`/influencer/offers/${item.id}`)} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+        {filteredOffers.length > 1 && (
+          <div className="flex justify-center mt-4 gap-2">
+            {filteredOffers.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => api?.scrollTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-8" : "bg-slate-200 w-2"}`}
+                aria-label={`Go to campaign ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tablet + Desktop — grid */}
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredOffers.map((item) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="group bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
-          >
-            {/* Image Section */}
-            <div className="relative h-60 w-full p-4">
-              <div className="relative h-full w-full rounded-4xl overflow-hidden">
-                <Image src={item.imageUrl} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-
-                {/* Overlay Badges */}
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="bg-white/90 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">{item.category}</span>
-                </div>
-                <div className="absolute top-4 right-4">
-                  <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full" /> {item.badge}
-                  </span>
-                </div>
-                {/* Match % — green = strong fit, amber = moderate. Driven by
-                    category tier + budget vs the creator's reel rate. */}
-                {item.match > 0 && (
-                  <div className="absolute bottom-4 left-4">
-                    <span
-                      className={`text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg ${
-                        item.match >= 75 ? "bg-[#22C55E]" : item.match >= 50 ? "bg-amber-500" : "bg-slate-500"
-                      }`}
-                    >
-                      {item.match}% match
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Content Section */}
-            <div className="px-6 pb-8 flex flex-col flex-1">
-              <div className="mb-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600">{item.brand[0]}</div>
-                    <span className="text-xs font-bold text-slate-400">{item.brand} •</span>
-                    <div className="flex items-center text-slate-400 gap-0.5">
-                      <MapPin size={10} />
-                      <span className="text-[10px] font-bold">{item.location}</span>
-                    </div>
-                  </div>
-                </div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 group-hover:text-[#D61F69] transition-colors">{item.title}</h3>
-                <p className="text-xs text-slate-400 font-medium leading-relaxed">{item.desc}</p>
-              </div>
-
-              {/* Pay & Req Boxes */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-                    <DollarSign size={10} className="text-green-500" /> Pay
-                  </p>
-                  <p className="text-xs font-black text-slate-800">{item.pay}</p>
-                </div>
-                <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-                    <Users size={10} className="text-blue-500" /> Req
-                  </p>
-                  <p className="text-xs font-black text-slate-800">{item.req}</p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 mt-auto">
-                <button
-                  onClick={() => router.push(`/influencer/offers/${item.id}`)}
-                  className="flex-1 cursor-pointer text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all"
-                  style={{ background: "linear-gradient(to right, #8E2DE2, #F6339A)" }}
-                >
-                  Apply Now
-                </button>
-              </div>
-            </div>
-          </motion.div>
+          <CampaignCard key={item.id} item={item} onApply={() => router.push(`/influencer/offers/${item.id}`)} />
         ))}
       </div>
     </section>
+  );
+}
+
+function CampaignCard({ item, onApply }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
+    >
+      {/* Image Section */}
+      <div className="relative h-60 w-full p-4">
+        <div className="relative h-full w-full rounded-4xl overflow-hidden">
+          <Image src={item.imageUrl} alt={item.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+
+          {/* Overlay Badges */}
+          <div className="absolute top-4 left-4 flex gap-2">
+            <span className="bg-white/90 backdrop-blur-md text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">{item.category}</span>
+          </div>
+          <div className="absolute top-4 right-4">
+            <span className="bg-slate-900/80 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full" /> {item.badge}
+            </span>
+          </div>
+          {item.match > 0 && (
+            <div className="absolute bottom-4 left-4">
+              <span
+                className={`text-white text-[10px] font-black px-3 py-1.5 rounded-lg shadow-lg ${
+                  item.match >= 75 ? "bg-[#22C55E]" : item.match >= 50 ? "bg-amber-500" : "bg-slate-500"
+                }`}
+              >
+                {item.match}% match
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="px-6 pb-8 flex flex-col flex-1">
+        <div className="mb-4">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600">{item.brand[0]}</div>
+              <span className="text-xs font-bold text-slate-400">{item.brand} •</span>
+              <div className="flex items-center text-slate-400 gap-0.5">
+                <MapPin size={10} />
+                <span className="text-[10px] font-bold">{item.location}</span>
+              </div>
+            </div>
+          </div>
+          <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 group-hover:text-[#D61F69] transition-colors">{item.title}</h3>
+          <p className="text-xs text-slate-400 font-medium leading-relaxed">{item.desc}</p>
+        </div>
+
+        {/* Pay & Req Boxes */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+              <DollarSign size={10} className="text-green-500" /> Pay
+            </p>
+            <p className="text-xs font-black text-slate-800">{item.pay}</p>
+          </div>
+          <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+              <Users size={10} className="text-blue-500" /> Req
+            </p>
+            <p className="text-xs font-black text-slate-800">{item.req}</p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 mt-auto">
+          <button
+            onClick={onApply}
+            className="flex-1 cursor-pointer text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all"
+            style={{ background: "linear-gradient(to right, #8E2DE2, #F6339A)" }}
+          >
+            Apply Now
+          </button>
+        </div>
+      </div>
+    </motion.div>
   );
 }

@@ -349,8 +349,10 @@ export default function MediaKitPage() {
 }
 
 // Lets the creator preview + adopt one of the five media-kit templates.
-// Plan-locked options are visible (so the upsell is obvious) but disabled
-// until the user upgrades.
+// Plan-locked options are visible (so the upsell is obvious) but the
+// user can't even preview them — clicking does nothing, the card is
+// dimmed + has a "not-allowed" cursor. The persistent upgrade nudge at
+// the bottom is the only path to action for a locked tier.
 function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplate, templateError, onPreview, onSave }) {
   const effectivePlan = getEffectivePlan(profile);
   const hasUnsavedPreview = previewTemplate !== savedTemplate;
@@ -384,15 +386,25 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
             <button
               key={t.id}
               type="button"
-              onClick={() => onPreview(t.id)}
-              className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all cursor-pointer ${
-                isPreviewing ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40" : "border-slate-100 hover:border-slate-200"
+              onClick={() => !locked && onPreview(t.id)}
+              disabled={locked}
+              aria-disabled={locked}
+              title={locked ? `Available on the ${t.minPlan} plan and above` : undefined}
+              className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all ${
+                locked
+                  ? "border-slate-100 bg-slate-50/60 opacity-60 cursor-not-allowed"
+                  : isPreviewing
+                    ? "border-purple-400 ring-2 ring-purple-100 bg-purple-50/40 cursor-pointer"
+                    : "border-slate-100 hover:border-slate-200 cursor-pointer"
               }`}
             >
-              <div className="w-12 h-12 rounded-lg shrink-0 border border-slate-100" style={{ background: t.preview }} />
+              <div
+                className={`w-12 h-12 rounded-lg shrink-0 border border-slate-100 ${locked ? "grayscale" : ""}`}
+                style={{ background: t.preview }}
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-bold text-slate-800 truncate">{t.label}</p>
+                  <p className={`text-xs font-bold truncate ${locked ? "text-slate-500" : "text-slate-800"}`}>{t.label}</p>
                   {isSaved && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">Live</span>}
                 </div>
                 <p className="text-[10px] text-slate-400 truncate">{t.description}</p>

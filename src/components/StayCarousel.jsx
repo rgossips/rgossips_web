@@ -51,12 +51,15 @@ const FALLBACK_STAYS = [
   },
 ];
 
+const DEFAULT_TITLE = "Plan your stay with us";
+
 export default function StayCarousel() {
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
   const [stays, setStays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [sectionTitle, setSectionTitle] = useState(DEFAULT_TITLE);
   const router = useRouter();
 
   // Same list-featured-campaigns response feeds Stay + the Deal Of The Day
@@ -75,6 +78,7 @@ export default function StayCarousel() {
         });
         const data = await res.json();
         if (cancelled) return;
+        if (data?.sectionTitle) setSectionTitle(data.sectionTitle);
         if (Array.isArray(data?.campaigns) && data.campaigns.length > 0) {
           setStays(
             data.campaigns.map((c) => ({
@@ -136,7 +140,7 @@ export default function StayCarousel() {
 
   return (
     <section className="w-full px-4 py-12 flex flex-col items-center overflow-hidden">
-      <SectionTitle text="Featured Campaigns" />
+      <SectionTitle text={sectionTitle} />
 
       <div className="w-full flex justify-center mt-10" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
         <div className="relative w-full max-w-[1480px]">

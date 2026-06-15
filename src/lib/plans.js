@@ -53,22 +53,22 @@ export const PLAN_STRIPE_PRICES = {
 // via NEXT_PUBLIC_RAZORPAY_PLAN_<PLAN>_<CYCLE> in Netlify.
 export const PLAN_RAZORPAY_IDS = {
   starter: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY || "plan_T0s0k1xBZVPVqV",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL  || "plan_T0s0kBViDM3mFb",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY || "plan_T1Y2naNQ87SYv2",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL  || "plan_T1Y2nn8FJlHWD1",
   },
   pro: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_MONTHLY     || "plan_T0s0kJfs3JAGXC",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_ANNUAL      || "plan_T0s0kUVazAqxyT",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_MONTHLY     || "plan_T1Y2nz7EZ9TyVd",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_ANNUAL      || "plan_T1Y2oBVHOMtPtY",
   },
   elite: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_MONTHLY   || "plan_T0s0kgVMveRvcE",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_ANNUAL    || "plan_T0s0kqmNOmiSyj",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_MONTHLY   || "plan_T1Y2oKsjhqTM11",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_ANNUAL    || "plan_T1Y2oVUdagzL8t",
   },
 };
 
 // Public Razorpay key surfaced to the browser checkout. Server-side
 // secret + webhook secret live in Supabase Edge Function secrets only.
-export const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_T0rj3hv8AWWacI";
+export const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_T1WsWMDox1kR7Z";
 
 export const PAYMENT_GATEWAYS = ["stripe", "razorpay"];
 

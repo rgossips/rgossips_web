@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import SectionTitle from "./SectionTitle";
 import {
   Carousel,
@@ -49,6 +50,7 @@ function BrandLogo({ logo, name }) {
 }
 
 export default function BrandsCarousel() {
+  const router = useRouter();
   const [brands, setBrands] = useState([]);
   const [api, setApi] = useState(null);
 
@@ -280,15 +282,14 @@ export default function BrandsCarousel() {
                 <button
                   type="button"
                   onClick={() => {
-                    // Featured brands carry an Instagram URL — open it.
-                    // Otherwise nudge the user toward the campaigns they can
-                    // actually act on.
-                    if (b.instagram_url) {
-                      window.open(b.instagram_url, "_blank", "noopener,noreferrer");
-                      return;
-                    }
-                    const el = document.getElementById("section-recommended-campaigns");
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    // Drop the user into /influencer/campaigns with this
+                    // brand pre-selected in the filter. Campaigns page
+                    // reads ?brand=<name> on mount and seeds
+                    // selectedBrands with that one entry — same brand
+                    // names come from list-campaigns' brandName field
+                    // so a string match is reliable.
+                    if (!b.name) return;
+                    router.push(`/influencer/campaigns?brand=${encodeURIComponent(b.name)}`);
                   }}
                   className="flex flex-col items-center w-full group cursor-pointer"
                 >

@@ -1,15 +1,17 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Star, Video, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchServices, formatINR, iconForName } from "@/lib/services";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const TopServices = () => {
   const router = useRouter();
-  const scrollRef = useRef(null);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [api, setApi] = useState(null);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,37 +26,21 @@ const TopServices = () => {
     };
   }, []);
 
-  // Auto-scroll the mobile carousel — pause on touch.
+  // Track active slide for the dot indicator.
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container || services.length === 0) return;
-    let raf;
-    let scrollPos = 0;
-    const speed = 0.5;
-    const step = () => {
-      scrollPos += speed;
-      if (scrollPos >= container.scrollWidth / 2) scrollPos = 0;
-      container.scrollLeft = scrollPos;
-      raf = requestAnimationFrame(step);
-    };
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const start = () => {
-      if (mq.matches) raf = requestAnimationFrame(step);
-    };
-    const stop = () => cancelAnimationFrame(raf);
-    if (mq.matches) start();
-    const onChange = (e) => (e.matches ? start() : stop());
-    mq.addEventListener("change", onChange);
-    container.addEventListener("touchstart", stop);
-    container.addEventListener("touchend", () => {
-      scrollPos = container.scrollLeft;
-      start();
-    });
-    return () => {
-      stop();
-      mq.removeEventListener("change", onChange);
-    };
-  }, [services]);
+    if (!api) return;
+    setCurrent(api.selectedScrollSnap());
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    return () => api.off("select", onSelect);
+  }, [api]);
+
+  // Auto-advance one slide every 3.5s; Embla's loop wraps back to start.
+  useEffect(() => {
+    if (!api) return;
+    const interval = setInterval(() => api.scrollNext(), 3500);
+    return () => clearInterval(interval);
+  }, [api]);
 
   if (loading) {
     return (
@@ -83,11 +69,29 @@ const TopServices = () => {
         </div>
       </div>
 
-      {/* ── MOBILE: auto-scroll carousel ── */}
-      <div ref={scrollRef} className="flex lg:hidden gap-4 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-        {[...services, ...services].map((s, i) => (
-          <CarouselCard key={`${s.id}-${i}`} service={s} onClick={() => router.push(`/influencer/services/${s.slug}`)} />
-        ))}
+      {/* ── MOBILE: one-card-at-a-time auto-flowing carousel ── */}
+      <div className="lg:hidden">
+        <Carousel opts={{ align: "center", loop: true }} setApi={setApi} className="w-full">
+          <CarouselContent className="-ml-3">
+            {services.map((s) => (
+              <CarouselItem key={s.id} className="pl-3 basis-[92%]">
+                <CarouselCard service={s} onClick={() => router.push(`/influencer/services/${s.slug}`)} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+        {services.length > 1 && (
+          <div className="flex justify-center mt-4 gap-2">
+            {services.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => api?.scrollTo(i)}
+                className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-8" : "bg-slate-200 w-2"}`}
+                aria-label={`Go to service ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── DESKTOP: featured + list ── */}
@@ -203,35 +207,44 @@ function ServiceRow({ service, onClick }) {
   );
 }
 
-// ── Mobile carousel card ────────────────────────────────────────────────
+// ── Mobile carousel card — fills the slide (one-at-a-time view) ─────────
 function CarouselCard({ service, onClick }) {
   const Icon = iconForName(service.icon_name);
+  const hasImage = !!service.featured_image_url;
   return (
-    <div onClick={onClick} className="min-w-[260px] max-w-[260px] shrink-0 rounded-2xl border border-slate-200 bg-white overflow-hidden cursor-pointer group">
-      <div className={`relative h-36 bg-gradient-to-br ${service.hero_gradient} flex items-center justify-center overflow-hidden`}>
-        <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-[9px] font-black px-2 py-0.5 rounded-full">{service.tag}</span>
-        <Icon size={42} strokeWidth={1.4} className="text-white/85 group-hover:scale-110 transition-transform duration-500" />
+    <div onClick={onClick} className="w-full rounded-3xl border border-slate-200 bg-white overflow-hidden cursor-pointer group">
+      <div className={`relative h-48 flex items-center justify-center overflow-hidden ${hasImage ? "bg-slate-100" : `bg-gradient-to-br ${service.hero_gradient}`}`}>
+        {hasImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={service.featured_image_url} alt={service.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        )}
+        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[10px] font-black px-2.5 py-1 rounded-full z-10">{service.tag}</span>
+        {!hasImage && <Icon size={56} strokeWidth={1.4} className="text-white/85 group-hover:scale-110 transition-transform duration-500" />}
       </div>
-      <div className="p-3">
-        <h4 className="text-sm font-black text-slate-900 leading-tight mb-2 line-clamp-2">{service.title}</h4>
+      <div className="p-4">
+        <h4 className="text-base font-black text-slate-900 leading-tight mb-2 line-clamp-2">{service.title}</h4>
+        <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-3">{service.about || service.description}</p>
         <div className="flex items-center gap-1 mb-3">
-          <Star size={12} className="fill-amber-400 text-amber-400" />
-          <span className="text-[10px] font-black text-slate-700">
+          <Star size={13} className="fill-amber-400 text-amber-400" />
+          <span className="text-[11px] font-black text-slate-700">
             {Number(service.rating_avg || 0).toFixed(1)}
-            <span className="text-slate-400 font-bold"> ({service.reviews_count || 0})</span>
+            <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
           </span>
         </div>
-        <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
-          <p className="text-base font-black text-slate-900">
-            {formatINR(service.price_starting)}
-            {service.price_suffix && <span className="text-[10px] font-bold text-slate-400">{service.price_suffix}</span>}
-          </p>
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Starting at</p>
+            <p className="text-lg font-black text-slate-900">
+              {formatINR(service.price_starting)}
+              {service.price_suffix && <span className="text-[10px] font-bold text-slate-400">{service.price_suffix}</span>}
+            </p>
+          </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onClick();
             }}
-            className="btn-purple text-[10px] font-black px-3 py-1.5 rounded-xl cursor-pointer"
+            className="btn-purple text-xs font-black px-5 py-2.5 rounded-xl cursor-pointer"
           >
             Get Quote
           </button>

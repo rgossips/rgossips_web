@@ -53,9 +53,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Admin-editable section title. Read separately so the carousel can
+    // re-label itself even when the featured list is empty.
+    const DEFAULT_SECTION_TITLE = "Plan your stay with us";
+    let sectionTitle = DEFAULT_SECTION_TITLE;
+    try {
+      const { data: setting } = await supabaseAdmin
+        .from("homepage_settings")
+        .select("value")
+        .eq("key", "featured_section_title")
+        .maybeSingle();
+      if (setting?.value) sectionTitle = setting.value;
+    } catch {
+      // Table missing in older deployments — fall back to default.
+    }
+
     const ids = (featured || []).map((r) => r.campaign_id);
     if (ids.length === 0) {
-      return new Response(JSON.stringify({ campaigns: [] }), {
+      return new Response(JSON.stringify({ campaigns: [], sectionTitle }), {
         status: 200,
         headers: jsonHeaders,
       });
@@ -140,7 +155,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    return new Response(JSON.stringify({ campaigns: out }), {
+    return new Response(JSON.stringify({ campaigns: out, sectionTitle }), {
       status: 200,
       headers: jsonHeaders,
     });

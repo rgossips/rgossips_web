@@ -1,6 +1,16 @@
-import { Star, Users, Zap } from "lucide-react";
+import { ShieldCheck, Zap } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+// Mirrors src/lib/brandProfile.js BANDS so the card and the brand-side
+// dashboard speak the same colour language.
+const TRUST_BAND_COLORS = {
+  Excellent: "text-emerald-600 bg-emerald-50",
+  "Very Good": "text-blue-600 bg-blue-50",
+  Good: "text-amber-600 bg-amber-50",
+  Fair: "text-orange-600 bg-orange-50",
+  Poor: "text-slate-500 bg-slate-50",
+};
 
 const BrandCard = ({ brand, matchScore }) => {
   const router = useRouter();
@@ -8,6 +18,10 @@ const BrandCard = ({ brand, matchScore }) => {
     matchScore >= 80 ? "text-emerald-500 bg-emerald-50" :
     matchScore >= 60 ? "text-amber-500 bg-amber-50" :
     "text-slate-400 bg-slate-50";
+
+  const trustScore = Number(brand.trustScore) || 0;
+  const trustBand = brand.trustBand || "";
+  const trustColor = TRUST_BAND_COLORS[trustBand] || "text-slate-500 bg-slate-50";
 
   const handleOpen = () => {
     // Open the campaigns list filtered by this brand
@@ -66,30 +80,19 @@ const BrandCard = ({ brand, matchScore }) => {
               {brand.activeCampaigns}
             </span>
           </div>
-          <div className="flex justify-between w-full">
-            <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">
-              Avg Payout
-            </span>
-            <span className="text-sm font-bold text-[#00BA88]">
-              {brand.payout}
-            </span>
-          </div>
         </div>
 
-        {/* Footer */}
-        <div className="w-full flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-1.5">
-            <Star className="text-amber-400 fill-amber-400" size={16} />
-            <span className="text-xs font-bold text-slate-700">
-              {brand.rating}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Users className="text-slate-300" size={16} />
-            <span className="text-xs font-bold text-slate-400">
-              {brand.followers}
-            </span>
-          </div>
+        {/* Footer — trust score on the left */}
+        <div className="w-full flex items-center pt-4 border-t border-slate-50">
+          {trustScore > 0 && (
+            <div
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${trustColor}`}
+              title={trustBand ? `Trust score · ${trustBand}` : "Trust score"}
+            >
+              <ShieldCheck size={14} />
+              <span className="text-xs font-black">{trustScore}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
