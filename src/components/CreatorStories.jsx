@@ -66,32 +66,44 @@ const fallbackStories = [
   },
 ];
 
+const DEFAULT_TITLE = "TOP CREATOR STORIES";
+
 export default function CreatorStories() {
   const supabase = createClient();
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
   const [stories, setStories] = useState(fallbackStories);
+  const [sectionTitle, setSectionTitle] = useState(DEFAULT_TITLE);
 
-  // Pull admin-published stories. When the table is empty we stay on the
-  // hardcoded fallback so the section never renders blank.
+  // Pull admin-published stories + the editable section title. When the
+  // stories table is empty we stay on the hardcoded fallback so the
+  // section never renders blank.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("creator_stories")
-        .select("username, avatar_url, video_url, poster_url")
-        .eq("is_active", true)
-        .order("position", { ascending: true });
+      const [storiesRes, titleRes] = await Promise.all([
+        supabase
+          .from("creator_stories")
+          .select("username, avatar_url, video_url, poster_url")
+          .eq("is_active", true)
+          .order("position", { ascending: true }),
+        supabase
+          .from("homepage_settings")
+          .select("value")
+          .eq("key", "creator_stories_section_title")
+          .maybeSingle(),
+      ]);
       if (cancelled) return;
-      if (data && data.length > 0) {
+      if (storiesRes.data && storiesRes.data.length > 0) {
         setStories(
-          data.map((r) => ({
+          storiesRes.data.map((r) => ({
             name: r.username,
             image: r.avatar_url || r.poster_url || "",
             link: r.video_url,
           }))
         );
       }
+      if (titleRes.data?.value) setSectionTitle(titleRes.data.value);
     })();
     return () => {
       cancelled = true;
@@ -127,7 +139,7 @@ export default function CreatorStories() {
   return (
     <section className="w-full px-3 py-6 lg:px-8">
       {/* Heading */}
-      <SectionTitle text={"TOP CREATOR STORIES"} />
+      <SectionTitle text={sectionTitle} />
 
       {/* Carousel */}
       {/* Carousel Wrapper with Arrows */}

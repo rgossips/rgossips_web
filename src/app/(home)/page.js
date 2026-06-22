@@ -19,6 +19,7 @@ import CategoryGrid from "@/components/CategoryGrid";
 import CTASection from "@/components/CTASection";
 import { useGlobal } from "@/context/GlobalContext";
 import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import BrandForms from "@/components/BrandForms";
 import Hero2 from "@/components/Hero2";
 import ProductPreview from "@/components/ProductPreview";
@@ -60,6 +61,18 @@ const features = [
 
 export default function Home() {
   const { scrollTo, setScrollTo } = useGlobal();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Admin invitation links (?invited=<instagram-handle>) jump straight
+  // into the sign-up flow with role + IG details pre-filled by the
+  // login page. We just forward the param.
+  useEffect(() => {
+    const invited = searchParams?.get("invited");
+    if (invited) {
+      router.replace(`/login?invited=${encodeURIComponent(invited)}`);
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     // 1. Check if scrollTo exists
