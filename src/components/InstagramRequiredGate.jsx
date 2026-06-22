@@ -70,16 +70,31 @@ export default function InstagramRequiredGate() {
       if (updErr) throw new Error(updErr.message);
       if (updData?.error) throw new Error(updData.error);
 
-      // Refresh follower/media data in the background (influencer only —
-      // refresh-instagram is influencer-scoped today). Refresh the cached
-      // profile either way so the gate disappears.
+      // CRITICAL: refresh the cached profile so the gate's mount
+      // condition (`!profile.instagram_access_token`) re-evaluates and
+      // the overlay unmounts. We do this BEFORE the optional IG-data
+      // backfill so the gate disappears even if refresh-instagram has
+      // a transient failure.
+      await refreshProfile();
+
+      // Background IG-data backfill (followers, media, demographics).
+      // Best-effort — refresh-instagram is influencer-scoped today and
+      // can fail for non-token reasons (Meta rate limit, partial outage)
+      // without invalidating the token we just stored. Swallow errors
+      // so they don't leave the gate stuck.
       if (role === "influencer") {
-        await refreshInstagram(user.id);
-      } else {
-        await refreshProfile();
+        try {
+          await refreshInstagram(user.id);
+        } catch (_) {
+          // non-fatal
+        }
       }
     } catch (err) {
       setError(err.message || "Failed to connect Instagram");
+    } finally {
+      // Always clear the spinner — on success the gate unmounts when
+      // profile.instagram_access_token populates; on failure the user
+      // needs to be able to retry, which means the button must be live.
       setConnecting(false);
     }
   };
