@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
+import InstagramRequiredGate from "@/components/InstagramRequiredGate";
 
 const publicPaths = [
   "/",
@@ -122,5 +123,20 @@ export default function ProtectedRoute({ children }) {
     return <BrandedLoader />;
   }
 
-  return children;
+  // Instagram is a mandatory connection for both brands and influencers.
+  // If the profile doesn't have an access token (invited users who skipped
+  // OAuth, or historical accounts), render the dashboard *and* the gate
+  // overlay — the gate is fixed-position and blocks all interaction until
+  // the user completes OAuth. Notifications/chats sub-routes are no
+  // exception: missing IG → gate, full stop.
+  const needsIgConnect =
+    (isInfluencerRoute || isBrandRoute) &&
+    !profile.instagram_access_token;
+
+  return (
+    <>
+      {children}
+      {needsIgConnect && <InstagramRequiredGate />}
+    </>
+  );
 }

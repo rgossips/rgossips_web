@@ -145,23 +145,20 @@ const LoginInner = () => {
           return;
         }
 
-        // Drop the user straight into the sign-up form with everything
-        // pre-filled. instaProfile carries just the username + display
-        // name; refresh-instagram will populate followers/media once the
-        // brand connects IG from the dashboard.
+        // Invited users still have to OAuth Instagram — IG connection is
+        // mandatory and we need the real access token (admin only supplied
+        // a handle). Auto-set role + name, store the expected handle for
+        // the handle-match check, then jump to step 2 (InstagramConnect).
+        // No instaProfile pre-fill — we want the real OAuth result.
         const inv = data.invitation;
-        setInvitation({ id: inv.id });
+        setInvitation({ id: inv.id, instagramHandle: (inv.instagram_username || handle).toLowerCase() });
         setSignupData((prev) => ({
           ...prev,
           role: data.role,
           name: inv.name || prev.name,
         }));
-        setInstaProfile({
-          username: inv.instagram_username || handle,
-          profilePictureUrl: inv.logo_url || "",
-        });
         setFlow("signup");
-        setStep(3); // → SignUpForm / BrandSignUpForm
+        setStep(2); // → InstagramConnect (mandatory)
       } catch (e) {
         if (cancelled) return;
         setInvitationBlock({
@@ -387,10 +384,28 @@ const LoginInner = () => {
       return;
     }
 
-    // Pre-invited brands/influencers must come in via the email link —
-    // not by signing up directly with their Instagram. We check both
-    // invitation tables and bounce them to a "use the invitation link"
-    // screen so they don't end up with a second, un-claimed account.
+    // Invitation flow: the user already proved invitation ownership by
+    // clicking the email link. Verify the OAuth'd handle matches the
+    // invitation's handle (case-insensitive) — prevents claiming a
+    // brand invitation with a personal IG by accident.
+    if (invitation?.instagramHandle) {
+      const oauthHandle = profile.username.toLowerCase();
+      if (oauthHandle !== invitation.instagramHandle) {
+        setError(
+          `This invitation is for @${invitation.instagramHandle}. ` +
+          `You connected @${profile.username}. Please reconnect with the right Instagram account.`
+        );
+        return;
+      }
+      // Match — accept and continue to phone OTP step.
+      setInstaProfile(profile);
+      nextStep();
+      return;
+    }
+
+    // Non-invitation signup: if the OAuth'd handle matches a pending
+    // invitation we never knew about, bounce them to the invitation flow
+    // so they don't end up with a duplicate account.
     try {
       const { data } = await supabase.functions.invoke("lookup-invitation", {
         body: { token: profile.username },

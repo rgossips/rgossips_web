@@ -169,6 +169,15 @@ Deno.serve(async (req) => {
         contact_phone: phone || "",
         instagram_username: instagram || "",
         logo_url: storedProfilePictureUrl,
+        profile_photo_url: storedProfilePictureUrl,
+        // IG OAuth columns — mandatory for new signups via migration 031.
+        // Stays null only if the caller forgot to pass them (we'll catch
+        // that via the InstagramRequiredGate on the dashboard).
+        instagram_access_token: instagramAccessToken || null,
+        instagram_token_expires_at: instagramTokenExpiresAt || null,
+        followers_count: followersCount || 0,
+        follows_count: followsCount || 0,
+        media_count: mediaCount || 0,
         gstin: gstinValue,
         gstin_legal_name: gstinData?.legalName || "",
         gstin_trade_name: gstinData?.tradeName || "",
