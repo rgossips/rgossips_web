@@ -713,6 +713,16 @@ export default Login;
 //   - "invalid" / "error": link broken or service failed → let them
 //     fall through to a normal sign-up
 function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn }) {
+  // The "use-link" path navigates back through `/?invited=<handle>`
+  // (same shape the admin email uses), which the home page forwards
+  // into the login page's invitation flow — role + IG details auto-
+  // filled, only phone OTP left. Using window.location.assign forces a
+  // fresh page load so the login page's setup effect re-runs cleanly.
+  const handleUseInvitation = () => {
+    if (!block.inviteHandle) return;
+    window.location.assign(`/?invited=${encodeURIComponent(block.inviteHandle)}`);
+  };
+
   return (
     <div className="w-full max-w-sm mx-auto space-y-5 pt-6">
       <div className="flex justify-center">
@@ -740,6 +750,24 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn }) {
         >
           Sign in instead
         </button>
+      ) : block.kind === "use-link" ? (
+        <div className="space-y-3">
+          {block.inviteHandle && (
+            <button
+              onClick={handleUseInvitation}
+              className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            >
+              Continue with my invitation →
+            </button>
+          )}
+          <button
+            onClick={onContinueSignUp}
+            className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
+          >
+            Sign up with a different Instagram
+          </button>
+        </div>
       ) : (
         <button
           onClick={onContinueSignUp}

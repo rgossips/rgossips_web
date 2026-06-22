@@ -23,6 +23,11 @@ Deno.serve(async (req) => {
 
     const conflicts: string[] = [];
     let instagramConflictSource = "";
+    // "profile" → an actual account exists with this IG (treat as conflict)
+    // "invitation" → only a pending invitation row exists (NOT a conflict —
+    //   the caller should route the user into the invitation flow instead
+    //   of telling them to sign in)
+    let instagramConflictKind: "profile" | "invitation" | "" = "";
 
     // Check phone in auth.users via RPC (uses service role, can access auth schema)
     if (phone) {
@@ -77,19 +82,25 @@ Deno.serve(async (req) => {
           .maybeSingle(),
       ]);
 
-      if (infInsta.data || brandInsta.data || brandInvite.data || infInvite.data) {
+      const profileMatch = infInsta.data || brandInsta.data;
+      const inviteMatch = brandInvite.data || infInvite.data;
+
+      // A real existing account is a true conflict — the user must sign
+      // in instead of creating a duplicate. A pending invitation is NOT
+      // a conflict; we surface it as `instagramConflictKind: "invitation"`
+      // so the client can flip into the invitation flow.
+      if (profileMatch) {
         conflicts.push("instagram");
-        // Determine the source for better error messages
-        if (infInsta.data || infInvite.data) {
-          instagramConflictSource = "influencer";
-        } else {
-          instagramConflictSource = "brand";
-        }
+        instagramConflictKind = "profile";
+        instagramConflictSource = (infInsta.data) ? "influencer" : "brand";
+      } else if (inviteMatch) {
+        instagramConflictKind = "invitation";
+        instagramConflictSource = (infInvite.data) ? "influencer" : "brand";
       }
     }
 
     return new Response(
-      JSON.stringify({ conflicts, instagramConflictSource }),
+      JSON.stringify({ conflicts, instagramConflictSource, instagramConflictKind }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {
