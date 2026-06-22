@@ -124,14 +124,14 @@ export default function ProtectedRoute({ children }) {
   }
 
   // Instagram is a mandatory connection for both brands and influencers.
-  // If the profile doesn't have an access token (invited users who skipped
-  // OAuth, or historical accounts), render the dashboard *and* the gate
-  // overlay — the gate is fixed-position and blocks all interaction until
-  // the user completes OAuth. Notifications/chats sub-routes are no
-  // exception: missing IG → gate, full stop.
+  // check-profile strips the raw token from the response and exposes a
+  // derived `instagram_connected` boolean instead — we gate on that.
+  // Render the dashboard *and* the gate overlay — the gate is fixed-
+  // position and blocks all interaction until the user completes OAuth.
+  // Notifications/chats sub-routes are no exception.
   const needsIgConnect =
     (isInfluencerRoute || isBrandRoute) &&
-    !profile.instagram_access_token;
+    !profile.instagram_connected;
 
   return (
     <>

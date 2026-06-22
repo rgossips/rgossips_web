@@ -34,11 +34,18 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Strip sensitive fields before returning to client
+    // Strip sensitive fields before returning to client.
+    // Expose a derived `instagram_connected` boolean + expiry timestamp
+    // so the dashboard gate / banner can render correctly without ever
+    // seeing the raw token. Token + raw expiry stay server-side only.
     const sanitize = (data: Record<string, unknown> | null) => {
       if (!data) return data;
       const { instagram_access_token, instagram_token_expires_at, ...safe } = data;
-      return safe;
+      return {
+        ...safe,
+        instagram_connected: !!instagram_access_token,
+        instagram_token_expires_at: instagram_token_expires_at || null,
+      };
     };
 
     // If a specific table is requested, check only that one
