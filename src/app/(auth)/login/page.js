@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -40,7 +40,10 @@ const formatDisplayPhone = (raw) => {
   return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 };
 
-const Login = () => {
+// Inner component — accesses useSearchParams(), so the export below
+// wraps it in <Suspense> to satisfy Next's CSR-bailout requirement
+// during static prerender of /login.
+const LoginInner = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -688,6 +691,18 @@ const Login = () => {
     </div>
   );
 };
+
+const Login = () => (
+  <Suspense
+    fallback={
+      <div className="flex items-center justify-center h-screen bg-[#0F0F1A]">
+        <Loader2 size={28} className="animate-spin text-pink-500" />
+      </div>
+    }
+  >
+    <LoginInner />
+  </Suspense>
+);
 
 export default Login;
 

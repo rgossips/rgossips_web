@@ -18,7 +18,7 @@ import ProductSuite from "@/components/ProductSuite";
 import CategoryGrid from "@/components/CategoryGrid";
 import CTASection from "@/components/CTASection";
 import { useGlobal } from "@/context/GlobalContext";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BrandForms from "@/components/BrandForms";
 import Hero2 from "@/components/Hero2";
@@ -59,20 +59,26 @@ const features = [
   },
 ];
 
-export default function Home() {
-  const { scrollTo, setScrollTo } = useGlobal();
+// useSearchParams() forces CSR-bailout, so isolating it in a
+// tiny child component (wrapped in <Suspense> at render time)
+// keeps the rest of the marketing home statically prerenderable
+// for SEO.
+function InvitationRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Admin invitation links (?invited=<instagram-handle>) jump straight
-  // into the sign-up flow with role + IG details pre-filled by the
-  // login page. We just forward the param.
   useEffect(() => {
     const invited = searchParams?.get("invited");
     if (invited) {
       router.replace(`/login?invited=${encodeURIComponent(invited)}`);
     }
   }, [searchParams, router]);
+
+  return null;
+}
+
+export default function Home() {
+  const { scrollTo, setScrollTo } = useGlobal();
 
   useEffect(() => {
     // 1. Check if scrollTo exists
@@ -101,6 +107,9 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center w-full">
+      <Suspense fallback={null}>
+        <InvitationRedirect />
+      </Suspense>
       <HomeHero />
       {/* <HomeCarousel /> */}
       <BrandsCarousel />
