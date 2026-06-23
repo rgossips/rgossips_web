@@ -175,6 +175,7 @@ export default function DiscoverBrands() {
       <AnimatePresence>
         {isFiltersOpen && (
           <FilterModal
+            title="Filter Brands"
             onClose={() => setIsFiltersOpen(false)}
             selectedCategories={selectedCategories}
             setSelectedCategories={setSelectedCategories}

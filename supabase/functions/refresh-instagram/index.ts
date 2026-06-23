@@ -14,7 +14,11 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, force } = await req.json();
+    const { userId, force, debug } = await req.json();
+    // When debug=true we capture every raw Meta response and return them
+    // verbatim in the function's response body so we can compare what the
+    // Graph API hands us against what the IG app displays.
+    const debugCaptures: Record<string, unknown> = {};
 
     if (!userId) {
       return new Response(
@@ -91,6 +95,7 @@ Deno.serve(async (req) => {
       `https://graph.instagram.com/v22.0/me?fields=username,name,profile_picture_url,followers_count,follows_count,media_count&access_token=${encodeURIComponent(accessToken)}`
     );
     const igProfile = await profileRes.json();
+    if (debug) debugCaptures.profile = igProfile;
 
     if (igProfile.error) {
       // Token might be expired/revoked
@@ -148,6 +153,7 @@ Deno.serve(async (req) => {
         `https://graph.instagram.com/v22.0/me/insights?metric=reach,views,total_interactions,accounts_engaged&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
       );
       const insights = await insightsRes.json();
+      if (debug) debugCaptures.insights_days_28 = insights;
       if (insights?.data) {
         for (const metric of insights.data) {
           const value = metric?.total_value?.value ?? 0;
@@ -165,6 +171,202 @@ Deno.serve(async (req) => {
       if (!totalImpressions) totalImpressions = totalReach;
     } catch (e) {
       console.error("Failed to fetch account insights:", e);
+    }
+
+    // Debug-only: alternate metric shapes to compare against what the IG
+    // app displays. We try `period=day` (daily values across the window),
+    // a single-metric reach call to rule out multi-metric quirks, and the
+    // profile_views/website_clicks slice. None of these write to the DB.
+    if (debug) {
+      try {
+        const r = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=reach&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
+        );
+        debugCaptures.reach_only_days_28 = await r.json();
+      } catch (e) { debugCaptures.reach_only_days_28 = { fetch_error: String((e as any)?.message || e) }; }
+
+      try {
+        const r = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=reach&period=day&access_token=${encodeURIComponent(accessToken)}`
+        );
+        debugCaptures.reach_daily = await r.json();
+      } catch (e) { debugCaptures.reach_daily = { fetch_error: String((e as any)?.message || e) }; }
+
+      try {
+        const r = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=views&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
+        );
+        debugCaptures.views_only_days_28 = await r.json();
+      } catch (e) { debugCaptures.views_only_days_28 = { fetch_error: String((e as any)?.message || e) }; }
+
+      try {
+        const r = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=profile_views,website_clicks&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
+        );
+        debugCaptures.profile_metrics_days_28 = await r.json();
+      } catch (e) { debugCaptures.profile_metrics_days_28 = { fetch_error: String((e as any)?.message || e) }; }
+
+      // OPTION-1 DRY RUN: explicit 28-day window with period=day, then sum
+      // the per-day values ourselves. Stored values are NOT updated — this
+      // is purely for comparison against the IG app numbers.
+      try {
+        const untilSec = Math.floor(Date.now() / 1000);
+        const sinceSec = untilSec - 28 * 24 * 60 * 60;
+        const r = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=reach,views,total_interactions,accounts_engaged&period=day&since=${sinceSec}&until=${untilSec}&access_token=${encodeURIComponent(accessToken)}`
+        );
+        const raw = await r.json();
+        const sums: Record<string, number> = {};
+        const dayCounts: Record<string, number> = {};
+        const series: Record<string, Array<{ end_time: string; value: number }>> = {};
+        for (const m of (raw?.data || [])) {
+          const name: string = m?.name;
+          const values: Array<{ value: number; end_time: string }> = m?.values || [];
+          series[name] = values.map((v) => ({ end_time: v.end_time, value: Number(v.value) || 0 }));
+          sums[name] = values.reduce((s, v) => s + (Number(v.value) || 0), 0);
+          dayCounts[name] = values.length;
+        }
+        debugCaptures.option1_summed_28d = {
+          window: {
+            since: new Date(sinceSec * 1000).toISOString(),
+            until: new Date(untilSec * 1000).toISOString(),
+            sinceSec,
+            untilSec,
+          },
+          sums,
+          dayCounts,
+          series,
+          raw,
+        };
+      } catch (e) {
+        debugCaptures.option1_summed_28d = { fetch_error: String((e as any)?.message || e) };
+      }
+
+      // API VERSION PROBE — does the silent days_28 → day downgrade happen
+      // on every Graph API version? Try a few. For each, log what `period`
+      // Meta echoes back and what `total_value` it returns.
+      try {
+        const versions = ['v18.0', 'v19.0', 'v20.0', 'v21.0', 'v22.0', 'v23.0'];
+        const versionProbe: Record<string, any> = {};
+        for (const v of versions) {
+          try {
+            const r = await fetch(
+              `https://graph.instagram.com/${v}/me/insights?metric=reach,views,total_interactions,accounts_engaged&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
+            );
+            const raw = await r.json();
+            const summary = (raw?.data || []).map((m: any) => ({
+              name: m?.name,
+              period_echoed: m?.period,
+              total_value: m?.total_value?.value ?? null,
+              has_values_array: Array.isArray(m?.values),
+              values_count: m?.values?.length ?? 0,
+            }));
+            versionProbe[v] = {
+              status: r.status,
+              ok: r.ok,
+              error: raw?.error ?? null,
+              metric_count: (raw?.data || []).length,
+              summary,
+            };
+          } catch (e) {
+            versionProbe[v] = { fetch_error: String((e as any)?.message || e) };
+          }
+        }
+        debugCaptures.version_probe_days_28 = versionProbe;
+      } catch (e) {
+        debugCaptures.version_probe_days_28 = { fetch_error: String((e as any)?.message || e) };
+      }
+
+      // EXTRA PROBE — three independent variables to see if any of them
+      // escapes the silent days_28 → day downgrade:
+      //   1. graph.facebook.com vs graph.instagram.com
+      //   2. /me vs explicit /<ig-user-id>
+      //   3. metric_type=total_value vs time_series
+      // We hit every combination of these and report what Meta echoes
+      // back so we can see which (if any) returns the real 28-day value.
+      try {
+        const hosts = ['graph.instagram.com', 'graph.facebook.com'];
+        const targets = ['me', '17841453381496033'];
+        const metricTypes = ['total_value', 'time_series'];
+        const matrix: Record<string, any> = {};
+        for (const host of hosts) {
+          for (const target of targets) {
+            for (const mt of metricTypes) {
+              const key = `${host} | /${target} | mt=${mt}`;
+              try {
+                const r = await fetch(
+                  `https://${host}/v22.0/${target}/insights?metric=reach,views,total_interactions,accounts_engaged&period=days_28${mt === 'total_value' ? '&metric_type=total_value' : ''}&access_token=${encodeURIComponent(accessToken)}`
+                );
+                const raw = await r.json();
+                matrix[key] = {
+                  status: r.status,
+                  ok: r.ok,
+                  error: raw?.error ?? null,
+                  summary: (raw?.data || []).map((m: any) => ({
+                    name: m?.name,
+                    period_echoed: m?.period,
+                    total_value: m?.total_value?.value ?? null,
+                    values_count: m?.values?.length ?? 0,
+                    values_sum: Array.isArray(m?.values)
+                      ? m.values.reduce(
+                          (s: number, v: any) => s + (Number(v?.value) || 0),
+                          0,
+                        )
+                      : null,
+                  })),
+                };
+              } catch (e) {
+                matrix[key] = { fetch_error: String((e as any)?.message || e) };
+              }
+            }
+          }
+        }
+        debugCaptures.host_target_metrictype_probe = matrix;
+      } catch (e) {
+        debugCaptures.host_target_metrictype_probe = { fetch_error: String((e as any)?.message || e) };
+      }
+
+      // OPTION-1 ISOLATED: per-metric calls with same 28-day window.
+      // Grouped queries dropped 3 of 4 metrics; isolating them may
+      // surface the missing values. Each result has its own series + sum.
+      try {
+        const untilSec = Math.floor(Date.now() / 1000);
+        const sinceSec = untilSec - 28 * 24 * 60 * 60;
+        const isolatedResults: Record<string, any> = {};
+        for (const metric of ['reach', 'views', 'total_interactions', 'accounts_engaged']) {
+          try {
+            const r = await fetch(
+              `https://graph.instagram.com/v22.0/me/insights?metric=${metric}&period=day&since=${sinceSec}&until=${untilSec}&access_token=${encodeURIComponent(accessToken)}`
+            );
+            const raw = await r.json();
+            const entry = raw?.data?.[0];
+            const values: Array<{ value: number; end_time: string }> = entry?.values || [];
+            isolatedResults[metric] = {
+              status: r.status,
+              ok: r.ok,
+              returned_period: entry?.period ?? null,
+              day_count: values.length,
+              sum: values.reduce((s, v) => s + (Number(v.value) || 0), 0),
+              series: values.map((v) => ({ end_time: v.end_time, value: Number(v.value) || 0 })),
+              error: raw?.error ?? null,
+              // Keep first 3 values raw so we can inspect schema if the
+              // aggregation logic is misreading something.
+              raw_first_3: values.slice(0, 3),
+            };
+          } catch (e) {
+            isolatedResults[metric] = { fetch_error: String((e as any)?.message || e) };
+          }
+        }
+        debugCaptures.option1_isolated_28d = {
+          window: {
+            since: new Date(sinceSec * 1000).toISOString(),
+            until: new Date(untilSec * 1000).toISOString(),
+          },
+          results: isolatedResults,
+        };
+      } catch (e) {
+        debugCaptures.option1_isolated_28d = { fetch_error: String((e as any)?.message || e) };
+      }
     }
 
     // Build top reels: sort by engagement (likes + comments), take top 6
@@ -192,6 +394,7 @@ Deno.serve(async (req) => {
         `https://graph.instagram.com/v22.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=city&access_token=${encodeURIComponent(accessToken)}`
       );
       const cityData = await cityRes.json();
+      if (debug) debugCaptures.demographics_city = cityData;
       const cityBreakdown = cityData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
       const topCities = cityBreakdown
         .sort((a: any, b: any) => b.value - a.value)
@@ -210,6 +413,7 @@ Deno.serve(async (req) => {
         `https://graph.instagram.com/v22.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=age,gender&access_token=${encodeURIComponent(accessToken)}`
       );
       const ageGenderData = await ageGenderRes.json();
+      if (debug) debugCaptures.demographics_age_gender = ageGenderData;
       const ageGenderBreakdown = ageGenderData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
 
       // Aggregate by age
@@ -246,6 +450,7 @@ Deno.serve(async (req) => {
         `https://graph.instagram.com/v22.0/me/insights?metric=follower_demographics&period=days_28&metric_type=total_value&breakdown=country&access_token=${encodeURIComponent(accessToken)}`
       );
       const countryData = await countryRes.json();
+      if (debug) debugCaptures.demographics_country = countryData;
       const countryBreakdown = countryData?.data?.[0]?.total_value?.breakdowns?.[0]?.results || [];
       const topCountries = countryBreakdown
         .sort((a: any, b: any) => b.value - a.value)
@@ -374,6 +579,7 @@ Deno.serve(async (req) => {
           totalInteractions,
           accountsEngaged,
         },
+        ...(debug ? { debug: debugCaptures } : {}),
       }),
       { status: 200, headers: jsonHeaders }
     );

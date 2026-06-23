@@ -178,30 +178,50 @@ Deno.serve(async (req) => {
       userId = profile.brand_id;
     }
 
-    // Step 2: Generate session using temp password trick
-    const tempPassword = crypto.randomUUID();
-
-    // Set temp password via Admin REST API
-    const updateRes = await authAdminFetch(`users/${userId}`, "PUT", {
-      password: tempPassword,
-    });
-
-    if (!updateRes.ok) {
+    // Step 2: Generate session.
+    //
+    // Stable per-user password stored in app_metadata.session_password.
+    // We do NOT rotate it on every sign-in — that would invalidate every
+    // existing session on every device. First-ever sign-in generates +
+    // persists the password; subsequent sign-ins reuse it.
+    const userLookup = await authAdminFetch(`users/${userId}`);
+    if (!userLookup.ok) {
       return new Response(
-        JSON.stringify({
-          error: "Failed to prepare session: " + JSON.stringify(updateRes.data),
-        }),
+        JSON.stringify({ error: "Failed to load user: " + JSON.stringify(userLookup.data) }),
         { status: 200, headers: jsonHeaders }
       );
     }
+    const existingPassword: string | undefined =
+      userLookup.data?.app_metadata?.session_password;
+    let sessionPassword: string;
+    if (existingPassword) {
+      sessionPassword = existingPassword;
+    } else {
+      sessionPassword = crypto.randomUUID();
+      const setRes = await authAdminFetch(`users/${userId}`, "PUT", {
+        password: sessionPassword,
+        app_metadata: {
+          ...(userLookup.data?.app_metadata || {}),
+          session_password: sessionPassword,
+        },
+      });
+      if (!setRes.ok) {
+        return new Response(
+          JSON.stringify({
+            error: "Failed to prepare session: " + JSON.stringify(setRes.data),
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    }
 
     // Get the user's email from the admin response to sign in
-    const userEmail = updateRes.data?.email;
-    const userPhone = updateRes.data?.phone;
+    const userEmail = userLookup.data?.email;
+    const userPhone = userLookup.data?.phone;
 
-    // Sign in with temp password via GoTrue token endpoint
+    // Sign in with the stable password via GoTrue token endpoint
     // Use email if available, otherwise phone
-    const signInBody: Record<string, string> = { password: tempPassword };
+    const signInBody: Record<string, string> = { password: sessionPassword };
     if (userEmail) {
       signInBody.email = userEmail;
     } else if (userPhone) {
@@ -241,8 +261,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Note: temp password is a random UUID (unguessable), safe to leave as-is
-    // Changing it here would invalidate the session we just created
+    // Session created. Password is unchanged — other devices' sessions
+    // remain valid.
 
     return new Response(
       JSON.stringify({

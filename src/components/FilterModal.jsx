@@ -274,7 +274,7 @@ export const FilterSidebar = ({
             onClick={handleReset}
             className="text-xs font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
           >
-            Reset
+            Clear All
           </button>
         )}
       </div>
@@ -406,6 +406,10 @@ export const FilterSidebar = ({
 };
 
 // --- 2. The Modal Wrapper (Desktop & Mobile) ---
+// `title` lets each parent page label the modal — e.g. "Filter Campaigns"
+// from /influencer/campaigns and "Filter Brands" from /influencer/brands.
+// Defaults to "Filters" when nothing is passed so older callers keep
+// working.
 const FilterModal = ({
   onClose,
   selectedCategories,
@@ -419,6 +423,7 @@ const FilterModal = ({
   brands,
   selectedBrands,
   setSelectedBrands,
+  title = "Filters",
 }) => {
   const handleReset = () => {
     setSelectedCategories([]);
@@ -454,12 +459,12 @@ const FilterModal = ({
             >
               <ChevronLeft size={24} />
             </button>
-            <h2 className="text-lg font-bold text-slate-800">Filters</h2>
+            <h2 className="text-lg font-bold text-slate-800">{title}</h2>
             <button
               onClick={handleReset}
               className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              Reset
+              Clear All
             </button>
           </div>
 
@@ -487,7 +492,7 @@ const FilterModal = ({
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
-              Reset
+              Clear All
             </Button>
             <Button
               onClick={handleApply}
@@ -513,7 +518,7 @@ const FilterModal = ({
         >
           {/* Desktop Header */}
           <div className="flex items-center justify-between p-8 bg-white z-10 border-b border-slate-100 rounded-t-4xl">
-            <h2 className="text-2xl font-bold text-slate-800">Filter Brands</h2>
+            <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
             <button
               onClick={onClose}
               className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
@@ -546,7 +551,7 @@ const FilterModal = ({
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
-              Reset Filters
+              Clear All
             </Button>
             <Button
               onClick={handleApply}

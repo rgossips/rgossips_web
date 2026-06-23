@@ -1,6 +1,5 @@
 import Image from "next/image";
-import { FaCheckCircle } from "react-icons/fa";
-import { IoMdLink } from "react-icons/io";
+import { FaCheckCircle, FaInstagram } from "react-icons/fa";
 
 export default function CreatorCard({
   name,
@@ -41,24 +40,31 @@ export default function CreatorCard({
           props but intentionally not rendered. The data source
           (featured_creators table) doesn't expose them anyway, and we
           want a cleaner, single-stat card on the influencer home. */}
-      <div className="flex justify-center text-center w-full text-sm mt-1 pb-2">
+      <div className="flex justify-center text-center w-full text-sm mt-1">
         <div>
           <p className="font-semibold text-base">{followers}</p>
           <p className="text-gray-500 text-xs">followers</p>
         </div>
       </div>
 
-      {/* Bio */}
-      {/* <p className="text-sm text-gray-700 text-center leading-tight">{bio}</p> */}
-
-      {/* Link Button */}
-      {/* <a
-        href={link}
-        className="mt-2 flex items-center gap-2 justify-center text-blue-600 border rounded-full px-4 py-2 hover:bg-blue-50 text-sm overflow-hidden whitespace-nowrap text-ellipsis max-w-full"
-      >
-        <IoMdLink className="text-lg flex-shrink-0" />
-        <span className="truncate">{link}</span>
-      </a> */}
+      {/* View on Instagram — opens in a new tab. Hidden when no link is
+          available on the creator row (e.g. an admin row without the
+          instagram_url column populated). */}
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 text-white text-sm font-bold rounded-full px-4 py-2.5 mt-1 shadow-md hover:opacity-90 transition-opacity"
+          style={{
+            background:
+              "linear-gradient(135deg, #FCAF45 0%, #E1306C 50%, #833AB4 100%)",
+          }}
+        >
+          <FaInstagram className="text-base" />
+          View on Instagram
+        </a>
+      )}
     </div>
   );
 }

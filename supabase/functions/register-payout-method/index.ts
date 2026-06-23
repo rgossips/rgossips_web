@@ -1,17 +1,13 @@
-// Register a UPI or bank-account payout method on RazorpayX, then mirror
-// it into payment_methods.
+// Register a UPI or bank-account payout method.
 //
-// Why this exists: the Add Payment Method modal used to do a direct
-// supabase.from("payment_methods").insert(...). That stored the method
-// for display only — RazorpayX had no idea about it, so a release would
-// have nowhere to send funds. This function:
-//   1. Creates a RazorpayX Contact for the user if one doesn't already
-//      exist (cached on influencer_profiles.razorpay_contact_id).
-//   2. Creates a RazorpayX Fund Account for the new method.
-//   3. Fires a fund-account validation (₹1 name-match check) so we catch
-//      typos / mismatched holder names at save time, not at payout time.
-//   4. Inserts the payment_methods row with the RazorpayX IDs.
-//   5. Auto-resumes any waiting payouts in pending_creator_info status.
+// As of the manual-payouts switch (Option 1, replacing RazorpayX), this
+// function no longer talks to RazorpayX. It validates the payload, saves
+// the method to `payment_methods`, and auto-resumes any waiting payouts
+// from `pending_creator_info` to `scheduled` so the admin queue picks
+// them up.
+//
+// The razorpay_contact_id / razorpay_fund_account_id columns stay on the
+// row for backwards compat (left null on new inserts).
 //
 // Body shape:
 //   { type: "upi", upi_id, holder_name, label?, is_primary?: boolean }
@@ -50,23 +46,6 @@ type BankBody = {
   is_primary?: boolean;
 };
 
-const rxBase = "https://api.razorpay.com/v1";
-
-const rxFetch = async (path: string, init: RequestInit) => {
-  const keyId = Deno.env.get("RAZORPAYX_KEY_ID")!;
-  const secret = Deno.env.get("RAZORPAYX_KEY_SECRET")!;
-  const res = await fetch(`${rxBase}${path}`, {
-    ...init,
-    headers: {
-      Authorization: "Basic " + btoa(`${keyId}:${secret}`),
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-  });
-  const body = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, body };
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -87,10 +66,7 @@ Deno.serve(async (req) => {
 
     const payload = (await req.json().catch(() => ({}))) as UpiBody | BankBody;
 
-    // Server-side guard — same NPCI VPA shape the client checks. The
-    // client form runs this too but a malformed VPA reaching here would
-    // get rejected by Razorpay with a noisy "fund_account.vpa.address
-    // is invalid" error; this is a friendlier 400.
+    // Server-side guard — same NPCI VPA shape the client checks.
     if (payload?.type === "upi") {
       const vpa = String((payload as UpiBody).upi_id || "").trim();
       const at = vpa.indexOf("@");
@@ -101,157 +77,39 @@ Deno.serve(async (req) => {
       if (!vpa || at < 0 || otherAt !== -1 || !userOk || !handleOk || vpa.length > 50) {
         return json({ error: "Invalid UPI ID format." }, 400);
       }
+    } else if (payload?.type === "bank") {
+      // Light shape checks — IFSC is 11 chars, account number ≥ 9 digits.
+      const ifsc = String((payload as BankBody).ifsc || "").trim().toUpperCase();
+      const acct = String((payload as BankBody).account_number || "").trim();
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) return json({ error: "Invalid IFSC." }, 400);
+      if (!/^[0-9]{9,18}$/.test(acct)) return json({ error: "Invalid account number." }, 400);
+      if (!(payload as BankBody).account_holder_name?.trim()) {
+        return json({ error: "Account holder name is required." }, 400);
+      }
+    } else {
+      return json({ error: "Unsupported payment method type." }, 400);
     }
 
-    // ----------------------------------------------------------------
-    // 1. Per-user RazorpayX Contact (cached on influencer_profiles).
-    //    We use upsert semantics: if the profile already has one, reuse
-    //    it. Otherwise create + cache.
-    // ----------------------------------------------------------------
+    // Profile lookup — keeps us behind a 404 if the user signed in but
+    // never finished influencer profile creation.
     const { data: profile, error: profErr } = await supabase
       .from("influencer_profiles")
-      .select("influencer_id, razorpay_contact_id, full_name, username, email")
+      .select("influencer_id, full_name")
       .eq("influencer_id", userId)
       .maybeSingle();
     if (profErr) return json({ error: "Profile lookup failed: " + profErr.message }, 500);
     if (!profile) return json({ error: "Influencer profile not found" }, 404);
 
-    let contactId = profile.razorpay_contact_id as string | null;
-    if (!contactId) {
-      // Phone + email live on auth.users (the Supabase auth standard);
-      // influencer_profiles doesn't carry phone. Pull from there as a
-      // last resort if profile.email is empty too.
-      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-      const authPhone = authUser?.user?.phone || "";
-      const authEmail = authUser?.user?.email || "";
+    // Manual-payout validation policy:
+    //   UPI  → trust the syntax check. Razorpay never offered a sync
+    //          name-match anyway and the admin verifies at payout time.
+    //   Bank → mark `manual` so the admin queue surfaces an "unverified"
+    //          banner. They'll eyeball the IFSC/account before sending.
+    const validationStatus: "success" | "manual" =
+      payload.type === "upi" ? "success" : "manual";
+    const validatedAt = payload.type === "upi" ? new Date().toISOString() : null;
 
-      // Razorpay Contact requires a name; bank/UPI account-holder name is
-      // a better fallback than the profile.username (which may be an IG
-      // handle that mismatches the bank name).
-      const holderName =
-        payload.type === "bank"
-          ? payload.account_holder_name
-          : (payload as UpiBody).holder_name || profile.full_name || profile.username || "Creator";
-
-      const contactRes = await rxFetch("/contacts", {
-        method: "POST",
-        body: JSON.stringify({
-          name: holderName,
-          email: profile.email || authEmail || undefined,
-          contact: authPhone || undefined,
-          type: "vendor",
-          // Razorpay caps reference_id at 40 chars; a bare UUID is 36
-          // and still unique enough to find the contact later.
-          reference_id: userId,
-        }),
-      });
-      if (!contactRes.ok) {
-        return json(
-          { error: "Could not create RazorpayX contact", razorpay: contactRes.body },
-          502
-        );
-      }
-      contactId = (contactRes.body as any).id;
-      await supabase
-        .from("influencer_profiles")
-        .update({ razorpay_contact_id: contactId })
-        .eq("influencer_id", userId);
-    }
-
-    // ----------------------------------------------------------------
-    // 2. Create the Fund Account on RazorpayX.
-    // ----------------------------------------------------------------
-    const fundAccountBody =
-      payload.type === "upi"
-        ? {
-            contact_id: contactId,
-            account_type: "vpa",
-            vpa: { address: payload.upi_id.trim() },
-          }
-        : {
-            contact_id: contactId,
-            account_type: "bank_account",
-            bank_account: {
-              name: payload.account_holder_name.trim(),
-              ifsc: payload.ifsc.trim().toUpperCase(),
-              account_number: payload.account_number.trim(),
-            },
-          };
-
-    const fundRes = await rxFetch("/fund_accounts", {
-      method: "POST",
-      body: JSON.stringify(fundAccountBody),
-    });
-    if (!fundRes.ok) {
-      return json(
-        { error: "Could not register fund account on RazorpayX", razorpay: fundRes.body },
-        502
-      );
-    }
-    const fundAccountId = (fundRes.body as any).id as string;
-
-    // ----------------------------------------------------------------
-    // 3. Validation strategy diverges by method:
-    //
-    //   Bank → we fire the bank-account validation API (₹1.18 debit +
-    //   IMPS name-match). Razorpay returns status='created' immediately
-    //   and the result arrives async via
-    //   fund_account.validation.completed webhook, which flips the row.
-    //
-    //   UPI  → Razorpay does NOT offer a synchronous name-match for
-    //   VPAs, and the bank-account validation API rejects VPA fund
-    //   accounts. The VPA was already syntax-checked above, so we trust
-    //   the user-entered value. If the VPA turns out to be wrong, the
-    //   payout itself fails loudly and the user can fix the method —
-    //   no money is lost.
-    // ----------------------------------------------------------------
-    let validationStatus: "pending" | "success" | "failed" = "pending";
-    let validationFailureReason: string | null = null;
-    let validatedAt: string | null = null;
-
-    if (payload.type === "upi") {
-      // No upstream validation available — accept on syntax check.
-      validationStatus = "success";
-      validatedAt = new Date().toISOString();
-    } else {
-      const accountNumber = Deno.env.get("RAZORPAYX_ACCOUNT_NUMBER");
-      if (!accountNumber) {
-        console.warn("RAZORPAYX_ACCOUNT_NUMBER not set — skipping validation");
-      } else {
-        const valRes = await rxFetch("/fund_accounts/validations", {
-          method: "POST",
-          body: JSON.stringify({
-            account_number: accountNumber,
-            fund_account: { id: fundAccountId },
-            amount: 100,         // paise — ₹1 test debit, reversed instantly
-            currency: "INR",
-            notes: { user_id: userId },
-          }),
-        });
-        if (valRes.ok) {
-          const status = (valRes.body as any).status;
-          if (status === "completed" || status === "active") {
-            validationStatus = "success";
-            validatedAt = new Date().toISOString();
-          } else if (status === "failed") {
-            validationStatus = "failed";
-            validationFailureReason =
-              (valRes.body as any).results?.account_status ||
-              (valRes.body as any).results?.registered_name ||
-              "Validation failed";
-          }
-          // status === "created" → async; webhook will flip later.
-        } else {
-          // Validation API call itself failed — keep status pending and let
-          // the webhook take over. Don't block the save.
-          console.warn("Fund account validation call failed:", valRes.body);
-        }
-      }
-    }
-
-    // ----------------------------------------------------------------
-    // 4. Insert into payment_methods. First method auto-primary.
-    // ----------------------------------------------------------------
+    // First method auto-primary.
     const { count: existingCount } = await supabase
       .from("payment_methods")
       .select("*", { count: "exact", head: true })
@@ -267,9 +125,9 @@ Deno.serve(async (req) => {
             upi_id: payload.upi_id.trim(),
             account_holder_name:
               (payload as UpiBody).holder_name || profile.full_name || null,
-            razorpay_fund_account_id: fundAccountId,
+            razorpay_fund_account_id: null,
             validation_status: validationStatus,
-            validation_failure_reason: validationFailureReason,
+            validation_failure_reason: null,
             validated_at: validatedAt,
             is_primary: isPrimary,
           }
@@ -281,15 +139,13 @@ Deno.serve(async (req) => {
             bank_name: payload.bank_name?.trim() || null,
             account_number: payload.account_number.trim(),
             ifsc: payload.ifsc.trim().toUpperCase(),
-            razorpay_fund_account_id: fundAccountId,
+            razorpay_fund_account_id: null,
             validation_status: validationStatus,
-            validation_failure_reason: validationFailureReason,
+            validation_failure_reason: null,
             validated_at: validatedAt,
             is_primary: isPrimary,
           };
 
-    // If this row will be primary, clear any existing primaries first to
-    // satisfy the partial unique index.
     if (isPrimary) {
       await supabase
         .from("payment_methods")
@@ -306,11 +162,9 @@ Deno.serve(async (req) => {
       return json({ error: "Could not save payment method: " + insertErr.message }, 500);
     }
 
-    // ----------------------------------------------------------------
-    // 5. Auto-resume any waiting payouts. If validation succeeded AND
-    //    this is now the primary method, flip pending_creator_info rows
-    //    so the next cron tick picks them up.
-    // ----------------------------------------------------------------
+    // Auto-resume any waiting payouts. UPI flips straight to `scheduled`
+    // (admin queue). Bank stays pending_creator_info until admin marks
+    // it verified — we don't auto-release funds to an unverified bank.
     let resumedCount = 0;
     if (validationStatus === "success" && isPrimary) {
       const { data: resumed, error: resumeErr } = await supabase
@@ -325,7 +179,6 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       payment_method: inserted,
-      razorpay_fund_account_id: fundAccountId,
       validation_status: validationStatus,
       resumed_payouts: resumedCount,
     });

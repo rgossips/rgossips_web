@@ -219,22 +219,45 @@ Deno.serve(async (req) => {
       .update({ verified: true })
       .eq("id", otpRecord.id);
 
-    // Step 5: Generate session — set temp password, sign in, clear it
-    const tempPassword = crypto.randomUUID();
-
-    // Set temp password via Admin REST API
-    const updateRes = await authAdminFetch(`users/${userId}`, "PUT", {
-      password: tempPassword,
-    });
-
-    if (!updateRes.ok) {
-      return new Response(
-        JSON.stringify({ error: "Failed to prepare session: " + JSON.stringify(updateRes.data) }),
-        { status: 200, headers: jsonHeaders }
-      );
+    // Step 5: Generate session.
+    //
+    // CRITICAL: do NOT rotate the password on every sign-in. GoTrue
+    // invalidates ALL existing sessions for the user when their password
+    // changes, which is why signing in on phone B used to log phone A
+    // out. We store a stable per-user random password in app_metadata
+    // (private, server-only) and reuse it forever — only generated on
+    // first sign-in (or written by the one-shot backfill for legacy
+    // users).
+    //
+    // app_metadata is signed and never exposed to the client via JWT
+    // claims (only `user_metadata` is), so the stored password stays
+    // server-side. The actual access path is the service-role key,
+    // which is the same trust boundary as everything else this edge
+    // function does.
+    const userLookup = await authAdminFetch(`users/${userId}`);
+    const existingPassword: string | undefined =
+      userLookup?.data?.app_metadata?.session_password;
+    let sessionPassword: string;
+    if (existingPassword) {
+      sessionPassword = existingPassword;
+    } else {
+      sessionPassword = crypto.randomUUID();
+      const setRes = await authAdminFetch(`users/${userId}`, "PUT", {
+        password: sessionPassword,
+        app_metadata: {
+          ...(userLookup?.data?.app_metadata || {}),
+          session_password: sessionPassword,
+        },
+      });
+      if (!setRes.ok) {
+        return new Response(
+          JSON.stringify({ error: "Failed to prepare session: " + JSON.stringify(setRes.data) }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
     }
 
-    // Sign in with temp password via GoTrue token endpoint
+    // Sign in with the stable password via GoTrue token endpoint.
     const tokenRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: "POST",
       headers: {
@@ -243,7 +266,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         phone: normalizedPhone,
-        password: tempPassword,
+        password: sessionPassword,
       }),
     });
 
@@ -256,9 +279,6 @@ Deno.serve(async (req) => {
         { status: 200, headers: jsonHeaders }
       );
     }
-
-    // Note: temp password is a random UUID (unguessable), safe to leave as-is
-    // Changing it here would invalidate the session we just created
 
     // Clean up used OTP records
     await supabaseAdmin

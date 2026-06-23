@@ -169,9 +169,11 @@ function ServiceRow({ service, onClick }) {
   const Icon = iconForName(service.icon_name);
   return (
     <div onClick={onClick} className="bg-white border border-slate-100 rounded-2xl p-4 hover:shadow-md hover:border-slate-200 transition-all flex items-center gap-4 cursor-pointer">
-      <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 shrink-0 ${service.accent}`}>
-        <span className="text-[8px] font-black uppercase tracking-widest opacity-80">{service.tag}</span>
-        <Icon size={18} strokeWidth={1.8} />
+      <div
+        className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 text-white shadow-md"
+        style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+      >
+        <Icon size={24} strokeWidth={1.8} />
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="text-[14px] font-black text-slate-900 leading-tight truncate">{service.title}</h4>

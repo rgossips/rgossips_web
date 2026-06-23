@@ -290,6 +290,7 @@ export default function CampaignsPage() {
       <AnimatePresence>
         {isFiltersOpen && (
           <FilterModal
+            title="Filter Campaigns"
             onClose={() => setIsFiltersOpen(false)}
             selectedCategories={selectedCategories}
             setSelectedCategories={setSelectedCategories}
