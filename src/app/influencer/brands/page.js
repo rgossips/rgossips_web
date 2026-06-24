@@ -57,7 +57,7 @@ export default function DiscoverBrands() {
   // --- FILTER ENGINE ---
   const filteredBrands = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
-    return brands.filter((brand) => {
+    const passed = brands.filter((brand) => {
       const name = (brand.name || "").toLowerCase();
       const ig = (brand.instagram || "").toLowerCase();
       const cats = Array.isArray(brand.categories) ? brand.categories : [];
@@ -82,7 +82,16 @@ export default function DiscoverBrands() {
 
       return matchesSearch && matchesCategory && matchesBudget && matchesVerified;
     });
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly]);
+
+    // Sort by match score descending so the best-fit brands land at
+    // the top of the grid for this creator. Same calculateBrandMatchScore
+    // that the BrandCard renders, so the % badge a user sees on a card
+    // matches the position it lands in. Ties keep their original order.
+    return passed
+      .map((b) => ({ b, score: calculateBrandMatchScore(profile, b) }))
+      .sort((a, c) => c.score - a.score)
+      .map(({ b }) => b);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -119,7 +128,11 @@ export default function DiscoverBrands() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* --- LEFT SIDEBAR (Desktop) --- */}
-          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8">
+          {/* Same fix as the campaigns page sidebar — sticky + max-h +
+              overflow-y-auto so the "All Filters" expand button at the
+              bottom stays reachable on short viewports without
+              scrolling the full page. */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 scrollbar-thin">
             <div className="relative group">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E60076]"
