@@ -108,12 +108,39 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Amount must be positive" }), { status: 200, headers: jsonHeaders });
     }
 
+    // Look up the user's email so Stripe Checkout can prefill it. Source
+    // priority: auth.users (canonical, every signed-in user has one
+    // unless they used phone-only) → influencer_profiles.email (set
+    // during profile editing). Missing email is fine — Stripe just
+    // shows the empty field for the user to fill.
+    let customerEmail = "";
+    try {
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      customerEmail = authUser?.user?.email || "";
+      if (!customerEmail) {
+        const { data: infRow } = await supabase
+          .from("influencer_profiles")
+          .select("email")
+          .eq("influencer_id", userId)
+          .maybeSingle();
+        customerEmail = infRow?.email || "";
+      }
+    } catch (_) {
+      // Non-fatal — checkout still opens, email just isn't prefilled.
+    }
+
     // Stripe expects the smallest currency unit. INR = paise (×100).
     const amountPaise = amountRupees * 100;
 
     const params = new URLSearchParams();
     params.append("mode", "payment");
     params.append("payment_method_types[]", "card");
+    if (customerEmail) {
+      // Prefills the email field on the hosted checkout page so the
+      // user doesn't have to retype it. Also seeds the receipt
+      // destination if the payment succeeds.
+      params.append("customer_email", customerEmail);
+    }
     // RBI export-compliance: India regulations require us to collect the
     // customer's name + address for cross-border card payments. Without
     // this Stripe rejects the session creation with a 400. Same setting

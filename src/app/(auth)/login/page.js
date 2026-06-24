@@ -404,19 +404,54 @@ const LoginInner = () => {
     }
 
     // Non-invitation signup: if the OAuth'd handle matches a pending
-    // invitation we never knew about, bounce them to the invitation flow
-    // so they don't end up with a duplicate account.
+    // invitation we never knew about, bounce them to the invitation
+    // flow. Three possible outcomes from lookup-invitation:
+    //   1. Found, role matches user's pick   → "use-link" interrupt
+    //   2. Found, role mismatched            → "role-mismatch" interrupt
+    //                                          (tells them to switch role)
+    //   3. Found but not pending / not found → fall through, treat as
+    //                                          a normal direct sign-up
+    //
+    // The OAuth profile + the lookup response are both stashed on the
+    // interrupt block so "Continue with my invitation" can advance in
+    // place without forcing the user to re-OAuth (previously caused a
+    // navigation loop).
     try {
       const { data } = await supabase.functions.invoke("lookup-invitation", {
         body: { token: profile.username },
       });
       if (data?.found && data?.status === "pending") {
+        const inviteRole = data.role;
+        const userRole = signupData.role;
+        const inviteRoleLabel = inviteRole === "brand" ? "Brand" : "Influencer";
+        const userRoleLabel = userRole === "brand" ? "Brand" : "Influencer";
+
+        if (inviteRole && userRole && inviteRole !== userRole) {
+          setInstaProfile(null);
+          setInvitationBlock({
+            kind: "role-mismatch",
+            title: `You're invited as ${inviteRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}`,
+            message:
+              `@${profile.username} is pre-registered as ${inviteRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}, ` +
+              `not ${userRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}. ` +
+              `Switch to ${inviteRoleLabel} sign-up to continue with the invitation, or sign up with a different Instagram.`,
+            inviteHandle: profile.username,
+            inviteRole,
+            invitationData: data,
+            oauthProfile: profile,
+          });
+          return;
+        }
+
         setInstaProfile(null);
         setInvitationBlock({
           kind: "use-link",
           title: "Use your invitation link",
-          message: `We've already pre-registered @${profile.username}. Open the invitation link we emailed you (or sign up with a different Instagram).`,
+          message: `We've already pre-registered @${profile.username}. Continue with your invitation to finish signing up, or sign up with a different Instagram.`,
           inviteHandle: profile.username,
+          inviteRole,
+          invitationData: data,
+          oauthProfile: profile,
         });
         return;
       }
@@ -426,6 +461,31 @@ const LoginInner = () => {
 
     setInstaProfile(profile);
     nextStep(); // → step 3 (profile form)
+  };
+
+  // Continue with the invitation in-place — reuses the IG OAuth result
+  // captured in the block, sets invitation state, and jumps to the
+  // sign-up form. Old behaviour navigated to /?invited=<handle> which
+  // forced a fresh OAuth and could loop.
+  const continueWithInvitationBlock = (block, opts = {}) => {
+    const data = block?.invitationData;
+    const profile = block?.oauthProfile;
+    if (!data?.invitation || !profile?.username) return;
+    const inv = data.invitation;
+    const role = opts.switchRole ? data.role : (signupData.role || data.role);
+    setInvitation({
+      id: inv.id,
+      instagramHandle: (inv.instagram_username || block.inviteHandle || profile.username).toLowerCase(),
+    });
+    setSignupData((prev) => ({
+      ...prev,
+      role,
+      name: inv.name || prev.name,
+    }));
+    setInstaProfile(profile);
+    setInvitationBlock(null);
+    setFlow("signup");
+    setStep(3); // → SignUpForm / BrandSignUpForm (skip re-OAuth)
   };
 
   const handleSignUpFormSubmit = async (formData) => {
@@ -635,6 +695,10 @@ const LoginInner = () => {
                     setFlow("signin");
                     setStep(1);
                   }}
+                  onUseInvitation={() => continueWithInvitationBlock(invitationBlock)}
+                  onSwitchRoleAndContinue={() =>
+                    continueWithInvitationBlock(invitationBlock, { switchRole: true })
+                  }
                 />
               )}
               {!invitationChecking && !invitationBlock && (
@@ -727,16 +791,15 @@ export default Login;
 //   - "claimed": invitation already used → push to sign-in
 //   - "invalid" / "error": link broken or service failed → let them
 //     fall through to a normal sign-up
-function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn }) {
-  // The "use-link" path navigates back through `/?invited=<handle>`
-  // (same shape the admin email uses), which the home page forwards
-  // into the login page's invitation flow — role + IG details auto-
-  // filled, only phone OTP left. Using window.location.assign forces a
-  // fresh page load so the login page's setup effect re-runs cleanly.
-  const handleUseInvitation = () => {
-    if (!block.inviteHandle) return;
-    window.location.assign(`/?invited=${encodeURIComponent(block.inviteHandle)}`);
-  };
+function InvitationInterrupt({
+  block,
+  onContinueSignUp,
+  onSwitchToSignIn,
+  onUseInvitation,
+  onSwitchRoleAndContinue,
+}) {
+  const inviteRoleLabel =
+    block.inviteRole === "brand" ? "Brand" : block.inviteRole === "influencer" ? "Influencer" : null;
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-5 pt-6">
@@ -750,9 +813,9 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn }) {
         <p className="text-sm text-slate-500 leading-relaxed">{block.message}</p>
       </div>
 
-      {block.kind === "use-link" && (
+      {(block.kind === "use-link" || block.kind === "role-mismatch") && (
         <p className="text-[12px] text-slate-400 text-center leading-snug">
-          Can't find the email? Check spam, or reach out to{" "}
+          Trouble? Reach out to{" "}
           <a href="mailto:info@rgossips.com" className="font-bold text-[#E60076]">info@rgossips.com</a>.
         </p>
       )}
@@ -765,17 +828,33 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn }) {
         >
           Sign in instead
         </button>
-      ) : block.kind === "use-link" ? (
+      ) : block.kind === "role-mismatch" ? (
         <div className="space-y-3">
-          {block.inviteHandle && (
+          {inviteRoleLabel && (
             <button
-              onClick={handleUseInvitation}
+              onClick={onSwitchRoleAndContinue}
               className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
             >
-              Continue with my invitation →
+              Continue as {inviteRoleLabel} →
             </button>
           )}
+          <button
+            onClick={onContinueSignUp}
+            className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
+          >
+            Sign up with a different Instagram
+          </button>
+        </div>
+      ) : block.kind === "use-link" ? (
+        <div className="space-y-3">
+          <button
+            onClick={onUseInvitation}
+            className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            Continue with my invitation →
+          </button>
           <button
             onClick={onContinueSignUp}
             className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
