@@ -123,7 +123,7 @@ const STATUS_BANNER = {
 export default function ServiceOrderDetailPage() {
   const router = useRouter();
   const { id } = useParams();
-  const { user, role } = useAuth();
+  const { user, profile, role } = useAuth();
   const supabase = createClient();
 
   const [order, setOrder] = useState(null);
@@ -132,6 +132,14 @@ export default function ServiceOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null); // 'accept' | 'counter' | 'decline' | 'approve' | 'revision'
+  // Independent flag for the full-screen payment overlay. Goes true the
+  // moment the user picks a gateway from the picker and stays up until
+  // the Razorpay modal renders (or Stripe redirects, or we error). We
+  // can't gate the overlay on `actionLoading` alone because the Razorpay
+  // modal keeps actionLoading set after it opens (so the dismissed-then-
+  // retried path works) — but visually the Razorpay modal *is* the
+  // status, so the overlay underneath would be redundant.
+  const [paymentBusy, setPaymentBusy] = useState(false);
   const [counterAmount, setCounterAmount] = useState("");
   const [counterMessage, setCounterMessage] = useState("");
   const [declineReason, setDeclineReason] = useState("");
@@ -207,9 +215,15 @@ export default function ServiceOrderDetailPage() {
   // Razorpay → embedded checkout modal opened in-page. Either way the
   // webhook is the source of truth for status progression, so a user
   // closing the modal mid-payment can't leave the order in a half-state.
+  //
+  // While this runs, the page renders the PaymentBusyOverlay (full-
+  // screen spinner) so the user doesn't keep mashing the button while
+  // we set up the gateway. The overlay clears when Razorpay's modal
+  // opens (or when an error fires).
   const payViaGateway = async (phase, gateway) => {
     setPickerPhase(null);
     setActionLoading(phase === "advance" ? "accept" : "approve");
+    setPaymentBusy(true);
     setError("");
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -240,6 +254,18 @@ export default function ServiceOrderDetailPage() {
       if (typeof window === "undefined" || !window.Razorpay) {
         throw new Error("Razorpay Checkout failed to load — check your network.");
       }
+      // Razorpay prefill — saves the user from re-typing phone/email/
+      // name in the checkout modal. Phone goes in with the +91 prefix
+      // (Razorpay accepts both, but the prefixed form prevents a
+      // country-code mismatch error if Razorpay's account is set to a
+      // non-default country).
+      const phoneDigits = String(user?.phone || profile?.contact_phone || "").replace(/\D/g, "");
+      const prefillContact = phoneDigits
+        ? phoneDigits.startsWith("91")
+          ? `+${phoneDigits}`
+          : `+91${phoneDigits.slice(-10)}`
+        : undefined;
+
       const rzp = new window.Razorpay({
         key: data.key_id,
         order_id: data.order_id,
@@ -248,6 +274,11 @@ export default function ServiceOrderDetailPage() {
         name: "RGossips",
         description: data.line_label || (phase === "advance" ? "Service advance" : "Service final"),
         theme: { color: "#5851DB" },
+        prefill: {
+          name: profile?.full_name || profile?.username || "",
+          email: user?.email || profile?.email || "",
+          contact: prefillContact,
+        },
         handler: () => {
           // Payment captured. The razorpay-webhook handler will flip the
           // order's status; we hit the URL the Stripe path uses so the
@@ -263,9 +294,14 @@ export default function ServiceOrderDetailPage() {
         setActionLoading(null);
       });
       rzp.open();
+      // Razorpay modal is up — the full-screen overlay can come down.
+      // (We keep actionLoading set so the underlying buttons stay
+      // disabled until ondismiss / payment.failed clear it.)
+      setPaymentBusy(false);
     } catch (e) {
       setError(e.message || "Failed to start payment");
       setActionLoading(null);
+      setPaymentBusy(false);
     }
   };
 
@@ -393,9 +429,21 @@ export default function ServiceOrderDetailPage() {
     );
   }
 
-  const banner = STATUS_BANNER[order.status] || STATUS_BANNER.pending_quote;
+  // A quote can sit past its valid-until window if the server hasn't
+  // touched the row yet. Detect that case once and gate all
+  // accept/counter/decline actions behind it — the user shouldn't be
+  // able to pay an expired price the brand may no longer honour.
+  const isQuoteExpired =
+    !!order?.quote_valid_until &&
+    (order.status === "quoted" || order.status === "counter_offered") &&
+    new Date(order.quote_valid_until).getTime() < Date.now();
+
+  const banner = STATUS_BANNER[isQuoteExpired ? "expired" : order.status] || STATUS_BANNER.pending_quote;
   const BannerIcon = banner.icon;
-  const isQuoted = order.status === "quoted";
+  // `isQuoted` previously meant "show accept/counter/decline UI". When
+  // the quote is expired we want that UI replaced by an expired notice,
+  // so flip the flag off in that case.
+  const isQuoted = order.status === "quoted" && !isQuoteExpired;
 
   // Prefer the browser's history so the user lands wherever they came from
   // (notifications, the Services list, a chat link, etc.). When the order
@@ -527,6 +575,45 @@ export default function ServiceOrderDetailPage() {
 
           {/* ── RIGHT — pricing & actions ── */}
           <aside className="space-y-4">
+            {/* Quote expired — replaces the accept/counter/decline action
+                card. The price is no longer guaranteed, so we don't let
+                the user pay; only path forward is to request a fresh
+                quote (or browse other services). */}
+            {isQuoteExpired && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                    <AlertCircle size={20} className="text-gray-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-900">This quote has expired</p>
+                    <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">
+                      Validity passed on{" "}
+                      {new Date(order.quote_valid_until).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                      . The price is no longer guaranteed — request a fresh
+                      quote to continue.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push(`/influencer/services/${order.service_slug || ""}`)}
+                  className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black cursor-pointer shadow-md shadow-pink-100"
+                >
+                  Request new quote
+                </button>
+                <button
+                  onClick={() => router.push("/influencer/services")}
+                  className="w-full py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 text-[12px] font-black cursor-pointer hover:border-pink-200 hover:text-pink-500"
+                >
+                  Browse other services
+                </button>
+              </div>
+            )}
+
             {isQuoted && (
               <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
                 <div>
@@ -725,6 +812,20 @@ export default function ServiceOrderDetailPage() {
           onCancel={() => setPickerPhase(null)}
           onPick={(g) => payViaGateway(pickerPhase, g)}
         />
+      )}
+
+      {/* Full-screen overlay shown after the user picks Razorpay/Stripe
+          and before the gateway UI takes over. Replaces the previous
+          in-button spinner — clearer signal that something's happening
+          and prevents stray taps on the page underneath. */}
+      {paymentBusy && (
+        <div className="fixed inset-0 z-200 bg-[#0F0F1A]/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-white/20" />
+            <Loader2 size={64} strokeWidth={2.5} className="absolute inset-0 animate-spin text-[#E60076]" />
+          </div>
+          <p className="text-white text-sm font-bold">Opening secure checkout…</p>
+        </div>
       )}
     </div>
   );

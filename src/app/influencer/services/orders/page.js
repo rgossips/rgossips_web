@@ -41,6 +41,18 @@ const ACTIVE_STATUSES = new Set([
   "paid_final",
 ]);
 
+// A quote can sit at status='quoted' (or counter_offered) past its
+// quote_valid_until — the server only flips it to 'expired' on the next
+// touch. Treat both list pill + tab filtering as if it had already
+// flipped, so the influencer sees the truth immediately.
+const isQuoteExpired = (order) => {
+  if (!order?.quote_valid_until) return false;
+  if (order.status !== "quoted" && order.status !== "counter_offered") return false;
+  return new Date(order.quote_valid_until).getTime() < Date.now();
+};
+const effectiveStatus = (order) =>
+  isQuoteExpired(order) ? "expired" : order.status;
+
 export default function ServiceRequestsHistoryPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -57,7 +69,7 @@ export default function ServiceRequestsHistoryPage() {
     if (!user?.id) return;
     const { data } = await supabase
       .from("service_orders")
-      .select("id, order_number, service_title, status, total_amount, quoted_amount, advance_pct, created_at, updated_at")
+      .select("id, order_number, service_title, status, total_amount, quoted_amount, advance_pct, quote_valid_until, created_at, updated_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setOrders(data || []);
@@ -85,9 +97,10 @@ export default function ServiceRequestsHistoryPage() {
   const counts = useMemo(() => {
     const out = { all: orders.length, active: 0, completed: 0, declined: 0 };
     for (const o of orders) {
-      if (ACTIVE_STATUSES.has(o.status)) out.active += 1;
-      else if (o.status === "completed") out.completed += 1;
-      else if (o.status === "declined" || o.status === "expired") out.declined += 1;
+      const s = effectiveStatus(o);
+      if (ACTIVE_STATUSES.has(s)) out.active += 1;
+      else if (s === "completed") out.completed += 1;
+      else if (s === "declined" || s === "expired") out.declined += 1;
     }
     return out;
   }, [orders]);
@@ -95,9 +108,10 @@ export default function ServiceRequestsHistoryPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return orders.filter((o) => {
-      if (tab === "active" && !ACTIVE_STATUSES.has(o.status)) return false;
-      if (tab === "completed" && o.status !== "completed") return false;
-      if (tab === "declined" && o.status !== "declined" && o.status !== "expired") return false;
+      const s = effectiveStatus(o);
+      if (tab === "active" && !ACTIVE_STATUSES.has(s)) return false;
+      if (tab === "completed" && s !== "completed") return false;
+      if (tab === "declined" && s !== "declined" && s !== "expired") return false;
       if (!q) return true;
       return (
         (o.service_title || "").toLowerCase().includes(q) ||
@@ -199,7 +213,8 @@ export default function ServiceRequestsHistoryPage() {
 }
 
 function OrderRow({ order, onClick }) {
-  const pill = STATUS_PILL[order.status] || { label: order.status, class: "bg-slate-100 text-slate-600" };
+  const s = effectiveStatus(order);
+  const pill = STATUS_PILL[s] || { label: s, class: "bg-slate-100 text-slate-600" };
   const amount = order.total_amount || order.quoted_amount || 0;
   return (
     <button

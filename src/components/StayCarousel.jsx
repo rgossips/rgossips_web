@@ -74,7 +74,7 @@ export default function StayCarousel() {
         const res = await fetch(`${supabaseUrl}/functions/v1/list-featured-campaigns`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-          body: "{}",
+          body: JSON.stringify({ section: "stay" }),
         });
         const data = await res.json();
         if (cancelled) return;

@@ -84,7 +84,7 @@ export default function CampaignsPage() {
   }, [campaigns]);
 
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter((campaign) => {
+    const passed = campaigns.filter((campaign) => {
       // The "Completed" tab should only surface campaigns this user has
       // actually applied to and that finished — not any campaign whose
       // brand-side status is closed.
@@ -105,7 +105,16 @@ export default function CampaignsPage() {
       const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
       return matchesTab && matchesSearch && matchesCategory && matchesBrand && matchesBudget;
     });
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange]);
+
+    // Sort by match score (highest first) so the best fit lands at the
+    // top of the grid. Equal scores keep their server-side order
+    // (newest-first by created_at). Memoised on the raw `passed` array
+    // so a stable score isn't recomputed during re-render storms.
+    return passed
+      .map((c) => ({ c, score: calculateCampaignMatchScore(profile, c) }))
+      .sort((a, b) => b.score - a.score)
+      .map(({ c }) => c);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange, profile]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
@@ -184,22 +193,35 @@ export default function CampaignsPage() {
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
               <h2 className="font-black text-slate-800 text-lg mb-4">Status</h2>
               <div className="space-y-1">
-                {["Active", "Applied", "Completed"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`w-full cursor-pointer flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-[#E60076] to-[#D500F9] text-white shadow-md shadow-pink-100"
-                        : "text-slate-500 hover:bg-slate-50"
-                    }`}
-                  >
-                    {tab}
-                    {activeTab === tab && (
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    )}
-                  </button>
-                ))}
+                {["Active", "Applied", "Completed"].map((tab) => {
+                  const count =
+                    tab === "Completed"
+                      ? campaigns.filter((c) => c.applicationStatus === "completed").length
+                      : campaigns.filter((c) => c.status === tab).length;
+                  const isActive = activeTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`w-full cursor-pointer flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                        isActive
+                          ? "bg-gradient-to-r from-[#E60076] to-[#D500F9] text-white shadow-md shadow-pink-100"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span>{tab}</span>
+                      <span
+                        className={`text-[11px] font-black px-2 py-0.5 rounded-md min-w-6 text-center ${
+                          isActive
+                            ? "bg-white/25 text-white"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

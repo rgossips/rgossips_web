@@ -40,10 +40,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Body is optional. Newer callers send `{ section: 'stay' | 'campaign' }`
+    // to pick which carousel they're feeding. Older callers (and a GET-
+    // without-body) default to 'campaign' so the top StackedDeals strip
+    // keeps working without a coordinated client deploy.
+    let section: "campaign" | "stay" = "campaign";
+    try {
+      const body = await req.json();
+      if (body?.section === "stay" || body?.section === "campaign") {
+        section = body.section;
+      }
+    } catch {
+      // No body / not JSON → default.
+    }
+
     const { data: featured, error: fErr } = await supabaseAdmin
       .from("featured_campaigns")
       .select("campaign_id, position")
       .eq("is_active", true)
+      .eq("section", section)
       .order("position", { ascending: true });
 
     if (fErr) {
@@ -53,15 +68,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Admin-editable section title. Read separately so the carousel can
-    // re-label itself even when the featured list is empty.
-    const DEFAULT_SECTION_TITLE = "Plan your stay with us";
+    // Admin-editable section title — different key per section. For the
+    // historical 'stay' carousel we keep the existing `featured_section_title`
+    // key so admin-edited titles don't reset; for the new 'campaign'
+    // strip we use `featured_campaigns_section_title`.
+    const titleKey =
+      section === "stay" ? "featured_section_title" : "featured_campaigns_section_title";
+    const DEFAULT_SECTION_TITLE =
+      section === "stay" ? "Plan your stay with us" : "FEATURED CAMPAIGNS";
     let sectionTitle = DEFAULT_SECTION_TITLE;
     try {
       const { data: setting } = await supabaseAdmin
         .from("homepage_settings")
         .select("value")
-        .eq("key", "featured_section_title")
+        .eq("key", titleKey)
         .maybeSingle();
       if (setting?.value) sectionTitle = setting.value;
     } catch {
