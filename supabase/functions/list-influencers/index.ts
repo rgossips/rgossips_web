@@ -15,6 +15,22 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
+    // Pagination bounds. Default = 500 (covers the discover page's
+    // existing usage) but also the HARD CAP — a single client can
+    // never pull more than that in one request, which bounds both
+    // network payload and the per-row work this function does.
+    // Callers can pass a smaller `limit` for perf.
+    const MAX_LIMIT = 500;
+    let limit = MAX_LIMIT;
+    let offset = 0;
+    try {
+      const body = await req.json();
+      if (Number.isFinite(body?.limit)) limit = Math.max(1, Math.min(MAX_LIMIT, Math.floor(body.limit)));
+      if (Number.isFinite(body?.offset)) offset = Math.max(0, Math.floor(body.offset));
+    } catch {
+      // No body / not JSON → defaults.
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -198,8 +214,13 @@ Deno.serve(async (req) => {
     // Sort by followers desc
     merged.sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
 
+    // Slice to the requested page. We return `total` so the client can
+    // paginate intelligently (e.g. show "showing 25 of 412 creators").
+    const total = merged.length;
+    const page = merged.slice(offset, offset + limit);
+
     return new Response(
-      JSON.stringify({ influencers: merged }),
+      JSON.stringify({ influencers: page, total, limit, offset }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

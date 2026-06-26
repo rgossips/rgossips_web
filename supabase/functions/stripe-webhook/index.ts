@@ -526,15 +526,18 @@ Deno.serve(async (req) => {
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
   const body = await req.text();
 
+  // Refuse unverified payloads in production — both secret and header
+  // must be present. Stripe's constructEventAsync also enforces a
+  // 5-minute timestamp tolerance window internally (default), so a
+  // captured-and-replayed event is rejected as stale.
+  if (!webhookSecret || !signature) {
+    console.error("Stripe webhook rejected: missing secret or signature header");
+    return new Response("Webhook not configured", { status: 401, headers: corsHeaders });
+  }
+
   let event: Stripe.Event;
   try {
-    if (webhookSecret && signature) {
-      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-    } else {
-      // Fallback for local testing without signature verification
-      console.warn("Stripe webhook running without signature verification");
-      event = JSON.parse(body);
-    }
+    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
     console.error("Signature verification failed:", err);
     return new Response("Invalid signature", { status: 400, headers: corsHeaders });

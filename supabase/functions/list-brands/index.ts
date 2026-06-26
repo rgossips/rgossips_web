@@ -173,6 +173,22 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
+    // Pagination bounds. Default = 500 (matches historical behaviour
+    // for the discover page) but the HARD CAP is also 500 — a single
+    // client can never pull more than that in one request, which
+    // bounds both network payload and the per-brand trust-score work
+    // the function does. Callers can pass smaller limits for perf.
+    const MAX_LIMIT = 500;
+    let limit = MAX_LIMIT;
+    let offset = 0;
+    try {
+      const body = await req.json();
+      if (Number.isFinite(body?.limit)) limit = Math.max(1, Math.min(MAX_LIMIT, Math.floor(body.limit)));
+      if (Number.isFinite(body?.offset)) offset = Math.max(0, Math.floor(body.offset));
+    } catch {
+      // No body / not JSON → defaults.
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -389,9 +405,15 @@ Deno.serve(async (req) => {
       brand.trustBand = band;
     }
 
+    const total = brands.length;
+    const page = brands.slice(offset, offset + limit);
+
     return new Response(
       JSON.stringify({
-        brands,
+        brands: page,
+        total,
+        limit,
+        offset,
         _debug: {
           profilesCount: profiles?.length || 0,
           invitationsCount: invitations?.length || 0,

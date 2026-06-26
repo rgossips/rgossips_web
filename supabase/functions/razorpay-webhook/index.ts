@@ -699,14 +699,21 @@ Deno.serve(async (req) => {
   const webhookSecret = Deno.env.get("RAZORPAY_WEBHOOK_SECRET");
   const body = await req.text();
 
-  if (webhookSecret) {
-    const ok = await verifySignature(body, signature, webhookSecret);
-    if (!ok) {
-      console.error("Razorpay signature verification failed");
-      return new Response("Invalid signature", { status: 400, headers: corsHeaders });
-    }
-  } else {
-    console.warn("RAZORPAY_WEBHOOK_SECRET not set — running unverified");
+  // Refuse unverified payloads — both secret and signature must be
+  // present. Without this, anyone with the function URL can post a
+  // fake `payment.captured` event and trigger order-completion logic.
+  if (!webhookSecret) {
+    console.error("Razorpay webhook rejected: RAZORPAY_WEBHOOK_SECRET not set");
+    return new Response("Webhook not configured", { status: 401, headers: corsHeaders });
+  }
+  if (!signature) {
+    console.error("Razorpay webhook rejected: missing x-razorpay-signature header");
+    return new Response("Missing signature", { status: 401, headers: corsHeaders });
+  }
+  const ok = await verifySignature(body, signature, webhookSecret);
+  if (!ok) {
+    console.error("Razorpay signature verification failed");
+    return new Response("Invalid signature", { status: 400, headers: corsHeaders });
   }
 
   let event: any;
@@ -714,6 +721,25 @@ Deno.serve(async (req) => {
     event = JSON.parse(body);
   } catch {
     return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
+  }
+
+  // Replay protection. Razorpay signs the payload but the signature
+  // alone doesn't bind to a time window — a captured signed event can
+  // be replayed indefinitely if our handlers aren't idempotent. We
+  // reject events older than 5 minutes. event.created_at is Unix
+  // seconds; missing it (older format) falls back to event.payload's
+  // payment.entity.created_at.
+  const eventCreatedAt =
+    Number(event?.created_at) ||
+    Number(event?.payload?.payment?.entity?.created_at) ||
+    Number(event?.payload?.subscription?.entity?.created_at) ||
+    0;
+  const MAX_AGE_SECS = 5 * 60;
+  if (eventCreatedAt > 0 && Date.now() / 1000 - eventCreatedAt > MAX_AGE_SECS) {
+    console.error(
+      `Razorpay webhook rejected: event is ${Math.round(Date.now() / 1000 - eventCreatedAt)}s old (cap ${MAX_AGE_SECS}s)`
+    );
+    return new Response("Event too old", { status: 400, headers: corsHeaders });
   }
 
   try {

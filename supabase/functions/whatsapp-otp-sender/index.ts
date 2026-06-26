@@ -18,8 +18,80 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Phone number is required" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Light shape guard — reject obviously bogus phones before doing any
+    // billable work. The client already formats to E.164-ish; we just
+    // re-check digit count so a bad payload can't waste a WA send.
+    const phoneDigits = String(phone).replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      return new Response(
+        JSON.stringify({ error: "Invalid phone number format." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Initialize Supabase Admin client
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // ─── Rate limit (migration 034) ────────────────────────────────
+    // Three caps stop unauthenticated attackers from draining the WA
+    // budget by spamming this endpoint:
+    //   1. 60s cooldown per phone — accidental double-tap protection
+    //   2. ≤ 5 sends per phone per rolling hour — targeted abuse
+    //   3. ≤ 20 sends per IP per rolling hour — scattershot abuse
+    //
+    // IP is best-effort. Behind Cloudflare we read cf-connecting-ip;
+    // otherwise the first hop of x-forwarded-for; otherwise "unknown"
+    // (all unknown traffic shares a bucket — a feature, since direct
+    // origin requests are not normal).
+    const ip =
+      req.headers.get("cf-connecting-ip") ||
+      (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
+      "unknown";
+    const COOLDOWN_MS = 60 * 1000;
+    const PHONE_HOURLY_CAP = 5;
+    const IP_HOURLY_CAP = 20;
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const cooldownCutoff = new Date(Date.now() - COOLDOWN_MS).toISOString();
+
+    const [cooldownRes, phoneCountRes, ipCountRes] = await Promise.all([
+      supabaseAdmin
+        .from("otp_send_log")
+        .select("sent_at")
+        .eq("phone", phone)
+        .gte("sent_at", cooldownCutoff)
+        .limit(1),
+      supabaseAdmin
+        .from("otp_send_log")
+        .select("id", { count: "exact", head: true })
+        .eq("phone", phone)
+        .gte("sent_at", oneHourAgo),
+      supabaseAdmin
+        .from("otp_send_log")
+        .select("id", { count: "exact", head: true })
+        .eq("ip", ip)
+        .gte("sent_at", oneHourAgo),
+    ]);
+
+    if ((cooldownRes.data || []).length > 0) {
+      const lastSentMs = new Date((cooldownRes.data as any[])[0].sent_at).getTime();
+      const waitSecs = Math.max(1, Math.ceil((lastSentMs + COOLDOWN_MS - Date.now()) / 1000));
+      return new Response(
+        JSON.stringify({ error: `Please wait ${waitSecs}s before requesting another OTP.` }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if ((phoneCountRes.count ?? 0) >= PHONE_HOURLY_CAP) {
+      return new Response(
+        JSON.stringify({ error: "Too many OTP requests for this number. Try again in an hour." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if ((ipCountRes.count ?? 0) >= IP_HOURLY_CAP) {
+      return new Response(
+        JSON.stringify({ error: "Too many OTP requests from your network. Try again in an hour." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Test-phone bypass — for QA test logins seeded by seed-test-users.
     // Phone is already normalised on the client (+91…). We compare against
@@ -52,6 +124,18 @@ Deno.serve(async (req) => {
       console.error("DB Error:", dbError);
       return new Response(JSON.stringify({ error: "Failed to store OTP" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Log this send so the rate-limit caps see it on the next call.
+    // We log here (before the WA HTTP call) so a hung/failed send still
+    // counts against the cap — otherwise an attacker can force failures
+    // and burst past the cap. Non-blocking on insert errors so a log
+    // outage doesn't break sign-up.
+    supabaseAdmin
+      .from("otp_send_log")
+      .insert({ phone, ip })
+      .then((res: any) => {
+        if (res?.error) console.error("otp_send_log insert failed:", res.error.message);
+      });
 
     // Skip the actual WhatsApp send for test phones — they're QA-only and
     // we don't want to spend Meta credit on them.

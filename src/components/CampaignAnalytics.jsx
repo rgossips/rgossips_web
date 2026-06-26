@@ -223,8 +223,13 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
           <h3 className="font-black text-gray-900 text-sm mb-4 px-2">
             Recent Campaigns
           </h3>
+          {/* overflow-x-auto so the table scrolls horizontally on
+              narrow viewports instead of being clipped by the parent's
+              overflow-hidden — was cutting off the rightmost columns
+              on mobile with no way to reach them. */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
@@ -277,6 +282,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
                 />
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>

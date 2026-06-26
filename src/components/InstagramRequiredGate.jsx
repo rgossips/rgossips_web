@@ -120,8 +120,10 @@ export default function InstagramRequiredGate() {
   if (!profile) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0F0F1A]/95 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 space-y-5">
+    <div className="fixed inset-0 z-[100] bg-[#0F0F1A]/95 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+      {/* p-5 sm:p-8 so the card has room on 320–360px phones (was
+          p-8 = 64px of padding, leaving < 260px for content). */}
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-5 sm:p-8 space-y-5">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shadow-lg">
             <Instagram size={32} className="text-white" />
