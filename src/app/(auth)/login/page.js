@@ -508,6 +508,11 @@ const LoginInner = () => {
         name: formData.name || signupData.name,
         gstin: formData.gstin || "",
         invitationId: invitation?.id || null,
+        // Refer & Earn attribution — read once at page load, passed
+        // straight through to create-profile which forwards it to
+        // attribute-referral. Guarded server-side against self-referral
+        // + inactive referrer, so an empty string / bad code just no-ops.
+        referralCode: searchParams?.get("ref") || null,
       };
 
       // Add Instagram data if available

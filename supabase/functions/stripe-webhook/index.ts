@@ -16,6 +16,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
+import {
+  ensureReferralCode,
+  qualifyReferralIfEligible,
+  clawBackReferral,
+} from "../_shared/referrals.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -573,6 +578,31 @@ Deno.serve(async (req) => {
             razorpay_subscription_id: null,
             razorpay_customer_id: null,
           });
+
+          // Refer & Earn (Phase 1). A paid user becomes eligible to
+          // both EARN and QUALIFY referrals from this moment. The
+          // helper is idempotent via the qualifying_event_id unique
+          // constraint on public.referrals — safe under re-delivery.
+          try {
+            const supabase = createClient(
+              Deno.env.get("SUPABASE_URL")!,
+              Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+            );
+            // The paying user gets their own share slug (only fills
+            // if not already set).
+            await ensureReferralCode(supabase, userId);
+            // Did anyone refer THEM?
+            const planKey = plan.toLowerCase() as "starter" | "pro" | "elite";
+            if (session.subscription && ["starter", "pro", "elite"].includes(planKey)) {
+              await qualifyReferralIfEligible(supabase, {
+                refereeId: userId,
+                refereePlan: planKey,
+                qualifyingEventId: String(session.subscription),
+              });
+            }
+          } catch (e) {
+            console.error("referral qualification (stripe) failed:", (e as any)?.message || e);
+          }
         }
         break;
       }
@@ -625,6 +655,30 @@ Deno.serve(async (req) => {
           } else {
             console.log("Ignoring deletion of stale Stripe sub", sub.id);
           }
+        }
+        break;
+      }
+
+      // Refund → within 7d of QUALIFIED, claw the RC back from the
+      // referrer. Idempotent via referrals.qualifying_event_id
+      // (subscription id).
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        // Derive the subscription id from the charge → invoice → sub
+        // chain. `charge.invoice` is the invoice id string; we fetch it
+        // just to get its subscription reference.
+        try {
+          if (!charge.invoice) break;
+          const invoice = await stripe.invoices.retrieve(charge.invoice as string);
+          const subscriptionId = (invoice.subscription as string) || "";
+          if (!subscriptionId) break;
+          const supabase = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          );
+          await clawBackReferral(supabase, subscriptionId);
+        } catch (e) {
+          console.error("clawback (stripe) failed:", (e as any)?.message || e);
         }
         break;
       }

@@ -19,6 +19,11 @@
 // can post here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ensureReferralCode,
+  qualifyReferralIfEligible,
+  clawBackReferral,
+} from "../_shared/referrals.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -831,6 +836,24 @@ Deno.serve(async (req) => {
             stripe_subscription_id: null,
             stripe_customer_id: null,
           });
+
+          // Refer & Earn (Phase 1). Idempotent via
+          // referrals.qualifying_event_id unique constraint — both
+          // subscription.activated AND subscription.charged fire on
+          // first payment; only the first one wins.
+          try {
+            await ensureReferralCode(supabase, userId);
+            const planKey = plan.toLowerCase() as "starter" | "pro" | "elite";
+            if (subscriptionId && ["starter", "pro", "elite"].includes(planKey)) {
+              await qualifyReferralIfEligible(supabase, {
+                refereeId: userId,
+                refereePlan: planKey,
+                qualifyingEventId: subscriptionId,
+              });
+            }
+          } catch (e) {
+            console.error("referral qualification (razorpay) failed:", (e as any)?.message || e);
+          }
         }
         break;
       }
@@ -870,6 +893,29 @@ Deno.serve(async (req) => {
         }
         await setUserPlan(userId, "starter");
         break;
+      }
+    }
+
+    // Refer & Earn — clawback on subscription refund. Razorpay's
+    // `refund.processed` doesn't share the same envelope shape as the
+    // subscription events above, so handle it after the main switch.
+    // Idempotent via referrals.qualifying_event_id.
+    if (String(event?.event || "") === "refund.processed") {
+      try {
+        const paymentId = event?.payload?.payment?.entity?.id || event?.payload?.refund?.entity?.payment_id;
+        const subId =
+          event?.payload?.payment?.entity?.subscription_id ||
+          event?.payload?.subscription?.entity?.id ||
+          event?.payload?.refund?.entity?.notes?.subscription_id ||
+          null;
+        if (subId) {
+          await clawBackReferral(supabase, String(subId));
+        } else if (paymentId) {
+          // Fall back: match the referral by payment id via notes.
+          console.log("refund.processed: no subscription id, payment id", paymentId);
+        }
+      } catch (e) {
+        console.error("clawback (razorpay) failed:", (e as any)?.message || e);
       }
     }
 

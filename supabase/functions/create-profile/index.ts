@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId, referralCode } = await req.json();
 
     if (!userId || !table) {
       return new Response(
@@ -271,6 +271,29 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("influencer_invitations").update(claimData).eq("id", invitationId).eq("status", "pending");
       } else if (igUsername) {
         await supabaseAdmin.from("influencer_invitations").update(claimData).ilike("instagram_username", igUsername).eq("status", "pending");
+      }
+
+      // Refer & Earn attribution. Fire-and-forget — a bad referral
+      // code (expired, self-referral, referrer cancelled) must never
+      // block signup. attribute-referral itself is defensive.
+      if (referralCode) {
+        try {
+          const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/attribute-referral`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
+            },
+            body: JSON.stringify({ userId, referralCode }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!data?.attributed) {
+            console.log("attribute-referral skipped:", data?.reason);
+          }
+        } catch (e) {
+          console.error("attribute-referral call failed:", (e as any)?.message || e);
+        }
       }
     }
 

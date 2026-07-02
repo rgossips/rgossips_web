@@ -69,8 +69,16 @@ function InvitationRedirect() {
 
   useEffect(() => {
     const invited = searchParams?.get("invited");
+    const ref = searchParams?.get("ref");
+    // Priority: invitation flow > referral link. Both funnel into the
+    // login page; login owns the state machine that decides what to
+    // show (invitation interrupt, referral discount banner, etc.).
     if (invited) {
       router.replace(`/login?invited=${encodeURIComponent(invited)}`);
+      return;
+    }
+    if (ref) {
+      router.replace(`/login?ref=${encodeURIComponent(ref)}`);
     }
   }, [searchParams, router]);
 
