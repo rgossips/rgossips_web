@@ -143,6 +143,18 @@ Always resolve as `custom || instagram || default`. Web home components
 2026-07 to use the fallback. Media kit, profile page, brand-side cards,
 and the mobile `useProfilePhoto()` helper already did the right thing.
 
+**Edge-function joins must coalesce too.** Client code that reads
+`inf.profile_photo_url` off a joined row is trusting the server to have
+picked the right column. Fixed sites:
+- `list-influencers` — `r.custom_profile_photo_url || r.profile_photo_url`
+- `brand-campaigns` (get action) — maps `custom_profile_photo_url` onto
+  `profile_photo_url` on each application's joined `influencer_profiles`
+  so campaign detail shows the custom upload (fixed 2026-07).
+
+If you add a new edge function that joins to `influencer_profiles` and
+returns a photo, mirror the same coalesce or another surface will
+silently regress.
+
 ## Payments
 
 - **Stripe** (subscriptions): `stripe-checkout` creates Sessions,

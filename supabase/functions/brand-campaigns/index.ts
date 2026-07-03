@@ -161,14 +161,33 @@ Deno.serve(async (req) => {
       if (error || !c) return ok({ error: "Campaign not found" });
       if (c.brand_id !== brandId) return ok({ error: "Not authorized" });
 
-      // Fetch applications with influencer info
+      // Fetch applications with influencer info. custom_profile_photo_url
+      // is the influencer's manual upload (via upload-profile-photo);
+      // profile_photo_url is the Instagram-synced version. The client
+      // reads `inf.profile_photo_url`, so we coalesce the two below so
+      // a custom upload actually shows through on the campaign detail
+      // page instead of being masked by the Instagram photo.
       const { data: apps } = await supabase
         .from("campaign_applications")
         .select(
-          "id, campaign_id, influencer_id, initiated_by, proposed_rate, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, influencer_profiles ( full_name, username, profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
+          "id, campaign_id, influencer_id, initiated_by, proposed_rate, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
         )
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
+
+      // Coalesce custom upload over Instagram photo so downstream
+      // consumers can keep reading inf.profile_photo_url unchanged.
+      const appsWithPhoto = (apps || []).map((a: any) => {
+        const p = a.influencer_profiles;
+        if (!p) return a;
+        return {
+          ...a,
+          influencer_profiles: {
+            ...p,
+            profile_photo_url: p.custom_profile_photo_url || p.profile_photo_url || "",
+          },
+        };
+      });
 
       const { body, meta } = unpackDescription(c.description);
 
@@ -216,7 +235,7 @@ Deno.serve(async (req) => {
           targetGender: m.target_gender || [],
           targetLanguages: m.target_languages || [],
         },
-        applications: apps || [],
+        applications: appsWithPhoto,
       });
     }
 
