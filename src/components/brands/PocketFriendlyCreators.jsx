@@ -57,7 +57,10 @@ export default function PocketFriendlyCreators() {
             apikey: supabaseKey,
             Authorization: `Bearer ${supabaseKey}`,
           },
-          body: "{}",
+          // Pocket Friendly filters + sorts the full directory locally, so
+          // ask for a large slice up-front. `list-influencers` capped its
+          // default to 50 in the 2026-07 pagination refactor.
+          body: JSON.stringify({ limit: 2000 }),
         });
         const data = await res.json();
         if (!cancelled && Array.isArray(data?.influencers)) {

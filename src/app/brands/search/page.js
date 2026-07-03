@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Search,
-  Plus,
-  SlidersHorizontal,
   ChevronDown,
   Loader2,
 } from "lucide-react";
@@ -19,25 +17,38 @@ import { InfluencerCard } from "@/components/brands/InfluencerCard";
 import { FilterDrawer, filterData, sortOptions } from "@/components/brands/FilterDrawer";
 import { createClient } from "@/utils/supabase/client";
 
-// Map "Follower Count" bucket labels to [min, max] ranges
-const followerRanges = {
-  "0 - 10k": [0, 10_000],
-  "10k - 50k": [10_000, 50_000],
-  "50k - 100k": [50_000, 100_000],
-  "100k - 500k": [100_000, 500_000],
-  "500k - 1M": [500_000, 1_000_000],
-  "1M+": [1_000_000, Infinity],
-};
-
-// Map "Creator Type" labels to [min, max] ranges
-const creatorTypeRanges = {
-  Nano: [0, 10_000],
-  Micro: [10_000, 100_000],
-  Macro: [100_000, 1_000_000],
-  Mega: [1_000_000, Infinity],
-};
-
 const emptyFilters = Object.fromEntries(Object.keys(filterData).map((k) => [k, []]));
+
+const PAGE_SIZE = 50;
+
+// The sort strings in the UI don't match what the server accepts, and
+// mapping this at call time keeps the FilterDrawer options list as the
+// user-facing source of truth.
+const SORT_WIRE = {
+  "Followers (High to Low)": "followers_desc",
+  "Followers (Low to High)": "followers_asc",
+  "Alphabetical": "alpha",
+};
+
+// Convert the FilterDrawer's per-group chip arrays into the shape
+// list-influencers expects on the wire.
+function filtersToWire(filters) {
+  return {
+    categories: filters.Categories || [],
+    // Server treats followerBuckets as a union of both the "Follower
+    // Count" and "Creator Type" chip lists — same range table.
+    followerBuckets: [
+      ...(filters["Follower Count"] || []),
+      ...(filters["Creator Type"] || []),
+    ],
+    locations: filters.Location || [],
+    genders: filters.Gender || [],
+    profileTypes: (filters["Profile Type"] || []).map((p) =>
+      p === "Meme page" ? "meme_page" : p === "Celebrity" ? "celebrity" : p,
+    ),
+    languages: filters["Content Language"] || [],
+  };
+}
 
 const SortPopover = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -110,9 +121,19 @@ const InfluencerDirectory = () => {
         ? "Celebrity"
         : null;
   const [influencers, setInfluencers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchText, setSearchText] = useState(initialQuery);
+  // Debounced version — only this actually drives fetches, so typing a
+  // 12-char query doesn't fire 12 round-trips.
+  const [debouncedSearch, setDebouncedSearch] = useState(initialQuery);
   const [sort, setSort] = useState(null);
+  // Bumped every time filters/search/sort change, so a stale in-flight
+  // request from a prior filter combination can't overwrite the current
+  // results when it finally lands.
+  const reqRef = useRef(0);
   const [filters, setFilters] = useState(() => {
     let initial = { ...emptyFilters };
     if (initialCategory && filterData.Categories.includes(initialCategory)) {
@@ -163,134 +184,89 @@ const InfluencerDirectory = () => {
     setSearchText(initialQuery);
   }, [initialQuery]);
 
+  // Debounce searchText → debouncedSearch. 300ms feels responsive without
+  // flooding the edge function on every keystroke.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      // Use edge function (service role) so RLS doesn't hide influencers from brand users.
+    const t = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  // Any change to the filter combination resets pagination to the first
+  // page. loadPage(0, replace=true) runs immediately after via the
+  // effect below.
+  useEffect(() => {
+    setOffset(0);
+  }, [debouncedSearch, filters, sort]);
+
+  // Fetch a page. On the initial load / any filter change we replace
+  // the list; on Load More we append.
+  const loadPage = async (nextOffset, { replace }) => {
+    const ticket = ++reqRef.current;
+    if (replace) setLoading(true);
+    else setLoadingMore(true);
+    try {
       const { data, error } = await supabase.functions.invoke("list-influencers", {
-        body: {},
+        body: {
+          limit: PAGE_SIZE,
+          offset: nextOffset,
+          q: debouncedSearch.trim(),
+          filters: filtersToWire(filters),
+          sort: SORT_WIRE[sort] || "followers_desc",
+        },
       });
-
-      if (!cancelled) {
-        if (error || data?.error) {
-          console.error("Failed to load influencers:", error || data?.error);
-          setInfluencers([]);
-        } else {
-          setInfluencers(data?.influencers || []);
-        }
-        setLoading(false);
+      // A newer request has already fired — drop this response.
+      if (ticket !== reqRef.current) return;
+      if (error || data?.error) {
+        console.error("Failed to load influencers:", error || data?.error);
+        if (replace) setInfluencers([]);
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
-  // Pure predicate so the drawer's "Apply Filters (N)" count can re-run it
-  // against a *draft* filter set without going through state.
-  const matchesFilters = (inf, f, q = "") => {
-    if (q) {
-      const haystack = `${inf.full_name || ""} ${inf.username || ""} ${inf.instagram_handle || ""}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
+      const page = data?.influencers || [];
+      setTotal(Number(data?.total || 0));
+      setInfluencers((prev) => (replace ? page : [...prev, ...page]));
+    } finally {
+      if (ticket === reqRef.current) {
+        if (replace) setLoading(false);
+        else setLoadingMore(false);
+      }
     }
-    const selectedCats = f.Categories || [];
-    if (selectedCats.length) {
-      const infCats = Array.isArray(inf.categories) ? inf.categories : [];
-      if (!selectedCats.some((c) => infCats.includes(c))) return false;
-    }
-    const followerBuckets = f["Follower Count"] || [];
-    if (followerBuckets.length) {
-      const fc = inf.followers_count || 0;
-      const matches = followerBuckets.some((b) => {
-        const [min, max] = followerRanges[b] || [0, Infinity];
-        return fc >= min && fc < max;
-      });
-      if (!matches) return false;
-    }
-    const creatorTypes = f["Creator Type"] || [];
-    if (creatorTypes.length) {
-      const fc = inf.followers_count || 0;
-      const matches = creatorTypes.some((t) => {
-        const [min, max] = creatorTypeRanges[t] || [0, Infinity];
-        return fc >= min && fc < max;
-      });
-      if (!matches) return false;
-    }
-    const locations = f.Location || [];
-    if (locations.length) {
-      // Fuzzy match — a stored city like "Mumbai, Maharashtra" should match
-      // the "Mumbai" filter chip, and vice-versa.
-      const city = (inf.city || "").toLowerCase();
-      if (!city) return false;
-      const hit = locations.some((loc) => {
-        const l = loc.toLowerCase();
-        return city.includes(l) || l.includes(city);
-      });
-      if (!hit) return false;
-    }
-    const genders = f.Gender || [];
-    if (genders.length) {
-      const g = (inf.gender || "").toLowerCase();
-      if (!g) return false;
-      // Normalise "M"/"male"/"F"/"female" style values to the chip labels.
-      const hit = genders.some((sel) => {
-        const s = sel.toLowerCase();
-        if (s.startsWith("male")) return g === "male" || g === "m";
-        if (s.startsWith("female")) return g === "female" || g === "f";
-        return g.includes(s) || s.includes(g);
-      });
-      if (!hit) return false;
-    }
-    const profileTypes = f["Profile Type"] || [];
-    if (profileTypes.length) {
-      // Chip labels are human-readable ("Meme page", "Celebrity"); the DB
-      // column stores the snake-cased enum values ("meme_page",
-      // "celebrity"). Map before comparing.
-      const stored = (inf.creator_type || "").toLowerCase();
-      if (!stored) return false;
-      const wanted = new Set(
-        profileTypes.map((p) => (p === "Meme page" ? "meme_page" : p === "Celebrity" ? "celebrity" : ""))
-      );
-      if (!wanted.has(stored)) return false;
-    }
-    const languages = f["Content Language"] || [];
-    if (languages.length) {
-      const infLangs = (Array.isArray(inf.languages) ? inf.languages : []).map((x) => String(x).toLowerCase());
-      if (infLangs.length === 0) return false;
-      const hit = languages.some((sel) => infLangs.some((il) => il.includes(sel.toLowerCase()) || sel.toLowerCase().includes(il)));
-      if (!hit) return false;
-    }
-    return true;
   };
 
-  // Counter the drawer calls as the user toggles options.
-  const countForDraft = (draft) => {
-    const q = searchText.trim().toLowerCase();
-    return influencers.reduce((n, inf) => (matchesFilters(inf, draft, q) ? n + 1 : n), 0);
+  // Kick off the first-page fetch after debouncedSearch / filters / sort
+  // settle. Also runs on mount.
+  useEffect(() => {
+    loadPage(0, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, filters, sort]);
+
+  const handleLoadMore = () => {
+    if (loadingMore) return;
+    const next = influencers.length;
+    setOffset(next);
+    loadPage(next, { replace: false });
   };
 
-  const filteredInfluencers = useMemo(() => {
-    const q = searchText.trim().toLowerCase();
-    let list = influencers.filter((inf) => matchesFilters(inf, filters, q));
-
-    // Sort
-    if (sort === "Followers (High to Low)") {
-      list = [...list].sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
-    } else if (sort === "Followers (Low to High)") {
-      // Treat unknown / 0-follower profiles (mostly un-enriched invitations)
-      // as +Infinity so they sink to the bottom instead of dominating the
-      // top of a low-to-high sort with meaningless zeros.
-      const lowKey = (n) => (n && n > 0 ? n : Infinity);
-      list = [...list].sort((a, b) => lowKey(a.followers_count) - lowKey(b.followers_count));
-    } else if (sort === "Alphabetical") {
-      list = [...list].sort((a, b) =>
-        (a.full_name || a.username || "").localeCompare(b.full_name || b.username || "")
-      );
+  // Drawer count for "Apply Filters (N)" — cheap server dry-run using
+  // limit:0 so we get { total } without pulling any rows.
+  const countForDraft = async (draft) => {
+    try {
+      const { data } = await supabase.functions.invoke("list-influencers", {
+        body: {
+          limit: 1,
+          offset: 0,
+          q: debouncedSearch.trim(),
+          filters: filtersToWire(draft),
+          sort: SORT_WIRE[sort] || "followers_desc",
+        },
+      });
+      return Number(data?.total || 0);
+    } catch {
+      return 0;
     }
+  };
 
-    return list;
-  }, [influencers, searchText, filters, sort]);
+  const filteredInfluencers = influencers;
+  const hasMore = filteredInfluencers.length < total;
 
   const FilterBar = () => (
     <div className="flex items-center gap-2 flex-wrap">
@@ -355,7 +331,7 @@ const InfluencerDirectory = () => {
       </div>
 
       {/* ── Influencer Grid ── */}
-      <div className="flex-1 overflow-y-auto max-h-[80vh] lg:px-8 pb-4">
+      <div className="flex-1 lg:px-8 pb-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={28} className="animate-spin text-[#5851DB]" />
@@ -368,11 +344,31 @@ const InfluencerDirectory = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            {filteredInfluencers.map((inf) => (
-              <InfluencerCard key={inf.influencer_id} {...inf} />
-            ))}
-          </div>
+          <>
+            {/* Result count strip — tells the brand there's more behind
+                the Load More button so paginating doesn't feel like the
+                list is complete when it isn't. */}
+            <p className="text-[11px] font-semibold text-slate-400 px-6 lg:px-0 pb-3">
+              Showing {filteredInfluencers.length} of {total} creator{total === 1 ? "" : "s"}
+            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {filteredInfluencers.map((inf) => (
+                <InfluencerCard key={inf.influencer_id} {...inf} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="flex justify-center py-6">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#5851DB] text-[#5851DB] bg-white hover:bg-purple-50 disabled:opacity-60 text-[12px] font-bold cursor-pointer"
+                >
+                  {loadingMore && <Loader2 size={14} className="animate-spin" />}
+                  {loadingMore ? "Loading..." : `Load more (${total - filteredInfluencers.length} left)`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -163,10 +163,23 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     </div>
   );
 
-  // Live count for the Apply button. Only computed when the drawer is open
-  // and the parent has supplied a counter — otherwise we just render
-  // "Apply Filters" with no number.
-  const draftCount = countForDraft && open ? countForDraft(draft) : null;
+  // Live count for the Apply button. countForDraft may return a Promise
+  // (server-side count) or a number (legacy sync callers), so we
+  // normalise both via state + a debounced refresh.
+  const [draftCount, setDraftCount] = useState(null);
+  useEffect(() => {
+    if (!countForDraft || !open) {
+      setDraftCount(null);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const value = await countForDraft(draft);
+        if (typeof value === "number") setDraftCount(value);
+      } catch { /* ignore — Apply still says just "Apply Filters" */ }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [draft, open, countForDraft]);
 
   const footer = (
     <div className="grid grid-cols-2 gap-4 p-6 border-t bg-white shrink-0">

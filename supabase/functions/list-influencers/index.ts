@@ -15,21 +15,51 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    // Pagination bounds. Default = 500 (covers the discover page's
-    // existing usage) but also the HARD CAP — a single client can
-    // never pull more than that in one request, which bounds both
-    // network payload and the per-row work this function does.
-    // Callers can pass a smaller `limit` for perf.
-    const MAX_LIMIT = 500;
-    let limit = MAX_LIMIT;
+    // Pagination bounds. Default = 50 (brands find-creators paginates
+    // with a Load More button). MAX_LIMIT is the hard ceiling per call
+    // — bumped from 500 to 2000 for the "list everything" callers
+    // (BrandsCarousel, TopPicksCarousel etc.) that don't paginate yet.
+    const MAX_LIMIT = 2000;
+    let limit = 50;
     let offset = 0;
+    let q = "";
+    // Filters bundle — keys match the FilterDrawer's group names
+    // normalised to snake_case. Each value is an array of accepted
+    // strings. Empty / missing arrays mean "don't filter on that key".
+    let filters: {
+      categories?: string[];
+      followerBuckets?: string[];
+      locations?: string[];
+      genders?: string[];
+      profileTypes?: string[];
+      languages?: string[];
+    } = {};
+    let sort: "followers_desc" | "followers_asc" | "alpha" = "followers_desc";
     try {
       const body = await req.json();
       if (Number.isFinite(body?.limit)) limit = Math.max(1, Math.min(MAX_LIMIT, Math.floor(body.limit)));
       if (Number.isFinite(body?.offset)) offset = Math.max(0, Math.floor(body.offset));
+      if (typeof body?.q === "string") q = body.q.trim().toLowerCase();
+      if (body?.filters && typeof body.filters === "object") filters = body.filters;
+      if (body?.sort === "followers_asc" || body?.sort === "alpha") sort = body.sort;
     } catch {
       // No body / not JSON → defaults.
     }
+
+    // Follower / creator-type bucket → [min, max) range table.
+    // Mirrors src/app/brands/search/page.js so the two stay consistent.
+    const FOLLOWER_RANGES: Record<string, [number, number]> = {
+      "0 - 10k": [0, 10_000],
+      "10k - 50k": [10_000, 50_000],
+      "50k - 100k": [50_000, 100_000],
+      "100k - 500k": [100_000, 500_000],
+      "500k - 1M": [500_000, 1_000_000],
+      "1M+": [1_000_000, Number.POSITIVE_INFINITY],
+      Nano: [0, 10_000],
+      Micro: [10_000, 100_000],
+      Macro: [100_000, 1_000_000],
+      Mega: [1_000_000, Number.POSITIVE_INFINITY],
+    };
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -145,6 +175,7 @@ Deno.serve(async (req) => {
       // Gender + languages power the brand-side search filters.
       gender: r.gender || "",
       languages: Array.isArray(r.languages) ? r.languages : [],
+      creator_type: r.creator_type || "",
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,
@@ -211,13 +242,96 @@ Deno.serve(async (req) => {
       merged.push(row);
     }
 
-    // Sort by followers desc
-    merged.sort((a, b) => (b.followers_count || 0) - (a.followers_count || 0));
+    // Apply search + filters BEFORE sort + slice, so the page always
+    // returns a full 50 matching rows when there's more data behind it.
+    // Free-text search matches across name / username / instagram handle.
+    let filtered = merged;
+    if (q) {
+      filtered = filtered.filter((r: any) => {
+        const hay = `${r.full_name || ""} ${r.username || ""} ${r.instagram_handle || ""}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    if (filters.categories?.length) {
+      const wanted = new Set(filters.categories);
+      filtered = filtered.filter((r: any) =>
+        Array.isArray(r.categories) && r.categories.some((c: string) => wanted.has(c)),
+      );
+    }
+    // Follower Count buckets — accepts both the FilterDrawer's chip
+    // labels (e.g. "10k - 50k") and the Creator Type synonyms
+    // (Nano/Micro/Macro/Mega). Server treats them as a union.
+    const followerBuckets = [
+      ...(filters.followerBuckets || []),
+    ];
+    if (followerBuckets.length) {
+      const ranges = followerBuckets
+        .map((b) => FOLLOWER_RANGES[b])
+        .filter(Boolean) as [number, number][];
+      if (ranges.length) {
+        filtered = filtered.filter((r: any) => {
+          const n = r.followers_count || 0;
+          return ranges.some(([lo, hi]) => n >= lo && n < hi);
+        });
+      }
+    }
+    if (filters.locations?.length) {
+      const wanted = filters.locations.map((s) => s.toLowerCase());
+      filtered = filtered.filter((r: any) => {
+        const city = (r.city || "").toLowerCase();
+        if (!city) return false;
+        return wanted.some((l) => city.includes(l) || l.includes(city));
+      });
+    }
+    if (filters.genders?.length) {
+      const wanted = filters.genders.map((s) => s.toLowerCase());
+      filtered = filtered.filter((r: any) => {
+        const g = (r.gender || "").toLowerCase();
+        if (!g) return false;
+        return wanted.some((s) => {
+          if (s.startsWith("male")) return g === "male" || g === "m";
+          if (s.startsWith("female")) return g === "female" || g === "f";
+          return g.includes(s) || s.includes(g);
+        });
+      });
+    }
+    if (filters.profileTypes?.length) {
+      // Client sends the DB enum value directly (meme_page / celebrity).
+      const wanted = new Set(filters.profileTypes.map((s) => s.toLowerCase()));
+      filtered = filtered.filter((r: any) => {
+        const stored = (r.creator_type || "").toLowerCase();
+        if (!stored) return false;
+        return wanted.has(stored);
+      });
+    }
+    if (filters.languages?.length) {
+      const wanted = filters.languages.map((s) => s.toLowerCase());
+      filtered = filtered.filter((r: any) => {
+        const langs = Array.isArray(r.languages) ? r.languages.map((s: any) => String(s).toLowerCase()) : [];
+        if (langs.length === 0) return false;
+        return wanted.some((sel) => langs.some((il: string) => il.includes(sel) || sel.includes(il)));
+      });
+    }
+
+    // Sort the filtered set. followers_desc is the default; alpha and
+    // followers_asc are the FilterDrawer's other two options.
+    if (sort === "followers_asc") {
+      // 0-follower rows (mostly un-enriched invitations) sink to the
+      // bottom instead of dominating the low-to-high top.
+      const key = (n: number) => (n && n > 0 ? n : Number.POSITIVE_INFINITY);
+      filtered.sort((a: any, b: any) => key(a.followers_count) - key(b.followers_count));
+    } else if (sort === "alpha") {
+      filtered.sort((a: any, b: any) =>
+        (a.full_name || a.username || "").localeCompare(b.full_name || b.username || ""),
+      );
+    } else {
+      filtered.sort((a: any, b: any) => (b.followers_count || 0) - (a.followers_count || 0));
+    }
 
     // Slice to the requested page. We return `total` so the client can
     // paginate intelligently (e.g. show "showing 25 of 412 creators").
-    const total = merged.length;
-    const page = merged.slice(offset, offset + limit);
+    const total = filtered.length;
+    const page = filtered.slice(offset, offset + limit);
 
     return new Response(
       JSON.stringify({ influencers: page, total, limit, offset }),
