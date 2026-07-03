@@ -7,13 +7,13 @@ import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
 import InfoBadge from "@/components/brands/InfoBadge";
 
 // Band → ring color. Bands match the spec's five-tier ladder
-// (Excellent / Very Good / Good / Fair / Poor).
+// (Elite / Trusted / Established / Emerging / Building Trust).
 const BAND_RING = {
-  "Excellent": "#10b981", // emerald
-  "Very Good": "#3b82f6", // blue
-  "Good":      "#5B3DF5", // indigo
-  "Fair":      "#f59e0b", // amber
-  "Poor":      "#ef4444", // rose
+  "Elite":          "#10b981", // emerald
+  "Trusted":        "#3b82f6", // blue
+  "Established":    "#5B3DF5", // indigo
+  "Emerging":       "#f59e0b", // amber
+  "Building Trust": "#64748b", // slate
 };
 
 export const TrustSection = () => {
@@ -22,7 +22,7 @@ export const TrustSection = () => {
   const min = trust?.scaleMin ?? 300;
   const max = trust?.scaleMax ?? 900;
   const score = trust?.score || min;
-  const band = trust?.band || "Poor";
+  const band = trust?.band || "Building Trust";
   // Ring sweep tracks position within the 300–900 range, not score/max,
   // so a 600 lands roughly half-way around the ring instead of two-thirds.
   const ringPct = Math.min(100, Math.max(0, ((score - min) / (max - min)) * 100));

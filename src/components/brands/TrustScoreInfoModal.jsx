@@ -99,9 +99,9 @@ export default function TrustScoreInfoModal({ open, onClose }) {
             </p>
             <div className="h-3 rounded-full bg-gradient-to-r from-rose-500 via-amber-400 via-emerald-400 to-violet-500 mb-2" />
             <div className="flex justify-between text-[10px] font-bold text-slate-500">
-              <span>300 · Poor</span>
-              <span>Good</span>
-              <span>900 · Excellent</span>
+              <span>300 · Building Trust</span>
+              <span>Established</span>
+              <span>900 · Elite</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed mt-3">
               The higher your score, the more visibility and trust your

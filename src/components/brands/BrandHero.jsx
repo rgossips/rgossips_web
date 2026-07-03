@@ -30,13 +30,13 @@ const BrandHero = () => {
   const trustMin = trust?.scaleMin ?? 300;
   const trustMax = trust?.scaleMax ?? 900;
   const trustScore = trust?.score || trustMin;
-  const trustBand = trust?.band || "Poor";
+  const trustBand = trust?.band || "Building Trust";
   const trustBorder =
-    trustBand === "Excellent" ? "border-emerald-500" :
-    trustBand === "Very Good" ? "border-blue-500" :
-    trustBand === "Good"      ? "border-indigo-500" :
-    trustBand === "Fair"      ? "border-amber-500" :
-                                "border-rose-500";
+    trustBand === "Elite"       ? "border-emerald-500" :
+    trustBand === "Trusted"     ? "border-blue-500"    :
+    trustBand === "Established" ? "border-indigo-500"  :
+    trustBand === "Emerging"    ? "border-amber-500"   :
+                                  "border-slate-400";
 
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">

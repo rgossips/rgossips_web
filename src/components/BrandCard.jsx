@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 // Mirrors src/lib/brandProfile.js BANDS so the card and the brand-side
 // dashboard speak the same colour language.
 const TRUST_BAND_COLORS = {
-  Excellent: "text-emerald-600 bg-emerald-50",
-  "Very Good": "text-blue-600 bg-blue-50",
-  Good: "text-amber-600 bg-amber-50",
-  Fair: "text-orange-600 bg-orange-50",
-  Poor: "text-slate-500 bg-slate-50",
+  Elite: "text-emerald-600 bg-emerald-50",
+  Trusted: "text-blue-600 bg-blue-50",
+  Established: "text-indigo-600 bg-indigo-50",
+  Emerging: "text-amber-600 bg-amber-50",
+  "Building Trust": "text-slate-500 bg-slate-50",
 };
 
 const BrandCard = ({ brand, matchScore }) => {

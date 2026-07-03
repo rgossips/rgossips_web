@@ -11,8 +11,10 @@
 //   P4 Communication              15%   response-time SLAs + feedback richness
 //   P5 Platform Engagement        10%   recency of activity + profile completeness
 //
-// Bands: 800–900 Excellent · 740–799 Very Good · 670–739 Good
-//        580–669 Fair    · <580    Poor
+// Bands: 800–900 Elite · 740–799 Trusted · 670–739 Established
+//        580–669 Emerging · <580 Building Trust
+// (Renamed from Excellent / Very Good / Good / Fair / Poor — same
+//  score cutoffs, non-punitive language for brands still ramping up.)
 
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
@@ -303,16 +305,16 @@ const PILLAR_WEIGHTS = {
 };
 
 const BANDS = [
-  { min: 800, label: "Excellent" },
-  { min: 740, label: "Very Good" },
-  { min: 670, label: "Good" },
-  { min: 580, label: "Fair" },
-  { min: 300, label: "Poor" },
+  { min: 800, label: "Elite" },
+  { min: 740, label: "Trusted" },
+  { min: 670, label: "Established" },
+  { min: 580, label: "Emerging" },
+  { min: 300, label: "Building Trust" },
 ];
 
 function bandFor(score) {
   for (const b of BANDS) if (score >= b.min) return b.label;
-  return "Poor";
+  return "Building Trust";
 }
 
 const COLD_START_CAP = 720;
