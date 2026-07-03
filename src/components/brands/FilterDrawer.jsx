@@ -51,6 +51,7 @@ export const filterData = {
     "1M+",
   ],
   "Creator Type": ["Mega", "Macro", "Micro", "Nano"],
+  "Profile Type": ["Meme page", "Celebrity"],
   Location: [
     "Mumbai",
     "Delhi",

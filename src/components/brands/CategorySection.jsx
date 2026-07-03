@@ -128,10 +128,15 @@ export const CategorySection = () => {
             ))}
           </div>
 
-          {/* Selection Cards (Who Are You Looking For?) */}
+          {/* Selection Cards (Who Are You Looking For?)
+              Route to the influencer search page pre-filtered by profile
+              type. brands/search reads ?profileType= on mount and seeds
+              the filter drawer's "Profile Type" chip so the list opens
+              already narrowed. */}
           <div className="grid grid-cols-2 gap-4">
             <motion.div
               whileHover={{ y: -4 }}
+              onClick={() => router.push("/brands/search?profileType=meme_page")}
               className="bg-[#FFF7E6] p-6 rounded-[32px] flex flex-col justify-between h-40 border border-amber-100 cursor-pointer"
             >
               <span className="text-2xl">😂</span>
@@ -147,6 +152,7 @@ export const CategorySection = () => {
 
             <motion.div
               whileHover={{ y: -4 }}
+              onClick={() => router.push("/brands/search?profileType=celebrity")}
               className="bg-[#FFF1F1] p-6 rounded-[32px] flex flex-col justify-between h-40 border border-red-50 cursor-pointer"
             >
               <span className="text-2xl">🎭</span>

@@ -97,6 +97,18 @@ const InfluencerDirectory = () => {
   const initialCategory = searchParams.get("category");
   const initialQuery = searchParams.get("q") || "";
   const initialCity = searchParams.get("city");
+  // ?profileType=meme_page | celebrity — routed here from the
+  // CategorySection Meme Pages / Celebrities cards on /brands. We
+  // translate the wire value into the chip label the FilterDrawer
+  // renders ("Meme page" / "Celebrity") so the pre-selection lights up
+  // in the drawer too.
+  const initialProfileTypeRaw = searchParams.get("profileType");
+  const initialProfileType =
+    initialProfileTypeRaw === "meme_page"
+      ? "Meme page"
+      : initialProfileTypeRaw === "celebrity"
+        ? "Celebrity"
+        : null;
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState(initialQuery);
@@ -108,6 +120,9 @@ const InfluencerDirectory = () => {
     }
     if (initialCity && filterData.Location?.includes(initialCity)) {
       initial.Location = [initialCity];
+    }
+    if (initialProfileType && filterData["Profile Type"]?.includes(initialProfileType)) {
+      initial["Profile Type"] = [initialProfileType];
     }
     return initial;
   });
@@ -133,6 +148,16 @@ const InfluencerDirectory = () => {
       );
     }
   }, [initialCity]);
+
+  useEffect(() => {
+    if (initialProfileType && filterData["Profile Type"]?.includes(initialProfileType)) {
+      setFilters((prev) =>
+        prev["Profile Type"]?.includes(initialProfileType)
+          ? prev
+          : { ...prev, "Profile Type": [initialProfileType] }
+      );
+    }
+  }, [initialProfileType]);
 
   useEffect(() => {
     setSearchText(initialQuery);
@@ -216,6 +241,18 @@ const InfluencerDirectory = () => {
         return g.includes(s) || s.includes(g);
       });
       if (!hit) return false;
+    }
+    const profileTypes = f["Profile Type"] || [];
+    if (profileTypes.length) {
+      // Chip labels are human-readable ("Meme page", "Celebrity"); the DB
+      // column stores the snake-cased enum values ("meme_page",
+      // "celebrity"). Map before comparing.
+      const stored = (inf.creator_type || "").toLowerCase();
+      if (!stored) return false;
+      const wanted = new Set(
+        profileTypes.map((p) => (p === "Meme page" ? "meme_page" : p === "Celebrity" ? "celebrity" : ""))
+      );
+      if (!wanted.has(stored)) return false;
     }
     const languages = f["Content Language"] || [];
     if (languages.length) {
