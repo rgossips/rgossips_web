@@ -147,6 +147,19 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Application-deadline check is separate. isExpired above prefers
+      // campaign_end_date and only falls back to application_deadline —
+      // a campaign whose applications closed yesterday but whose overall
+      // end date is next month wouldn't be flagged there. This flag is
+      // what the Active-list visibility filter below actually checks so
+      // late-deadline campaigns disappear from Active while the user's
+      // in-flight applications (Applied / Completed tabs) still show them.
+      let applicationDeadlinePassed = false;
+      if (c.application_deadline) {
+        applicationDeadlinePassed =
+          new Date(c.application_deadline).getTime() < Date.now();
+      }
+
       // Format deadline
       let deadline = "No deadline";
       if (c.application_deadline) {
@@ -283,13 +296,18 @@ Deno.serve(async (req) => {
         targetLanguages: m.target_languages || [],
         minEngagementRate: m.min_engagement_rate || 0,
         rawPlatforms,
+        applicationDeadlinePassed,
       };
     });
 
-    // Hide expired campaigns from the influencer list, but keep them when
-    // the influencer has already applied (so they can still see status,
-    // submit deliverables, etc.).
-    const visible = formatted.filter((c: any) => !c.isExpired || c.applicationStatus);
+    // Hide from the influencer list when either the overall campaign
+    // ended (isExpired) or the application deadline itself passed
+    // (applicationDeadlinePassed), UNLESS the influencer already applied
+    // — in that case keep the row so they can still see status, submit
+    // deliverables, etc.
+    const visible = formatted.filter(
+      (c: any) => (!c.isExpired && !c.applicationDeadlinePassed) || c.applicationStatus,
+    );
 
     return new Response(
       JSON.stringify({ campaigns: visible }),

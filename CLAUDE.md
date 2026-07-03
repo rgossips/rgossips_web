@@ -212,6 +212,22 @@ Admin sidebar is grouped:
 | 038 | refer_earn_phase2 | `unlocks_at`, welcome bonus reason, available-balance view, fraud columns |
 | 039 | referrals_leaderboard | Monthly view + 2 SECURITY DEFINER RPCs |
 
+## Campaign visibility rules (influencer side)
+
+`list-campaigns` (edge fn) hides a campaign from the influencer list
+when EITHER:
+
+- `isExpired` is true (based on `campaign_end_date`, falling back to
+  `application_deadline` if no end date) — the overall campaign ended, OR
+- `applicationDeadlinePassed` is true (based on `application_deadline`
+  alone) — applications closed even though the campaign might still be
+  running for people already accepted.
+
+Both flags surface on the campaign row for the client. Rows the
+influencer has already applied to are always kept (regardless of either
+flag) so they can still see status / submit deliverables / view final
+metrics under the Applied / Completed tabs.
+
 ## Common commands
 
 - Apply new migration: `npx supabase db push`
