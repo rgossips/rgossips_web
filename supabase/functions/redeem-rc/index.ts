@@ -1,24 +1,23 @@
-// Redeem RC — called by the subscription checkout functions
-// (razorpay-checkout, stripe-checkout) when the user opts to apply
-// their Reward Credits to a plan purchase.
+// Redeem RC — quotes and (optionally) records a Reward Credit redemption.
 //
-// Returns:
-//   { applied: N, balanceAfter: M, invoiceDiscountPaise: N*100 }
+// Body:
+//   { userId?: string, planPriceRupees: number, dryRun?: boolean }
+// If userId is absent the auth header's JWT is used (direct client caller).
 //
-// Rules (Phase-0 locks 8 + 13):
-//   - actual_apply = min(balance, floor(plan_price × 0.5))
+// Response (always 200 with a `reason` on skip cases so callers can branch):
+//   { applied, availableBefore, balanceAfter, invoiceDiscountPaise, reason }
+//
+// Rules (Phase-0 locks 8 + 13, Phase-2 lock refinement):
+//   - actual_apply = min(available_balance, floor(plan_price × 0.5))
+//   - available_balance skips locked (welcome-bonus) + expired rows.
 //   - Even admin-granted RC follows the same 50% cap.
-//   - FIFO consumption (soonest-to-expire spent first) is implicit:
-//     we just insert one REDEMPTION row against the wallet; the ledger
-//     doesn't need per-row spending because expiry logic already
-//     compares against current balance before writing an EXPIRY row
-//     (see migration 036).
+//   - FIFO consumption is implicit — one REDEMPTION debit against the raw
+//     wallet total. Expiry math already caps the negative it writes.
 //
-// Called with { userId, planPriceRupees }.
-//
-// This function ONLY writes the REDEMPTION ledger row and returns the
-// discount amount. The caller (checkout) is responsible for actually
-// applying that discount to the invoice.
+// Note on live use: the subscription checkouts (stripe / razorpay) inline
+// the balance query + cap because they debit in their respective webhooks
+// after payment succeeds. This endpoint is kept for direct client callers
+// (e.g. one-off service purchases) and for `dryRun` price previews.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -44,6 +43,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     let userId = (body?.userId || "").toString().trim();
     const planPriceRupees = Number(body?.planPriceRupees);
+    const dryRun = Boolean(body?.dryRun);
 
     if (!userId) {
       // Fall back to auth token — direct client callers.
@@ -78,9 +78,10 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           applied: 0,
+          availableBefore: availableBalance,
           balanceAfter: availableBalance,
           invoiceDiscountPaise: 0,
-          reason: availableBalance <= 0 ? "no_available_balance" : "cap_zero",
+          reason: availableBalance <= 0 ? "no_balance" : "cap_zero",
         }),
         { status: 200, headers: jsonHeaders }
       );
@@ -95,6 +96,21 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .maybeSingle();
     const balanceAfter = (rawBal?.balance || 0) - applied;
+
+    // Dry-run mode short-circuits before writing — used by the pricing
+    // page to preview the "you'd pay ₹X" figure before commit.
+    if (dryRun) {
+      return new Response(
+        JSON.stringify({
+          applied,
+          availableBefore: availableBalance,
+          balanceAfter,
+          invoiceDiscountPaise: applied * 100,
+          reason: "dry_run",
+        }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     // Insert the REDEMPTION row. No expires_at — this row is a debit.
     const { error: insErr } = await supabase
@@ -117,8 +133,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         applied,
+        availableBefore: availableBalance,
         balanceAfter,
         invoiceDiscountPaise: applied * 100,
+        reason: "applied",
       }),
       { status: 200, headers: jsonHeaders }
     );

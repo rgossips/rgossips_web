@@ -19,6 +19,7 @@ import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
+import ReferBalanceCard from "@/components/ReferBalanceCard";
 
 const CATEGORIES = [
   { id: 2, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
@@ -125,6 +126,11 @@ export default function HomePage() {
           {/* Instagram Reconnect Banner */}
           <div className="w-full">
             <InstagramReconnectBanner />
+          </div>
+
+          {/* Refer & Earn wallet strip — self-hides for users with no RC. */}
+          <div className="w-full px-4 lg:px-10">
+            <ReferBalanceCard />
           </div>
 
           {/* Desktop Two-Column Layout */}

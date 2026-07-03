@@ -47,6 +47,8 @@ export default function ReferPage() {
   const [lockedBalance, setLockedBalance] = useState(0);
   const [referrals, setReferrals] = useState([]);
   const [ledger, setLedger] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [myRank, setMyRank] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -55,7 +57,7 @@ export default function ReferPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [{ data: prof }, { data: bal }, { data: availBal }, { data: refs }, { data: led }] = await Promise.all([
+        const [{ data: prof }, { data: bal }, { data: availBal }, { data: refs }, { data: led }, { data: board }, { data: rank }] = await Promise.all([
           supabase
             .from("influencer_profiles")
             .select("referral_code")
@@ -83,6 +85,11 @@ export default function ReferPage() {
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(50),
+          // Top 10 referrers this IST month + this user's rank on the
+          // same board. Both are SECURITY DEFINER RPCs so they bypass
+          // referrals RLS while only exposing public identity fields.
+          supabase.rpc("get_referral_leaderboard", { top_n: 10 }),
+          supabase.rpc("get_my_referral_rank"),
         ]);
         if (cancelled) return;
         setReferralCode(prof?.referral_code || "");
@@ -91,6 +98,8 @@ export default function ReferPage() {
         setLockedBalance(availBal?.locked_balance || 0);
         setReferrals(refs || []);
         setLedger(led || []);
+        setLeaderboard(Array.isArray(board) ? board : []);
+        setMyRank(Array.isArray(rank) && rank[0] ? rank[0] : null);
       } catch (e) {
         console.error("refer page load failed:", e);
       } finally {
@@ -248,6 +257,67 @@ export default function ReferPage() {
                 RC lands the moment your friend pays. Reversed if they refund within 7 days. Auto-expires 90 days after credit.
               </p>
             </div>
+
+            {/* Monthly leaderboard — self-hides when nobody has qualified
+                yet this month. Ranks by RC earned, ties broken by count. */}
+            {leaderboard.length > 0 && (
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                    Top referrers this month
+                  </h3>
+                  {myRank && (
+                    <span className="text-[11px] font-black bg-slate-50 text-slate-700 px-2 py-1 rounded">
+                      You: #{myRank.rank}
+                    </span>
+                  )}
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {leaderboard.map((row) => {
+                    const isMe = user?.id === row.referrer_id;
+                    return (
+                      <div
+                        key={row.referrer_id}
+                        className={`py-3 flex items-center gap-3 ${isMe ? "bg-pink-50/50 -mx-6 px-6" : ""}`}
+                      >
+                        <div className="w-7 text-center text-[13px] font-black text-slate-500">
+                          #{row.rank}
+                        </div>
+                        {row.profile_photo_url ? (
+                          <img
+                            src={row.profile_photo_url}
+                            alt=""
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-slate-100" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-bold text-slate-900 truncate">
+                            {row.full_name || row.username || "Unknown"}
+                            {isMe && <span className="text-[10px] text-pink-500 font-black ml-1">YOU</span>}
+                          </p>
+                          <p className="text-[11px] text-slate-400 truncate">
+                            {row.instagram_handle ? `@${row.instagram_handle}` : "—"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-black text-emerald-600">
+                            {row.rc_earned} RC
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {row.rewarded_count} referral{row.rewarded_count === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-slate-400 leading-snug">
+                  Resets on the 1st of each month (IST).
+                </p>
+              </div>
+            )}
 
             {/* Referrals list */}
             <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-3">

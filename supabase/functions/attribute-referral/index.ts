@@ -16,6 +16,7 @@
 // code.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendBrandedEmail } from "../_shared/email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,6 +174,14 @@ Deno.serve(async (req) => {
           is_read: false,
         });
       } catch (_) { /* non-fatal */ }
+      void sendBrandedEmail(supabase, {
+        userId: referrer.influencer_id,
+        subject: "A friend joined RGossips with your link",
+        title: "Someone just signed up",
+        body: "<p>A creator joined RGossips using your referral link. You'll earn Reward Credits (RC) the moment they subscribe to any plan — up to <strong>300 RC per referral</strong>.</p>",
+        ctaLabel: "Share your link again",
+        ctaPath: "/influencer/refer",
+      });
     }
 
     return new Response(

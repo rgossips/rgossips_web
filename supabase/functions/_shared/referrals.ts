@@ -13,6 +13,7 @@
 //   3. On refund within 7 days of QUALIFIED, insert CLAWBACK.
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendBrandedEmail } from "./email.ts";
 
 // Instant-reward RC by referee's first-purchase plan.
 export const REWARD_BY_PLAN: Record<string, number> = {
@@ -216,6 +217,18 @@ export async function qualifyReferralIfEligible(admin: SupabaseClient, args: {
     });
   } catch (_) { /* non-fatal */ }
 
+  // Best-effort email — same subject line as the in-app notification so
+  // multi-channel messaging feels consistent. Silent if the user has no
+  // email on file.
+  void sendBrandedEmail(admin, {
+    userId: row.referrer_id,
+    subject: `You earned ${rc} RC on RGossips`,
+    title: `+${rc} RC just landed in your wallet`,
+    body: `<p>Your friend subscribed to the <strong>${refereePlan.toUpperCase()}</strong> plan on RGossips. That's <strong>${rc} RC</strong> in your wallet, redeemable on your next renewal — up to 50% off.</p>`,
+    ctaLabel: "Open your wallet",
+    ctaPath: "/influencer/refer",
+  });
+
   return { ok: true, reason: "rewarded", rc };
 }
 
@@ -276,6 +289,15 @@ export async function clawBackReferral(admin: SupabaseClient, qualifyingEventId:
       is_read: false,
     });
   } catch (_) { /* non-fatal */ }
+
+  void sendBrandedEmail(admin, {
+    userId: row.referrer_id,
+    subject: `${row.referrer_reward_rc} RC reclaimed on RGossips`,
+    title: "A referral reward was reversed",
+    body: `<p>Your referral refunded their subscription within 7 days, so the <strong>${row.referrer_reward_rc} RC</strong> we credited was reversed. You can still earn again when they re-subscribe — nothing else on your wallet is affected.</p>`,
+    ctaLabel: "See your wallet",
+    ctaPath: "/influencer/refer",
+  });
 
   return { ok: true, reason: "clawed_back" };
 }
