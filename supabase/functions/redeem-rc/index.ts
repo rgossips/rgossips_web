@@ -60,31 +60,41 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "planPriceRupees required" }), { status: 200, headers: jsonHeaders });
     }
 
-    // Current balance.
+    // Available balance = total minus locked (welcome bonus in its 30-day
+    // lock window) minus expired. This is the only figure users can spend
+    // — the raw v_reward_credits_balance sum is a marketing display only.
     const { data: balRow } = await supabase
-      .from("v_reward_credits_balance")
-      .select("balance")
+      .from("v_reward_credits_available_balance")
+      .select("available_balance")
       .eq("user_id", userId)
       .maybeSingle();
-    const balance = balRow?.balance || 0;
+    const availableBalance = balRow?.available_balance || 0;
 
     // 50%-of-plan cap. floor because we deal in whole rupees.
     const maxApply = Math.floor(planPriceRupees * 0.5);
-    const applied = Math.max(0, Math.min(balance, maxApply));
+    const applied = Math.max(0, Math.min(availableBalance, maxApply));
 
     if (applied <= 0) {
       return new Response(
         JSON.stringify({
           applied: 0,
-          balanceAfter: balance,
+          balanceAfter: availableBalance,
           invoiceDiscountPaise: 0,
-          reason: balance <= 0 ? "no_balance" : "cap_zero",
+          reason: availableBalance <= 0 ? "no_available_balance" : "cap_zero",
         }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
-    const balanceAfter = balance - applied;
+    // balance_after on the ledger row snapshots the raw sum (includes
+    // locked). Read it live from v_reward_credits_balance so the ledger
+    // stays consistent with the debit-including-locked model.
+    const { data: rawBal } = await supabase
+      .from("v_reward_credits_balance")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const balanceAfter = (rawBal?.balance || 0) - applied;
 
     // Insert the REDEMPTION row. No expires_at — this row is a debit.
     const { error: insErr } = await supabase

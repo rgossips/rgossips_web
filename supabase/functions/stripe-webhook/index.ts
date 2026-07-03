@@ -603,6 +603,58 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error("referral qualification (stripe) failed:", (e as any)?.message || e);
           }
+
+          // Refer & Earn (Phase 2). If this checkout burned RC via an
+          // ad-hoc Stripe Coupon, post the matching REDEMPTION ledger
+          // row now (post-payment, never before). Idempotent via a
+          // note-based lookup keyed on subscription id so a re-delivered
+          // webhook event can't debit twice.
+          try {
+            const rcApplied = Number(session.metadata?.rc_applied || 0);
+            const subId = String(session.subscription || "");
+            if (rcApplied > 0 && subId) {
+              const supaAdmin = createClient(
+                Deno.env.get("SUPABASE_URL")!,
+                Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+              );
+              const { data: existing } = await supaAdmin
+                .from("reward_credits_ledger")
+                .select("id")
+                .eq("user_id", userId)
+                .eq("reason", "REDEMPTION")
+                .ilike("note", `%${subId}%`)
+                .limit(1)
+                .maybeSingle();
+              if (!existing) {
+                // Cap against current available balance so we never
+                // debit into the negative (the coupon was already
+                // applied at Stripe — this row just records it).
+                const { data: availRow } = await supaAdmin
+                  .from("v_reward_credits_available_balance")
+                  .select("available_balance")
+                  .eq("user_id", userId)
+                  .maybeSingle();
+                const applied = Math.min(rcApplied, availRow?.available_balance || 0);
+                if (applied > 0) {
+                  const { data: rawBal } = await supaAdmin
+                    .from("v_reward_credits_balance")
+                    .select("balance")
+                    .eq("user_id", userId)
+                    .maybeSingle();
+                  const balanceAfter = (rawBal?.balance || 0) - applied;
+                  await supaAdmin.from("reward_credits_ledger").insert({
+                    user_id: userId,
+                    delta_rc: -applied,
+                    reason: "REDEMPTION",
+                    balance_after: balanceAfter,
+                    note: `Applied via Stripe checkout (sub ${subId})`,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.error("RC redemption ledger insert (stripe) failed:", (e as any)?.message || e);
+          }
         }
         break;
       }

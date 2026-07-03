@@ -513,6 +513,29 @@ const LoginInner = () => {
         // attribute-referral. Guarded server-side against self-referral
         // + inactive referrer, so an empty string / bad code just no-ops.
         referralCode: searchParams?.get("ref") || null,
+        // Device fingerprint for fraud attribution on the referral row.
+        // Cheap non-cryptographic hash of UA + timezone + language +
+        // screen size — stable across visits from the same browser,
+        // different across devices. Not identity: just a duplicate-account
+        // signal for the admin MANUAL_REVIEW queue.
+        deviceFingerprint: (() => {
+          if (typeof window === "undefined") return null;
+          try {
+            const parts = [
+              navigator.userAgent || "",
+              Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+              navigator.language || "",
+              String(window.screen?.width || 0),
+              String(window.screen?.height || 0),
+              String(window.screen?.colorDepth || 0),
+            ].join("|");
+            let h = 0;
+            for (let i = 0; i < parts.length; i++) {
+              h = ((h << 5) - h + parts.charCodeAt(i)) | 0;
+            }
+            return String(h >>> 0);
+          } catch { return null; }
+        })(),
       };
 
       // Add Instagram data if available

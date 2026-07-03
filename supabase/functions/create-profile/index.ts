@@ -91,7 +91,10 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId, referralCode } = await req.json();
+    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId, referralCode, deviceFingerprint } = await req.json();
+    // Signup IP — best-effort read from the edge proxy's forwarded-for
+    // header. Forwarded on to attribute-referral for fraud attribution.
+    const signupIp = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "";
 
     if (!userId || !table) {
       return new Response(
@@ -273,6 +276,44 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from("influencer_invitations").update(claimData).ilike("instagram_username", igUsername).eq("status", "pending");
       }
 
+      // Welcome RC bonus. 50 RC lands the moment an influencer profile is
+      // created, but stays locked for 30 days before it can be redeemed
+      // — the lock discourages create-account/redeem/delete abuse. We
+      // skip this if a WELCOME_BONUS row already exists for this user
+      // (idempotent on retries / re-invocations of create-profile).
+      try {
+        const { data: existingBonus } = await supabaseAdmin
+          .from("reward_credits_ledger")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("reason", "WELCOME_BONUS")
+          .limit(1)
+          .maybeSingle();
+        if (!existingBonus) {
+          const WELCOME_RC = 50;
+          const now = new Date();
+          const unlocksAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+          const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: bal } = await supabaseAdmin
+            .from("v_reward_credits_balance")
+            .select("balance")
+            .eq("user_id", userId)
+            .maybeSingle();
+          const newBalance = (bal?.balance || 0) + WELCOME_RC;
+          await supabaseAdmin.from("reward_credits_ledger").insert({
+            user_id: userId,
+            delta_rc: WELCOME_RC,
+            reason: "WELCOME_BONUS",
+            balance_after: newBalance,
+            unlocks_at: unlocksAt,
+            expires_at: expiresAt,
+            note: "Welcome bonus — unlocks after 30 days",
+          });
+        }
+      } catch (e) {
+        console.error("Welcome RC bonus insert failed (non-fatal):", (e as any)?.message);
+      }
+
       // Refer & Earn attribution. Fire-and-forget — a bad referral
       // code (expired, self-referral, referrer cancelled) must never
       // block signup. attribute-referral itself is defensive.
@@ -285,7 +326,12 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
             },
-            body: JSON.stringify({ userId, referralCode }),
+            body: JSON.stringify({
+              userId,
+              referralCode,
+              deviceFingerprint: deviceFingerprint || null,
+              signupIp: signupIp || null,
+            }),
           });
           const data = await res.json().catch(() => ({}));
           if (!data?.attributed) {

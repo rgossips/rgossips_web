@@ -69,6 +69,12 @@ export default function PricingPage() {
   const supabase = createClient();
   const [billing, setBilling] = useState("monthly"); // "monthly" | "annual"
   const [upgrading, setUpgrading] = useState(null);
+  // Refer & Earn Phase 2: spendable RC balance + "apply at checkout" toggle.
+  // We fetch v_reward_credits_available_balance (locked rows excluded) once
+  // on mount and again after any successful upgrade so the toggle reflects
+  // the new remaining balance without a hard reload.
+  const [availableRc, setAvailableRc] = useState(0);
+  const [applyRc, setApplyRc] = useState(false);
   const [verifying, setVerifying] = useState(false);
   // Locks the whole page while we're talking to the gateway between
   // "user picked Stripe / Razorpay" and "checkout UI is visible." The
@@ -179,6 +185,33 @@ export default function PricingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch spendable RC balance for the redemption toggle. Runs on mount
+  // and after a successful upgrade so the toggle immediately reflects
+  // the newly-reduced balance. RLS on v_reward_credits_available_balance
+  // lets the user read only their own row.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setAvailableRc(0);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("v_reward_credits_available_balance")
+          .select("available_balance")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled) setAvailableRc(data?.available_balance || 0);
+      } catch {
+        if (!cancelled) setAvailableRc(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, supabase, successDetails]);
+
   // Two-step upgrade: the plan card opens the gateway picker, then the
   // modal calls handleUpgrade(planId, gateway) once the user picks one.
   const openGatewayPicker = (planId) => {
@@ -206,6 +239,10 @@ export default function PricingPage() {
       // Normalise to "+91XXXXXXXXXX" which is the most reliable.
       const phoneForPrefill = normalizeIndianPhone(profile?.phone);
 
+      const planPriceRupees = billing === "annual"
+        ? PLAN_PRICING[planId]?.annual || 0
+        : PLAN_PRICING[planId]?.monthly || 0;
+
       if (gateway === "razorpay") {
         const razorpayPlanId = PLAN_RAZORPAY_IDS[planId]?.[billing];
         if (!razorpayPlanId) {
@@ -224,6 +261,8 @@ export default function PricingPage() {
             email,
             name: profile?.full_name || "",
             contact: phoneForPrefill,
+            applyRc: applyRc && availableRc > 0,
+            planPriceRupees,
           },
         });
         if (error) throw new Error(error.message);
@@ -325,6 +364,8 @@ export default function PricingPage() {
           cycle: billing,
           email,
           origin: typeof window !== "undefined" ? window.location.origin : "",
+          applyRc: applyRc && availableRc > 0,
+          planPriceRupees,
         },
       });
       if (error) throw new Error(error.message);
@@ -408,6 +449,28 @@ export default function PricingPage() {
             </button>
           </div>
         </div>
+
+        {/* RC redemption toggle — shown only when the user has spendable RC.
+            The 50%-of-plan cap is enforced server-side in redeem-rc /
+            stripe-checkout / razorpay-checkout, so we advertise the raw
+            balance here and let the server compute the actual applied
+            amount at checkout time. */}
+        {availableRc > 0 && (
+          <div className="flex justify-center">
+            <label className="inline-flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={applyRc}
+                onChange={(e) => setApplyRc(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#5851DB] focus:ring-[#5851DB] cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-slate-700">
+                Apply my <span className="text-[#5851DB] font-black">{availableRc} RC</span> at checkout
+                <span className="text-[11px] text-slate-400 ml-1 font-normal">(up to 50% off first invoice)</span>
+              </span>
+            </label>
+          </div>
+        )}
 
         {/* Plan cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

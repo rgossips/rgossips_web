@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, priceId, plan, cycle, email, origin } = await req.json();
+    const { userId, priceId, plan, cycle, email, origin, applyRc, planPriceRupees } = await req.json();
 
     if (!userId || !priceId) {
       return new Response(
@@ -35,6 +35,59 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "STRIPE_SECRET_KEY is not configured" }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // Refer & Earn — optional RC redemption on the first invoice.
+    // We create an ad-hoc, one-time Stripe Coupon and stamp the applied
+    // amount into session metadata. The actual ledger debit is inserted
+    // by the stripe-webhook when it observes checkout.session.completed,
+    // so abandoned sessions leave the wallet untouched. Cap semantics
+    // (available balance + 50% of plan) live in the redeem-rc function
+    // — we mirror them client-side here for a live preview but the
+    // webhook re-checks before posting the ledger row.
+    let rcCouponId: string | null = null;
+    let rcAppliedRupees = 0;
+    if (applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+      try {
+        const supaUrl = Deno.env.get("SUPABASE_URL")!;
+        const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const balRes = await fetch(
+          `${supaUrl}/rest/v1/v_reward_credits_available_balance?user_id=eq.${encodeURIComponent(userId)}&select=available_balance`,
+          { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }
+        );
+        const balRows = await balRes.json().catch(() => []);
+        const availableBalance = Array.isArray(balRows) && balRows[0]?.available_balance ? Number(balRows[0].available_balance) : 0;
+        const maxApply = Math.floor(Number(planPriceRupees) * 0.5);
+        const applied = Math.max(0, Math.min(availableBalance, maxApply));
+        if (applied > 0) {
+          // Create a one-off Stripe Coupon: `amount_off` in the smallest
+          // unit of `currency` (paise for INR). duration=once means it
+          // discounts only the first invoice on this subscription.
+          const couponParams = new URLSearchParams();
+          couponParams.append("amount_off", String(applied * 100));
+          couponParams.append("currency", "inr");
+          couponParams.append("duration", "once");
+          couponParams.append("name", `RGossips RC (${applied})`);
+          couponParams.append("max_redemptions", "1");
+          const couponRes = await fetch("https://api.stripe.com/v1/coupons", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${stripeKey}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: couponParams.toString(),
+          });
+          const coupon = await couponRes.json();
+          if (coupon?.id) {
+            rcCouponId = coupon.id;
+            rcAppliedRupees = applied;
+          } else {
+            console.error("RC coupon create failed:", coupon?.error?.message || JSON.stringify(coupon));
+          }
+        }
+      } catch (e) {
+        console.error("RC redemption (stripe) prep failed:", (e as any)?.message);
+      }
     }
 
     // Stripe Checkout needs the absolute redirect URL up front; without
@@ -70,7 +123,15 @@ Deno.serve(async (req) => {
     params.append("metadata[cycle]", cycle || "monthly");
     params.append("success_url", `${appUrl}/influencer/pricing?success=1&session_id={CHECKOUT_SESSION_ID}`);
     params.append("cancel_url", `${appUrl}/influencer/pricing?canceled=1`);
-    params.append("allow_promotion_codes", "true");
+    // `allow_promotion_codes` and `discounts[]` are mutually exclusive
+    // on a Checkout Session. Prefer the RC coupon when we have one.
+    if (rcCouponId) {
+      params.append("discounts[0][coupon]", rcCouponId);
+      params.append("metadata[rc_applied]", String(rcAppliedRupees));
+      params.append("subscription_data[metadata][rc_applied]", String(rcAppliedRupees));
+    } else {
+      params.append("allow_promotion_codes", "true");
+    }
     // RBI / India-export compliance — Stripe accounts registered in India
     // require a customer name + billing address on every charge. Forcing
     // Checkout to collect the billing address satisfies this rule and

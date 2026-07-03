@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, planId, plan, cycle, email, name, contact } = await req.json();
+    const { userId, planId, plan, cycle, email, name, contact, applyRc, planPriceRupees } = await req.json();
 
     if (!userId || !planId) {
       return new Response(
@@ -46,6 +46,65 @@ Deno.serve(async (req) => {
 
     const appUrl = Deno.env.get("APP_URL") || "https://rgossips.com";
     const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
+
+    // Refer & Earn — optional RC redemption on the first Razorpay invoice.
+    // Razorpay applies discounts via `offer_id` on subscription creation.
+    // Offers are created via POST /v1/offers with a validity window; the
+    // account must have Offers enabled (many test accounts don't, in
+    // which case the create call fails and we fall through to a normal
+    // no-discount subscription). The applied amount is stamped into the
+    // subscription's `notes.rc_applied` and only debited by the webhook
+    // AFTER a successful subscription.charged — abandoned checkouts leave
+    // the wallet untouched.
+    let rcOfferId: string | null = null;
+    let rcAppliedRupees = 0;
+    if (applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+      try {
+        const supaUrl = Deno.env.get("SUPABASE_URL")!;
+        const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const balRes = await fetch(
+          `${supaUrl}/rest/v1/v_reward_credits_available_balance?user_id=eq.${encodeURIComponent(userId)}&select=available_balance`,
+          { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }
+        );
+        const balRows = await balRes.json().catch(() => []);
+        const availableBalance = Array.isArray(balRows) && balRows[0]?.available_balance ? Number(balRows[0].available_balance) : 0;
+        const maxApply = Math.floor(Number(planPriceRupees) * 0.5);
+        const applied = Math.max(0, Math.min(availableBalance, maxApply));
+        if (applied > 0) {
+          const nowSec = Math.floor(Date.now() / 1000);
+          const offerRes = await fetch("https://api.razorpay.com/v1/offers", {
+            method: "POST",
+            headers: { Authorization: auth, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: `RGossips RC redemption (${applied})`,
+              // "all" covers card / UPI / netbanking / wallet on accounts
+              // where Offers is fully enabled. Some accounts require a
+              // single method — if that's your case, hard-code "card".
+              payment_method: "card",
+              discount_amount: applied * 100,
+              min_amount: Number(planPriceRupees) * 100,
+              redeem_type: "promo",
+              max_offer_usage: 1,
+              display_text: `RC applied (${applied})`,
+              starts_at: nowSec,
+              // 24h window. If the user waits longer to complete checkout,
+              // they'll retry from the pricing page and get a fresh offer.
+              ends_at: nowSec + 24 * 60 * 60,
+              notes: { user_id: userId, rc_applied: String(applied) },
+            }),
+          });
+          const offer = await offerRes.json();
+          if (offer?.id) {
+            rcOfferId = offer.id;
+            rcAppliedRupees = applied;
+          } else {
+            console.error("razorpay offer create failed:", offer?.error?.description || JSON.stringify(offer));
+          }
+        }
+      } catch (e) {
+        console.error("RC redemption (razorpay) prep failed:", (e as any)?.message);
+      }
+    }
 
     // total_count is the maximum number of billing cycles Razorpay will
     // charge. We pick a long horizon (≈10 years monthly / 50 years yearly)
@@ -88,14 +147,19 @@ Deno.serve(async (req) => {
       total_count: totalCount,
       // metadata Razorpay echoes back on webhook events. user_id is our
       // primary join key; plan + cycle save a profile lookup on each event.
+      // rc_applied is the applied redemption amount (0 if none / offer
+      // creation failed) — the webhook uses it to insert the REDEMPTION
+      // ledger row after subscription.charged.
       notes: {
         user_id: userId,
         plan: plan || "",
         cycle: cycle || "monthly",
+        rc_applied: String(rcAppliedRupees),
       },
       customer_notify: 1,
     };
     if (customerId) body.customer_id = customerId;
+    if (rcOfferId) body.offer_id = rcOfferId;
 
     const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
       method: "POST",

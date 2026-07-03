@@ -261,5 +261,21 @@ export async function clawBackReferral(admin: SupabaseClient, qualifyingEventId:
     note: `Refund / chargeback within 7d of QUALIFIED (${qualifyingEventId})`,
   });
 
+  // Notify the referrer that RC was reclaimed. Non-fatal — a stuck
+  // notification queue mustn't block a webhook path (the ledger is
+  // already correct at this point).
+  try {
+    await admin.from("notifications").insert({
+      user_id: row.referrer_id,
+      type: "referral_clawback",
+      title: `${row.referrer_reward_rc} RC reclaimed`,
+      body: JSON.stringify({
+        text: `Your referral refunded within 7 days, so their ${row.referrer_reward_rc} RC reward was reversed. You can still earn again when they re-subscribe.`,
+        link: "/influencer/refer",
+      }),
+      is_read: false,
+    });
+  } catch (_) { /* non-fatal */ }
+
   return { ok: true, reason: "clawed_back" };
 }

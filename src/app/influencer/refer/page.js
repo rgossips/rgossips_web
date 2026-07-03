@@ -18,6 +18,7 @@ const STATUS_PILL = {
 
 const REASON_LABEL = {
   REFERRAL_EARN: "Referral reward",
+  WELCOME_BONUS: "Welcome bonus",
   MILESTONE_BONUS: "Milestone bonus",
   LEADERBOARD: "Leaderboard prize",
   REDEMPTION: "Applied to subscription",
@@ -42,6 +43,8 @@ export default function ReferPage() {
 
   const [referralCode, setReferralCode] = useState("");
   const [balance, setBalance] = useState(0);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [lockedBalance, setLockedBalance] = useState(0);
   const [referrals, setReferrals] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,7 @@ export default function ReferPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [{ data: prof }, { data: bal }, { data: refs }, { data: led }] = await Promise.all([
+        const [{ data: prof }, { data: bal }, { data: availBal }, { data: refs }, { data: led }] = await Promise.all([
           supabase
             .from("influencer_profiles")
             .select("referral_code")
@@ -64,6 +67,11 @@ export default function ReferPage() {
             .eq("user_id", user.id)
             .maybeSingle(),
           supabase
+            .from("v_reward_credits_available_balance")
+            .select("available_balance, locked_balance")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          supabase
             .from("referrals")
             .select("id, referral_code, status, referee_first_plan, referrer_reward_rc, created_at, qualified_at, rewarded_at")
             .eq("referrer_id", user.id)
@@ -71,7 +79,7 @@ export default function ReferPage() {
             .limit(50),
           supabase
             .from("reward_credits_ledger")
-            .select("id, delta_rc, reason, balance_after, expires_at, created_at, note")
+            .select("id, delta_rc, reason, balance_after, expires_at, unlocks_at, created_at, note")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -79,6 +87,8 @@ export default function ReferPage() {
         if (cancelled) return;
         setReferralCode(prof?.referral_code || "");
         setBalance(bal?.balance || 0);
+        setAvailableBalance(availBal?.available_balance || 0);
+        setLockedBalance(availBal?.locked_balance || 0);
         setReferrals(refs || []);
         setLedger(led || []);
       } catch (e) {
@@ -172,12 +182,24 @@ export default function ReferPage() {
                 style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
               >
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest opacity-80">RC balance</p>
-                  <p className="text-4xl font-black mt-1">{balance}</p>
-                  <p className="text-xs opacity-80 mt-1">₹{balance} discount available</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest opacity-80">Available RC</p>
+                  <p className="text-4xl font-black mt-1">{availableBalance}</p>
+                  <p className="text-xs opacity-80 mt-1">
+                    ₹{availableBalance} redeemable at checkout
+                  </p>
+                  {lockedBalance > 0 && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest opacity-90">
+                        Locked
+                      </span>
+                      <span className="text-[11px] font-black">+{lockedBalance} RC</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-[11px] opacity-70 mt-4">
-                  Redeem up to 50% of any plan price at checkout.
+                  {lockedBalance > 0
+                    ? "Your welcome bonus unlocks 30 days after signup. Referral rewards are spendable immediately."
+                    : "Redeem up to 50% of any plan price at checkout."}
                 </p>
               </div>
 
@@ -270,28 +292,38 @@ export default function ReferPage() {
                 <p className="text-sm text-slate-400 py-6 text-center">Wallet is empty.</p>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {ledger.map((row) => (
-                    <div key={row.id} className="py-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-bold text-slate-900">
-                          {REASON_LABEL[row.reason] || row.reason}
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                          {formatDate(row.created_at)}
-                          {row.expires_at && row.delta_rc > 0 && ` · expires ${formatDate(row.expires_at)}`}
-                          {row.note && ` · ${row.note}`}
-                        </p>
+                  {ledger.map((row) => {
+                    const isLocked =
+                      row.unlocks_at && new Date(row.unlocks_at) > new Date() && row.delta_rc > 0;
+                    return (
+                      <div key={row.id} className="py-3 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-bold text-slate-900 flex items-center gap-1.5">
+                            {REASON_LABEL[row.reason] || row.reason}
+                            {isLocked && (
+                              <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
+                                Locked
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {formatDate(row.created_at)}
+                            {isLocked && ` · unlocks ${formatDate(row.unlocks_at)}`}
+                            {row.expires_at && row.delta_rc > 0 && ` · expires ${formatDate(row.expires_at)}`}
+                            {row.note && ` · ${row.note}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-sm font-black whitespace-nowrap ${
+                            row.delta_rc > 0 ? "text-emerald-600" : "text-slate-500"
+                          }`}
+                        >
+                          {row.delta_rc > 0 ? "+" : ""}
+                          {row.delta_rc}
+                        </span>
                       </div>
-                      <span
-                        className={`text-sm font-black whitespace-nowrap ${
-                          row.delta_rc > 0 ? "text-emerald-600" : "text-slate-500"
-                        }`}
-                      >
-                        {row.delta_rc > 0 ? "+" : ""}
-                        {row.delta_rc}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

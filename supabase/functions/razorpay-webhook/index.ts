@@ -854,6 +854,50 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.error("referral qualification (razorpay) failed:", (e as any)?.message || e);
           }
+
+          // Refer & Earn (Phase 2). If the sub was created with an
+          // RC redemption offer attached, insert the matching
+          // REDEMPTION ledger row. Idempotent via note lookup on the
+          // sub id — subscription.activated + subscription.charged
+          // fire together on first payment; only the first one wins.
+          try {
+            const rcApplied = Number(notes.rc_applied || 0);
+            if (rcApplied > 0 && subscriptionId) {
+              const { data: existing } = await supabase
+                .from("reward_credits_ledger")
+                .select("id")
+                .eq("user_id", userId)
+                .eq("reason", "REDEMPTION")
+                .ilike("note", `%${subscriptionId}%`)
+                .limit(1)
+                .maybeSingle();
+              if (!existing) {
+                const { data: availRow } = await supabase
+                  .from("v_reward_credits_available_balance")
+                  .select("available_balance")
+                  .eq("user_id", userId)
+                  .maybeSingle();
+                const applied = Math.min(rcApplied, availRow?.available_balance || 0);
+                if (applied > 0) {
+                  const { data: rawBal } = await supabase
+                    .from("v_reward_credits_balance")
+                    .select("balance")
+                    .eq("user_id", userId)
+                    .maybeSingle();
+                  const balanceAfter = (rawBal?.balance || 0) - applied;
+                  await supabase.from("reward_credits_ledger").insert({
+                    user_id: userId,
+                    delta_rc: -applied,
+                    reason: "REDEMPTION",
+                    balance_after: balanceAfter,
+                    note: `Applied via Razorpay checkout (sub ${subscriptionId})`,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.error("RC redemption ledger insert (razorpay) failed:", (e as any)?.message || e);
+          }
         }
         break;
       }
