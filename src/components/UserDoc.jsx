@@ -83,7 +83,7 @@ const UserDoc = () => {
               <Image
                 width={32}
                 height={32}
-                src={profile?.profile_photo_url || "/default-avatar.svg"}
+                src={profile?.custom_profile_photo_url || profile?.profile_photo_url || "/default-avatar.svg"}
                 alt="User"
                 className="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover"
               />
@@ -119,7 +119,7 @@ const UserDoc = () => {
                   <Image
                     width={44}
                     height={44}
-                    src={profile?.profile_photo_url || "/default-avatar.svg"}
+                    src={profile?.custom_profile_photo_url || profile?.profile_photo_url || "/default-avatar.svg"}
                     alt="User"
                     className="w-11 h-11 rounded-full border-2 border-white shadow-sm object-cover"
                   />
@@ -219,7 +219,7 @@ const UserDoc = () => {
                 <Image
                   width={60}
                   height={60}
-                  src={profile?.profile_photo_url || "/default-avatar.svg"}
+                  src={profile?.custom_profile_photo_url || profile?.profile_photo_url || "/default-avatar.svg"}
                   alt="User"
                   className="w-14 h-14 lg:w-16 lg:h-16 rounded-full border-2 border-white shadow-sm object-cover"
                 />

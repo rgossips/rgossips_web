@@ -108,7 +108,7 @@ export function ProStatusCard() {
               <Image
                 width={56}
                 height={56}
-                src={profile?.profile_photo_url || "/default-avatar.svg"}
+                src={profile?.custom_profile_photo_url || profile?.profile_photo_url || "/default-avatar.svg"}
                 alt={profile?.full_name || "User"}
                 className="w-14 h-14 lg:w-12 lg:h-12 rounded-full border-2 border-white shadow-sm object-cover"
               />
