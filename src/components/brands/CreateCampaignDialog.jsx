@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Drawer, DrawerContent, DrawerClose, DrawerOverlay, DrawerPortal } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogClose, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
@@ -937,19 +937,32 @@ export function CreateCampaignDialog({
     </form>
   );
 
-  const header = (
+  const titleText = mode === "edit" ? "Edit Campaign" : "New Campaign";
+  const subheadText = mode === "edit"
+    ? "Saved changes go live immediately unless the campaign is paused"
+    : "Will be saved as a draft unless you publish";
+
+  // Header is rendered twice — once inside DialogContent, once inside
+  // DrawerContent — because Radix requires Title/Description components
+  // to be descendants of the matching root. Using a shared plain <h2>
+  // triggers the "DialogContent requires a DialogTitle" accessibility
+  // warning on desktop.
+  const renderHeader = (variant) => (
     <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">
-          {mode === "edit" ? "Edit Campaign" : "New Campaign"}
-        </h2>
-        <p className="text-[11px] text-gray-400">
-          {mode === "edit"
-            ? "Saved changes go live immediately unless the campaign is paused"
-            : "Will be saved as a draft unless you publish"}
-        </p>
+        {variant === "dialog" ? (
+          <>
+            <DialogTitle className="text-lg font-bold text-gray-900">{titleText}</DialogTitle>
+            <DialogDescription className="text-[11px] text-gray-400">{subheadText}</DialogDescription>
+          </>
+        ) : (
+          <>
+            <DrawerTitle className="text-lg font-bold text-gray-900">{titleText}</DrawerTitle>
+            <DrawerDescription className="text-[11px] text-gray-400">{subheadText}</DrawerDescription>
+          </>
+        )}
       </div>
-      {isDesktop ? (
+      {variant === "dialog" ? (
         <DialogClose asChild>
           <button type="button" className="p-2 -mr-2 cursor-pointer">
             <X size={20} className="text-gray-400" />
@@ -969,7 +982,7 @@ export function CreateCampaignDialog({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent showCloseButton={false} className="mt-[30px] sm:max-w-[720px] h-[87vh] max-h-[87vh] p-0 flex flex-col overflow-hidden rounded-2xl">
-          {header}
+          {renderHeader("dialog")}
           {content}
         </DialogContent>
       </Dialog>
@@ -981,7 +994,7 @@ export function CreateCampaignDialog({
       <DrawerPortal>
         <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
         <DrawerContent className="fixed inset-x-0 bottom-0 z-50 h-[92vh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
-          {header}
+          {renderHeader("drawer")}
           {content}
         </DrawerContent>
       </DrawerPortal>
