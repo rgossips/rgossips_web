@@ -22,6 +22,7 @@ import {
   Play,
   RefreshCw,
   RotateCcw,
+  Sparkles,
   Star,
   Target,
   Trash2,
@@ -125,6 +126,10 @@ const CampaignDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
+  // Count of active influencers whose profile matches this campaign's
+  // categories + follower band + cities. Server computes on get; also
+  // returned by create so we can update from a stale-cached value.
+  const [matchingCount, setMatchingCount] = useState(0);
   // Edit dialog visibility. Not-editable modal fires when the client-
   // side check (applications.length > 0) or the server ("has_applications"
   // race) says the brief is frozen.
@@ -151,6 +156,7 @@ const CampaignDetailPage = () => {
     setCampaign(data.campaign);
     const apps = data.applications || [];
     setApplications(apps);
+    setMatchingCount(Number(data.matchingCount || 0));
     setLoading(false);
 
     // Pull existing brand-side ratings for all applications in this campaign
@@ -194,6 +200,27 @@ const CampaignDetailPage = () => {
       setStatusUpdating(false);
       stopLoading();
     }
+  };
+
+  // Matching-creator callout click. Routes to /brands/search with the
+  // campaign's target_categories + target_cities + follower range
+  // pre-filled so the drawer chips light up without the brand having
+  // to re-set them.
+  const handleMatchClick = () => {
+    if (!campaign) return;
+    const p = new URLSearchParams();
+    const cats = Array.isArray(campaign.categories) ? campaign.categories.filter(Boolean) : [];
+    if (cats.length > 0 && !(cats.length === 1 && cats[0] === "General")) {
+      p.set("categories", cats.map((c) => encodeURIComponent(c)).join(","));
+    }
+    const cities = Array.isArray(campaign.targetCities) ? campaign.targetCities.filter(Boolean) : [];
+    if (cities.length > 0 && !(cities.length === 1 && cities[0] === "All India")) {
+      p.set("cities", cities.map((c) => encodeURIComponent(c)).join(","));
+    }
+    if (campaign.targetFollowerMin) p.set("followerMin", String(campaign.targetFollowerMin));
+    if (campaign.targetFollowerMax) p.set("followerMax", String(campaign.targetFollowerMax));
+    const qs = p.toString();
+    router.push(qs ? `/brands/search?${qs}` : "/brands/search");
   };
 
   // Edit gate — click Edit. Client-side we already know how many apps
@@ -315,6 +342,34 @@ const CampaignDetailPage = () => {
           </button>
         </div>
       </nav>
+
+      {/* Matching-creator callout — visible whenever the server has
+          computed a positive matching_count for this campaign. On create
+          the fan-out already fired; on subsequent views we're just
+          reporting the current match count. Click routes to
+          /brands/search with the campaign's criteria prefilled. */}
+      {matchingCount > 0 && (
+        <div className="px-6 pt-4 max-w-6xl mx-auto">
+          <button
+            onClick={handleMatchClick}
+            type="button"
+            className="w-full flex items-center gap-3 rounded-2xl border border-purple-100 bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 hover:from-purple-100 hover:via-pink-100 hover:to-amber-100 text-left px-4 py-3 cursor-pointer transition-colors"
+          >
+            <div className="shrink-0 w-9 h-9 rounded-2xl bg-white/70 flex items-center justify-center text-[#5B3DF5]">
+              <Sparkles size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-black text-gray-900">
+                {matchingCount.toLocaleString("en-IN")} influencer{matchingCount === 1 ? "" : "s"} match perfectly to your needs.
+              </p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                They've been notified. Tap to open Find Creators with these filters prefilled.
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-gray-400 shrink-0" />
+          </button>
+        </div>
+      )}
 
       <div className="px-6 pt-5 pb-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         {/* ─── LEFT: Campaign details ─── */}

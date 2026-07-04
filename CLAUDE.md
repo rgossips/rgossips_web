@@ -227,12 +227,39 @@ Admin sidebar is grouped:
 
 Actions on `brand-campaigns` edge function:
 
-- `list` / `get` — read.
-- `create` — insert new draft (or `active` when `status=active`).
+- `list` / `get` — read. `get` also returns `matchingCount` — count of active influencers whose profile matches the campaign's target_categories + follower band + target_cities.
+- `create` — insert new draft (or `active` when `status=active`). When `status='active'`, matching creators are computed and receive a `type=campaign_match` notification; the response includes `matchingCount`.
 - `update` — full-row edit. **Rejected with `{ error: "has_applications", applied }` if ANY `campaign_applications` row exists**, regardless of state. Does NOT touch `status` (pause/publish still flow through `updateStatus`).
 - `duplicate` — *(server action retained but currently unused; the client duplicate flow just opens the create dialog prefilled)*.
 - `delete` — hard-delete. Same `has_applications` guard as update.
 - `updateStatus` — flip between `draft`/`active`/`paused`/`completed`.
+
+### Matching predicate
+
+Shared helper `findMatchingInfluencerIds(campaign)`:
+
+- influencer_profiles.status = 'active'
+- 0-follower rows excluded (mostly un-enriched invitation stubs)
+- Category overlap: at least one shared entry between `target_categories` and `influencer_profiles.categories`. Skipped if the campaign only has "General".
+- Followers band: `target_follower_min <= followers_count <= target_follower_max`.
+- City: fuzzy substring match against `influencer_profiles.city` (or `location` fallback). "All India" or empty city list matches everyone.
+- Respects `user_preferences.privacy_prefs.publicProfile === false` (excluded).
+
+Same predicate runs at create-time (for the notification fan-out) and at get-time (for the callout on campaign detail).
+
+### Match callout on brand campaign detail
+
+`/brands/campaign/[id]` renders a purple/pink/amber banner when `matchingCount > 0`: "N influencers match perfectly to your needs. They've been notified." Click routes to `/brands/search` with the campaign's criteria prefilled via URL params.
+
+### `/brands/search` URL prefill
+
+Supports both single-value legacy params (`?category=`, `?city=`, `?profileType=`, `?q=`) and multi-value versions used by the match callout:
+
+- `?categories=Beauty%20%26%20Skincare,Fashion%20%26%20Lifestyle` — comma-separated, URL-encoded per entry.
+- `?cities=Mumbai,Delhi` — same shape.
+- `?followerMin=10000&followerMax=100000` — converted to FilterDrawer bucket labels via `bucketsForRange()`.
+
+Multi-value wins when both single and multi are present on the same param.
 
 Campaign detail (`/brands/campaign/[id]`) surfaces:
 - **Edit** — always visible. Zero apps → opens the dialog in edit mode. Any apps → opens the "not editable" modal with Pause + Duplicate.

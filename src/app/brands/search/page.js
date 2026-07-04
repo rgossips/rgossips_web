@@ -102,12 +102,51 @@ const SortPopover = ({ value, onChange }) => {
   );
 };
 
+// Map a raw follower count to the closest FilterDrawer bucket labels
+// that fully cover the range. Used when a campaign's target
+// follower_min/max lands us on /brands/search — we translate to chip
+// labels so the drawer's pre-selection lights up.
+const FOLLOWER_BUCKETS = [
+  { label: "0 - 10k", min: 0, max: 10_000 },
+  { label: "10k - 50k", min: 10_000, max: 50_000 },
+  { label: "50k - 100k", min: 50_000, max: 100_000 },
+  { label: "100k - 500k", min: 100_000, max: 500_000 },
+  { label: "500k - 1M", min: 500_000, max: 1_000_000 },
+  { label: "1M+", min: 1_000_000, max: Infinity },
+];
+function bucketsForRange(followerMin, followerMax) {
+  const lo = Number(followerMin) || 0;
+  const hi = Number.isFinite(followerMax) ? Number(followerMax) : Infinity;
+  return FOLLOWER_BUCKETS.filter((b) => b.max > lo && b.min < hi).map((b) => b.label);
+}
+
 const InfluencerDirectory = () => {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category");
   const initialQuery = searchParams.get("q") || "";
   const initialCity = searchParams.get("city");
+  // Multi-value versions of the same params. Both single and multi
+  // shapes are accepted; the campaign-match callout on brand campaign
+  // detail routes here with the multi shape prefilled from the
+  // campaign's target_categories / target_cities. Comma-separated
+  // values are decoded via decodeURIComponent per element.
+  const initialCategoriesRaw = searchParams.get("categories") || "";
+  const initialCategoriesList = initialCategoriesRaw
+    .split(",")
+    .map((s) => decodeURIComponent(s).trim())
+    .filter((s) => s && filterData.Categories.includes(s));
+  const initialCitiesRaw = searchParams.get("cities") || "";
+  const initialCitiesList = initialCitiesRaw
+    .split(",")
+    .map((s) => decodeURIComponent(s).trim())
+    .filter((s) => s && filterData.Location?.includes(s));
+  const initialFollowerMin = Number(searchParams.get("followerMin") || 0);
+  const initialFollowerMax = Number(searchParams.get("followerMax") || 0);
+  const initialFollowerBuckets =
+    initialFollowerMin || initialFollowerMax
+      ? bucketsForRange(initialFollowerMin, initialFollowerMax || Infinity)
+      : [];
   // ?profileType=meme_page | celebrity — routed here from the
   // CategorySection Meme Pages / Celebrities cards on /brands. We
   // translate the wire value into the chip label the FilterDrawer
@@ -136,11 +175,19 @@ const InfluencerDirectory = () => {
   const reqRef = useRef(0);
   const [filters, setFilters] = useState(() => {
     let initial = { ...emptyFilters };
-    if (initialCategory && filterData.Categories.includes(initialCategory)) {
+    // Multi-value wins over single-value when both are present.
+    if (initialCategoriesList.length > 0) {
+      initial.Categories = [...initialCategoriesList];
+    } else if (initialCategory && filterData.Categories.includes(initialCategory)) {
       initial.Categories = [initialCategory];
     }
-    if (initialCity && filterData.Location?.includes(initialCity)) {
+    if (initialCitiesList.length > 0) {
+      initial.Location = [...initialCitiesList];
+    } else if (initialCity && filterData.Location?.includes(initialCity)) {
       initial.Location = [initialCity];
+    }
+    if (initialFollowerBuckets.length > 0) {
+      initial["Follower Count"] = [...initialFollowerBuckets];
     }
     if (initialProfileType && filterData["Profile Type"]?.includes(initialProfileType)) {
       initial["Profile Type"] = [initialProfileType];

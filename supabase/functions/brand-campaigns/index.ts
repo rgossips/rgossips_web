@@ -77,6 +77,133 @@ function pickExtras(c: any) {
   return extras;
 }
 
+// ─── Matching + notification helpers ────────────────────────────
+// Returns the set of influencer_ids that "match" a campaign — the same
+// idea a brand would express in /brands/search as filter chips. Used at
+// campaign create (for the fan-out notification) and campaign get (for
+// the "N influencers match" callout on detail).
+async function findMatchingInfluencerIds(
+  supabase: any,
+  campaignRow: {
+    target_categories?: string[] | null;
+    target_follower_min?: number | null;
+    target_follower_max?: number | null;
+    target_cities?: string[] | null;
+  },
+): Promise<string[]> {
+  const wantedCats = new Set(
+    Array.isArray(campaignRow.target_categories)
+      ? campaignRow.target_categories.filter((c): c is string => typeof c === "string")
+      : [],
+  );
+  const minFollowers = Number(campaignRow.target_follower_min || 0);
+  const maxFollowers = Number(campaignRow.target_follower_max || 1_000_000_000);
+  const cityList = (Array.isArray(campaignRow.target_cities) ? campaignRow.target_cities : [])
+    .map((s) => String(s || "").toLowerCase().trim())
+    .filter(Boolean);
+  const cityAllIndia = cityList.length === 0 || cityList.includes("all india");
+
+  // Pull the whole active directory. Same PAGE size as list-influencers
+  // uses; caps at 10k to guard against pathological cases.
+  const PAGE = 1000;
+  const HARD_CAP = 10_000;
+  const rows: any[] = [];
+  for (let from = 0; from < HARD_CAP; from += PAGE) {
+    const { data, error } = await supabase
+      .from("influencer_profiles")
+      .select("influencer_id, categories, followers_count, city, location, status")
+      .eq("status", "active")
+      .order("followers_count", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+  }
+  if (rows.length === 0) return [];
+
+  // Privacy filter — mirror list-influencers so a creator who set their
+  // profile private isn't notified. Missing row defaults to public.
+  const ids = rows.map((r) => r.influencer_id);
+  const { data: prefs } = await supabase
+    .from("user_preferences")
+    .select("user_id, privacy_prefs")
+    .in("user_id", ids);
+  const privateIds = new Set<string>();
+  for (const p of prefs || []) {
+    if (p?.privacy_prefs?.publicProfile === false) privateIds.add(String(p.user_id));
+  }
+
+  const matches: string[] = [];
+  for (const inf of rows) {
+    if (privateIds.has(String(inf.influencer_id))) continue;
+
+    // At least one shared category. If the campaign has "General"
+    // (a placeholder we use when no categories were picked), we skip
+    // this filter and match on the other axes only.
+    if (wantedCats.size > 0 && !(wantedCats.size === 1 && wantedCats.has("General"))) {
+      const infCats = Array.isArray(inf.categories) ? inf.categories : [];
+      const overlap = infCats.some((c: string) => wantedCats.has(c));
+      if (!overlap) continue;
+    }
+
+    // Followers band. 0-follower rows (mostly un-enriched invitations)
+    // are excluded from a match so brands don't spam creators whose
+    // Instagram hasn't been synced yet.
+    const fc = Number(inf.followers_count || 0);
+    if (fc <= 0) continue;
+    if (fc < minFollowers || fc > maxFollowers) continue;
+
+    // City match — same fuzzy substring pattern the client uses on the
+    // Location filter. "All India" / empty city list matches everyone.
+    if (!cityAllIndia) {
+      const city = String(inf.city || inf.location || "").toLowerCase();
+      if (!city) continue;
+      const hit = cityList.some((c) => city.includes(c) || c.includes(city));
+      if (!hit) continue;
+    }
+
+    matches.push(inf.influencer_id);
+  }
+  return matches;
+}
+
+// Fan-out — one notification row per matching creator, batched. Best-
+// effort: notification failures never break campaign creation. We cap
+// at 2000 to bound the write; anything beyond is silently truncated
+// (an alert-only-first-N tradeoff we make because the fan-out is
+// awaited before returning the create response).
+async function notifyMatchingInfluencers(
+  supabase: any,
+  influencerIds: string[],
+  campaign: { campaign_id: string; title: string },
+  brandName: string,
+): Promise<void> {
+  if (influencerIds.length === 0) return;
+  const capped = influencerIds.slice(0, 2000);
+  const rows = capped.map((id) => ({
+    user_id: id,
+    type: "campaign_match",
+    title: "New campaign matching your profile",
+    body: JSON.stringify({
+      text: `${brandName || "A brand"} just posted "${campaign.title}" — matches your categories. Apply before applications close.`,
+      link: `/influencer/campaigns`,
+    }),
+    is_read: false,
+  }));
+  // Chunk into 500-row batches — the REST API handles this size cleanly
+  // and any single failed chunk doesn't sink the rest.
+  const CHUNK = 500;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const slice = rows.slice(i, i + CHUNK);
+    try {
+      await supabase.from("notifications").insert(slice);
+    } catch (e) {
+      console.error("notifyMatchingInfluencers chunk failed:", (e as any)?.message);
+    }
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -192,7 +319,25 @@ Deno.serve(async (req) => {
       const { body, meta } = unpackDescription(c.description);
 
       const m = meta as any;
+
+      // Best-effort matching count. Errors don't sink the get response
+      // — the client tolerates matchingCount=0 or undefined by hiding
+      // the callout.
+      let matchingCount = 0;
+      try {
+        const matchingIds = await findMatchingInfluencerIds(supabase, {
+          target_categories: c.target_categories,
+          target_follower_min: c.target_follower_min,
+          target_follower_max: c.target_follower_max,
+          target_cities: c.target_cities,
+        });
+        matchingCount = matchingIds.length;
+      } catch (e) {
+        console.error("matching count on get failed:", (e as any)?.message || e);
+      }
+
       return ok({
+        matchingCount,
         campaign: {
           id: c.campaign_id,
           title: c.title,
@@ -299,7 +444,42 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) return ok({ error: error.message });
-      return ok({ success: true, campaignId: created.campaign_id });
+
+      // Match + notify — only on active-status create. Drafts are
+      // work-in-progress and shouldn't spam creators. Failures here
+      // never block the campaign creation.
+      let matchingCount = 0;
+      if (row.status === "active") {
+        try {
+          const matchingIds = await findMatchingInfluencerIds(supabase, {
+            target_categories: row.target_categories as string[],
+            target_follower_min: row.target_follower_min as number,
+            target_follower_max: row.target_follower_max as number,
+            target_cities: row.target_cities as string[],
+          });
+          matchingCount = matchingIds.length;
+          // Resolve the brand's public name for the notification copy.
+          let brandName = "A brand";
+          try {
+            const { data: bp } = await supabase
+              .from("brand_profiles")
+              .select("brand_name")
+              .eq("brand_id", brandId)
+              .maybeSingle();
+            if (bp?.brand_name) brandName = bp.brand_name;
+          } catch { /* silent */ }
+          await notifyMatchingInfluencers(
+            supabase,
+            matchingIds,
+            { campaign_id: created.campaign_id, title: row.title as string },
+            brandName,
+          );
+        } catch (e) {
+          console.error("match+notify on create failed:", (e as any)?.message || e);
+        }
+      }
+
+      return ok({ success: true, campaignId: created.campaign_id, matchingCount });
     }
 
     // ── UPDATE (full edit) ───────────────────────────────────────────

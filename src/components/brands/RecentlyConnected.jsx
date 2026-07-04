@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Instagram, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 export const RecentlyConnected = () => {
@@ -56,7 +56,6 @@ export const RecentlyConnected = () => {
               const handle = i.instagram_handle || i.username;
               const photo = i.custom_profile_photo_url || i.profile_photo_url;
               const displayName = i.full_name || handle || "Influencer";
-              const igUrl = handle ? `https://instagram.com/${handle}` : null;
               return (
                 <div
                   key={i.influencer_id}
@@ -84,29 +83,9 @@ export const RecentlyConnected = () => {
                   <h3 className="font-bold text-[#1C115A] text-sm mb-1 truncate w-full px-1">
                     {displayName}
                   </h3>
-                  <p className="text-slate-400 text-[10px] uppercase tracking-wider mb-4 truncate w-full">
+                  <p className="text-slate-400 text-[10px] uppercase tracking-wider mb-1 truncate w-full">
                     {handle ? `@${handle}` : "Creator"}
                   </p>
-
-                  {igUrl ? (
-                    <a
-                      href={igUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] text-white text-xs font-bold hover:opacity-90 active:scale-95 cursor-pointer"
-                    >
-                      <Instagram size={14} />
-                      Instagram
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed"
-                    >
-                      <Instagram size={14} />
-                      No handle
-                    </button>
-                  )}
                 </div>
               );
             })}

@@ -9,7 +9,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { ChevronDown, Instagram, Loader2, IndianRupee, Check } from "lucide-react";
+import { ChevronDown, Loader2, IndianRupee, Check } from "lucide-react";
 
 // Reel rate buckets. The brand picks one; we filter influencers whose
 // service_rates.reels (rupees per reel) falls in [min, max). Open-ended
@@ -182,7 +182,6 @@ export default function PocketFriendlyCreators() {
           <CarouselContent className="-ml-4">
             {matches.map((inf) => {
               const handle = inf.instagram_handle || inf.username || "";
-              const igUrl = handle ? `https://instagram.com/${handle}` : null;
               const display = inf.full_name || handle || "Creator";
               const category = inf.categories?.[0] || "Creator";
               return (
@@ -226,23 +225,6 @@ export default function PocketFriendlyCreators() {
                       <IndianRupee size={11} /> {formatRate(inf._reelRate)} / reel
                     </div>
 
-                    {igUrl ? (
-                      <a
-                        href={igUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-5 w-full cursor-pointer py-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] text-white text-sm font-bold hover:opacity-90 active:scale-95 transition-all"
-                      >
-                        <Instagram size={15} /> Instagram
-                      </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="mt-5 w-full py-3 rounded-2xl bg-slate-100 text-slate-400 text-sm font-bold cursor-not-allowed"
-                      >
-                        No handle
-                      </button>
-                    )}
                   </div>
                 </CarouselItem>
               );

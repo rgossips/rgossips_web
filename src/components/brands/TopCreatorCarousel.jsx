@@ -233,17 +233,6 @@ export const TopCreatorsCarousel = () => {
                       </span>
                     </div>
 
-                    {/* Action Button — opens the creator's Instagram in a
-                        new tab. "View Profile" is shorthand for "see them on
-                        the channel you'll book them from". */}
-                    <a
-                      href={creator.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-center w-full py-3.5 rounded-2xl bg-slate-50 text-[#1C115A] font-black text-sm hover:bg-[#5B3DF5] hover:text-white transition-all duration-300 cursor-pointer"
-                    >
-                      View on Instagram
-                    </a>
                   </div>
                 </div>
               </CarouselItem>
