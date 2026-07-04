@@ -122,7 +122,97 @@ function useIsDesktop() {
 
 const DESCRIPTION_TEMPLATE = "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?";
 
-export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated }) {
+// Trim a server-returned ISO date to YYYY-MM-DD for <input type="date">.
+// Postgres DATE columns already arrive as YYYY-MM-DD strings; DATETIME
+// columns come as full ISO — either way, first 10 chars is what the
+// input expects.
+const isoToDateInput = (v) => (typeof v === "string" && v.length >= 10 ? v.slice(0, 10) : "");
+
+// Server returns content_types_required as strings like "reels:2" —
+// unpack into the num_reels / num_posts / etc. form fields.
+const parseContentTypes = (arr) => {
+  const out = { num_reels: "", num_posts: "", num_stories: "", num_videos: "", num_blogs: "" };
+  for (const item of Array.isArray(arr) ? arr : []) {
+    const [k, n] = String(item).split(":");
+    if (!k) continue;
+    if (k in { reels: 1, posts: 1, stories: 1, videos: 1, blogs: 1 }) {
+      out[`num_${k}`] = String(Number(n) || 0);
+    }
+  }
+  return out;
+};
+
+// Map a server-returned campaign row (from brand-campaigns.get, all
+// camelCase + metadata already merged) back into the snake_case form
+// shape used by this dialog. Used only in edit mode.
+function campaignToForm(c) {
+  if (!c) return { form: emptyForm, categories: [], platforms: ["Instagram"], cities: [], allIndia: false, genders: [], languages: [], bannerUrl: "", galleryUrls: [] };
+  const content = parseContentTypes(c.contentTypesRequired);
+  const targetCities = Array.isArray(c.targetCities) ? c.targetCities : [];
+  const allIndia = targetCities.length === 1 && targetCities[0] === "All India";
+  return {
+    form: {
+      ...emptyForm,
+      title: c.title || "",
+      description: c.description || "",
+      campaign_type: c.campaignType || "barter",
+      offering_type: c.offering_type || (c.productName ? "product" : c.service_location ? "service" : "product"),
+      max_influencers: c.maxInfluencers ? String(c.maxInfluencers) : "",
+      budget_total: c.budgetTotal ? String(c.budgetTotal) : "",
+      budget_per_influencer: c.budgetPerInfluencer ? String(c.budgetPerInfluencer) : "",
+      product_name: c.productName || "",
+      product_value: c.productValue ? String(c.productValue) : "",
+      shipping_required: c.shippingRequired || "no",
+      shipping_timeline_days: c.shippingTimelineDays ? String(c.shippingTimelineDays) : "",
+      service_location: c.serviceLocation || "",
+      barter_compensation: c.barterCompensation || "",
+      ...content,
+      target_follower_min: c.targetFollowerMin ? String(c.targetFollowerMin) : "",
+      target_follower_max: c.targetFollowerMax ? String(c.targetFollowerMax) : "",
+      target_influencer_tier: c.targetInfluencerTier || "all",
+      min_engagement_rate: c.minEngagementRate ? String(c.minEngagementRate) : "",
+      content_dos: c.contentDos || "",
+      content_donts: c.contentDonts || "",
+      required_hashtags: c.requiredHashtags || "",
+      brand_handles_to_tag: c.brandHandlesToTag || "",
+      usage_rights: c.usageRights || "creator_only",
+      keepup_duration: c.keepupDuration || "permanent",
+      exclusivity_days: c.exclusivityDays || "0",
+      payment_timeline: c.paymentTimeline || "on_approval",
+      campaign_start_date: isoToDateInput(c.startDate),
+      application_deadline: isoToDateInput(c.applicationDeadline),
+      campaign_end_date: isoToDateInput(c.endDate),
+    },
+    categories: Array.isArray(c.categories) ? c.categories : [],
+    platforms: Array.isArray(c.platforms) && c.platforms.length ? c.platforms : ["Instagram"],
+    cities: allIndia ? [] : targetCities,
+    allIndia,
+    genders: Array.isArray(c.targetGender) ? c.targetGender : [],
+    languages: Array.isArray(c.targetLanguages) ? c.targetLanguages : [],
+    bannerUrl: c.bannerImage || "",
+    galleryUrls: Array.isArray(c.galleryImages) ? c.galleryImages : [],
+  };
+}
+
+export function CreateCampaignDialog({
+  open,
+  onOpenChange,
+  brandId,
+  onCreated,
+  // Optional edit mode — parent passes the full campaign object it
+  // already fetched via brand-campaigns(get). When undefined we're in
+  // create mode (default behaviour).
+  mode = "create",
+  campaignId = null,
+  initialCampaign = null,
+  // Fired when the server refuses an update because the campaign
+  // already has applications. Parent typically closes the form and
+  // opens a "not editable" guard modal.
+  onEditBlocked,
+  // Fired on a successful update (edit mode). Parent typically refreshes
+  // the campaign detail page and closes the dialog.
+  onUpdated,
+}) {
   const supabase = createClient();
   const isDesktop = useIsDesktop();
   const { startLoading, stopLoading } = useGlobalLoading();
@@ -135,11 +225,62 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const [languages, setLanguages] = useState([]);
   const [bannerFile, setBannerFile] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
+  // In edit mode we start with the pre-existing image URLs — the form
+  // treats them the same as "already uploaded, no re-upload needed"
+  // unless the brand picks a new file to replace them.
+  const [existingBannerUrl, setExistingBannerUrl] = useState("");
+  const [existingGalleryUrls, setExistingGalleryUrls] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [stage, setStage] = useState("");
   const bannerInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+
+  // Prefill on open. Two shapes:
+  //   - mode==="edit" + initialCampaign → prefill with existing values;
+  //     submit updates the source row.
+  //   - mode==="create" + initialCampaign → prefill from an existing
+  //     campaign but treat it as a new draft (duplicate flow). Submit
+  //     inserts a fresh row; the source is untouched. Title override
+  //     from initialCampaign.title (parent typically prepends "Copy of").
+  //   - mode==="create" without initialCampaign → clean slate.
+  // Reset on close so the next open starts from the right baseline.
+  useEffect(() => {
+    if (!open) return;
+    if (initialCampaign) {
+      const preset = campaignToForm(initialCampaign);
+      setForm(preset.form);
+      setCategories(preset.categories);
+      setPlatforms(preset.platforms);
+      setCities(preset.cities);
+      setAllIndia(preset.allIndia);
+      setGenders(preset.genders);
+      setLanguages(preset.languages);
+      setExistingBannerUrl(preset.bannerUrl);
+      setExistingGalleryUrls(preset.galleryUrls);
+      setBannerFile(null);
+      setGalleryFiles([]);
+      setError("");
+    } else {
+      setForm(emptyForm);
+      setCategories([]);
+      setPlatforms(["Instagram"]);
+      setCities([]);
+      setAllIndia(false);
+      setGenders([]);
+      setLanguages([]);
+      setExistingBannerUrl("");
+      setExistingGalleryUrls([]);
+      setBannerFile(null);
+      setGalleryFiles([]);
+      setError("");
+    }
+    // We intentionally don't depend on the individual state setters —
+    // they're stable — nor on initialCampaign identity beyond open. If
+    // the parent hands us a new campaign object mid-flight, they should
+    // close+reopen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
 
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSetItem = (setter) => (item) => setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
@@ -235,15 +376,21 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
     if (platforms.length < 1) return setError("Select at least 1 platform");
     // A published campaign must carry a banner — it's the hero image
     // creators see in every listing. Drafts can be saved without one.
-    if (publish && !bannerFile && !form.banner_image_url) {
+    // In edit mode the existing banner counts.
+    const hasAnyBanner = !!bannerFile || !!form.banner_image_url || !!existingBannerUrl;
+    if (publish && !hasAnyBanner) {
       return setError("Add a campaign banner before publishing — it's the cover image creators see.");
     }
 
     setSubmitting(true);
-    startLoading(publish ? "Publishing campaign..." : "Saving draft...");
+    const busyCopy = mode === "edit"
+      ? "Saving changes..."
+      : publish ? "Publishing campaign..." : "Saving draft...";
+    startLoading(busyCopy);
     try {
-      let bannerUrl = "";
-      const galleryUrls = [];
+      // Keep any existing images the brand didn't replace with a new upload.
+      let bannerUrl = existingBannerUrl;
+      const galleryUrls = [...existingGalleryUrls];
 
       if (bannerFile) {
         setStage("Uploading banner...");
@@ -257,32 +404,57 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         }
       }
 
-      setStage(publish ? "Publishing campaign..." : "Saving draft...");
-      const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
-        body: {
-          action: "create",
-          brandId,
-          campaign: {
-            ...form,
-            target_categories: categories,
-            target_cities: allIndia ? ["All India"] : cities,
-            banner_image_url: bannerUrl,
-            gallery_image_urls: galleryUrls,
-            status: publish ? "active" : "draft",
-            // Extended audit fields packed into description metadata
-            platforms,
-            target_gender: genders,
-            target_languages: languages,
+      setStage(busyCopy);
+      const campaignPayload = {
+        ...form,
+        target_categories: categories,
+        target_cities: allIndia ? ["All India"] : cities,
+        banner_image_url: bannerUrl,
+        gallery_image_urls: galleryUrls,
+        platforms,
+        target_gender: genders,
+        target_languages: languages,
+      };
+
+      if (mode === "edit") {
+        // Update never touches status — the caller uses updateStatus for
+        // pause / publish. Publish button is hidden in edit mode below.
+        const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
+          body: {
+            action: "update",
+            brandId,
+            campaignId,
+            campaign: campaignPayload,
           },
-        },
-      });
-
-      if (err) throw new Error(err.message);
-      if (data?.error) throw new Error(data.error);
-
-      onCreated?.(data.campaignId);
+        });
+        if (err) throw new Error(err.message);
+        if (data?.error === "has_applications") {
+          // Race — someone applied between the client-side check and
+          // this submit. Bail out cleanly, let the parent open the
+          // "not editable" guard modal.
+          onEditBlocked?.();
+          onOpenChange?.(false);
+          return;
+        }
+        if (data?.error) throw new Error(data.error);
+        onUpdated?.(campaignId);
+      } else {
+        const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
+          body: {
+            action: "create",
+            brandId,
+            campaign: {
+              ...campaignPayload,
+              status: publish ? "active" : "draft",
+            },
+          },
+        });
+        if (err) throw new Error(err.message);
+        if (data?.error) throw new Error(data.error);
+        onCreated?.(data.campaignId);
+      }
     } catch (e) {
-      setError(e.message || "Failed to create campaign");
+      setError(e.message || (mode === "edit" ? "Failed to save changes" : "Failed to create campaign"));
       setSubmitting(false);
       setStage("");
     } finally {
@@ -419,6 +591,23 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
                 <Trash2 size={16} />
               </button>
             </div>
+          ) : existingBannerUrl ? (
+            // Pre-existing banner in edit mode. Trash removes it entirely
+            // (falls back to the upload prompt), or the brand can click
+            // the image to swap in a new one via the file picker.
+            <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
+              <img src={existingBannerUrl} alt="Banner" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => bannerInputRef.current?.click()}
+                className="absolute bottom-2 left-2 px-3 py-1.5 bg-white/90 rounded-full text-xs font-bold text-[#5851DB] cursor-pointer shadow"
+              >
+                Replace
+              </button>
+              <button type="button" onClick={() => setExistingBannerUrl("")} className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-red-500 cursor-pointer shadow">
+                <Trash2 size={16} />
+              </button>
+            </div>
           ) : (
             <button
               type="button"
@@ -446,15 +635,28 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         <Section
           title="Gallery"
           right={
-            galleryFiles.length > 0 && (
+            (existingGalleryUrls.length + galleryFiles.length) > 0 && (
               <span className="text-[10px] text-gray-400">
-                {galleryFiles.length} image{galleryFiles.length > 1 ? "s" : ""}
+                {existingGalleryUrls.length + galleryFiles.length} image
+                {existingGalleryUrls.length + galleryFiles.length > 1 ? "s" : ""}
               </span>
             )
           }
         >
-          {galleryFiles.length > 0 && (
+          {(existingGalleryUrls.length > 0 || galleryFiles.length > 0) && (
             <div className="grid grid-cols-3 gap-2">
+              {existingGalleryUrls.map((url, i) => (
+                <div key={`existing-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
+                  <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setExistingGalleryUrls((prev) => prev.filter((_, x) => x !== i))}
+                    className="absolute top-1.5 right-1.5 p-1.5 bg-white/90 rounded-full text-red-500 cursor-pointer shadow"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
               {galleryFiles.map((f, i) => (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
                   <img src={URL.createObjectURL(f)} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
@@ -687,7 +889,7 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
       </div>
 
       {/* Footer */}
-      <div className="shrink-0 grid grid-cols-3 gap-2 p-4 border-t border-gray-100 bg-white">
+      <div className={`shrink-0 grid ${mode === "edit" ? "grid-cols-2" : "grid-cols-3"} gap-2 p-4 border-t border-gray-100 bg-white`}>
         <button
           type="button"
           onClick={() => onOpenChange(false)}
@@ -696,24 +898,41 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
         >
           Cancel
         </button>
-        <button
-          type="button"
-          onClick={() => submitForm(false)}
-          disabled={submitting}
-          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting && stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
-          Save Draft
-        </button>
-        <button
-          type="button"
-          onClick={() => submitForm(true)}
-          disabled={submitting}
-          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting && !stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
-          {submitting && stage ? stage.split(" ")[0] : "Publish"}
-        </button>
+        {mode === "edit" ? (
+          // Edit mode never touches status — pause / publish are
+          // separate actions on the campaign detail page. The single
+          // Save Changes button keeps the surface honest.
+          <button
+            type="button"
+            onClick={() => submitForm(false)}
+            disabled={submitting}
+            className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
+            {submitting && stage ? stage.split(" ")[0] : "Save Changes"}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => submitForm(false)}
+              disabled={submitting}
+              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting && stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
+              Save Draft
+            </button>
+            <button
+              type="button"
+              onClick={() => submitForm(true)}
+              disabled={submitting}
+              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting && !stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
+              {submitting && stage ? stage.split(" ")[0] : "Publish"}
+            </button>
+          </>
+        )}
       </div>
     </form>
   );
@@ -721,8 +940,14 @@ export function CreateCampaignDialog({ open, onOpenChange, brandId, onCreated })
   const header = (
     <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0">
       <div>
-        <h2 className="text-lg font-bold text-gray-900">New Campaign</h2>
-        <p className="text-[11px] text-gray-400">Will be saved as a draft unless you publish</p>
+        <h2 className="text-lg font-bold text-gray-900">
+          {mode === "edit" ? "Edit Campaign" : "New Campaign"}
+        </h2>
+        <p className="text-[11px] text-gray-400">
+          {mode === "edit"
+            ? "Saved changes go live immediately unless the campaign is paused"
+            : "Will be saved as a draft unless you publish"}
+        </p>
       </div>
       {isDesktop ? (
         <DialogClose asChild>

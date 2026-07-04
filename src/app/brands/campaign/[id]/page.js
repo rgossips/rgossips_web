@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -10,6 +11,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Edit,
   ExternalLink,
   IndianRupee,
   Loader2,
@@ -21,6 +24,7 @@ import {
   RotateCcw,
   Star,
   Target,
+  Trash2,
   TrendingUp,
   Users,
   AlertCircle,
@@ -30,6 +34,14 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import RatingModal from "@/components/RatingModal";
+
+// The Create/Edit dialog is fat (form + image compression + upload
+// helpers) and only mounts on an Edit click, so lazy-load to keep the
+// campaign-detail bundle lean.
+const CreateCampaignDialog = dynamic(
+  () => import("@/components/brands/CreateCampaignDialog").then((m) => m.CreateCampaignDialog),
+  { ssr: false },
+);
 
 // Brand-side escrow funding uses the same Razorpay Checkout SDK as the
 // subscription flow. Loaded lazily on first Approve click to keep the
@@ -113,6 +125,18 @@ const CampaignDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
+  // Edit dialog visibility. Not-editable modal fires when the client-
+  // side check (applications.length > 0) or the server ("has_applications"
+  // race) says the brief is frozen.
+  const [editOpen, setEditOpen] = useState(false);
+  const [notEditableOpen, setNotEditableOpen] = useState(false);
+  // Duplicate flow re-uses CreateCampaignDialog in create mode with a
+  // prefill payload. duplicatePrefill holds the source campaign (with
+  // title prepended by "Copy of ") — non-null value opens the dialog.
+  const [duplicatePrefill, setDuplicatePrefill] = useState(null);
+  // Delete confirmation modal + in-flight guard.
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user?.id || !id) return;
@@ -172,6 +196,60 @@ const CampaignDetailPage = () => {
     }
   };
 
+  // Edit gate — click Edit. Client-side we already know how many apps
+  // exist, so we short-circuit to the "not editable" modal without a
+  // round-trip. The server re-verifies on submit either way.
+  const handleEditClick = () => {
+    if (applications.length > 0) {
+      setNotEditableOpen(true);
+      return;
+    }
+    setEditOpen(true);
+  };
+
+  // Duplicate — opens the create dialog with the current campaign's
+  // fields prefilled (title prefixed with "Copy of "). Nothing hits the
+  // server until the brand actually saves in the dialog, so a brand
+  // that closes it mid-tweak leaves no artefacts behind.
+  const handleDuplicate = () => {
+    if (!campaign) return;
+    setNotEditableOpen(false);
+    setDuplicatePrefill({
+      ...campaign,
+      title: `Copy of ${campaign.title || "Campaign"}`,
+    });
+  };
+
+  // Hard-delete the campaign. Server refuses if any application exists,
+  // but the client hides the Delete button in that case so the modal
+  // only opens when it's safe. The confirmation is intentional — this
+  // is destructive and there's no undo.
+  const handleDelete = async () => {
+    if (!user?.id || !campaign?.id || deleting) return;
+    setDeleting(true);
+    startLoading("Deleting campaign…");
+    try {
+      const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
+        body: { action: "delete", brandId: user.id, campaignId: campaign.id },
+      });
+      if (err || data?.error) {
+        // has_applications only fires if a race snuck an application in
+        // between the client-side check and now — treat it the same as
+        // any other server error and surface a clear message.
+        const msg = data?.error === "has_applications"
+          ? "A creator applied to this campaign just now, so it can't be deleted."
+          : (err?.message || data?.error || "Failed to delete campaign");
+        alert(msg);
+        return;
+      }
+      setDeleteOpen(false);
+      router.push("/brands/campaigns");
+    } finally {
+      setDeleting(false);
+      stopLoading();
+    }
+  };
+
   const parsedContent = useMemo(() => {
     const out = { reels: 0, posts: 0, stories: 0, videos: 0 };
     for (const item of campaign?.contentTypesRequired || []) {
@@ -210,6 +288,28 @@ const CampaignDetailPage = () => {
         </button>
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${statusStyles[campaign.status] || statusStyles.draft}`}>{(campaign.status || "draft").toUpperCase()}</span>
+          <button
+            onClick={handleEditClick}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border border-[#5851DB] text-[#5851DB] hover:bg-purple-50 cursor-pointer"
+            title={applications.length > 0 ? "Editing locked — see options" : "Edit campaign"}
+          >
+            <Edit size={13} />
+            Edit
+          </button>
+          {/* Delete is only offered when zero creators have applied.
+              After the first application, the brief is frozen and the
+              brand should use Pause / Duplicate from the Edit flow
+              instead. Server enforces the same rule. */}
+          {applications.length === 0 && (
+            <button
+              onClick={() => setDeleteOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
+              title="Delete campaign"
+            >
+              <Trash2 size={13} />
+              Delete
+            </button>
+          )}
           <button onClick={load} disabled={loading} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 cursor-pointer disabled:opacity-50" title="Refresh">
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
@@ -324,6 +424,72 @@ const CampaignDetailPage = () => {
           </div>
         </aside>
       </div>
+
+      {/* Edit dialog — lazy-loaded so the fat form only enters the
+          bundle when actually opened. Server enforces the same
+          applications guard on submit; if a race lets us through, the
+          dialog closes and the not-editable modal fires. */}
+      {editOpen && (
+        <CreateCampaignDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          brandId={user?.id}
+          campaignId={campaign.id}
+          initialCampaign={campaign}
+          mode="edit"
+          onUpdated={() => {
+            setEditOpen(false);
+            load();
+          }}
+          onEditBlocked={() => setNotEditableOpen(true)}
+        />
+      )}
+
+      {/* Not-editable guard modal — surfaced when the campaign already
+          has applications. Two escape hatches: pause the campaign so no
+          more applications land, or duplicate it as a fresh draft. */}
+      {notEditableOpen && (
+        <NotEditableModal
+          open={notEditableOpen}
+          onClose={() => setNotEditableOpen(false)}
+          onPause={async () => {
+            await updateStatus("paused");
+            setNotEditableOpen(false);
+          }}
+          onDuplicate={handleDuplicate}
+          isPaused={campaign.status === "paused"}
+          applicationCount={applications.length}
+        />
+      )}
+
+      {/* Duplicate flow — CreateCampaignDialog in create mode with the
+          source campaign's fields prefilled. Insert happens only if the
+          brand actually saves in the dialog. */}
+      {duplicatePrefill && (
+        <CreateCampaignDialog
+          open={!!duplicatePrefill}
+          onOpenChange={(v) => !v && setDuplicatePrefill(null)}
+          brandId={user?.id}
+          mode="create"
+          initialCampaign={duplicatePrefill}
+          onCreated={(newId) => {
+            setDuplicatePrefill(null);
+            router.push(`/brands/campaign/${newId}`);
+          }}
+        />
+      )}
+
+      {/* Delete confirmation — small dedicated modal (destructive
+          actions deserve a slower path than a stock alert()). */}
+      {deleteOpen && (
+        <DeleteCampaignModal
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={handleDelete}
+          deleting={deleting}
+          title={campaign.title}
+        />
+      )}
     </div>
   );
 };
@@ -928,6 +1094,116 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     </div>
   );
 };
+
+// Small modal shown when a brand hits Edit on a campaign that already
+// has applications. The brief is frozen at that point (applying
+// creators agreed to those specific terms) — we surface Pause +
+// Duplicate as the two safe paths forward.
+function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, applicationCount }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+      >
+        <div className="px-6 pt-6 pb-2 flex items-start gap-3">
+          <div className="shrink-0 w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
+            <AlertCircle size={20} />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-black text-gray-900">This campaign can't be edited</h2>
+            <p className="text-xs text-gray-500 leading-relaxed mt-1">
+              {applicationCount} creator{applicationCount === 1 ? " has" : "s have"} already applied to
+              this campaign, so the brief is locked to protect them. You can pause
+              it to stop new applications, or duplicate it — the create form opens
+              prefilled with this campaign's details for you to tweak before saving.
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-6 pb-6 pt-4">
+          <button
+            type="button"
+            onClick={onPause}
+            disabled={isPaused}
+            className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Pause size={14} />
+            {isPaused ? "Already Paused" : "Pause Campaign"}
+          </button>
+          <button
+            type="button"
+            onClick={onDuplicate}
+            className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold text-white bg-[#5851DB] hover:bg-[#4742c4] cursor-pointer"
+          >
+            <Copy size={14} />
+            Duplicate as New
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Small confirm modal for the hard delete. Only reachable when the
+// campaign has zero applications (client-side gate); the server
+// re-verifies before executing.
+function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+      >
+        <div className="px-6 pt-6 pb-2 flex items-start gap-3">
+          <div className="shrink-0 w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center text-red-600">
+            <Trash2 size={18} />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-black text-gray-900">Delete this campaign?</h2>
+            <p className="text-xs text-gray-500 leading-relaxed mt-1">
+              <span className="font-bold text-gray-800">{title || "Campaign"}</span> will be
+              permanently removed. No creators have applied yet, so this is safe — but
+              there's no undo.
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 px-6 pb-6 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={deleting}
+            className="py-3 rounded-2xl text-xs font-bold text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            {deleting ? "Deleting…" : "Delete Campaign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const Fact = ({ label, value, highlight, href }) => {
   const content = (

@@ -212,6 +212,24 @@ Admin sidebar is grouped:
 | 038 | refer_earn_phase2 | `unlocks_at`, welcome bonus reason, available-balance view, fraud columns |
 | 039 | referrals_leaderboard | Monthly view + 2 SECURITY DEFINER RPCs |
 
+## Brand-side campaign lifecycle
+
+Actions on `brand-campaigns` edge function:
+
+- `list` / `get` — read.
+- `create` — insert new draft (or `active` when `status=active`).
+- `update` — full-row edit. **Rejected with `{ error: "has_applications", applied }` if ANY `campaign_applications` row exists**, regardless of state. Does NOT touch `status` (pause/publish still flow through `updateStatus`).
+- `duplicate` — *(server action retained but currently unused; the client duplicate flow just opens the create dialog prefilled)*.
+- `delete` — hard-delete. Same `has_applications` guard as update.
+- `updateStatus` — flip between `draft`/`active`/`paused`/`completed`.
+
+Campaign detail (`/brands/campaign/[id]`) surfaces:
+- **Edit** — always visible. Zero apps → opens the dialog in edit mode. Any apps → opens the "not editable" modal with Pause + Duplicate.
+- **Delete** — visible only when `applications.length === 0`. Confirmation modal before deleting; server double-checks.
+- **Duplicate as New** (from the not-editable modal) — opens `CreateCampaignDialog` in create mode with `initialCampaign` prefill; the title is prefixed with `"Copy of "`. Nothing hits the server until the brand actually saves in the dialog.
+
+`CreateCampaignDialog` accepts `initialCampaign` in both `create` and `edit` modes. In edit mode the submit path calls `update`; in create mode it calls `create` — the prefill just seeds the form either way. In edit mode the footer collapses to a single "Save Changes" button (no draft/publish toggle).
+
 ## Campaign visibility rules (influencer side)
 
 `list-campaigns` (edge fn) hides a campaign from the influencer list

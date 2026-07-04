@@ -302,6 +302,180 @@ Deno.serve(async (req) => {
       return ok({ success: true, campaignId: created.campaign_id });
     }
 
+    // ── UPDATE (full edit) ───────────────────────────────────────────
+    // Same field mapping as create, but as an UPDATE keyed on
+    // campaign_id + brand_id. Refuses if ANY campaign_applications row
+    // exists — once a creator's applied, the brief they applied to is
+    // frozen. Client can either pause + duplicate or accept the
+    // rejection here and try again. Not authorized returns 200 with an
+    // error string to match the rest of this file.
+    if (action === "update") {
+      const { brandId, campaignId, campaign } = payload;
+      if (!brandId) return ok({ error: "brandId is required" });
+      if (!campaignId) return ok({ error: "campaignId is required" });
+      if (!campaign?.title) return ok({ error: "Title is required" });
+      if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
+      if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
+      if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
+
+      // Ownership.
+      const { data: existing, error: findErr } = await supabase
+        .from("campaigns")
+        .select("brand_id")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (findErr || !existing) return ok({ error: "Campaign not found" });
+      if (existing.brand_id !== brandId) return ok({ error: "Not authorized" });
+
+      // Application-count guard. head:true keeps the round-trip tiny —
+      // we only need to know if the count is > 0. Any applicant, in any
+      // state (including rejected/withdrawn), freezes the brief. The
+      // client shows a "pause + duplicate" modal on this specific code.
+      const { count: applied } = await supabase
+        .from("campaign_applications")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId);
+      if ((applied ?? 0) > 0) {
+        return ok({ error: "has_applications", applied });
+      }
+
+      const contentTypes = buildContentTypes(campaign);
+      const meta: Record<string, unknown> = {};
+      if (campaign.banner_image_url) meta.banner_image = campaign.banner_image_url;
+      if (Array.isArray(campaign.gallery_image_urls) && campaign.gallery_image_urls.length > 0) {
+        meta.gallery_images = campaign.gallery_image_urls;
+      }
+      if (campaign.min_engagement_rate) meta.min_engagement_rate = Number(campaign.min_engagement_rate);
+      Object.assign(meta, pickExtras(campaign));
+
+      const fullDescription = packDescription(campaign.description || "", meta);
+
+      const cities = Array.isArray(campaign.target_cities)
+        ? campaign.target_cities.filter(Boolean)
+        : typeof campaign.target_cities === "string" && campaign.target_cities
+        ? campaign.target_cities.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+      const row: Record<string, unknown> = {
+        title: campaign.title,
+        description: fullDescription || campaign.title,
+        campaign_type: campaign.campaign_type || "barter",
+        target_categories: Array.isArray(campaign.target_categories) && campaign.target_categories.length > 0
+          ? campaign.target_categories
+          : ["General"],
+        max_influencers: campaign.max_influencers ? Number(campaign.max_influencers) : 10,
+        campaign_start_date: campaign.campaign_start_date,
+        campaign_end_date: campaign.campaign_end_date,
+        application_deadline: campaign.application_deadline,
+        content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
+        budget_total: campaign.budget_total ? Number(campaign.budget_total) : 0,
+        budget_per_influencer: campaign.budget_per_influencer ? Number(campaign.budget_per_influencer) : 0,
+        target_follower_min: campaign.target_follower_min ? Number(campaign.target_follower_min) : 0,
+        target_follower_max: campaign.target_follower_max ? Number(campaign.target_follower_max) : 1000000,
+        target_influencer_tier: campaign.target_influencer_tier || "all",
+        target_cities: cities.length > 0 ? cities : ["All India"],
+        // status is intentionally NOT touched here — pause / publish
+        // still flow through updateStatus. Otherwise a brand editing a
+        // paused campaign would silently unpause it.
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updErr } = await supabase
+        .from("campaigns")
+        .update(row)
+        .eq("campaign_id", campaignId);
+      if (updErr) return ok({ error: updErr.message });
+      return ok({ success: true, campaignId });
+    }
+
+    // ── DUPLICATE ─────────────────────────────────────────────────────
+    // Clone an existing campaign as a fresh draft. Used when a campaign
+    // already has applications and can't be edited in place — the brand
+    // duplicates, tweaks, and publishes the copy. The clone drops all
+    // application state, marks itself draft, and prefixes the title so
+    // the two are distinguishable in the campaigns list.
+    if (action === "duplicate") {
+      const { brandId, campaignId } = payload;
+      if (!brandId) return ok({ error: "brandId is required" });
+      if (!campaignId) return ok({ error: "campaignId is required" });
+
+      const { data: src, error: findErr } = await supabase
+        .from("campaigns")
+        .select("*")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (findErr || !src) return ok({ error: "Campaign not found" });
+      if (src.brand_id !== brandId) return ok({ error: "Not authorized" });
+
+      // Everything the create action would set. We copy over the source
+      // row's fields verbatim — the duplicated campaign inherits the
+      // full brief including the description metadata blob so the brand
+      // isn't retyping the audit fields.
+      const row = {
+        brand_id: src.brand_id,
+        brand_invitation_id: src.brand_invitation_id ?? null,
+        created_by_admin: false,
+        title: `Copy of ${src.title || "Campaign"}`,
+        description: src.description || "",
+        campaign_type: src.campaign_type || "barter",
+        target_categories: src.target_categories || ["General"],
+        max_influencers: src.max_influencers || 10,
+        campaign_start_date: src.campaign_start_date,
+        campaign_end_date: src.campaign_end_date,
+        application_deadline: src.application_deadline,
+        content_types_required: src.content_types_required || ["reels"],
+        budget_total: src.budget_total || 0,
+        budget_per_influencer: src.budget_per_influencer || 0,
+        target_follower_min: src.target_follower_min || 0,
+        target_follower_max: src.target_follower_max || 1000000,
+        target_influencer_tier: src.target_influencer_tier || "all",
+        target_cities: src.target_cities || ["All India"],
+        // Always draft — the brand still has to Publish once they've
+        // tweaked whatever prompted the duplicate.
+        status: "draft",
+      };
+
+      const { data: created, error: insErr } = await supabase
+        .from("campaigns")
+        .insert(row)
+        .select("campaign_id")
+        .single();
+      if (insErr) return ok({ error: insErr.message });
+      return ok({ success: true, campaignId: created.campaign_id });
+    }
+
+    // ── DELETE ────────────────────────────────────────────────────────
+    // Hard-delete the campaign row. Guarded the same way as update() —
+    // a single application, in any state, is enough to reject the delete.
+    // Client hides the Delete button when applications exist; the server
+    // check is the belt-and-braces against a race.
+    if (action === "delete") {
+      const { brandId, campaignId } = payload;
+      if (!brandId) return ok({ error: "brandId is required" });
+      if (!campaignId) return ok({ error: "campaignId is required" });
+
+      const { data: existing, error: findErr } = await supabase
+        .from("campaigns")
+        .select("brand_id")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (findErr || !existing) return ok({ error: "Campaign not found" });
+      if (existing.brand_id !== brandId) return ok({ error: "Not authorized" });
+
+      const { count: applied } = await supabase
+        .from("campaign_applications")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId);
+      if ((applied ?? 0) > 0) return ok({ error: "has_applications", applied });
+
+      const { error: delErr } = await supabase
+        .from("campaigns")
+        .delete()
+        .eq("campaign_id", campaignId);
+      if (delErr) return ok({ error: delErr.message });
+      return ok({ success: true });
+    }
+
     // ── UPDATE STATUS ────────────────────────────────────────────────
     if (action === "updateStatus") {
       const { campaignId, brandId, status } = payload;
