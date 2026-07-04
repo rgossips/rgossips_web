@@ -343,33 +343,53 @@ const CampaignDetailPage = () => {
         </div>
       </nav>
 
-      {/* Matching-creator callout — visible whenever the server has
-          computed a positive matching_count for this campaign. On create
-          the fan-out already fired; on subsequent views we're just
-          reporting the current match count. Click routes to
-          /brands/search with the campaign's criteria prefilled. */}
-      {matchingCount > 0 && (
-        <div className="px-6 pt-4 max-w-6xl mx-auto">
-          <button
-            onClick={handleMatchClick}
-            type="button"
-            className="w-full flex items-center gap-3 rounded-2xl border border-purple-100 bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 hover:from-purple-100 hover:via-pink-100 hover:to-amber-100 text-left px-4 py-3 cursor-pointer transition-colors"
+      {/* Profile-match callout — shown on every campaign detail. The
+          server recomputes matchingCount on every get() so this stays
+          accurate as the directory changes. Notifications only fan out
+          at create time (not on every view). Click routes to
+          /brands/search with the campaign's criteria prefilled so the
+          brand can browse the matched set. Copy adapts for the 0 case. */}
+      <div className="px-6 pt-4 max-w-6xl mx-auto">
+        <button
+          onClick={handleMatchClick}
+          type="button"
+          className={`w-full flex items-center gap-3 rounded-2xl border text-left px-4 py-3 cursor-pointer transition-colors ${
+            matchingCount > 0
+              ? "border-purple-100 bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 hover:from-purple-100 hover:via-pink-100 hover:to-amber-100"
+              : "border-slate-200 bg-slate-50 hover:bg-slate-100"
+          }`}
+        >
+          <div
+            className={`shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center ${
+              matchingCount > 0 ? "bg-white/70 text-[#5B3DF5]" : "bg-white text-slate-400"
+            }`}
           >
-            <div className="shrink-0 w-9 h-9 rounded-2xl bg-white/70 flex items-center justify-center text-[#5B3DF5]">
-              <Sparkles size={16} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-black text-gray-900">
-                {matchingCount.toLocaleString("en-IN")} influencer{matchingCount === 1 ? "" : "s"} match perfectly to your needs.
-              </p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                They've been notified. Tap to open Find Creators with these filters prefilled.
-              </p>
-            </div>
-            <ChevronRight size={16} className="text-gray-400 shrink-0" />
-          </button>
-        </div>
-      )}
+            <Sparkles size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            {matchingCount > 0 ? (
+              <>
+                <p className="text-[13px] font-black text-gray-900">
+                  {matchingCount.toLocaleString("en-IN")} influencer{matchingCount === 1 ? "" : "s"} match perfectly to your needs.
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  They&apos;ve been notified. Tap to open Find Creators with these filters prefilled.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] font-black text-gray-900">
+                  No influencers currently match this brief.
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Try broadening categories, the follower band, or target cities. Tap to open Find Creators with the current filters.
+                </p>
+              </>
+            )}
+          </div>
+          <ChevronRight size={16} className="text-gray-400 shrink-0" />
+        </button>
+      </div>
 
       <div className="px-6 pt-5 pb-8 max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
         {/* ─── LEFT: Campaign details ─── */}
