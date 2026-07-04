@@ -37,6 +37,17 @@ Distinct cookies via `cookieOptions.name = "sb-rgossips-user"` on the web
 side and `"sb-rgossips-admin"` on the admin side — pending, mentioned to
 the user but not yet applied.
 
+**Consequence** (until that fix ships): any brand-side edge function that
+does an inline `supabase.auth.getUser(token)` check (`escrow-fund`,
+`escrow-release`, etc.) will 401 when the admin app is signed in on the
+same browser origin, because the shared cookie holds the admin user's
+session and `functions.invoke()` falls back to sending the publishable
+key as the Bearer. The user page (`/brands/campaign/[id]`) guards the
+two escrow calls with an explicit `supabase.auth.getSession()` + fail-
+early alert + explicit `Authorization: Bearer <access_token>` header on
+the invoke — matches the pattern the durable cookie-name fix will
+generalise.
+
 ## Feature: Refer & Earn
 
 Three phases shipped. Everything is keyed to the **influencer** side; brands

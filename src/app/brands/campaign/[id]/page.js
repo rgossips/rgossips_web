@@ -690,8 +690,21 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     setLoading(true);
     startLoading("Preparing escrow…");
     try {
+      // Explicit session check — supabase.functions.invoke() falls back
+      // to sending the publishable key as Bearer when no user session
+      // is present, and escrow-fund's inline supabase.auth.getUser()
+      // then correctly rejects it as unauthorized. This can happen
+      // when the admin app is signed in on the same browser origin —
+      // its cookie collides with the user app's cookie because both
+      // clients derive their key from the same project ref.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        alert("Your session expired. Please sign in again and retry.");
+        return;
+      }
       const { data: fund, error: fundErr } = await supabase.functions.invoke("escrow-fund", {
         body: { applicationId: app.id, agreedRate: rate },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (fundErr || fund?.error) {
         alert(fundErr?.message || fund?.error || "Could not create escrow");
@@ -763,8 +776,17 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     setLoading(true);
     startLoading("Releasing payment…");
     try {
+      // Same session-guard as handleApprove — escrow-release also
+      // does an inline supabase.auth.getUser() so a fallback publishable
+      // key Bearer fails the same way.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        alert("Your session expired. Please sign in again and retry.");
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("escrow-release", {
         body: { applicationId: app.id },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || data?.error) {
         alert(error?.message || data?.error || "Could not release payment");
