@@ -224,6 +224,7 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
 
 // --- Category Selection Modal ---
 import { CATEGORIES as CATEGORY_OPTIONS } from "@/utils/categories";
+import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
 
 const CategoryModal = ({ selected, onSave, onClose }) => {
   const [localSelected, setLocalSelected] = useState([...selected]);
@@ -295,6 +296,83 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             Save Categories
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Same shape as CategoryModal — multiselect chips over a searchable
+// list. Kept as a separate component (rather than a generic
+// MultiSelect) so the Categories flow isn't touched.
+const LocationModal = ({ selected, onSave, onClose }) => {
+  const [localSelected, setLocalSelected] = useState([...selected]);
+  const [search, setSearch] = useState("");
+  const options = ["Remote", ...INDIAN_CITIES_SORTED];
+
+  const toggle = (city) => {
+    setLocalSelected((prev) => (prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]));
+  };
+
+  const q = search.trim().toLowerCase();
+  const filtered = q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="text-lg font-black text-gray-900">Select Locations</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <X size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        <div className="px-5 pt-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search cities..."
+            className="w-full p-3 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex flex-wrap gap-2">
+            {filtered.map((city) => {
+              const isSelected = localSelected.includes(city);
+              return (
+                <button
+                  key={city}
+                  onClick={() => toggle(city)}
+                  className={`px-4 py-2.5 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                    isSelected ? "bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-200" : "bg-white text-gray-600 border-gray-200 hover:border-purple-200 hover:bg-purple-50"
+                  }`}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {city}
+                </button>
+              );
+            })}
+          </div>
+
+          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{localSelected.length} selected</p>}
+        </div>
+
+        <div className="p-5 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onSave(localSelected);
+              onClose();
+            }}
+            className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            Save Locations
           </button>
         </div>
       </div>
@@ -433,7 +511,20 @@ const MyInformationDetail = ({ onBack }) => {
   // Editable fields initialized from profile
   const [name, setName] = useState(profile?.full_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
-  const [location, setLocation] = useState(profile?.location || "");
+  // Location is stored as a scalar text column on influencer_profiles
+  // but rendered here as a multiselect. We split on commas on load,
+  // filter blanks, and re-join on save so the DB shape is unchanged
+  // and the fuzzy-match code paths keep working (single-city creators
+  // still store a single string).
+  const [locationList, setLocationList] = useState(
+    typeof profile?.location === "string"
+      ? profile.location
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [],
+  );
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [email, setEmail] = useState(profile?.email || user?.email || "");
   const [address, setAddress] = useState(profile?.address || "");
   const [tiktok, setTiktok] = useState(profile?.tiktok_url || "");
@@ -623,7 +714,10 @@ const MyInformationDetail = ({ onBack }) => {
           table: "influencer_profiles",
           name,
           bio,
-          location,
+          // Comma-joined so the DB column stays scalar text; downstream
+          // fuzzy match in list-influencers + campaign matcher already
+          // does substring matches so "Mumbai, Pune" matches both.
+          location: locationList.join(", "),
           email,
           address,
           tiktokUrl: tiktok,
@@ -787,9 +881,12 @@ const MyInformationDetail = ({ onBack }) => {
         {bio && <p className="text-[11px] font-bold text-gray-500 text-center mt-2 leading-relaxed max-w-xs">{bio}</p>}
 
         <div className="flex gap-2 mt-3 flex-wrap justify-center">
-          {location && (
+          {locationList.length > 0 && (
             <div className="flex items-center gap-1 text-[9px] font-black text-pink-500 bg-pink-50 px-3 py-1 rounded-full">
-              <MapPin size={12} /> {location}
+              <MapPin size={12} />
+              {locationList.length === 1
+                ? locationList[0]
+                : `${locationList[0]} +${locationList.length - 1} more`}
             </div>
           )}
           {userHandle && (
@@ -850,7 +947,32 @@ const MyInformationDetail = ({ onBack }) => {
       {/* Contact Information */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-5`}>
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Information</h3>
-        <InputGroup label="Location" value={location} onChange={setLocation} placeholder="Your city" icon={<MapPin size={16} className="text-pink-500" />} />
+        {/* Location — multiselect chips + Edit opens a searchable
+            modal over the full Indian cities list. Chips render inline
+            so the user sees their current selection at a glance. */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Location</label>
+          <button
+            type="button"
+            onClick={() => setShowLocationModal(true)}
+            className="w-full min-h-[52px] p-3 bg-gray-50 border border-gray-100 hover:border-purple-300 hover:bg-white rounded-2xl text-left transition-all"
+          >
+            {locationList.length === 0 ? (
+              <span className="text-sm font-bold text-gray-400 pl-1">Tap to select cities</span>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {locationList.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full"
+                  >
+                    <MapPin size={10} /> {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </button>
+        </div>
         <InputGroup label="Email Address" value={email} onChange={setEmail} placeholder="you@email.com" icon={<Mail size={16} className="text-pink-500" />} />
         <InputGroup label="Phone Number" value={user?.phone || profile?.phone || ""} onChange={() => {}} placeholder="Not available" icon={<Phone size={16} className="text-pink-500" />} disabled />
         <div className="space-y-2">
@@ -1248,6 +1370,7 @@ const MyInformationDetail = ({ onBack }) => {
       {viewState === "edit" && <EditReelModal reel={selectedReel} onClose={closeAll} onSave={handleSaveReel} onDeleteTrigger={openDeleteConfirm} />}
       {viewState === "delete_confirm" && <DeleteConfirmModal onCancel={() => setViewState("edit")} onConfirm={handleDeleteReel} />}
       {showCategoryModal && <CategoryModal selected={editCategories} onSave={setEditCategories} onClose={() => setShowCategoryModal(false)} />}
+      {showLocationModal && <LocationModal selected={locationList} onSave={setLocationList} onClose={() => setShowLocationModal(false)} />}
       {showServicesModal && (
         <ServicesRatesModal
           services={editServices}

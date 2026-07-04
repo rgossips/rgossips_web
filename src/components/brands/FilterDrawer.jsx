@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { SlidersHorizontal, X } from "lucide-react";
+import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
 
 // Filter options shown in the drawer. Keys that map to real DB columns drive
 // filtering in the page: Categories, "Follower Count", "Creator Type", Location.
@@ -52,15 +53,11 @@ export const filterData = {
   ],
   "Creator Type": ["Mega", "Macro", "Micro", "Nano"],
   "Profile Type": ["Meme page", "Celebrity"],
-  Location: [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Hyderabad",
-    "Pune",
-    "Chennai",
-    "Remote",
-  ],
+  // Sourced from src/utils/indianCities.js so every location-picker
+  // surface (this drawer, admin invite/edit, influencer profile edit)
+  // shares one canonical list. Remote is kept as a synthetic entry at
+  // the top for creators who explicitly work location-independent.
+  Location: ["Remote", ...INDIAN_CITIES_SORTED],
   Gender: ["Male", "Female", "Non-binary", "Prefer not to say"],
   "Content Language": [
     "English",
@@ -233,8 +230,22 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
 
 const FilterContent = ({ draft, toggleOption }) => {
   const [activeTab, setActiveTab] = useState("Categories");
-  const currentOptions = filterData[activeTab] || [];
+  const [search, setSearch] = useState("");
+  const allOptions = filterData[activeTab] || [];
+  // Client-side search — Location has ~600 items so pure scroll would
+  // be brutal. Other tabs are short enough that the search box is
+  // dead-weight but harmless.
+  const q = search.trim().toLowerCase();
+  const currentOptions = q
+    ? allOptions.filter((o) => o.toLowerCase().includes(q))
+    : allOptions;
   const selectedInGroup = draft?.[activeTab] || [];
+
+  // Reset the search box when the tab changes so switching between
+  // Categories and Location doesn't leak a stale query.
+  useEffect(() => {
+    setSearch("");
+  }, [activeTab]);
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -259,14 +270,25 @@ const FilterContent = ({ draft, toggleOption }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 bg-white">
-        <div className="flex justify-between items-center mb-4 px-2">
+        <div className="flex justify-between items-center mb-3 px-2">
           <h4 className="text-[13px] font-bold text-gray-900">
             Filter by {activeTab}
           </h4>
           <span className="text-[10px] text-gray-400">
-            {currentOptions.length} Options
+            {currentOptions.length}
+            {q ? ` / ${allOptions.length}` : ""} Options
           </span>
         </div>
+
+        {allOptions.length > 20 && (
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search ${activeTab.toLowerCase()}...`}
+            className="w-full mb-3 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:border-[#5851DB] focus:bg-white text-[12px] font-medium outline-none transition-colors"
+          />
+        )}
 
         <div className="space-y-1">
           {currentOptions.map((option) => (

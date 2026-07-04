@@ -268,6 +268,16 @@ Campaign detail (`/brands/campaign/[id]`) surfaces:
 
 `CreateCampaignDialog` accepts `initialCampaign` in both `create` and `edit` modes. In edit mode the submit path calls `update`; in create mode it calls `create` — the prefill just seeds the form either way. In edit mode the footer collapses to a single "Save Changes" button (no draft/publish toggle).
 
+## Location / cities
+
+- Canonical list lives in [src/utils/indianCities.js](src/utils/indianCities.js) (web) and [rgossips-admin/src/lib/cities.ts](rgossips-admin/src/lib/cities.ts) (admin). Both files carry the same ~600-entry list; edit both together.
+- Surfaces using it:
+  - Web brand FilterDrawer Location tab (`Remote` prepended).
+  - Web influencer profile edit — chip modal (`LocationModal` in `MyInformationDetail.jsx`).
+  - Admin invite influencer + edit influencer + invited-row edit — `MultiSelectChips` component.
+- **Storage**: `influencer_profiles.location` remains a scalar text column. Multi-select surfaces comma-join on save (`"Mumbai, Pune"`). The fuzzy substring match in `list-influencers`, brand-campaigns matcher, and `/brands/search` filter chip logic all match either direction, so a stored `"Mumbai, Pune"` matches a "Mumbai" filter and vice versa.
+- Bulk-invite CSV still accepts a single-city value per row — the multi-select is an interactive-UI-only feature.
+
 ## Campaign visibility rules (influencer side)
 
 `list-campaigns` (edge fn) hides a campaign from the influencer list
