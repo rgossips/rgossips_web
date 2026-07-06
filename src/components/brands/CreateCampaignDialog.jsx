@@ -71,6 +71,13 @@ const TIER_RANGES = {
   mega: { min: 1000000, max: 10000000 },
 };
 
+// Local-timezone YYYY-MM-DD for <input type="date">. toISOString would
+// shift the date across the UTC boundary for IST evenings.
+const todayDateInput = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 const emptyForm = {
   title: "",
   description: "",
@@ -267,7 +274,9 @@ export function CreateCampaignDialog({
       setGalleryFiles([]);
       setError("");
     } else {
-      setForm(emptyForm);
+      // Start date defaults to today — computed at open time (not module
+      // load) so a tab left overnight doesn't seed yesterday's date.
+      setForm({ ...emptyForm, campaign_start_date: todayDateInput() });
       setCategories([]);
       setPlatforms(["Instagram"]);
       setCities([]);
