@@ -371,8 +371,24 @@ export function CreateCampaignDialog({
     // B2 — validate every required field at once and surface each error
     // inline, then scroll to the first failing field. A single top-level
     // message with no field context made the buttons look dead.
+    //
+    // Insertion order below MUST mirror the form's visual order (Title →
+    // Banner → Platforms → Deliverables → Categories → Schedule) — the
+    // scroll-to-first-error uses Object.keys(errs)[0], so an out-of-order
+    // build jumps the user to a later section while an earlier one is
+    // still failing.
     const errs = {};
     if (!form.title.trim()) errs.title = "Title is required";
+    // A published campaign must carry a banner — it's the hero image
+    // creators see in every listing. Drafts can be saved without one.
+    // In edit mode the existing banner counts.
+    const hasAnyBanner = !!bannerFile || !!form.banner_image_url || !!existingBannerUrl;
+    if (publish && !hasAnyBanner) {
+      errs.banner = "Add a campaign banner before publishing — it's the cover image creators see.";
+    }
+    if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
+    if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
+    if (categories.length < 1) errs.categories = "Select at least 1 category";
     if (!form.campaign_start_date) errs.campaign_start_date = "Start date is required";
     if (!form.application_deadline) errs.application_deadline = "Application deadline is required";
     if (!form.campaign_end_date) errs.campaign_end_date = "Campaign end date is required";
@@ -382,16 +398,6 @@ export function CreateCampaignDialog({
       new Date(form.application_deadline) > new Date(form.campaign_end_date)
     ) {
       errs.application_deadline = "Deadline must be on or before the campaign end date";
-    }
-    if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
-    if (categories.length < 1) errs.categories = "Select at least 1 category";
-    if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
-    // A published campaign must carry a banner — it's the hero image
-    // creators see in every listing. Drafts can be saved without one.
-    // In edit mode the existing banner counts.
-    const hasAnyBanner = !!bannerFile || !!form.banner_image_url || !!existingBannerUrl;
-    if (publish && !hasAnyBanner) {
-      errs.banner = "Add a campaign banner before publishing — it's the cover image creators see.";
     }
 
     if (Object.keys(errs).length > 0) {
