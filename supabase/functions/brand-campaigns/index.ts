@@ -12,20 +12,36 @@ const ok = (body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status: 200, headers: jsonHeaders });
 
 // Merge metadata (banner/gallery/engagement) into description like the admin app.
+// The separator is ALWAYS included when meta exists — an empty-description
+// campaign used to store the bare JSON blob as the whole description, and
+// unpack (finding no separator) served the JSON as visible body text on
+// campaign cards.
 function packDescription(description: string, meta: Record<string, unknown>) {
   const hasMeta = Object.keys(meta).length > 0;
   if (!hasMeta) return description || "";
   const clean = description || "";
-  return clean
-    ? `${clean}\n\n---\n${JSON.stringify(meta)}`
-    : JSON.stringify(meta);
+  return `${clean}\n\n---\n${JSON.stringify(meta)}`;
 }
 
 // Extract metadata stored after the `---` separator in description field.
 function unpackDescription(raw: string | null) {
   if (!raw) return { body: "", meta: {} as Record<string, unknown> };
   const idx = raw.indexOf("\n\n---\n");
-  if (idx < 0) return { body: raw, meta: {} };
+  if (idx < 0) {
+    // Legacy rows written before packDescription always added the
+    // separator: an empty-description campaign stored the bare meta
+    // JSON. Recognise it so the blob doesn't render as body text.
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return { body: "", meta: parsed };
+        }
+      } catch { /* fall through — genuinely body text */ }
+    }
+    return { body: raw, meta: {} };
+  }
   const body = raw.slice(0, idx);
   const metaRaw = raw.slice(idx + 6);
   try {

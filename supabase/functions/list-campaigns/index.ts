@@ -10,7 +10,21 @@ const corsHeaders = {
 function unpackDescription(raw: string | null) {
   if (!raw) return { body: "", meta: {} as Record<string, unknown> };
   const idx = raw.indexOf("\n\n---\n");
-  if (idx < 0) return { body: raw, meta: {} };
+  if (idx < 0) {
+    // Legacy rows: an empty-description campaign stored the bare meta
+    // JSON with no separator. Recognise it so the blob doesn't render
+    // as visible body text.
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          return { body: "", meta: parsed };
+        }
+      } catch { /* fall through — genuinely body text */ }
+    }
+    return { body: raw, meta: {} };
+  }
   const body = raw.slice(0, idx);
   const metaRaw = raw.slice(idx + 6);
   try {
