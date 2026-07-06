@@ -1567,7 +1567,12 @@ function SimilarCampaigns({ campaign }) {
 
 const STATUS_STEPS = [
   { key: "pending", label: "Applied" },
-  { key: "approved", label: "Approved" },
+  // B15 negotiation flow — the brand replies to an application with a
+  // priced offer; the creator accepts (one shot, no counter) and the
+  // brand then funds escrow, which flips the row to "approved".
+  { key: "offer_sent", label: "Offer Received" },
+  { key: "offer_accepted", label: "Offer Accepted" },
+  { key: "approved", label: "Escrow Funded" },
   { key: "submitted", label: "Deliverables Submitted" },
   { key: "accepted", label: "Work Accepted" },
   { key: "live_submitted", label: "Live Links Submitted" },
@@ -1579,7 +1584,105 @@ const STATUS_STEPS = [
 const SPECIAL_STATUSES = {
   revision_needed: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
   rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: "✕" },
+  withdrawn: { label: "Withdrawn", color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200", icon: "✕" },
 };
+
+// B15 — the creator's response to a priced offer. One shot: accept
+// locks the rate in and tells the brand to fund escrow; withdraw ends
+// the application. No counter-offer round exists by design.
+function OfferResponseCard({ campaign, refetch }) {
+  const { user } = useAuth();
+  const supabase = createClient();
+  const [busy, setBusy] = useState(null); // "accept" | "withdraw" | null
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const offer = Number(campaign?.brandOfferedRate || 0);
+
+  const respond = async (nextStatus) => {
+    if (!user?.id || !campaign?.applicationId) return;
+    setBusy(nextStatus === "offer_accepted" ? "accept" : "withdraw");
+    try {
+      const { data, error } = await supabase.functions.invoke("update-application-status", {
+        body: {
+          applicationId: campaign.applicationId,
+          influencerId: user.id,
+          status: nextStatus,
+        },
+      });
+      if (error || data?.error) {
+        alert(error?.message || data?.error || "Could not update the application");
+        return;
+      }
+      refetch?.();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-black text-sm shrink-0">₹</div>
+        <div>
+          <p className="text-sm font-black text-purple-800">
+            Offer: ₹{offer.toLocaleString("en-IN")}
+          </p>
+          <p className="text-[11px] text-purple-600">
+            {Number(campaign?.proposedRate || 0) > 0 && offer !== Number(campaign.proposedRate)
+              ? `You proposed ₹${Number(campaign.proposedRate).toLocaleString("en-IN")} — the brand countered with this amount.`
+              : "The brand approved your application at this rate."}
+          </p>
+        </div>
+      </div>
+      <p className="text-[11px] text-purple-700 leading-relaxed">
+        Accept to lock it in — the brand then funds escrow and you can start
+        working. Or withdraw if this doesn&apos;t work for you. No counter-offers.
+      </p>
+      {!confirmWithdraw ? (
+        <div className="flex gap-2">
+          <button
+            onClick={() => respond("offer_accepted")}
+            disabled={!!busy}
+            className="flex-1 h-11 rounded-xl text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-md"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            {busy === "accept" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+            Accept ₹{offer.toLocaleString("en-IN")}
+          </button>
+          <button
+            onClick={() => setConfirmWithdraw(true)}
+            disabled={!!busy}
+            className="h-11 px-4 rounded-xl border border-purple-200 bg-white text-purple-700 text-sm font-bold cursor-pointer disabled:opacity-60"
+          >
+            Withdraw
+          </button>
+        </div>
+      ) : (
+        <div className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
+          <p className="text-[11px] font-bold text-red-600">
+            Withdraw from this campaign? This ends your application — you can&apos;t undo it.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => respond("withdrawn")}
+              disabled={!!busy}
+              className="flex-1 h-9 rounded-lg bg-red-600 text-white text-xs font-black inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              {busy === "withdraw" ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+              Yes, Withdraw
+            </button>
+            <button
+              onClick={() => setConfirmWithdraw(false)}
+              disabled={!!busy}
+              className="h-9 px-3 rounded-lg border border-gray-200 bg-white text-gray-600 text-xs font-bold cursor-pointer"
+            >
+              Keep Offer
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -1591,15 +1694,29 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
   const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
   const canUpload = status === "approved" || status === "revision_needed" || status === "accepted";
+  const hasOffer = status === "offer_sent";
+  const waitingEscrow = status === "offer_accepted";
 
   if (compact) {
     return (
       <div className="space-y-2">
+        {/* B15 — priced offer waiting for the creator's response takes
+            over the whole compact bar; the status chip would be
+            redundant next to the Accept CTA. */}
+        {hasOffer ? (
+          <OfferResponseCard campaign={campaign} refetch={refetch} />
+        ) : (
         <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold ${
           isRejected ? "bg-red-500 text-white" : isRevision ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
         }`}>
           {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStep.label}
         </div>
+        )}
+        {waitingEscrow && (
+          <p className="text-[11px] text-center text-slate-500 font-semibold">
+            Offer accepted — waiting for the brand to fund escrow.
+          </p>
+        )}
         {canUpload && (
           <button
             onClick={() => setShowSubmitModal(true)}
@@ -1623,6 +1740,17 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   return (
     <div className="bg-[#F8F9FD] rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
       <h4 className="text-base font-black text-slate-800">Application Status</h4>
+
+      {/* B15 — offer response card sits above the step tracker so the
+          Accept CTA is impossible to miss. */}
+      {hasOffer && <OfferResponseCard campaign={campaign} refetch={refetch} />}
+      {waitingEscrow && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <p className="text-[12px] font-bold text-emerald-700">
+            ✓ You accepted ₹{Number(campaign?.brandOfferedRate || 0).toLocaleString("en-IN")} — waiting for the brand to fund escrow.
+          </p>
+        </div>
+      )}
       <div className="relative pl-7">
         {/* Vertical line */}
         <div className="absolute left-[11px] top-3 bottom-3 w-[3px] rounded-full overflow-hidden">

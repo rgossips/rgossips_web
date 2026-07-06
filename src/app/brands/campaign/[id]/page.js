@@ -9,6 +9,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Clock,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -77,7 +78,12 @@ const statusStyles = {
 };
 
 const appStatusConfig = {
-  pending: { bg: "bg-amber-50 text-amber-700", label: "Pending" },
+  pending: { bg: "bg-amber-50 text-amber-700", label: "Applied" },
+  // B15 negotiation flow — brand sends a priced offer, creator accepts
+  // (or withdraws), and only then does escrow funding happen.
+  offer_sent: { bg: "bg-purple-50 text-purple-700", label: "Offer Sent" },
+  offer_accepted: { bg: "bg-emerald-50 text-emerald-700", label: "Offer Accepted — Pay" },
+  withdrawn: { bg: "bg-gray-100 text-gray-600", label: "Withdrawn" },
   approved: { bg: "bg-indigo-50 text-indigo-700", label: "Approved" },
   submitted: { bg: "bg-purple-50 text-purple-700", label: "Submitted" },
   revision_needed: { bg: "bg-orange-50 text-orange-700", label: "Revision Needed" },
@@ -130,6 +136,10 @@ const CampaignDetailPage = () => {
   // categories + follower band + cities. Server computes on get; also
   // returned by create so we can update from a stale-cached value.
   const [matchingCount, setMatchingCount] = useState(0);
+  // B15f — which application's journey modal is open. The aside shows
+  // compact cards only; the full review panel + timeline lives in the
+  // modal keyed by this id.
+  const [selectedAppId, setSelectedAppId] = useState(null);
   // Edit dialog visibility. Not-editable modal fires when the client-
   // side check (applications.length > 0) or the server ("has_applications"
   // race) says the brief is frozen.
@@ -315,6 +325,15 @@ const CampaignDetailPage = () => {
         </button>
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-[11px] font-bold border ${statusStyles[campaign.status] || statusStyles.draft}`}>{(campaign.status || "draft").toUpperCase()}</span>
+          {/* B5 — visible overdue flag when applications closed but the
+              brand never paused/completed the campaign. */}
+          {campaign.status === "active" &&
+            campaign.applicationDeadline &&
+            new Date(campaign.applicationDeadline).getTime() < Date.now() && (
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold border bg-red-50 text-red-700 border-red-200">
+                DEADLINE PASSED
+              </span>
+            )}
           <button
             onClick={handleEditClick}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border border-[#5851DB] text-[#5851DB] hover:bg-purple-50 cursor-pointer"
@@ -468,7 +487,9 @@ const CampaignDetailPage = () => {
           )}
         </div>
 
-        {/* ─── RIGHT: Applications ─── */}
+        {/* ─── RIGHT: Applications — compact cards (B15f). Each card is
+            just DP + name + status; clicking opens the full journey
+            modal with the timeline + all review actions. ─── */}
         <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
           <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
@@ -483,22 +504,52 @@ const CampaignDetailPage = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {applications.map((a) => (
-                  <ApplicationRow
-                    key={a.id}
-                    app={a}
-                    brandId={user?.id}
-                    defaultRate={campaign.budgetPerInfluencer || 0}
-                    rating={ratingsByApp[a.id] || null}
-                    onRated={(r) => upsertRating(a.id, r)}
-                    onRefresh={load}
-                  />
-                ))}
+                {applications.map((a) => {
+                  const inf = a.influencer_profiles || {};
+                  const name = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+                  const st = appStatusConfig[a.status] || appStatusConfig.pending;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setSelectedAppId(a.id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 hover:border-purple-200 text-left cursor-pointer transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
+                        {inf.profile_photo_url ? <img src={inf.profile_photo_url} alt={name} className="w-full h-full object-cover" /> : name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
+                        {inf.instagram_handle && <p className="text-[11px] text-gray-400 truncate">@{inf.instagram_handle}</p>}
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{st.label}</span>
+                      <ChevronRight size={14} className="text-gray-300 shrink-0" />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         </aside>
       </div>
+
+      {/* Journey modal — full application detail: status timeline from
+          application_status_history + the review panel with all actions. */}
+      {selectedAppId && (() => {
+        const selApp = applications.find((a) => a.id === selectedAppId);
+        if (!selApp) return null;
+        return (
+          <ApplicationJourneyModal
+            app={selApp}
+            brandId={user?.id}
+            defaultRate={campaign.budgetPerInfluencer || 0}
+            rating={ratingsByApp[selApp.id] || null}
+            onRated={(r) => upsertRating(selApp.id, r)}
+            onRefresh={load}
+            onClose={() => setSelectedAppId(null)}
+          />
+        );
+      })()}
 
       {/* Edit dialog — lazy-loaded so the fat form only enters the
           bundle when actually opened. Server enforces the same
@@ -702,13 +753,14 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
   </div>
 );
 
-const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh }) => {
+const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh, alwaysExpanded = false }) => {
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
   // Auto-expand actionable statuses so the brand can review immediately.
   // We also auto-expand "accepted" so the brand can re-verify what they
-  // just approved without an extra click.
-  const autoExpand = app.status === "pending" || app.status === "submitted" || app.status === "live_submitted" || app.status === "accepted";
+  // just approved without an extra click. Inside the journey modal
+  // (alwaysExpanded) the panel is permanently open.
+  const autoExpand = alwaysExpanded || app.status === "pending" || app.status === "offer_accepted" || app.status === "submitted" || app.status === "live_submitted" || app.status === "accepted";
   const [expanded, setExpanded] = useState(autoExpand);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState(null); // "approve" | "reject" | "revision" | null
@@ -750,18 +802,30 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     }
   };
 
-  // Approve = fund escrow + flip status to approved. Flow:
-  //   1. escrow-fund creates a Razorpay Order for the agreed rate.
+  // B15: brand reviews the application and sends a priced offer. No
+  // money moves here — the creator gets a notification and can accept
+  // or withdraw. Escrow funding happens only after acceptance.
+  const handleSendOffer = () => {
+    const rate = parseInt(payAmount || "0", 10);
+    if (!rate || rate <= 0) return alert("Enter an offer amount first");
+    updateStatus("offer_sent", { agreedRate: rate });
+  };
+
+  // Pay to Escrow = fund escrow + flip status to approved. Only
+  // reachable once the creator has accepted the offer (server enforces
+  // this too). Flow:
+  //   1. escrow-fund creates a Razorpay Order for the ACCEPTED offer
+  //      amount (server rejects a mismatched amount).
   //   2. We open Razorpay Checkout against that order. The brand pays.
   //   3. On payment success, Razorpay returns { payment_id, order_id,
   //      signature } via the handler callback.
   //   4. We pass those into update-application-status (status='approved'),
   //      which verifies the signature server-side and flips
   //      escrow_status='held' atomically with the status change.
-  // If the brand dismisses Checkout, the application stays in 'pending'.
+  // If the brand dismisses Checkout, the application stays 'offer_accepted'.
   const handleApprove = async () => {
-    const rate = parseInt(payAmount || "0", 10);
-    if (!rate || rate <= 0) return alert("Enter an agreed rate first");
+    const rate = Number(app.brand_offered_rate || 0);
+    if (!rate || rate <= 0) return alert("No accepted offer amount on this application");
     setLoading(true);
     startLoading("Preparing escrow…");
     try {
@@ -896,15 +960,15 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // action buttons at this stage (the next step is the creator posting
   // live), so the action slot just shows a status line.
   const hasActions =
-    app.status === "pending" || app.status === "approved" || app.status === "submitted" || app.status === "revision_needed" || app.status === "live_submitted" || app.status === "payment" || app.status === "accepted";
+    app.status === "pending" || app.status === "offer_sent" || app.status === "offer_accepted" || app.status === "approved" || app.status === "submitted" || app.status === "revision_needed" || app.status === "live_submitted" || app.status === "payment" || app.status === "accepted";
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+    <div className={`rounded-xl bg-white overflow-hidden ${alwaysExpanded ? "" : "border border-gray-100"}`}>
       {/* Summary row — clickable */}
       <button
         type="button"
-        onClick={() => hasActions && setExpanded((e) => !e)}
-        className={`w-full flex items-center gap-3 p-3 text-left ${hasActions ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"}`}
+        onClick={() => !alwaysExpanded && hasActions && setExpanded((e) => !e)}
+        className={`w-full flex items-center gap-3 p-3 text-left ${!alwaysExpanded && hasActions ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"}`}
       >
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
           {inf.profile_photo_url ? <img src={inf.profile_photo_url} alt={displayName} className="w-full h-full object-cover" /> : displayName.charAt(0).toUpperCase()}
@@ -935,11 +999,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
             {rating.target_rating}/5
           </span>
         )}
-        {hasActions && <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />}
+        {!alwaysExpanded && hasActions && <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />}
       </button>
 
       {/* Expanded actions */}
-      {expanded && hasActions && (
+      {(expanded || alwaysExpanded) && hasActions && (
         <div className="px-3 pb-3 border-t border-gray-50">
           {rating && (
             <div className="mt-3 p-3 bg-amber-50/60 rounded-lg border border-amber-100 flex items-center gap-3">
@@ -975,6 +1039,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               <Fact label="Location" value={inf.location || "—"} />
               {inf.email && <Fact label="Email" value={inf.email} />}
               {app.proposed_rate != null && <Fact label="Proposed Rate" value={`₹${Number(app.proposed_rate).toLocaleString("en-IN")}`} highlight />}
+              {app.brand_offered_rate != null && Number(app.brand_offered_rate) > 0 && <Fact label="Your Offer" value={`₹${Number(app.brand_offered_rate).toLocaleString("en-IN")}`} highlight />}
               {app.final_agreed_rate != null && <Fact label="Agreed Rate" value={`₹${Number(app.final_agreed_rate).toLocaleString("en-IN")}`} highlight />}
             </div>
 
@@ -1025,13 +1090,29 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
             <div className="mt-3 flex flex-wrap gap-1.5">
               {app.status === "pending" && (
                 <>
-                  <button onClick={() => setMode("approve")} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
-                    <Check size={12} /> Approve
+                  <button onClick={() => setMode("offer")} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
+                    <Check size={12} /> Approve with Price
                   </button>
                   <button onClick={() => setMode("reject")} className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}>
                     <X size={12} /> Reject
                   </button>
                 </>
+              )}
+              {app.status === "offer_sent" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-purple-700 font-semibold bg-purple-50 border border-purple-200 px-2 py-1 rounded-lg">
+                  <Clock size={12} /> Offer of ₹{Number(app.brand_offered_rate || 0).toLocaleString("en-IN")} sent — waiting for the creator to accept.
+                </span>
+              )}
+              {app.status === "offer_accepted" && (
+                <button onClick={handleApprove} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
+                  {loading ? <Loader2 size={12} className="animate-spin" /> : <IndianRupee size={12} />}
+                  Pay ₹{Number(app.brand_offered_rate || 0).toLocaleString("en-IN")} to Escrow
+                </button>
+              )}
+              {app.status === "withdrawn" && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 font-semibold bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg">
+                  <X size={12} /> The creator withdrew from this campaign.
+                </span>
               )}
               {app.status === "approved" && (
                 <>
@@ -1080,10 +1161,13 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
             </div>
           )}
 
-          {/* Approve form */}
-          {mode === "approve" && (
+          {/* Offer form — B15: no payment here, just the priced offer.
+              The creator's proposed rate seeds the input; the brand can
+              counter with a different number. One shot: the creator can
+              only accept or withdraw, not counter back. */}
+          {mode === "offer" && (
             <div className="mt-3 space-y-2 p-3 bg-emerald-50/40 rounded-lg border border-emerald-100">
-              <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Agreed Rate (₹)</label>
+              <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Your Offer (₹)</label>
               <input
                 type="number"
                 min="0"
@@ -1091,10 +1175,13 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 onChange={(e) => setPayAmount(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-white border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
+              <p className="text-[10px] text-emerald-700/80 leading-snug">
+                The creator can accept or withdraw — no counter-offers. You&apos;ll pay into escrow only after they accept.
+              </p>
               <div className="flex gap-2">
-                <button onClick={handleApprove} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
+                <button onClick={handleSendOffer} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
                   {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                  Approve
+                  Send Offer
                 </button>
                 <button onClick={() => setMode(null)} className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}>
                   Cancel
@@ -1191,6 +1278,148 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     </div>
   );
 };
+
+// B15f — full application journey. Timeline from
+// application_status_history (RLS lets the brand read rows for its own
+// campaigns) + the complete review panel (ApplicationRow, permanently
+// expanded) with every action the brand can take at the current stage.
+const JOURNEY_LABELS = {
+  pending: "Applied",
+  offer_sent: "Offer sent",
+  offer_accepted: "Offer accepted by creator",
+  withdrawn: "Creator withdrew",
+  approved: "Escrow funded — work started",
+  submitted: "Drafts submitted",
+  revision_needed: "Revision requested",
+  accepted: "Drafts accepted",
+  live_submitted: "Posted live",
+  payment: "Payment released",
+  completed: "Completed",
+  rejected: "Rejected",
+};
+
+function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, onRefresh, onClose }) {
+  const supabase = createClient();
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  const inf = app.influencer_profiles || {};
+  const displayName = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("application_status_history")
+          .select("id, from_status, to_status, changed_by_role, reason, created_at")
+          .eq("application_id", app.id)
+          .order("created_at", { ascending: true });
+        if (!cancelled) setHistory(data || []);
+      } catch {
+        /* timeline is progressive enhancement — panel still works */
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [app.id, supabase]);
+
+  // Synthesise the "Applied" event if history starts later (backfill rows
+  // exist for old applications, but a fresh application's first history
+  // row is its first TRANSITION, not the application itself).
+  const events = useMemo(() => {
+    const out = [];
+    const hasInitial = history.some((h) => !h.from_status);
+    if (!hasInitial) {
+      out.push({
+        id: "applied",
+        to_status: "pending",
+        changed_by_role: "influencer",
+        reason: app.proposed_rate ? `Proposed ₹${Number(app.proposed_rate).toLocaleString("en-IN")}` : null,
+        created_at: app.created_at,
+      });
+    }
+    return [...out, ...history];
+  }, [history, app.created_at, app.proposed_rate]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-base font-black text-gray-900 truncate">{displayName}</h2>
+            <p className="text-[11px] text-gray-400">Application journey &amp; review</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 cursor-pointer shrink-0">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Timeline */}
+          <div className="bg-[#F8F9FE] rounded-2xl p-4">
+            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">Journey</p>
+            {historyLoading ? (
+              <div className="flex items-center gap-2 text-gray-400 text-xs py-2">
+                <Loader2 size={14} className="animate-spin" /> Loading history…
+              </div>
+            ) : events.length === 0 ? (
+              <p className="text-xs text-gray-400 py-2">No history recorded yet.</p>
+            ) : (
+              <div className="relative pl-5">
+                <div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-gray-200 rounded-full" />
+                {events.map((ev, i) => {
+                  const isLast = i === events.length - 1;
+                  const label = JOURNEY_LABELS[ev.to_status] || ev.to_status;
+                  return (
+                    <div key={ev.id} className="relative pb-4 last:pb-0">
+                      <div
+                        className={`absolute -left-5 top-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          isLast ? "bg-[#5851DB] border-[#5851DB]" : "bg-white border-gray-300"
+                        }`}
+                      >
+                        {isLast && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                      <p className={`text-[12px] font-bold ${isLast ? "text-gray-900" : "text-gray-600"}`}>{label}</p>
+                      <p className="text-[10px] text-gray-400">
+                        {formatDate(ev.created_at)}
+                        {ev.changed_by_role && ` · by ${ev.changed_by_role}`}
+                        {ev.reason && ` · ${ev.reason}`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Full review panel — same component the aside used to render
+              inline, permanently expanded, with all stage actions. */}
+          <ApplicationRow
+            app={app}
+            brandId={brandId}
+            defaultRate={defaultRate}
+            rating={rating}
+            onRated={onRated}
+            onRefresh={() => {
+              onRefresh?.();
+            }}
+            alwaysExpanded
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Small modal shown when a brand hits Edit on a campaign that already
 // has applications. The brief is frozen at that point (applying

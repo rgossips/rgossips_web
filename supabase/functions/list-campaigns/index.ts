@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       let applications: any[] = [];
       const { data: appsData, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at")
+        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at, brand_offered_rate, proposed_rate")
         .eq("influencer_id", influencerId);
 
       if (appErr) {
@@ -70,6 +70,10 @@ Deno.serve(async (req) => {
           rejectionReason: app.rejection_reason || "",
           metrics: app.metrics || null,
           metricsRefreshedAt: app.metrics_refreshed_at || null,
+          // B15 offer flow — the influencer UI needs the offer amount to
+          // render the Accept / Withdraw card on offer_sent.
+          brandOfferedRate: app.brand_offered_rate || 0,
+          proposedRate: app.proposed_rate || 0,
         };
       }
     }
@@ -179,9 +183,21 @@ Deno.serve(async (req) => {
       }
 
       // Format deliverables from content_types_required
+      // B10 — format "reels:2" entries as "2 Reels" (and "1 Reel", not
+      // "1 REELS"): singularise when the count is exactly 1.
       let deliverables = "Not specified";
       if (c.content_types_required && c.content_types_required.length > 0) {
-        deliverables = c.content_types_required.join(" + ");
+        deliverables = c.content_types_required
+          .map((entry: string) => {
+            const [type, countRaw] = String(entry).split(":");
+            const n = Number(countRaw);
+            if (!type) return entry;
+            const base = type.charAt(0).toUpperCase() + type.slice(1); // "Reels"
+            if (!Number.isFinite(n) || n <= 0) return base;
+            const label = n === 1 && base.endsWith("s") ? base.slice(0, -1) : base;
+            return `${n} ${label}`;
+          })
+          .join(" + ");
       }
 
       // Map status — check if influencer has applied
@@ -194,6 +210,8 @@ Deno.serve(async (req) => {
       let rejectionReason = "";
       let applicationMetrics: any = null;
       let metricsRefreshedAt: string | null = null;
+      let brandOfferedRate = 0;
+      let proposedRate = 0;
 
       if (appStatus) {
         applicationStatus = appStatus;
@@ -202,13 +220,17 @@ Deno.serve(async (req) => {
         rejectionReason = appData.rejectionReason || "";
         applicationMetrics = appData.metrics || null;
         metricsRefreshedAt = appData.metricsRefreshedAt || null;
+        brandOfferedRate = Number(appData.brandOfferedRate || 0);
+        proposedRate = Number(appData.proposedRate || 0);
 
         if (appStatus === "completed") {
           status = "Completed";
-        } else if (appStatus === "rejected") {
-          status = "Active"; // Rejected goes back to Active (can re-apply if needed)
+        } else if (appStatus === "rejected" || appStatus === "withdrawn") {
+          status = "Active"; // Rejected/withdrawn go back to Active (can re-apply if needed)
         } else {
-          status = "Applied"; // pending, approved, submitted, accepted, payment all stay in Applied
+          // pending, offer_sent, offer_accepted, approved, submitted,
+          // accepted, live_submitted, payment all stay in Applied
+          status = "Applied";
         }
       } else if (c.status === "open" || c.status === "active") {
         status = "Active";
@@ -274,6 +296,8 @@ Deno.serve(async (req) => {
         rejectionReason,
         applicationMetrics,
         metricsRefreshedAt,
+        brandOfferedRate,
+        proposedRate,
         contentTypesRequired: c.content_types_required || [],
         isExpired,
         // Audit fields packed in metadata

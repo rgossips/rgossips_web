@@ -72,6 +72,12 @@ async function notifyAdminsOfDispute(
 
 const VALID_STATUSES = new Set([
   "pending",
+  // B15 negotiation flow: brand sends a priced offer, influencer either
+  // accepts (offer_accepted → brand funds escrow → approved) or abandons
+  // (withdrawn). No counter-negotiation round exists by design.
+  "offer_sent",
+  "offer_accepted",
+  "withdrawn",
   "approved",
   "submitted",
   "revision_needed",
@@ -81,6 +87,13 @@ const VALID_STATUSES = new Set([
   "completed",
   "rejected",
 ]);
+
+// Statuses the influencer (not the brand) is allowed to set on their own
+// application, with the previous statuses each transition is legal from.
+const INFLUENCER_TRANSITIONS: Record<string, string[]> = {
+  offer_accepted: ["offer_sent"],
+  withdrawn: ["pending", "offer_sent"],
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -96,6 +109,10 @@ Deno.serve(async (req) => {
     const {
       applicationId,
       brandId,
+      // Influencer-initiated transitions (offer_accepted / withdrawn) pass
+      // influencerId instead of brandId. Exactly one of the two must match
+      // the application's ownership chain.
+      influencerId,
       status,
       agreedRate,
       rejectionReason,
@@ -110,8 +127,11 @@ Deno.serve(async (req) => {
       escrowSignature,
     } = await req.json();
 
-    if (!applicationId || !brandId || !status) {
-      return ok({ error: "applicationId, brandId and status are required" });
+    if (!applicationId || !status) {
+      return ok({ error: "applicationId and status are required" });
+    }
+    if (!brandId && !influencerId) {
+      return ok({ error: "brandId or influencerId is required" });
     }
     if (!VALID_STATUSES.has(status)) {
       return ok({ error: "Invalid status" });
@@ -120,22 +140,35 @@ Deno.serve(async (req) => {
     // Load the application so we can verify ownership
     const { data: app, error: appErr } = await supabase
       .from("campaign_applications")
-      .select("id, campaign_id, status")
+      .select("id, campaign_id, influencer_id, status, brand_offered_rate")
       .eq("id", applicationId)
       .single();
     const previousStatus = app?.status;
 
     if (appErr || !app) return ok({ error: "Application not found" });
 
-    // Verify the brand owns the campaign
-    const { data: campaign, error: campErr } = await supabase
-      .from("campaigns")
-      .select("brand_id")
-      .eq("campaign_id", app.campaign_id)
-      .single();
+    const isInfluencerAction = !brandId && !!influencerId;
 
-    if (campErr || !campaign) return ok({ error: "Campaign not found" });
-    if (campaign.brand_id !== brandId) return ok({ error: "Not authorized" });
+    if (isInfluencerAction) {
+      // Influencer path — only their own application, only the offer
+      // response transitions, only from the legal previous status.
+      if (app.influencer_id !== influencerId) return ok({ error: "Not authorized" });
+      const allowedFrom = INFLUENCER_TRANSITIONS[status];
+      if (!allowedFrom) return ok({ error: "Influencers cannot set this status" });
+      if (!allowedFrom.includes(previousStatus || "")) {
+        return ok({ error: `Cannot move from '${previousStatus}' to '${status}'` });
+      }
+    } else {
+      // Brand path — verify the brand owns the campaign
+      const { data: campaign, error: campErr } = await supabase
+        .from("campaigns")
+        .select("brand_id")
+        .eq("campaign_id", app.campaign_id)
+        .single();
+
+      if (campErr || !campaign) return ok({ error: "Campaign not found" });
+      if (campaign.brand_id !== brandId) return ok({ error: "Not authorized" });
+    }
 
     // Build update payload
     const updates: Record<string, unknown> = {
@@ -143,8 +176,29 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    if (status === "approved" && typeof agreedRate === "number" && agreedRate > 0) {
-      updates.final_agreed_rate = agreedRate;
+    // B15: brand sends a priced offer. No money moves here — the offer
+    // is just a number the influencer can accept or walk away from.
+    if (status === "offer_sent") {
+      if (typeof agreedRate !== "number" || agreedRate <= 0) {
+        return ok({ error: "A positive offer amount is required" });
+      }
+      if (previousStatus !== "pending") {
+        return ok({ error: `Offer can only be sent on a pending application (currently '${previousStatus}')` });
+      }
+      updates.brand_offered_rate = agreedRate;
+    }
+
+    if (status === "approved") {
+      // B15: approval (= escrow funding) only happens after the
+      // influencer accepted the offer. The agreed rate is the offer
+      // they accepted — the brand can't change it at payment time.
+      if (previousStatus !== "offer_accepted") {
+        return ok({ error: "The creator must accept your offer before you fund escrow." });
+      }
+      const finalRate = typeof agreedRate === "number" && agreedRate > 0
+        ? agreedRate
+        : Number(app.brand_offered_rate || 0);
+      if (finalRate > 0) updates.final_agreed_rate = finalRate;
 
       // Approve must be accompanied by a paid escrow — verify the Razorpay
       // signature so a client can't fake the payment, then flip the escrow
@@ -213,17 +267,80 @@ Deno.serve(async (req) => {
           application_id: applicationId,
           from_status: previousStatus || null,
           to_status: status,
-          changed_by: brandId || null,
-          changed_by_role: "brand",
+          changed_by: (isInfluencerAction ? influencerId : brandId) || null,
+          changed_by_role: isInfluencerAction ? "influencer" : "brand",
           reason:
             status === "rejected"
               ? rejectionReason || null
               : status === "revision_needed"
               ? revisionNote || null
+              : status === "offer_sent"
+              ? `Offered ₹${agreedRate}`
               : null,
         });
       } catch (e) {
         console.error("status-history insert failed:", e);
+      }
+    }
+
+    // B15 notifications — offer lifecycle.
+    // offer_sent: tell the creator there's a priced offer waiting.
+    // offer_accepted: tell the brand to fund escrow.
+    // withdrawn: tell the brand the creator walked away.
+    if (status === "offer_sent" || status === "offer_accepted" || status === "withdrawn") {
+      try {
+        const { data: full } = await supabase
+          .from("campaign_applications")
+          .select("influencer_id, campaign_id, brand_offered_rate, campaigns(title, brand_id, brand_profiles:brand_id(brand_name, gstin_trade_name))")
+          .eq("id", applicationId)
+          .single();
+        const campaignTitle = (full as any)?.campaigns?.title || "your campaign";
+        const brandRow = (full as any)?.campaigns?.brand_profiles || {};
+        const brandName = brandRow.brand_name || brandRow.gstin_trade_name || "The brand";
+        const offerInr = Number((full as any)?.brand_offered_rate || 0);
+        const campaignIdOut = (full as any)?.campaign_id;
+        const brandOwnerId = (full as any)?.campaigns?.brand_id;
+
+        if (status === "offer_sent") {
+          await supabase.from("notifications").insert({
+            user_id: (full as any)?.influencer_id,
+            type: "offer_received",
+            title: `Offer: ₹${offerInr.toLocaleString("en-IN")}`,
+            body: JSON.stringify({
+              text: `${brandName} offered ₹${offerInr.toLocaleString("en-IN")} for "${campaignTitle}". Accept to lock it in, or withdraw if it doesn't work for you.`,
+              link: `/influencer/offers/${campaignIdOut}`,
+              applicationId,
+            }),
+            is_read: false,
+          });
+        } else if (brandOwnerId) {
+          const isAccept = status === "offer_accepted";
+          // Look up creator name for the brand-side copy.
+          let creatorName = "The creator";
+          try {
+            const { data: inf } = await supabase
+              .from("influencer_profiles")
+              .select("full_name, username, instagram_handle")
+              .eq("influencer_id", (full as any)?.influencer_id)
+              .maybeSingle();
+            creatorName = inf?.full_name || inf?.username || (inf?.instagram_handle ? `@${inf.instagram_handle}` : creatorName);
+          } catch { /* keep default */ }
+          await supabase.from("notifications").insert({
+            user_id: brandOwnerId,
+            type: isAccept ? "offer_accepted" : "application_withdrawn",
+            title: isAccept ? "Offer accepted — fund escrow" : "Application withdrawn",
+            body: JSON.stringify({
+              text: isAccept
+                ? `${creatorName} accepted your ₹${offerInr.toLocaleString("en-IN")} offer for "${campaignTitle}". Fund escrow to kick off the work.`
+                : `${creatorName} withdrew from "${campaignTitle}".`,
+              link: `/brands/campaign/${campaignIdOut}`,
+              applicationId,
+            }),
+            is_read: false,
+          });
+        }
+      } catch (e) {
+        console.error("offer-lifecycle notification failed:", e);
       }
     }
 
@@ -371,8 +488,10 @@ Deno.serve(async (req) => {
 
       // Only notify when the status change originates outside the brand
       // (i.e. no brandId in payload, or brandId doesn't match) AND there's
-      // a brand to notify.
-      if (brandOwnerId && brandOwnerId !== brandId) {
+      // a brand to notify. Offer-lifecycle statuses are excluded — they
+      // already got a dedicated, better-worded notification above.
+      const offerLifecycle = status === "offer_sent" || status === "offer_accepted" || status === "withdrawn";
+      if (brandOwnerId && brandOwnerId !== brandId && !offerLifecycle) {
         const { data: influencer } = await supabase
           .from("influencer_profiles")
           .select("full_name, username, instagram_handle")

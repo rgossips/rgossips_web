@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     // so a brand can't fund someone else's deal.
     const { data: app, error: appErr } = await supabase
       .from("campaign_applications")
-      .select("id, campaign_id, influencer_id, status, escrow_status, campaigns(brand_id, title)")
+      .select("id, campaign_id, influencer_id, status, escrow_status, brand_offered_rate, campaigns(brand_id, title)")
       .eq("id", applicationId)
       .single();
     if (appErr || !app) return json({ error: "Application not found" }, 404);
@@ -75,8 +75,18 @@ Deno.serve(async (req) => {
         already_held: true,
       });
     }
-    if (app.status !== "pending") {
-      return json({ error: `Application is in state '${app.status}' — cannot create escrow.` }, 409);
+    // B15 negotiation flow: escrow can only be funded once the creator
+    // has accepted the brand's priced offer. Funding a merely-pending
+    // application would skip the influencer's consent step.
+    if (app.status !== "offer_accepted") {
+      return json({ error: `Application is in state '${app.status}' — the creator must accept your offer before you fund escrow.` }, 409);
+    }
+    // The amount is the accepted offer — the brand can't quietly change
+    // the number at payment time. agreedRate from the client is only a
+    // display hint; mismatch is rejected.
+    const acceptedRate = Number((app as any).brand_offered_rate || 0);
+    if (acceptedRate > 0 && Math.round(rupees) !== Math.round(acceptedRate)) {
+      return json({ error: `Amount mismatch: the accepted offer is ₹${acceptedRate}.` }, 409);
     }
 
     const keyId = Deno.env.get("RAZORPAY_KEY_ID");
