@@ -18,7 +18,15 @@
       "Bash(ls -la /d/Development/React/RS_Gossips/src/app/\\\\\\(auth\\\\\\)/register/)",
       "Bash(find d:DevelopmentReactRS_Gossips -type f -name *check-profile* -o -name *edge* -o -name *functions*)",
       "Bash(grep -r \"INSTAGRAM\\\\|INSTA\" d:DevelopmentReactRS_Gossips --include=*.env* --include=*.ts --include=*.js --include=*.jsx)",
-      "Bash(find /d/Development/React/RS_Gossips -type f -name *media*kit*)"
+      "Bash(find /d/Development/React/RS_Gossips -type f -name *media*kit*)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(node *)",
+      "Bash(mbt *)",
+      "Bash(cf *)",
+      "Bash(python *)",
+      "Bash"
     ]
   }
 }
