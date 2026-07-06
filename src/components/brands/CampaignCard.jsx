@@ -56,7 +56,7 @@ export const CampaignCard = ({
 
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 statusStyles[status] || statusStyles.draft
@@ -64,6 +64,16 @@ export const CampaignCard = ({
             >
               {statusLabel(status)}
             </span>
+            {/* B5 — a campaign can be brand-status "active" while its
+                application deadline is already past. Flag it visibly so
+                the brand knows creators can no longer apply. */}
+            {status === "active" &&
+              applicationDeadline &&
+              new Date(applicationDeadline).getTime() < Date.now() && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                  Deadline Passed
+                </span>
+              )}
             {campaignType && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-[#5851DB] capitalize">
                 {campaignType}

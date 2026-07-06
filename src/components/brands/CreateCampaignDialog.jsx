@@ -232,9 +232,14 @@ export function CreateCampaignDialog({
   const [existingGalleryUrls, setExistingGalleryUrls] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // B2 — per-field validation errors, keyed by the data-field attribute
+  // on each Field wrapper. Set together with `error`; cleared on any
+  // successful validation pass.
+  const [fieldErrors, setFieldErrors] = useState({});
   const [stage, setStage] = useState("");
   const bannerInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+  const formScrollRef = useRef(null);
 
   // Prefill on open. Two shapes:
   //   - mode==="edit" + initialCampaign → prefill with existing values;
@@ -361,25 +366,58 @@ export function CreateCampaignDialog({
 
   const submitForm = async (publish) => {
     setError("");
+    setFieldErrors({});
 
-    // Validation
-    if (!brandId) return setError("You must be signed in");
-    if (!form.title.trim()) return setError("Title is required");
-    if (!form.campaign_start_date) return setError("Start date is required");
-    if (!form.application_deadline) return setError("Application deadline is required");
-    if (!form.campaign_end_date) return setError("Campaign end date is required");
-    if (form.application_deadline && form.campaign_end_date && new Date(form.application_deadline) > new Date(form.campaign_end_date)) {
-      return setError("Application deadline must be on or before the campaign end date");
+    // B2 — validate every required field at once and surface each error
+    // inline, then scroll to the first failing field. A single top-level
+    // message with no field context made the buttons look dead.
+    const errs = {};
+    if (!form.title.trim()) errs.title = "Title is required";
+    if (!form.campaign_start_date) errs.campaign_start_date = "Start date is required";
+    if (!form.application_deadline) errs.application_deadline = "Application deadline is required";
+    if (!form.campaign_end_date) errs.campaign_end_date = "Campaign end date is required";
+    if (
+      form.application_deadline &&
+      form.campaign_end_date &&
+      new Date(form.application_deadline) > new Date(form.campaign_end_date)
+    ) {
+      errs.application_deadline = "Deadline must be on or before the campaign end date";
     }
-    if (totalDeliverables < 1) return setError("Add at least 1 deliverable (reels, posts, stories, videos or blogs)");
-    if (categories.length < 1) return setError("Select at least 1 category");
-    if (platforms.length < 1) return setError("Select at least 1 platform");
+    if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
+    if (categories.length < 1) errs.categories = "Select at least 1 category";
+    if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
     // A published campaign must carry a banner — it's the hero image
     // creators see in every listing. Drafts can be saved without one.
     // In edit mode the existing banner counts.
     const hasAnyBanner = !!bannerFile || !!form.banner_image_url || !!existingBannerUrl;
     if (publish && !hasAnyBanner) {
-      return setError("Add a campaign banner before publishing — it's the cover image creators see.");
+      errs.banner = "Add a campaign banner before publishing — it's the cover image creators see.";
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError("Please fix the highlighted fields below.");
+      // Scroll the first failing field into view. data-field attributes
+      // are stamped by the Field wrapper; banner/deliverables sections
+      // carry their own.
+      const firstKey = Object.keys(errs)[0];
+      requestAnimationFrame(() => {
+        const el = formScrollRef.current?.querySelector(`[data-field="${firstKey}"]`);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+
+    // B1 — the submit used to silently no-op when the auth session
+    // wasn't ready ("Auth initialization timed out" in console): the
+    // invoke fell back to the publishable key and the write never
+    // happened. Check the session explicitly and tell the user what's
+    // wrong instead of doing nothing.
+    if (!brandId) return setError("You must be signed in");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setError("Your session isn't ready yet. Wait a moment and try again — or sign in again if this persists.");
+      return;
     }
 
     setSubmitting(true);
@@ -426,6 +464,7 @@ export function CreateCampaignDialog({
             campaignId,
             campaign: campaignPayload,
           },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (err) throw new Error(err.message);
         if (data?.error === "has_applications") {
@@ -448,6 +487,7 @@ export function CreateCampaignDialog({
               status: publish ? "active" : "draft",
             },
           },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (err) throw new Error(err.message);
         if (data?.error) throw new Error(data.error);
@@ -469,12 +509,12 @@ export function CreateCampaignDialog({
 
   const content = (
     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
+      <div ref={formScrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
         {/* Basic Info */}
         <Section title="Basic info">
-          <Field label="Title" required>
+          <Field label="Title" required fieldKey="title" error={fieldErrors.title}>
             <input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Summer Fashion 2026" className="input" />
           </Field>
           <Field label="Description" hint="Helps creators understand what you need">
@@ -583,7 +623,7 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Banner */}
-        <Section title="Banner image">
+        <Section title="Banner image" fieldKey="banner" error={fieldErrors.banner}>
           {bannerFile ? (
             <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
               <img src={URL.createObjectURL(bannerFile)} alt="Banner preview" className="w-full h-full object-cover" />
@@ -692,14 +732,16 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Platforms */}
-        <Section title="Platforms" required right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{platforms.length} selected</span>}>
+        <Section title="Platforms" required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{platforms.length} selected</span>}>
           <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
         </Section>
 
         {/* Deliverables */}
         <Section
-          title="Content deliverables[per Creator]"
+          title="Content deliverables [per Creator]"
           required
+          fieldKey="deliverables"
+          error={fieldErrors.deliverables}
           right={
             <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
               {totalDeliverables} piece{totalDeliverables !== 1 ? "s" : ""}
@@ -725,6 +767,8 @@ export function CreateCampaignDialog({
         <Section
           title="Categories"
           required
+          fieldKey="categories"
+          error={fieldErrors.categories}
           right={
             <span className={`text-[11px] font-bold ${categories.length > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
               {categories.length} of {CATEGORIES.length} selected
@@ -857,13 +901,13 @@ export function CreateCampaignDialog({
         {/* Schedule — labels kept short so all 3 inputs line up across columns */}
         <Section title="Schedule">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Field label="Start Date" required>
+            <Field label="Start Date" required fieldKey="campaign_start_date" error={fieldErrors.campaign_start_date}>
               <input type="date" value={form.campaign_start_date} onChange={(e) => update("campaign_start_date", e.target.value)} className="input" />
             </Field>
-            <Field label="Application Deadline" required>
+            <Field label="Application Deadline" required fieldKey="application_deadline" error={fieldErrors.application_deadline}>
               <input type="date" value={form.application_deadline} onChange={(e) => update("application_deadline", e.target.value)} className="input" />
             </Field>
-            <Field label="Campaign End Date" required>
+            <Field label="Campaign End Date" required fieldKey="campaign_end_date" error={fieldErrors.campaign_end_date}>
               <input type="date" value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
             </Field>
           </div>
@@ -1002,9 +1046,9 @@ export function CreateCampaignDialog({
   );
 }
 
-function Section({ title, required, right, children }) {
+function Section({ title, required, right, children, error, fieldKey }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" data-field={fieldKey || undefined}>
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
           {title}
@@ -1013,18 +1057,23 @@ function Section({ title, required, right, children }) {
         {right}
       </div>
       {children}
+      {error && <p className="text-[10px] font-bold text-red-500">{error}</p>}
     </section>
   );
 }
 
-function Field({ label, required, hint, children }) {
+function Field({ label, required, hint, children, error, fieldKey }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" data-field={fieldKey || undefined}>
       <label className="block text-[11px] font-bold text-gray-700">
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       {hint ? <p className="text-[10px] font-medium text-gray-400 mt-0.5 mb-1.5 leading-tight">{hint}</p> : <div className="mb-1.5" />}
       {children}
+      {/* B2 — inline per-field validation error. Rendered under the
+          control so the brand can see exactly what's blocking submit
+          instead of a dead-looking button. */}
+      {error && <p className="text-[10px] font-bold text-red-500 mt-1">{error}</p>}
     </div>
   );
 }

@@ -98,7 +98,7 @@ export default function PocketFriendlyCreators() {
   return (
     <section className="w-full px-4 lg:px-10 py-10 bg-white">
       <div className="flex flex-col mb-6">
-        <h2 className="text-xl font-bold text-[#1C115A]">
+        <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
           Pocket Friendly Creators
         </h2>
         <p className="text-sm text-slate-500">

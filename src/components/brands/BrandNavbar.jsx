@@ -99,6 +99,14 @@ export function BrandNavbar() {
   const [showPopover, setShowPopover] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const popoverRef = useRef(null);
+  // B11 — header search is controlled and resets on navigation away
+  // from /brands/search, so a query typed three pages ago doesn't
+  // linger in the box. On /brands/search itself the on-page search is
+  // the source of truth; clearing here avoids two competing values.
+  const [headerQuery, setHeaderQuery] = useState("");
+  useEffect(() => {
+    if (pathname !== "/brands/search") setHeaderQuery("");
+  }, [pathname]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -167,12 +175,13 @@ export function BrandNavbar() {
 
       {/* Search — submits to the find-creators page with the query so
           Sidebar.Find Creators picks it up and filters by name / username /
-          category. */}
+          category. B11 — controlled input that clears on navigation away
+          from /brands/search so a stale query doesn't linger across pages. */}
       <form
         className="flex-1 max-w-xl mx-8"
         onSubmit={(e) => {
           e.preventDefault();
-          const q = e.currentTarget.querySelector("input")?.value?.trim();
+          const q = headerQuery.trim();
           router.push(q ? `/brands/search?q=${encodeURIComponent(q)}` : "/brands/search");
         }}
       >
@@ -184,6 +193,8 @@ export function BrandNavbar() {
           <input
             name="q"
             type="search"
+            value={headerQuery}
+            onChange={(e) => setHeaderQuery(e.target.value)}
             placeholder="Search creators by name, username or category…"
             className="w-full pl-9 pr-4 h-10 rounded-lg border bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />

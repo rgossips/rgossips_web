@@ -14,6 +14,7 @@ export const InfluencerCard = ({
   profile_photo_url,
   followers_count,
   categories,
+  media_kit_published,
 }) => {
   const handle = instagram_handle || username || "";
   const displayName = full_name || handle || "Unknown";
@@ -23,7 +24,9 @@ export const InfluencerCard = ({
   const initial = displayName.charAt(0).toUpperCase();
 
   const instagramUrl = handle ? `https://instagram.com/${handle}` : null;
-  const mediaKitUrl = handle ? `/kit/${handle}` : null;
+  // B4 — only offer the media-kit action when the creator has actually
+  // published one; a bare /kit/<handle> link 404s otherwise.
+  const mediaKitUrl = handle && media_kit_published ? `/kit/${handle}` : null;
 
   return (
     <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 last:border-0">

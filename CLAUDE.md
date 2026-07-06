@@ -278,6 +278,29 @@ Campaign detail (`/brands/campaign/[id]`) surfaces:
 - **Storage**: `influencer_profiles.location` remains a scalar text column. Multi-select surfaces comma-join on save (`"Mumbai, Pune"`). The fuzzy substring match in `list-influencers`, brand-campaigns matcher, and `/brands/search` filter chip logic all match either direction, so a stored `"Mumbai, Pune"` matches a "Mumbai" filter and vice versa.
 - Bulk-invite CSV still accepts a single-city value per row — the multi-select is an interactive-UI-only feature.
 
+## Application negotiation flow (B15, 2026-07)
+
+`campaign_applications.status` gained three states. Full lifecycle:
+
+```
+pending ──(brand: Approve with Price, sets brand_offered_rate)──▶ offer_sent
+offer_sent ──(influencer: Accept)──▶ offer_accepted
+offer_sent / pending ──(influencer: Withdraw)──▶ withdrawn
+offer_accepted ──(brand: Pay to Escrow via Razorpay)──▶ approved (escrow held)
+… then the pre-existing chain: submitted → accepted → live_submitted → payment → completed
+```
+
+Rules:
+- **No counter-offers.** The influencer either accepts the brand's price or withdraws.
+- `escrow-fund` refuses any application not in `offer_accepted`, and rejects an amount that doesn't match `brand_offered_rate`.
+- `update-application-status` accepts influencer-initiated transitions (`influencerId` instead of `brandId`) only for `offer_accepted` / `withdrawn`, verified against `app.influencer_id` and the legal from-status (`INFLUENCER_TRANSITIONS` map).
+- `final_agreed_rate` is stamped from `brand_offered_rate` at escrow time.
+- Notifications: offer_sent → influencer; offer_accepted / withdrawn → brand. All recorded in `application_status_history` with `changed_by_role`.
+
+Brand campaign detail (`/brands/campaign/[id]`): aside shows compact application cards (DP + name + status pill); clicking opens `ApplicationJourneyModal` — a timeline built from `application_status_history` + the full review panel (`ApplicationRow` with `alwaysExpanded`).
+
+Influencer offers page: `offer_sent` renders `OfferResponseCard` (Accept / Withdraw with confirm); `offer_accepted` shows a "waiting for escrow" note. `STATUS_STEPS` includes Offer Received / Offer Accepted / Escrow Funded.
+
 ## Campaign visibility rules (influencer side)
 
 `list-campaigns` (edge fn) hides a campaign from the influencer list

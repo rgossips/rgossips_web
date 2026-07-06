@@ -176,6 +176,9 @@ Deno.serve(async (req) => {
       gender: r.gender || "",
       languages: Array.isArray(r.languages) ? r.languages : [],
       creator_type: r.creator_type || "",
+      // B4 — the client only renders the media-kit action when a kit
+      // actually exists; otherwise /kit/<handle> would 404.
+      media_kit_published: !!r.media_kit_published,
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,
@@ -244,11 +247,15 @@ Deno.serve(async (req) => {
 
     // Apply search + filters BEFORE sort + slice, so the page always
     // returns a full 50 matching rows when there's more data behind it.
-    // Free-text search matches across name / username / instagram handle.
+    // Free-text search matches name / username / instagram handle AND
+    // (B3) categories + city — the search placeholder promises "name,
+    // username or category" so a "beauty" query must hit the Beauty &
+    // Skincare creators, not just people with beauty in their name.
     let filtered = merged;
     if (q) {
       filtered = filtered.filter((r: any) => {
-        const hay = `${r.full_name || ""} ${r.username || ""} ${r.instagram_handle || ""}`.toLowerCase();
+        const cats = Array.isArray(r.categories) ? r.categories.join(" ") : "";
+        const hay = `${r.full_name || ""} ${r.username || ""} ${r.instagram_handle || ""} ${cats} ${r.city || ""}`.toLowerCase();
         return hay.includes(q);
       });
     }

@@ -67,12 +67,12 @@ export const CreatorsByLocation = () => {
   const router = useRouter();
   return (
     <section className="w-full px-4 md:px-6 py-8 bg-white mt-8 mb-10 overflow-hidden">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-[#1C115A]">
+      <div className="mb-6">
+        <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
           Creators by Location
         </h2>
         <p className="text-slate-500 text-sm">
-          Discovery local talent right now
+          Discover local talent right now
         </p>
       </div>
 

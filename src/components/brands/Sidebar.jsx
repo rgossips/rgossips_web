@@ -54,7 +54,7 @@ export default function Sidebar() {
                   router.push(item.url);
                 }}
                 className={`flex cursor-pointer items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition ${
-                  (item.url === "/brands" ? pathname === "/brands" : pathname.startsWith(item.url)) ? "bg-purple-600 text-white" : "text-gray-600 hover:bg-gray-100"
+                  (item.url === "/brands" ? pathname === "/brands" : pathname.startsWith(item.url)) ? "bg-[#5B3DF5] text-white" : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Icon size={18} />
@@ -92,7 +92,7 @@ export default function Sidebar() {
       <div className="p-4">
         <button
           onClick={() => router.push("/brands/campaigns?new=1")}
-          className="flex cursor-pointer items-center justify-center gap-2 w-full bg-purple-600 text-white text-sm py-2.5 rounded-xl hover:bg-purple-700 transition font-medium"
+          className="flex cursor-pointer items-center justify-center gap-2 w-full bg-[#5B3DF5] text-white text-sm py-2.5 rounded-xl hover:brightness-110 transition font-medium"
         >
           <Plus size={16} />
           Post Requirement

@@ -138,13 +138,20 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     </button>
   );
 
-  const header = (
+  // B12 — Radix requires a DialogTitle/DrawerTitle descendant inside
+  // the matching content root; a raw <h3> triggers the accessibility
+  // console warning and screen readers can't announce the dialog.
+  const renderHeader = (variant) => (
     <div className="flex flex-row items-center justify-between border-b px-6 py-4 shrink-0">
       <div className="flex flex-col text-left">
-        <h3 className="text-xl font-bold text-gray-900">All Filters</h3>
+        {variant === "dialog" ? (
+          <DialogTitle className="text-xl font-bold text-gray-900">All Filters</DialogTitle>
+        ) : (
+          <DrawerTitle className="text-xl font-bold text-gray-900">All Filters</DrawerTitle>
+        )}
         <p className="text-[10px] text-gray-400">Refine your search</p>
       </div>
-      {isDesktop ? (
+      {variant === "dialog" ? (
         <DialogClose asChild>
           <button className="p-2 -mr-2 outline-hidden cursor-pointer">
             <X size={20} className="text-gray-400" />
@@ -205,7 +212,7 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
           showCloseButton={false}
           className="sm:max-w-[600px] max-h-[70vh] p-0 flex flex-col overflow-hidden rounded-2xl"
         >
-          {header}
+          {renderHeader("dialog")}
           {content}
           {footer}
         </DialogContent>
@@ -219,7 +226,7 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
       <DrawerPortal>
         <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
         <DrawerContent className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] mb-16 rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none">
-          {header}
+          {renderHeader("drawer")}
           {content}
           {footer}
         </DrawerContent>

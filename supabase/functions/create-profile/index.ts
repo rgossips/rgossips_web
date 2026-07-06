@@ -158,6 +158,57 @@ Deno.serve(async (req) => {
         status: "active",
         updated_at: new Date().toISOString(),
       };
+
+      // Carry the admin-curated classification from the pending invitation
+      // onto the real profile row. The admin invite/edit forms pack
+      // creator_type, categories, city, gender into influencer_invitations.
+      // notes (JSON trailer); those become top-level columns here so the
+      // brand-side directory (list-influencers) serves them from the
+      // profile once claimed instead of losing them. Best-effort — a
+      // missing/garbled invitation must never block signup.
+      try {
+        const igUser = instagram || username || "";
+        let invNotes: any = null;
+        if (invitationId) {
+          const { data } = await supabaseAdmin
+            .from("influencer_invitations")
+            .select("notes")
+            .eq("id", invitationId)
+            .eq("status", "pending")
+            .maybeSingle();
+          invNotes = data?.notes ?? null;
+        } else if (igUser) {
+          const { data } = await supabaseAdmin
+            .from("influencer_invitations")
+            .select("notes")
+            .ilike("instagram_username", igUser)
+            .eq("status", "pending")
+            .limit(1)
+            .maybeSingle();
+          invNotes = data?.notes ?? null;
+        }
+        if (invNotes) {
+          let meta: any = {};
+          if (typeof invNotes === "object") meta = invNotes;
+          else { try { meta = JSON.parse(invNotes); } catch { meta = {}; } }
+          if (meta.creator_type === "meme_page" || meta.creator_type === "celebrity") {
+            row.creator_type = meta.creator_type;
+          }
+          if (Array.isArray(meta.categories) && meta.categories.length > 0) {
+            row.categories = meta.categories;
+          }
+          if (typeof meta.gender === "string" && meta.gender) {
+            row.gender = meta.gender;
+          }
+          // Admin packs city as a (possibly comma-joined) string; the
+          // profile's scalar location column mirrors that format.
+          if (typeof meta.city === "string" && meta.city) {
+            row.location = meta.city;
+          }
+        }
+      } catch (e) {
+        console.error("Invitation metadata carry-over failed (non-fatal):", (e as any)?.message);
+      }
     } else {
       // brand_profiles
       // gstin can arrive either as a verified blob (legacy `gstinData`) or as

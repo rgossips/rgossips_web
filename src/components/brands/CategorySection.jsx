@@ -80,23 +80,26 @@ export const CategorySection = () => {
 
   return (
     <div className="px-4 lg:px-6 space-y-8 bg-slate-50/50 overflow-hidden w-full py-10">
-      {/* Top Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          Creator Categories
-        </h2>
-        <button
-          onClick={() => router.push("/brands/search")}
-          className="text-sm font-bold text-[#5B3DF5] flex items-center gap-1 hover:opacity-70 cursor-pointer"
-        >
-          View All <ChevronRight size={14} />
-        </button>
-      </div>
-
-      {/* Main Content Layout: Grid + Sidebar */}
+      {/* Main Content Layout: Grid + Sidebar. The section header lives
+          INSIDE the left column so the category grid's top edge lines
+          up with the profile-completion card on the right (brand-side
+          audit spacing fix #1). */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* LEFT: Category Grids/Carousel */}
         <div className="flex-1 space-y-8">
+          {/* Top Header */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
+              Creator Categories
+            </h2>
+            <button
+              onClick={() => router.push("/brands/search")}
+              className="text-sm font-bold text-[#5B3DF5] flex items-center gap-1 hover:opacity-70 cursor-pointer"
+            >
+              View All <ChevronRight size={14} />
+            </button>
+          </div>
+
           {/* MOBILE CAROUSEL */}
           <div className="lg:hidden">
             <Carousel opts={{ align: "start", dragFree: true }}>

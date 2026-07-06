@@ -8,7 +8,7 @@ export function CreatorCTASection() {
   return (
     <>
       <section className="w-full px-4 lg:px-6 text-center lg:hidden pb-20">
-        <h2 className="text-xl font-semibold text-gray-900">
+        <h2 className="text-xl font-black bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
           Home of creator collaborations.
         </h2>
 
@@ -53,12 +53,14 @@ export function CreatorCTASection() {
         <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-100 rounded-[32px] p-6 md:p-10 shadow-sm">
           {/* Left Section: Icon and Text */}
           <div className="flex items-center gap-6 mb-6 md:mb-0">
-            <div className="w-16 h-16 bg-[#131722] rounded-2xl flex items-center justify-center shadow-lg shadow-slate-200">
+            {/* Brand-gradient tile + heading — matches the header's
+                purple (#5B3DF5) so the page reads as one system. */}
+            <div className="w-16 h-16 bg-gradient-to-br from-[#5B3DF5] to-[#FF4E8E] rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
               <span className="text-white text-3xl font-bold">#</span>
             </div>
 
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">
+              <h2 className="text-2xl md:text-3xl font-black leading-tight bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
                 Home of creator collaborations.
               </h2>
               <p className="text-slate-500 text-sm md:text-base mt-1 font-medium">

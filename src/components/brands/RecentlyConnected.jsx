@@ -1,7 +1,32 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+
+// B7 — external avatar URLs (Google-hosted etc.) sometimes fail to load
+// with a 0 natural width. onError flips to the initial-letter fallback
+// so the card never renders a broken image.
+function Avatar({ photo, displayName }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = photo && !failed;
+  return (
+    <div className="bg-white rounded-full p-[2px] h-full w-full">
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photo}
+          alt={displayName}
+          onError={() => setFailed(true)}
+          className="w-full h-full rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#5B3DF5] to-[#FF4E8E] text-white flex items-center justify-center text-xl font-bold">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const RecentlyConnected = () => {
   const supabase = createClient();
@@ -16,7 +41,7 @@ export const RecentlyConnected = () => {
       const { data } = await supabase
         .from("influencer_profiles")
         .select(
-          "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url"
+          "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, media_kit_published"
         )
         .eq("status", "active")
         .order("created_at", { ascending: false })
@@ -33,7 +58,7 @@ export const RecentlyConnected = () => {
   return (
     <section className="w-full px-4 lg:px-6 overflow-hidden">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-[#1C115A]">
+        <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
           Influencers Recently Connected
         </h2>
         <p className="text-slate-500 text-sm">
@@ -56,6 +81,9 @@ export const RecentlyConnected = () => {
               const handle = i.instagram_handle || i.username;
               const photo = i.custom_profile_photo_url || i.profile_photo_url;
               const displayName = i.full_name || handle || "Influencer";
+              // B7 — Media Kit button replaces the removed Instagram
+              // button, but only when a kit exists (B4 gating rule).
+              const kitUrl = handle && i.media_kit_published ? `/kit/${handle}` : null;
               return (
                 <div
                   key={i.influencer_id}
@@ -63,20 +91,7 @@ export const RecentlyConnected = () => {
                 >
                   <div className="relative w-20 h-20 mb-4">
                     <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#FF4E8E] p-[2px]">
-                      <div className="bg-white rounded-full p-[2px] h-full w-full">
-                        {photo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={photo}
-                            alt={displayName}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full rounded-full bg-gradient-to-br from-[#5B3DF5] to-[#FF4E8E] text-white flex items-center justify-center text-xl font-bold">
-                            {displayName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
+                      <Avatar photo={photo} displayName={displayName} />
                     </div>
                   </div>
 
@@ -86,6 +101,18 @@ export const RecentlyConnected = () => {
                   <p className="text-slate-400 text-[10px] uppercase tracking-wider mb-1 truncate w-full">
                     {handle ? `@${handle}` : "Creator"}
                   </p>
+
+                  {kitUrl && (
+                    <a
+                      href={kitUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#5B3DF5]/10 text-[#5B3DF5] text-xs font-bold hover:bg-[#5B3DF5] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <FileText size={13} />
+                      Media Kit
+                    </a>
+                  )}
                 </div>
               );
             })}

@@ -423,9 +423,11 @@ const BrandProfile = () => {
             {trust.score}
             <span className="text-sm font-bold text-gray-400 ml-1">/{trust.scaleMax ?? 900}</span>
           </p>
+          {/* B13 — same phrasing as BrandHero + TrustSection so the
+              cold-start caption reads identically on every surface. */}
           {trust.coldStart && (
             <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
-              New brand · capped at {trust.coldStartCap} until {trust.coldStartThreshold} campaigns complete
+              Capped at {trust.coldStartCap} · {trust.coldStartThreshold ?? 3} campaigns to lift
             </p>
           )}
           <p className="text-[11px] text-gray-400 leading-snug">
