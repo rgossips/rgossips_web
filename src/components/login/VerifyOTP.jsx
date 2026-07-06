@@ -4,8 +4,13 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
+// Matches the server-side cooldown in send-otp (60s per phone) — a 30s
+// UI timer let users hit Resend while the backend still refused, which
+// read as a broken button.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", setOtp = () => {}, phoneNumber = "+91 98765 43210", resendSuccess = false }) => {
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(RESEND_COOLDOWN_SECONDS);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -70,13 +75,13 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
         <div className="text-center">
           {timer > 0 ? (
             <p className="text-sm text-slate-400 font-medium">
-              Resend code in <span className="text-[#6347F9] font-bold">0:{timer < 10 ? `0${timer}` : timer}</span>
+              Resend code in <span className="text-[#6347F9] font-bold">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>
             </p>
           ) : (
             <button
               className="text-sm cursor-pointer text-[#6347F9] font-bold hover:underline"
               onClick={() => {
-                setTimer(30);
+                setTimer(RESEND_COOLDOWN_SECONDS);
                 if (onResend) onResend();
               }}
             >

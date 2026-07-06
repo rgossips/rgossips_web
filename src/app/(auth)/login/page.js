@@ -231,6 +231,24 @@ const LoginInner = () => {
     setPhone(`+${formattedPhone}`);
   };
 
+  // Resend from the sign-in verify step. The bare `() => sendOtp(phone)`
+  // this replaces swallowed rejections — when the server refused with
+  // "Too many OTP requests for this number. Try again in an hour." the
+  // user saw nothing and assumed the button was broken. Surface both
+  // the failure and the success feedback.
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const handleResendOtp = async (phoneNumber) => {
+    setError("");
+    setResendSuccess(false);
+    try {
+      await sendOtp(phoneNumber);
+      setResendSuccess(true);
+      setTimeout(() => setResendSuccess(false), 4000);
+    } catch (err) {
+      setError(err.message || "Failed to resend OTP");
+    }
+  };
+
   // --- SHARED: Verify OTP & create session ---
   // mode="signin" makes the backend refuse to auto-create a user — sign-in
   // shouldn't silently spin up accounts.
@@ -391,10 +409,7 @@ const LoginInner = () => {
     if (invitation?.instagramHandle) {
       const oauthHandle = profile.username.toLowerCase();
       if (oauthHandle !== invitation.instagramHandle) {
-        setError(
-          `This invitation is for @${invitation.instagramHandle}. ` +
-          `You connected @${profile.username}. Please reconnect with the right Instagram account.`
-        );
+        setError(`This invitation is for @${invitation.instagramHandle}. ` + `You connected @${profile.username}. Please reconnect with the right Instagram account.`);
         return;
       }
       // Match — accept and continue to phone OTP step.
@@ -472,7 +487,7 @@ const LoginInner = () => {
     const profile = block?.oauthProfile;
     if (!data?.invitation || !profile?.username) return;
     const inv = data.invitation;
-    const role = opts.switchRole ? data.role : (signupData.role || data.role);
+    const role = opts.switchRole ? data.role : signupData.role || data.role;
     setInvitation({
       id: inv.id,
       instagramHandle: (inv.instagram_username || block.inviteHandle || profile.username).toLowerCase(),
@@ -534,7 +549,9 @@ const LoginInner = () => {
               h = ((h << 5) - h + parts.charCodeAt(i)) | 0;
             }
             return String(h >>> 0);
-          } catch { return null; }
+          } catch {
+            return null;
+          }
         })(),
       };
 
@@ -654,7 +671,7 @@ const LoginInner = () => {
   }
 
   return (
-    <div className="relative h-screen w-full bg-[#0F0F1A] overflow-hidden flex items-center justify-center">
+    <div className="relative h-screen w-full bg-[#F8FAFC] overflow-hidden flex items-center justify-center">
       {/* Back to landing — visible across onboarding + auth flows so the
           user can always escape the login surface without hitting the
           browser back. Uses <Link prefetch> so the home-page chunk
@@ -724,71 +741,63 @@ const LoginInner = () => {
                     setStep(1);
                   }}
                   onUseInvitation={() => continueWithInvitationBlock(invitationBlock)}
-                  onSwitchRoleAndContinue={() =>
-                    continueWithInvitationBlock(invitationBlock, { switchRole: true })
-                  }
+                  onSwitchRoleAndContinue={() => continueWithInvitationBlock(invitationBlock, { switchRole: true })}
                 />
               )}
               {!invitationChecking && !invitationBlock && (
                 <>
-              {/* ===== SIGN IN FLOW ===== */}
-              {flow === "signin" && (
-                <>
-                  {step === 1 && <RoleSelection onNext={handleSignInRoleSelected} mode="signin" onSwitchMode={switchToSignUp} />}
-                  {step === 2 && <SignInPhone onNext={handleSignInSendOtp} loading={loading} error={error} phone={phone} setPhone={setPhone} mode="signin" role={signupData.role} />}
-                  {step === 3 && !reactivationPending && (
-                    <VerifyOTP onNext={handleSignInVerifyOtp} onResend={() => sendOtp(phone)} loading={loading} error={error} otp={otp} setOtp={setOtp} phoneNumber={formatDisplayPhone(phone)} />
+                  {/* ===== SIGN IN FLOW ===== */}
+                  {flow === "signin" && (
+                    <>
+                      {step === 1 && <RoleSelection onNext={handleSignInRoleSelected} mode="signin" onSwitchMode={switchToSignUp} />}
+                      {step === 2 && <SignInPhone onNext={handleSignInSendOtp} loading={loading} error={error} phone={phone} setPhone={setPhone} mode="signin" role={signupData.role} />}
+                      {step === 3 && !reactivationPending && (
+                        <VerifyOTP onNext={handleSignInVerifyOtp} onResend={() => handleResendOtp(phone)} loading={loading} error={error} otp={otp} setOtp={setOtp} phoneNumber={formatDisplayPhone(phone)} resendSuccess={resendSuccess} />
+                      )}
+                      {step === 3 && reactivationPending && (
+                        <ReactivatePrompt role={reactivationPending.role} phone={formatDisplayPhone(phone)} loading={loading} onConfirm={handleReactivateConfirm} onCancel={handleReactivateCancel} />
+                      )}
+                    </>
                   )}
-                  {step === 3 && reactivationPending && (
-                    <ReactivatePrompt
-                      role={reactivationPending.role}
-                      phone={formatDisplayPhone(phone)}
-                      loading={loading}
-                      onConfirm={handleReactivateConfirm}
-                      onCancel={handleReactivateCancel}
-                    />
-                  )}
-                </>
-              )}
 
-              {/* ===== SIGN UP FLOW ===== */}
-              {flow === "signup" && (
-                <div className="space-y-6">
-                  {step === 1 && <RoleSelection onNext={handleSignUpRoleSelected} mode="signup" onSwitchMode={switchToSignIn} />}
-                  {step === 2 && <InstagramConnect onNext={handleSignUpInstagramConnect} mode="signup" role={signupData.role} />}
-                  {step === 3 && signupData.role === "brand" && (
-                    <BrandSignUpForm
-                      onSubmit={handleSignUpFormSubmit}
-                      onSendOtp={sendOtp}
-                      onResendOtp={sendOtp}
-                      onVerifyOtp={verifyOtp}
-                      loading={loading}
-                      error={error}
-                      initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
-                      otpPreVerified={!!authUserId}
-                      instagramProfile={instaProfile}
-                      invitation={invitation}
-                    />
+                  {/* ===== SIGN UP FLOW ===== */}
+                  {flow === "signup" && (
+                    <div className="space-y-6">
+                      {step === 1 && <RoleSelection onNext={handleSignUpRoleSelected} mode="signup" onSwitchMode={switchToSignIn} />}
+                      {step === 2 && <InstagramConnect onNext={handleSignUpInstagramConnect} mode="signup" role={signupData.role} />}
+                      {step === 3 && signupData.role === "brand" && (
+                        <BrandSignUpForm
+                          onSubmit={handleSignUpFormSubmit}
+                          onSendOtp={sendOtp}
+                          onResendOtp={sendOtp}
+                          onVerifyOtp={verifyOtp}
+                          loading={loading}
+                          error={error}
+                          initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
+                          otpPreVerified={!!authUserId}
+                          instagramProfile={instaProfile}
+                          invitation={invitation}
+                        />
+                      )}
+                      {step === 3 && signupData.role !== "brand" && (
+                        <SignUpForm
+                          onSubmit={handleSignUpFormSubmit}
+                          onSendOtp={sendOtp}
+                          onResendOtp={sendOtp}
+                          onVerifyOtp={verifyOtp}
+                          loading={loading}
+                          error={error}
+                          role={signupData.role}
+                          initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
+                          otpPreVerified={!!authUserId}
+                          instagramProfile={instaProfile}
+                          initialName={signupData.name}
+                        />
+                      )}
+                      {step === 4 && <CategorySelection onNext={handleCategorySelection} onSkip={handleSkip} />}
+                      {step === 5 && <Preferences onNext={handlePreferences} onSkip={handleSkip} />}
+                    </div>
                   )}
-                  {step === 3 && signupData.role !== "brand" && (
-                    <SignUpForm
-                      onSubmit={handleSignUpFormSubmit}
-                      onSendOtp={sendOtp}
-                      onResendOtp={sendOtp}
-                      onVerifyOtp={verifyOtp}
-                      loading={loading}
-                      error={error}
-                      role={signupData.role}
-                      initialPhone={phone ? phone.replace(/\D/g, "").slice(-10) : ""}
-                      otpPreVerified={!!authUserId}
-                      instagramProfile={instaProfile}
-                      initialName={signupData.name}
-                    />
-                  )}
-                  {step === 4 && <CategorySelection onNext={handleCategorySelection} onSkip={handleSkip} />}
-                  {step === 5 && <Preferences onNext={handlePreferences} onSkip={handleSkip} />}
-                </div>
-              )}
                 </>
               )}
             </div>
@@ -802,7 +811,7 @@ const LoginInner = () => {
 const Login = () => (
   <Suspense
     fallback={
-      <div className="flex items-center justify-center h-screen bg-[#0F0F1A]">
+      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
         <Loader2 size={28} className="animate-spin text-pink-500" />
       </div>
     }
@@ -819,15 +828,8 @@ export default Login;
 //   - "claimed": invitation already used → push to sign-in
 //   - "invalid" / "error": link broken or service failed → let them
 //     fall through to a normal sign-up
-function InvitationInterrupt({
-  block,
-  onContinueSignUp,
-  onSwitchToSignIn,
-  onUseInvitation,
-  onSwitchRoleAndContinue,
-}) {
-  const inviteRoleLabel =
-    block.inviteRole === "brand" ? "Brand" : block.inviteRole === "influencer" ? "Influencer" : null;
+function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseInvitation, onSwitchRoleAndContinue }) {
+  const inviteRoleLabel = block.inviteRole === "brand" ? "Brand" : block.inviteRole === "influencer" ? "Influencer" : null;
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-5 pt-6">
@@ -844,7 +846,10 @@ function InvitationInterrupt({
       {(block.kind === "use-link" || block.kind === "role-mismatch") && (
         <p className="text-[12px] text-slate-400 text-center leading-snug">
           Trouble? Reach out to{" "}
-          <a href="mailto:info@rgossips.com" className="font-bold text-[#E60076]">info@rgossips.com</a>.
+          <a href="mailto:info@rgossips.com" className="font-bold text-[#E60076]">
+            info@rgossips.com
+          </a>
+          .
         </p>
       )}
 
@@ -867,10 +872,7 @@ function InvitationInterrupt({
               Continue as {inviteRoleLabel} →
             </button>
           )}
-          <button
-            onClick={onContinueSignUp}
-            className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
-          >
+          <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
             Sign up with a different Instagram
           </button>
         </div>
@@ -883,18 +885,12 @@ function InvitationInterrupt({
           >
             Continue with my invitation →
           </button>
-          <button
-            onClick={onContinueSignUp}
-            className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
-          >
+          <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
             Sign up with a different Instagram
           </button>
         </div>
       ) : (
-        <button
-          onClick={onContinueSignUp}
-          className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50"
-        >
+        <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
           Sign up with a different Instagram
         </button>
       )}
@@ -924,18 +920,11 @@ function ReactivatePrompt({ role, phone, loading, onConfirm, onCancel }) {
       >
         {loading ? "Reactivating…" : "Reactivate & sign in"}
       </button>
-      <button
-        onClick={onCancel}
-        disabled={loading}
-        className="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 border border-slate-200 cursor-pointer disabled:opacity-50"
-      >
+      <button onClick={onCancel} disabled={loading} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 border border-slate-200 cursor-pointer disabled:opacity-50">
         Cancel
       </button>
 
-      <p className="text-[11px] text-slate-400 leading-snug text-center">
-        Reactivating restores your profile, settings and history exactly as
-        they were when you deactivated.
-      </p>
+      <p className="text-[11px] text-slate-400 leading-snug text-center">Reactivating restores your profile, settings and history exactly as they were when you deactivated.</p>
     </div>
   );
 }

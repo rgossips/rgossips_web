@@ -74,7 +74,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       }
       await onSendOtp(formData.phone);
       setOtpSent(true);
-      setTimer(30);
+      setTimer(60);
     } catch (err) {
       setLocalError(err.message || "Failed to send OTP");
     } finally {
@@ -101,7 +101,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
     setLocalError("");
     try {
       await onResendOtp(formData.phone);
-      setTimer(30);
+      setTimer(60);
       setOtp("");
     } catch (err) {
       setLocalError(err.message || "Failed to resend OTP");
@@ -268,7 +268,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
                 <div className="text-center">
                   {timer > 0 ? (
                     <p className="text-xs text-slate-400">
-                      Resend in <span className="text-[#6347F9] font-bold">0:{timer < 10 ? `0${timer}` : timer}</span>
+                      Resend in <span className="text-[#6347F9] font-bold">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>
                     </p>
                   ) : (
                     <button className="text-xs cursor-pointer text-[#6347F9] font-bold hover:underline" onClick={handleResend}>
