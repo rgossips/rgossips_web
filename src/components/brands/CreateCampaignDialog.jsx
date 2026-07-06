@@ -412,13 +412,19 @@ export function CreateCampaignDialog({
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
       setError("Please fix the highlighted fields below.");
-      // Scroll the first failing field into view. data-field attributes
+      // Scroll the first failing field into view AND focus its control
+      // so the user can start typing immediately. data-field attributes
       // are stamped by the Field wrapper; banner/deliverables sections
-      // carry their own.
+      // carry their own. preventScroll keeps focus() from fighting the
+      // smooth scrollIntoView. For chip/upload sections the first
+      // focusable is a button — focusing it still moves the keyboard
+      // ring to the right place.
       const firstKey = Object.keys(errs)[0];
       requestAnimationFrame(() => {
         const el = formScrollRef.current?.querySelector(`[data-field="${firstKey}"]`);
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const control = el?.querySelector("input, textarea, select, button");
+        control?.focus?.({ preventScroll: true });
       });
       return;
     }
