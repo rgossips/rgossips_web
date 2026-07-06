@@ -368,29 +368,14 @@ export function CreateCampaignDialog({
     setError("");
     setFieldErrors({});
 
-    // Draft saves only require a Title — everything else can stay
-    // blank while the brand iterates. Full validation gates Publish
-    // (campaign becomes creator-visible) and edits to non-draft
-    // campaigns (already live or paused). Server enforces the same
-    // split, plus a completeness check at draft→active activation.
-    const isDraftSave =
-      !publish && (mode !== "edit" || (initialCampaign?.status || "draft") === "draft");
-
     // B2 — validate every required field at once and surface each error
     // inline, then scroll to the first failing field. A single top-level
     // message with no field context made the buttons look dead.
     const errs = {};
     if (!form.title.trim()) errs.title = "Title is required";
-    if (!isDraftSave) {
-      if (!form.campaign_start_date) errs.campaign_start_date = "Start date is required";
-      if (!form.application_deadline) errs.application_deadline = "Application deadline is required";
-      if (!form.campaign_end_date) errs.campaign_end_date = "Campaign end date is required";
-      if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
-      if (categories.length < 1) errs.categories = "Select at least 1 category";
-      if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
-    }
-    // Date-order sanity applies whenever both dates are present, even
-    // on drafts — a draft with deadline after end date is never right.
+    if (!form.campaign_start_date) errs.campaign_start_date = "Start date is required";
+    if (!form.application_deadline) errs.application_deadline = "Application deadline is required";
+    if (!form.campaign_end_date) errs.campaign_end_date = "Campaign end date is required";
     if (
       form.application_deadline &&
       form.campaign_end_date &&
@@ -398,6 +383,9 @@ export function CreateCampaignDialog({
     ) {
       errs.application_deadline = "Deadline must be on or before the campaign end date";
     }
+    if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
+    if (categories.length < 1) errs.categories = "Select at least 1 category";
+    if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
     // A published campaign must carry a banner — it's the hero image
     // creators see in every listing. Drafts can be saved without one.
     // In edit mode the existing banner counts.

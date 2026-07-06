@@ -464,17 +464,10 @@ Deno.serve(async (req) => {
       const { brandId, campaign } = payload;
       if (!brandId) return ok({ error: "brandId is required" });
       if (!campaign?.title) return ok({ error: "Title is required" });
-      // Drafts are work-in-progress: Title is the only hard requirement.
-      // Publishing (status='active') demands the full brief — schedule
-      // dates included — because the campaign becomes visible to
-      // creators the moment it's active.
-      const isPublishing = campaign.status === "active";
-      if (isPublishing) {
-        if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
-        if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
-        if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
-      }
-      const deadline = campaign.application_deadline || null;
+      if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
+      if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
+      if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
+      const deadline = campaign.application_deadline;
 
       const contentTypes = buildContentTypes(campaign);
       const meta: Record<string, unknown> = {};
@@ -506,10 +499,8 @@ Deno.serve(async (req) => {
           ? campaign.target_categories
           : ["General"],
         max_influencers: campaign.max_influencers ? Number(campaign.max_influencers) : 10,
-        // Empty strings ("" from unfilled date inputs on drafts) would be
-        // rejected by Postgres date columns — store null instead.
-        campaign_start_date: campaign.campaign_start_date || null,
-        campaign_end_date: campaign.campaign_end_date || null,
+        campaign_start_date: campaign.campaign_start_date,
+        campaign_end_date: campaign.campaign_end_date,
         application_deadline: deadline,
         content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
         budget_total: campaign.budget_total ? Number(campaign.budget_total) : 0,
@@ -581,24 +572,18 @@ Deno.serve(async (req) => {
       if (!brandId) return ok({ error: "brandId is required" });
       if (!campaignId) return ok({ error: "campaignId is required" });
       if (!campaign?.title) return ok({ error: "Title is required" });
+      if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
+      if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
+      if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
 
       // Ownership.
       const { data: existing, error: findErr } = await supabase
         .from("campaigns")
-        .select("brand_id, status")
+        .select("brand_id")
         .eq("campaign_id", campaignId)
         .single();
       if (findErr || !existing) return ok({ error: "Campaign not found" });
       if (existing.brand_id !== brandId) return ok({ error: "Not authorized" });
-
-      // Drafts stay freely editable with just a title; a live (active/
-      // paused) campaign keeps the full-brief requirement because it's
-      // already visible (or about to be, on resume) to creators.
-      if (existing.status !== "draft") {
-        if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
-        if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
-        if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
-      }
 
       // Application-count guard. head:true keeps the round-trip tiny —
       // we only need to know if the count is > 0. Any applicant, in any
@@ -637,11 +622,9 @@ Deno.serve(async (req) => {
           ? campaign.target_categories
           : ["General"],
         max_influencers: campaign.max_influencers ? Number(campaign.max_influencers) : 10,
-        // Empty strings ("" from unfilled date inputs on drafts) would be
-        // rejected by Postgres date columns — store null instead.
-        campaign_start_date: campaign.campaign_start_date || null,
-        campaign_end_date: campaign.campaign_end_date || null,
-        application_deadline: campaign.application_deadline || null,
+        campaign_start_date: campaign.campaign_start_date,
+        campaign_end_date: campaign.campaign_end_date,
+        application_deadline: campaign.application_deadline,
         content_types_required: contentTypes.length > 0 ? contentTypes : ["reels"],
         budget_total: campaign.budget_total ? Number(campaign.budget_total) : 0,
         budget_per_influencer: campaign.budget_per_influencer ? Number(campaign.budget_per_influencer) : 0,
@@ -764,20 +747,11 @@ Deno.serve(async (req) => {
       // Verify ownership before mutating
       const { data: c, error: findErr } = await supabase
         .from("campaigns")
-        .select("brand_id, title, campaign_start_date, campaign_end_date, application_deadline")
+        .select("brand_id")
         .eq("campaign_id", campaignId)
         .single();
       if (findErr || !c) return ok({ error: "Campaign not found" });
       if (c.brand_id !== brandId) return ok({ error: "Not authorized" });
-
-      // Drafts can be saved with just a title, so activation is the last
-      // gate where the full brief must exist — otherwise an incomplete
-      // draft could go live straight from the list without dates.
-      if (status === "active") {
-        if (!c.campaign_start_date || !c.campaign_end_date || !c.application_deadline) {
-          return ok({ error: "Complete the campaign before publishing — schedule dates are missing. Open Edit to fill them in." });
-        }
-      }
 
       const { error } = await supabase
         .from("campaigns")
