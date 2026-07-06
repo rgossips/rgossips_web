@@ -18,7 +18,9 @@ const Footer = () => {
     platform: [
       { name: "For Brands", href: "/brands" },
       { name: "For Influencers", href: "/influencer" },
-      { name: "Pricing", href: "/influencer/pricing" },
+      // Landing-page pricing section (public) — /influencer/pricing is
+      // behind auth and dead-ends logged-out visitors.
+      { name: "Pricing", href: "/#pricing" },
     ],
     legal: [
       { name: "Privacy & Cookie Policy", href: "/consent/privacy" },
