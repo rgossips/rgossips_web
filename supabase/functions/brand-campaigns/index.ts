@@ -763,11 +763,24 @@ Deno.serve(async (req) => {
       // Verify ownership before mutating
       const { data: c, error: findErr } = await supabase
         .from("campaigns")
-        .select("brand_id")
+        .select("brand_id, status, description")
         .eq("campaign_id", campaignId)
         .single();
       if (findErr || !c) return ok({ error: "Campaign not found" });
       if (c.brand_id !== brandId) return ok({ error: "Not authorized" });
+
+      // Publishing requires a banner — same rule the create dialog's
+      // Publish button enforces. Without this, a brand could save a
+      // bannerless draft and activate it from the status buttons,
+      // sneaking a campaign with no cover image into creator listings.
+      // Only gate the draft→active leg: resuming a paused campaign that
+      // somehow lacks a banner (legacy rows) shouldn't brick pause/play.
+      if (status === "active" && c.status === "draft") {
+        const { meta } = unpackDescription(c.description);
+        if (!(meta as any)?.banner_image) {
+          return ok({ error: "Add a campaign banner before publishing — it's the cover image creators see. Open Edit to upload one." });
+        }
+      }
 
       const { error } = await supabase
         .from("campaigns")
