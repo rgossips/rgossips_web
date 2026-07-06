@@ -36,6 +36,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import RatingModal from "@/components/RatingModal";
+import ErrorModal from "@/components/ErrorModal";
 
 // The Create/Edit dialog is fat (form + image compression + upload
 // helpers) and only mounts on an Edit click, so lazy-load to keep the
@@ -152,6 +153,9 @@ const CampaignDetailPage = () => {
   // Delete confirmation modal + in-flight guard.
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Styled error popup replacing raw window.alert() for page-level
+  // failures (status flips, delete). String message or null.
+  const [errorPopup, setErrorPopup] = useState(null);
 
   const load = async () => {
     if (!user?.id || !id) return;
@@ -202,7 +206,7 @@ const CampaignDetailPage = () => {
         },
       });
       if (err || data?.error) {
-        alert(err?.message || data?.error || "Failed to update status");
+        setErrorPopup(err?.message || data?.error || "Failed to update status");
         return;
       }
       setCampaign((prev) => ({ ...prev, status: newStatus }));
@@ -276,7 +280,7 @@ const CampaignDetailPage = () => {
         const msg = data?.error === "has_applications"
           ? "A creator applied to this campaign just now, so it can't be deleted."
           : (err?.message || data?.error || "Failed to delete campaign");
-        alert(msg);
+        setErrorPopup(msg);
         return;
       }
       setDeleteOpen(false);
@@ -616,6 +620,14 @@ const CampaignDetailPage = () => {
           title={campaign.title}
         />
       )}
+
+      {/* Styled error popup — replaces window.alert for page-level
+          failures like "banner required before publishing". */}
+      <ErrorModal
+        open={!!errorPopup}
+        errorText={errorPopup || ""}
+        onClose={() => setErrorPopup(null)}
+      />
     </div>
   );
 };
