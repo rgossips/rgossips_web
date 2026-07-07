@@ -116,9 +116,6 @@ export default function ServiceDetailPage() {
                     <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
                   </span>
                 </div>
-                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider">
-                  Available Now
-                </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500">
                   <Clock size={11} /> {service.quote_sla_hours} hr quote SLA
                 </span>

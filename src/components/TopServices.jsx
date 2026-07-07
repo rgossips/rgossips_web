@@ -186,7 +186,6 @@ function ServiceRow({ service, onClick }) {
               <span className="text-slate-400 font-bold"> ({service.reviews_count || 0})</span>
             </span>
           </div>
-          <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Available Now</span>
         </div>
       </div>
       <div className="hidden sm:block text-right shrink-0">
