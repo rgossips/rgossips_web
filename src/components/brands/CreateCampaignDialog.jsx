@@ -340,6 +340,12 @@ export function CreateCampaignDialog({
     return ["num_reels", "num_posts", "num_stories", "num_videos", "num_blogs"].reduce((s, k) => s + (Number(form[k]) || 0), 0);
   }, [form.num_reels, form.num_posts, form.num_stories, form.num_videos, form.num_blogs]);
 
+  // Pre-compression source cap. compressImage shrinks anything to
+  // ≤1920px, but createImageBitmap on an enormous source (50MB+ phone
+  // panoramas) can hang mobile browsers before compression even starts.
+  // Server-side upload-campaign-image enforces 10MB on the final file.
+  const MAX_SOURCE_IMAGE_BYTES = 15 * 1024 * 1024;
+
   const compressImage = async (file, maxEdge = 1920, quality = 0.85) => {
     if (!file.type.startsWith("image/")) return file;
     try {
@@ -687,6 +693,11 @@ export function CreateCampaignDialog({
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
+              if (f && f.size > MAX_SOURCE_IMAGE_BYTES) {
+                setError("Banner image too large — please pick a file under 15MB.");
+                e.target.value = "";
+                return;
+              }
               if (f) setBannerFile(f);
             }}
           />
@@ -747,7 +758,11 @@ export function CreateCampaignDialog({
             className="hidden"
             onChange={(e) => {
               const files = Array.from(e.target.files || []);
-              setGalleryFiles((prev) => [...prev, ...files]);
+              const oversized = files.filter((f) => f.size > MAX_SOURCE_IMAGE_BYTES);
+              if (oversized.length > 0) {
+                setError(`${oversized.length} image${oversized.length > 1 ? "s" : ""} skipped — each file must be under 15MB.`);
+              }
+              setGalleryFiles((prev) => [...prev, ...files.filter((f) => f.size <= MAX_SOURCE_IMAGE_BYTES)]);
             }}
           />
         </Section>

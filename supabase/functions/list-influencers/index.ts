@@ -68,14 +68,25 @@ Deno.serve(async (req) => {
 
     // Paginate so we don't silently cap large directories at 500 rows.
     // Supabase REST defaults to 1000 max per page; we walk until exhausted.
+    // Explicit column lists — select("*") was pulling EVERY column of
+    // every profile into function memory per request, including
+    // instagram_access_token (never returned, but a needless secret in
+    // the hot path) and heavy jsonb blobs. Trimming the select cuts the
+    // Postgres→function payload to roughly a quarter.
+    // NOTE: `languages` is NOT a column on influencer_profiles — the
+    // Content Language data only exists on invitation notes. The old
+    // select("*") masked this (r.languages was just undefined).
+    const PROFILE_COLS =
+      "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, location, services, service_rates, gender, creator_type, media_kit_published, status";
     const PAGE = 1000;
     const pageThrough = async (
       table: string,
       build: (q: any) => any,
+      cols = "*",
     ): Promise<any[]> => {
       const out: any[] = [];
       for (let from = 0; ; from += PAGE) {
-        const q = build(supabase.from(table).select("*")).range(from, from + PAGE - 1);
+        const q = build(supabase.from(table).select(cols)).range(from, from + PAGE - 1);
         const { data, error } = await q;
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -85,11 +96,17 @@ Deno.serve(async (req) => {
       return out;
     };
 
-    // Registered influencers
+    // Registered influencers. Status filtering happens in SQL now —
+    // deactivated/pending_deletion rows never leave Postgres.
     let profilesData: any[];
     try {
-      profilesData = await pageThrough("influencer_profiles", (q) =>
-        q.order("followers_count", { ascending: false })
+      profilesData = await pageThrough(
+        "influencer_profiles",
+        (q) =>
+          q
+            .not("status", "in", "(deactivated,pending_deletion)")
+            .order("followers_count", { ascending: false }),
+        PROFILE_COLS,
       );
     } catch (e: any) {
       return new Response(
@@ -98,15 +115,6 @@ Deno.serve(async (req) => {
       );
     }
     const profilesRes = { data: profilesData };
-
-    // Hide creators whose account is no longer active. "deactivated" is the
-    // soft-paused state (a sign-in with explicit reactivation brings them
-    // back). "pending_deletion" is the 30-day grace window before admin
-    // permadeletes. Either way, brand search shouldn't surface them.
-    profilesData = profilesData.filter((r) => {
-      const s = String(r?.status || "").toLowerCase();
-      return s !== "deactivated" && s !== "pending_deletion";
-    });
 
     // Honour the "Public Profile" toggle from Privacy & Security
     // (user_preferences.privacy_prefs.publicProfile). When false, the
@@ -150,7 +158,11 @@ Deno.serve(async (req) => {
     // Admin-invited (not yet registered) influencers
     let invitesData: any[] = [];
     try {
-      invitesData = await pageThrough("influencer_invitations", (q) => q.eq("status", "pending"));
+      invitesData = await pageThrough(
+        "influencer_invitations",
+        (q) => q.eq("status", "pending"),
+        "id, full_name, instagram_username, profile_photo_url, notes, status",
+      );
     } catch (e) {
       console.error("invitations page error:", e);
     }

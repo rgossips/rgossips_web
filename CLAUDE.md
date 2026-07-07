@@ -317,6 +317,34 @@ influencer has already applied to are always kept (regardless of either
 flag) so they can still see status / submit deliverables / view final
 metrics under the Applied / Completed tabs.
 
+## Performance / scale notes (2026-07)
+
+- Migration `040_perf_indexes_and_stats.sql`: composite indexes on every
+  hot filter — `influencer_profiles(status, followers_count DESC)`,
+  `campaigns(brand_id, created_at DESC)`, `campaigns(status)`,
+  `campaign_applications(campaign_id, created_at DESC)` + `(influencer_id)`,
+  `notifications(user_id, created_at DESC)` + unread partial,
+  `influencer_invitations(status)`, `referrals(status)`,
+  `reward_credits_ledger(reason)` — plus `get_referral_admin_stats()`
+  RPC (EXECUTE revoked from PUBLIC/anon/authenticated; service-role only).
+- `list-influencers` uses explicit column lists (never `select("*")` —
+  it was dragging `instagram_access_token` etc. into function memory)
+  and filters `deactivated/pending_deletion` in SQL. **`languages` and
+  `city` are NOT columns on influencer_profiles** — selecting them
+  42703s; language data only exists on invitation notes.
+- Campaign matcher pushes the follower band into SQL (`gt 0` +
+  `gte/lte`), served by the status+followers index.
+- Admin Refer & Earn KPIs come from the stats RPC — never ship whole
+  tables to a server action for aggregation.
+- Upload caps: profile photos 5MB (server, upload-profile-photo +
+  admin action pre-buffer check), campaign images 10MB server / 15MB
+  client pre-compression source cap; web avatar picker guards 10MB
+  before FileReader decode. Android picker crops to 800px so output is
+  tiny.
+- Load test harness at scratchpad `loadtest.js` (read-only endpoints,
+  modest VUs). Baseline 2026-07: p50 ≈ 450ms, p95 < 1s, 0 errors at 10
+  concurrent per endpoint.
+
 ## Common commands
 
 - Apply new migration: `npx supabase db push`

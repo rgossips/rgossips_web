@@ -628,6 +628,14 @@ const MyInformationDetail = ({ onBack }) => {
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Guard before decoding — the cropper re-encodes to a small JPEG,
+    // but loading a huge source into FileReader + canvas can freeze
+    // low-memory devices. Server enforces 5MB on the final upload.
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image too large — please pick an image under 10MB.");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result);

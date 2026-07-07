@@ -31,6 +31,23 @@ Deno.serve(async (req) => {
         { status: 400, headers: jsonHeaders }
       );
     }
+    // Size + type guard — the campaign-image uploader already caps at
+    // 10MB; this one had NO limit, so a 100MB upload would be accepted
+    // and stream straight into storage. 5MB matches the bucket's
+    // fileSizeLimit set at creation time.
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return new Response(
+        JSON.stringify({ error: "Image too large — maximum size is 5MB. Please compress or crop it and try again." }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+    if (file.type && !file.type.startsWith("image/")) {
+      return new Response(
+        JSON.stringify({ error: "Only image files are allowed." }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,

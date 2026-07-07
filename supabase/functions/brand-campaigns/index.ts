@@ -171,14 +171,22 @@ async function findMatchingInfluencers(
   // `location` is. Explicit column list means we can't ask for `city`
   // (42703). list-influencers gets away with r.city || r.location
   // because it uses select("*").
+  //
+  // The followers band is pushed into SQL (gt 0 + gte/lte) so the
+  // function only pages rows that can possibly match — on a large
+  // directory this cuts the scan from "everyone" to just the band,
+  // served by the (status, followers_count) index.
   const PAGE = 1000;
   const HARD_CAP = 10_000;
   const profileRows: any[] = [];
   for (let from = 0; from < HARD_CAP; from += PAGE) {
     const { data, error } = await supabase
       .from("influencer_profiles")
-      .select("influencer_id, categories, followers_count, location, status")
+      .select("influencer_id, instagram_handle, username, categories, followers_count, location, status")
       .eq("status", "active")
+      .gt("followers_count", 0)
+      .gte("followers_count", minFollowers)
+      .lte("followers_count", maxFollowers)
       .order("followers_count", { ascending: false })
       .range(from, from + PAGE - 1);
     if (error) throw error;
