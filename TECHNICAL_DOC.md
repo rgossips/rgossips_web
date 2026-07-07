@@ -97,8 +97,9 @@ Core tables (Postgres). Every table listed is under RLS unless noted.
 - `campaign_applications` (PK: `id`)
   `campaign_id`, `influencer_id`, `initiated_by` ∈ `{influencer, brand}`,
   `proposed_rate`, `brand_offered_rate`, `final_agreed_rate`,
-  `status` ∈ `{pending, approved, submitted, revision_needed, accepted,
-  live_submitted, payment, completed, rejected, withdrawn}`,
+  `status` ∈ `{pending, offer_sent, offer_accepted, approved, submitted,
+  revision_needed, accepted, live_submitted, payment, completed,
+  rejected, withdrawn}` (see §9 for the B15 negotiation machine),
   `escrow_status` ∈ `{null, held, released, refunded}`,
   `escrow_order_id`, `escrow_payment_id`, `escrow_amount` (paise),
   `submission_links jsonb`, `rejection_reason`, `metrics jsonb`,
@@ -144,15 +145,19 @@ Core tables (Postgres). Every table listed is under RLS unless noted.
 
 ### Signup — influencer
 
-1. User visits `/?ref=<slug>` or `/login`.
-2. Enters phone → WhatsApp OTP (rate-limited: 60s cooldown, 5/hr per phone,
-   20/hr per IP).
-3. On verify, Supabase creates the `auth.users` row if new; session issued.
-4. Instagram Business Login OAuth — mandatory for creators. Long-lived
-   token stored on `influencer_profiles.instagram_access_token`
-   (encrypted at rest).
-5. Signup form collects `full_name` (+ any missing metadata).
-6. `create-profile` edge fn:
+Actual step order (see `src/app/(auth)/login/page.js` flow="signup"):
+
+1. User visits `/?ref=<slug>` or `/login` → onboarding carousel → picks
+   Sign Up → **Role selection** (step 1).
+2. **Instagram Business Login OAuth** (step 2, mandatory, both roles).
+   Long-lived token stored on
+   `influencer_profiles.instagram_access_token`.
+3. **Signup form** (step 3) — name prefilled from IG; phone + WhatsApp
+   OTP are embedded IN the form (send → 60s m:ss resend timer → verify).
+   Rate limits: 60s cooldown, 5/hr per phone, 20/hr per IP.
+4. **Category selection** (step 4) and **Preferences** (step 5), both
+   skippable.
+5. `create-profile` edge fn:
    - Downloads Instagram avatar → uploads to `influencer-photos` bucket
      (Instagram CDN URLs expire).
    - Upserts `influencer_profiles`.
@@ -474,31 +479,64 @@ Weights and formula in [src/lib/campaignMatch.js](src/lib/campaignMatch.js).
 
 ---
 
-## 9. Applications + escrow
+## 9. Applications + negotiation + escrow (B15 flow, 2026-07)
+
+### Status machine
+
+```
+pending ──(brand: Approve with Price)──▶ offer_sent
+offer_sent ──(influencer: Accept)──▶ offer_accepted
+offer_sent / pending ──(influencer: Withdraw)──▶ withdrawn
+offer_accepted ──(brand: Pay to Escrow)──▶ approved (escrow held)
+approved → submitted → accepted → live_submitted → payment → completed
+                (revision_needed / rejected branch off as before)
+```
+
+**No counter-offers by design** — the influencer either accepts the
+brand's number or withdraws.
 
 ### Influencer applies
 
 1. `submit-application` (or brand-initiated invite) creates a row with
    `status = pending`, `proposed_rate` from the influencer.
 
-### Brand approves + funds escrow
+### Brand sends a priced offer
 
-1. Brand enters `agreed_rate` on the application row on campaign detail.
-2. Click **Approve & Pay**:
-   - Client calls `escrow-fund` with `{ applicationId, agreedRate }`
-     and an explicit `Authorization: Bearer <session.access_token>`
-     (guarded by an inline `getSession()` check — see §1 cookie
-     collision).
-   - `escrow-fund` verifies ownership, creates a Razorpay Order for
-     `agreedRate * 100 paise`, returns `{order_id, key_id, amount_paise}`.
-   - Client opens Razorpay Checkout against the order.
-   - On Checkout success, client calls `update-application-status` with
-     `{ escrowOrderId, escrowPaymentId, escrowSignature, agreedRate }`.
-   - The status function verifies the Razorpay signature server-side
-     (HMAC over `orderId|paymentId`), flips application to
-     `status = approved`, `escrow_status = held`, stores payment ids +
-     amount.
-3. Idempotent: if the row is already `held`, `escrow-fund` returns the
+- On the campaign detail, applications render as compact cards (DP +
+  name + status); clicking opens the **journey modal**: a timeline from
+  `application_status_history` (every transition, timestamp, actor
+  role, reason) + the full review panel.
+- **Approve with Price** — the creator's proposed rate seeds the input;
+  the brand can counter. `update-application-status` with
+  `status=offer_sent` stores `brand_offered_rate`. No money moves.
+  Influencer gets an "Offer: ₹N" notification.
+
+### Influencer responds
+
+- `OfferResponseCard` on the influencer's campaign view shows the
+  amount (and "you proposed X, the brand countered" when different).
+- Accept → `offer_accepted` (influencer-authenticated transition:
+  `influencerId` verified against `app.influencer_id`, legal
+  from-status enforced via the `INFLUENCER_TRANSITIONS` map).
+- Withdraw → `withdrawn`, confirm-guarded. Campaign returns to their
+  Active tab.
+
+### Brand funds escrow (only after acceptance)
+
+1. Status chip flips to "Offer Accepted — Pay"; brand clicks
+   **Pay ₹N to Escrow** (fixed amount, no input).
+2. Client calls `escrow-fund` with an explicit
+   `Authorization: Bearer <session.access_token>` (guarded by an inline
+   `getSession()` check — see §1 cookie collision).
+   - Server refuses any application not in `offer_accepted`, and any
+     amount that doesn't match `brand_offered_rate` (tamper guard).
+   - Creates a Razorpay Order for the accepted amount.
+3. Client opens Razorpay Checkout; on success calls
+   `update-application-status` with the payment triplet.
+   - Signature verified server-side (HMAC over `orderId|paymentId`);
+     `status = approved`, `escrow_status = held`,
+     `final_agreed_rate` stamped from the accepted offer.
+4. Idempotent: if the row is already `held`, `escrow-fund` returns the
    existing order id.
 
 ### Content submission
@@ -594,11 +632,18 @@ documented in the fetcher (`_shared/instagram.ts`).
 
 ### OTP send
 
-`send-otp` edge fn:
+`whatsapp-otp-sender` edge fn:
 - Rate limits: 60s cooldown per phone; 5 sends per hour per phone; 20
-  sends per hour per IP.
+  sends per hour per IP. All three refusals return HTTP 200 with a
+  distinct `{ error }` message so the client can show it verbatim.
 - Persists a `verifier` cookie/local row; verify checks that.
 - Delivery via WhatsApp Cloud API.
+
+**UI contract (2026-07)**: every resend timer (web + Android × sign-in
+VerifyOTP / SignUpForm / BrandSignUpForm) counts down from **60s** in
+`m:ss` to match the backend cooldown. Resend failures — including the
+hourly phone-cap and IP-cap messages — surface in the error banner via
+`handleResendOtp` wrappers; they are never silently swallowed.
 
 ### In-app notifications
 
@@ -624,7 +669,7 @@ used by every referral event + admin manual-approve + welcome flow.
 {
   limit: 50,                  // default 50, hard cap 2000
   offset: 0,
-  q: "",                      // free text across name/username/handle
+  q: "",                      // free text across name/username/handle/categories/city
   filters: {
     categories: string[],
     followerBuckets: string[],// includes Creator Type synonyms
@@ -832,13 +877,13 @@ If all pass → row created as `SIGNED_UP`.
 | `upload-profile-photo` | yes | Multipart → Storage `influencer-photos/{userId}.jpg`; sets `custom_profile_photo_url` |
 | `upload-campaign-image` | yes | Multipart → `campaign-images/{banners,gallery}` |
 | `refresh-instagram` | yes | Pull latest Instagram metrics + token refresh |
-| `send-otp` / `verify-otp` | no | Rate-limited OTP send + verify |
+| `whatsapp-otp-sender` / `whatsapp-otp-verifier` | no | Rate-limited OTP send + verify (60s / 5 per phone-hr / 20 per IP-hr) |
 | `send-email` | no | Thin wrapper around ESP |
 | `list-influencers` | yes | Brand-side directory with server-side filter + pagination |
 | `list-campaigns` | yes | Influencer-side directory with isExpired + applicationDeadlinePassed hiding |
 | `brand-campaigns` | yes | Brand-side CRUD (list, get, create, update, delete, duplicate, updateStatus) |
 | `submit-application` | yes | Influencer applies to a campaign |
-| `update-application-status` | yes | Brand approves / rejects / requests revision |
+| `update-application-status` | yes | Offer / accept / withdraw / approve+escrow / revision / reject — brand AND influencer transitions (B15) |
 | `escrow-fund` | no (own auth check) | Creates Razorpay Order for the agreed rate |
 | `escrow-release` | no (own auth check) | Marks payout intent + notifications |
 | `stripe-checkout` / `stripe-webhook` | yes / no | Subscription + escrow flows |
@@ -940,3 +985,90 @@ curl -sS "$SUPA_URL/rest/v1/rpc/get_referral_leaderboard?top_n=1" \
 10. **List-influencers pagination** — default limit is 50. Callers that
     filter/sort the whole directory locally (`PocketFriendlyCreators`,
     other carousels) must explicitly pass `limit: 2000`.
+
+11. **`languages` and `city` are NOT columns on `influencer_profiles`.**
+    Selecting them in an explicit column list 42703s. `select("*")`
+    masks this (missing key just reads `undefined`), which is how it
+    went unnoticed — Content Language data only exists in invitation
+    notes; profile city lives in `location`.
+
+---
+
+## 21. Performance & scale (2026-07)
+
+Supabase edge functions are auto-scaled serverless and Postgres sits
+behind Supavisor pooling — there is no self-managed load balancer to
+configure. The levers that keep the stack healthy under large data are
+query efficiency, indexes, bounded payloads, and upload caps. All four
+were addressed in the 2026-07 performance pass.
+
+### Indexes (migration `040_perf_indexes_and_stats.sql`)
+
+| Index | Serves |
+|---|---|
+| `influencer_profiles (status, followers_count DESC)` | directory paging + campaign matcher band scan |
+| `campaigns (brand_id, created_at DESC)` | brand campaign list |
+| `campaigns (status)` | influencer discovery |
+| `campaign_applications (campaign_id, created_at DESC)` | campaign detail applications |
+| `campaign_applications (influencer_id)` | influencer application map |
+| `notifications (user_id, created_at DESC)` + unread partial | inbox + badge |
+| `influencer_invitations (status)` | directory merge |
+| `referrals (status)`, `reward_credits_ledger (reason)` | admin analytics |
+
+### Query rules
+
+- **Never `select("*")` on `influencer_profiles` in edge functions** —
+  it drags `instagram_access_token` and heavy jsonb into function
+  memory for every row. `list-influencers` uses an explicit
+  `PROFILE_COLS` list; keep it in sync with real columns (see gotcha 11).
+- Status exclusions (`deactivated` / `pending_deletion`) and the
+  campaign matcher's follower band run **in SQL**, not client-side —
+  rows that can't match never leave Postgres.
+- Admin aggregates go through `get_referral_admin_stats()` (SECURITY
+  DEFINER, EXECUTE revoked from PUBLIC/anon/authenticated) — never ship
+  whole tables to a server action to compute a handful of numbers.
+
+### Upload caps
+
+| Surface | Limit | Where enforced |
+|---|---|---|
+| Profile photos | 5MB + image-type check | `upload-profile-photo` (server) + bucket fileSizeLimit |
+| Admin photo upload | 5MB | server action, **before** buffering into memory |
+| Campaign images | 10MB server / 15MB pre-compression source | `upload-campaign-image` + client pickers |
+| Web avatar picker | 10MB before FileReader decode | client |
+| Android picker | crops to 800px — output inherently small | client |
+
+Client pickers reject oversized sources *before* decode/compression —
+`createImageBitmap` on a 50MB phone panorama can hang mobile browsers.
+
+### Load testing — admin console tool
+
+**`/dashboard/load-test`** (super-admin only, in the Admin Panel
+sidebar group):
+
+- Fixed read-only scenario catalog — `list-influencers` (plain +
+  filtered), `list-campaigns`, `list-featured-campaigns`. Clients pick
+  scenarios by id; the runner cannot be pointed at arbitrary URLs. No
+  writes, no OTP sends, no payments.
+- Hard caps: **20 virtual users × 20 iterations** per scenario, run
+  sequentially so concurrency never exceeds the VU setting.
+- Executes from the admin server with the service key (never sent to
+  the browser); double-gated (`isSuperAdmin` page redirect +
+  `requireSuperAdmin` in the action). `maxDuration = 300` on the route
+  so hosted deployments don't kill a long run.
+- Reports per scenario: OK/total, errors, req/s, p50 / p95 / max
+  latency, average payload KB, with a health dot (green = zero errors
+  and p95 < 2s).
+- To add a scenario: extend the `SCENARIOS` map in
+  `rgossips-admin/src/app/dashboard/load-test/actions.ts`.
+
+**Baseline (2026-07, 10 VUs × 10 iterations per scenario):**
+
+| Scenario | OK | p50 | p95 | max | req/s | payload |
+|---|---|---|---|---|---|---|
+| list-influencers (page of 50) | 100/100 | 457ms | 974ms | 1.1s | 17.7 | 23KB |
+| list-influencers (search+filter) | 100/100 | 452ms | 692ms | 779ms | 20.0 | 23KB |
+| list-campaigns (discovery) | 100/100 | 452ms | 664ms | 671ms | 19.8 | 78KB |
+
+Zero errors across 300 requests. Treat a run with errors or p95 ≥ 2s as
+a regression worth investigating before shipping.
