@@ -184,7 +184,20 @@ async function verifySignature(body: string, signature: string, secret: string):
   const expected = Array.from(new Uint8Array(sigBytes))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return expected === signature;
+  // Constant-time compare — a plain `===` on the hex digest can leak the
+  // match prefix length via timing. Cheap to do it right.
+  return timingSafeEqualHex(expected, signature);
+}
+
+// Constant-time compare for equal-length hex digests. Length mismatch is
+// safe to reveal early (the attacker already knows the 64-char length).
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
 }
 
 // Shared "what plan should a user be on now" logic. Identical shape to

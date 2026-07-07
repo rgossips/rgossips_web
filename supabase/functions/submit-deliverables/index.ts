@@ -223,7 +223,9 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
           },
-          body: JSON.stringify({ applicationId }),
+          // force: this is a genuine post-submit refresh — bypass the
+          // metrics-refresh cooldown so fresh deliverables measure now.
+          body: JSON.stringify({ applicationId, force: true }),
         });
       } catch (e) {
         console.error("Metrics refresh kick-off failed:", e);

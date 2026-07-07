@@ -1,10 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { log, hashId } from "../_shared/log.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
+// Max wrong guesses per issued OTP before the code is burned. With the
+// sender's 60s cooldown + 5/phone/hr cap, this bounds total guesses to a
+// couple dozen per hour against a 900k keyspace — brute-force infeasible.
+const MAX_OTP_ATTEMPTS = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,6 +36,8 @@ Deno.serve(async (req) => {
     return { data, ok: res.ok, status: res.status };
   };
 
+  const rid = crypto.randomUUID();
+
   try {
     const { phone, otp, mode, reactivate } = await req.json();
 
@@ -39,6 +47,7 @@ Deno.serve(async (req) => {
         { status: 200, headers: jsonHeaders }
       );
     }
+    const phoneHash = await hashId(String(phone));
 
     // "signin" mode never creates a new user — if the phone isn't already
     // registered we send the caller back with `no_user` so the UI can prompt
@@ -51,38 +60,62 @@ Deno.serve(async (req) => {
     // Initialize Supabase client (for DB operations only)
     const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // Step 1: Look up the most recent unexpired, unverified OTP
-    const { data: otpRecord, error: fetchError } = await supabaseAdmin
-      .from("otp_verifications")
-      .select("*")
-      .eq("phone", normalizedPhone)
-      .eq("verified", false)
-      .gte("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // Steps 1+2: Atomically look up the newest active OTP, enforce the
+    // attempt ceiling, and check the code — all under a row lock in the
+    // DB so parallel guesses can't bypass the counter (TOCTOU). This is
+    // the brute-force guard: without it a 6-digit code (900k keyspace,
+    // 5-min window) could be guessed with unlimited concurrent requests,
+    // which is a practical account-takeover primitive.
+    const { data: verifyRows, error: verifyErr } = await supabaseAdmin.rpc(
+      "consume_otp_attempt",
+      { p_phone: normalizedPhone, p_code: String(otp), p_max: MAX_OTP_ATTEMPTS }
+    );
+    if (verifyErr) {
+      log.error("otp.verify.rpc_failed", { rid, phoneHash }, verifyErr);
+      return new Response(
+        JSON.stringify({ error: "Could not verify OTP. Please try again." }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+    const outcome = Array.isArray(verifyRows) ? verifyRows[0] : verifyRows;
+    const vstatus: string = outcome?.status || "no_code";
 
-    if (fetchError || !otpRecord) {
-      console.error("OTP fetch error:", fetchError);
+    if (vstatus === "no_code") {
+      log.warn("otp.verify.no_active_code", { rid, phoneHash });
       return new Response(
         JSON.stringify({ error: "OTP expired or not found. Please request a new one." }),
         { status: 200, headers: jsonHeaders }
       );
     }
-
-    // Step 2: Verify the OTP matches
-    if (otpRecord.otp !== otp) {
+    if (vstatus === "locked_out") {
+      log.warn("otp.verify.locked_out", { rid, phoneHash });
       return new Response(
-        JSON.stringify({ error: "Invalid OTP. Please try again." }),
+        JSON.stringify({
+          error: "too_many_attempts",
+          message: "Too many incorrect codes. Please request a new OTP.",
+        }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+    if (vstatus === "invalid" || outcome?.matched !== true) {
+      const remaining = Number(outcome?.remaining ?? 0);
+      log.warn("otp.verify.bad_code", { rid, phoneHash, remaining });
+      return new Response(
+        JSON.stringify({
+          error: "invalid_otp",
+          message: `Invalid OTP. ${remaining} attempt(s) left before you'll need a new code.`,
+        }),
         { status: 200, headers: jsonHeaders }
       );
     }
 
-    // NOTE: we used to mark the OTP verified here, but that consumed it
-    // even for outcomes that short-circuit below (e.g. deactivated accounts
-    // requiring an explicit Reactivate confirmation). The OTP is now marked
-    // verified just before we issue the session, so the client can re-send
-    // the same OTP value with reactivate: true.
+    // Matched. The code is left un-consumed here on purpose: the
+    // reactivation short-circuit below (deactivated account needing an
+    // explicit confirm) asks the client to re-submit the same code with
+    // reactivate:true, so it must still be findable. It's marked
+    // verified=true just before we issue the session (and all codes for
+    // the phone are deleted at the end).
+    log.info("otp.verify.matched", { rid, phoneHash, mode });
 
     // Step 4: Resolve auth user by phone.
     // Supabase stores phone WITHOUT '+' prefix (e.g., "917204909749").

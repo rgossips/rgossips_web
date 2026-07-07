@@ -1,7 +1,11 @@
 // lib/instagram.ts
 
 export async function getInstagramReel(mediaId) {
-  const token = process.env.NEXT_PUBLIC_INSTA_TOKEN;
+  // Server-only token. These helpers run server-side (they use Next's
+  // fetch `revalidate` cache option). Reading the non-public env name
+  // keeps the token out of the client bundle; falls back to the legacy
+  // NEXT_PUBLIC_ name so nothing breaks before it's renamed in .env.
+  const token = process.env.INSTA_TOKEN || process.env.NEXT_PUBLIC_INSTA_TOKEN;
 
   // We fetch the direct media_url (the mp4) and the thumbnail
   const url = `https://graph.instagram.com/${mediaId}?fields=media_url,thumbnail_url,media_type,caption&access_token=${token}`;
@@ -28,7 +32,11 @@ export async function getInstagramReel(mediaId) {
 // lib/instagram.ts
 
 export async function getLatestReelIds() {
-  const token = process.env.NEXT_PUBLIC_INSTA_TOKEN;
+  // Server-only token. These helpers run server-side (they use Next's
+  // fetch `revalidate` cache option). Reading the non-public env name
+  // keeps the token out of the client bundle; falls back to the legacy
+  // NEXT_PUBLIC_ name so nothing breaks before it's renamed in .env.
+  const token = process.env.INSTA_TOKEN || process.env.NEXT_PUBLIC_INSTA_TOKEN;
   // Fetching ID and Media_Type to ensure we only get videos
   const url = `https://graph.instagram.com/me/media?fields=id,media_type,caption&access_token=${token}`;
 

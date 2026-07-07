@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { applicationId } = await req.json();
+    const { applicationId, force } = await req.json();
 
     if (!applicationId) {
       return new Response(
@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
 
     const { data: app, error: appErr } = await supabaseAdmin
       .from("campaign_applications")
-      .select("id, status, campaign_id, influencer_id, submission_links")
+      .select("id, status, campaign_id, influencer_id, submission_links, metrics, metrics_refreshed_at")
       .eq("id", applicationId)
       .single();
 
@@ -128,6 +128,28 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Application not found" }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // Cooldown: each call fans out to the Instagram Graph API (up to 8
+    // pages of /me/media + per-link /insights), so repeated calls can
+    // exhaust the external rate limit. Serve the cached metrics if we
+    // refreshed within COOLDOWN_MS, unless the caller passes force:true
+    // (used right after a genuine deliverable submit). This is the only
+    // throttle on an endpoint that doesn't authenticate the caller.
+    const COOLDOWN_MS = 60 * 1000;
+    if (!force && app.metrics_refreshed_at) {
+      const age = Date.now() - new Date(app.metrics_refreshed_at).getTime();
+      if (age >= 0 && age < COOLDOWN_MS) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            metrics: app.metrics ?? null,
+            cached: true,
+            cooldown_ms_remaining: COOLDOWN_MS - age,
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
     }
 
     const links = Array.isArray(app.submission_links) ? app.submission_links : [];

@@ -34,51 +34,42 @@ const ProfileDetails = ({ onNext }) => {
   };
 
   const validateInstagram = async () => {
+    const targetUsername = formData.username.replace("@", "").trim();
+    if (!targetUsername) {
+      alert("Please enter a username first");
+      return;
+    }
     try {
-      const accessToken = process.env.NEXT_PUBLIC_INSTA_OAUTH_TOKEN;
-
-      // This is the Instagram Business Account ID associated with YOUR Meta App/Business
-      // You can find this in your Meta Business Suite or via the Graph Explorer
-      const myIgBusinessId = process.env.NEXT_PUBLIC_APP_ID;
-      const targetUsername = formData.username.replace("@", ""); // Clean the input
-
-      console.log("a", accessToken);
-      console.log(myIgBusinessId, targetUsername);
-      if (!targetUsername) {
-        alert("Please enter a username first");
-        return;
-      }
-
-      // 1. Single API call using Business Discovery
-      // We query YOUR ID, but ask it to "discover" the target username
-      const url = `https://graph.facebook.com/v21.0/${myIgBusinessId}?fields=business_discovery.username(${targetUsername}){id,username,followers_count,media_count,profile_picture_url,biography}&access_token=${accessToken}`;
-
-      const response = await fetch(url);
+      // Server-side proxy: the Meta access token stays on the server and
+      // never ships in the browser bundle. See
+      // src/app/api/instagram/business-discovery/route.js.
+      const response = await fetch("/api/instagram/business-discovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: targetUsername }),
+      });
       const data = await response.json();
 
-      if (data.error) {
-        // If error code is 100, the user likely isn't a Business/Creator account
+      if (!response.ok || data.error) {
         throw new Error(
-          data.error.message ||
+          data.error ||
             "Account not found or not a Business/Creator profile",
         );
       }
 
-      const userData = data.business_discovery;
-
-      // 2. Save into form
+      // Save into form
       setFormData((prev) => ({
         ...prev,
-        instagram: userData.username,
-        instagramFollowers: userData.followers_count,
-        instagramProfilePic: userData.profile_picture_url,
-        biography: userData.biography,
-        instaId: userData.id,
+        instagram: data.username,
+        instagramFollowers: data.followers_count,
+        instagramProfilePic: data.profile_picture_url,
+        biography: data.biography,
+        instaId: data.id,
       }));
 
-      alert(`Validated! ${userData.followers_count} followers found. ✅`);
+      alert(`Validated! ${data.followers_count} followers found. ✅`);
     } catch (err) {
-      console.error(err);
+      console.error("Instagram validation failed");
       alert(
         err.message ||
           "Validation failed. Ensure the account is Public & a Creator/Business account.",

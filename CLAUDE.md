@@ -221,6 +221,56 @@ Admin sidebar is grouped:
 - **Operations** — Disputes, Payouts, Services, Quote Requests, Leads
 - **Admin Panel** (super-admin only) — Admin Users
 
+## Security hardening (audit 2026-07)
+
+Full QA + security + abuse audit. Key results and standing rules:
+
+- **RLS is the real boundary and it holds.** Empirically verified with the
+  live publishable/anon key: every sensitive table (`influencer_profiles`,
+  `campaigns`, `campaign_applications`, `brand_profiles`, `referrals`,
+  `reward_credits_ledger`, `notifications`, `user_preferences`) returns
+  `[]` to anon despite holding data, and anon writes are denied (`42501`).
+  Only `services` + `homepage_settings` are intentionally public. Storage
+  buckets deny anon object listing. When probing, remember **RLS-denied
+  SELECT returns `[]`, not an error** — an empty array on a table you know
+  has rows means the policy is working, not that the table is empty.
+- **OTP brute-force (was CRITICAL, fixed).** `whatsapp-otp-verifier` had
+  no attempt cap → a 6-digit code (900k space, 5-min window) was
+  brute-forceable = account takeover. Fixed via `otp_verifications.attempts`
+  + SECURITY DEFINER RPC `consume_otp_attempt(phone, code, max)` that does
+  the compare + increment under a row lock (race-safe), burns the code at
+  5 wrong guesses. Match does NOT burn the code (reactivation re-submit
+  needs it). Verifier calls the RPC; caps combine with the sender's 60s
+  cooldown + 5/phone/hr.
+- **Instagram token in client bundle (was HIGH, fixed).** `ProfileDetails.jsx`
+  called the Graph API directly with `NEXT_PUBLIC_INSTA_OAUTH_TOKEN` (Next
+  inlines every `NEXT_PUBLIC_*` into the browser bundle) and even
+  `console.log`ged it. Moved to server route
+  `src/app/api/instagram/business-discovery/route.js` (reads server-only
+  `INSTA_OAUTH_TOKEN`, falls back to the legacy public name). **Rule: never
+  reference a `NEXT_PUBLIC_*` secret from client code** — rename to drop the
+  prefix and proxy through a route/edge fn. `lib/instagram.js` (dead) also
+  de-referenced.
+- **Payment webhooks verify signatures** (Stripe `constructEventAsync`,
+  Razorpay HMAC-SHA256, now constant-time compare). Escrow funds/release
+  enforce brand ownership + state guards + amount-match + idempotency.
+- **Fixed:** duplicate-application race (unique partial index on
+  `campaign_applications(campaign_id, influencer_id)`), leaderboard RPC
+  exposed to `anon` (revoked from PUBLIC+anon; `top_n` capped at 100),
+  `refresh-application-metrics` external-API hammering (60s cooldown,
+  `force:true` bypass for genuine post-submit calls).
+- **Structured logging**: `supabase/functions/_shared/log.ts` — JSON
+  severity+event+context lines, auto-redacts secret-ish keys, `hashId()`
+  for PII-free correlation. Wired into the OTP verifier; the pattern to
+  copy into other functions.
+- **Known-open (documented, not yet done):** several edge fns
+  (`apply-campaign`, `create-profile`, `submit-quote-request`,
+  `refresh-instagram`) trust a body-supplied `userId`/`influencerId`
+  instead of deriving it from the JWT — combine with `verify_jwt` posture
+  before relying on their per-user caps. CORS is wildcard `*` everywhere
+  but auth is token-in-header (not cookie), so CSRF/credential-theft via
+  CORS isn't the exposure; tightening is defense-in-depth only.
+
 ## Migrations register
 
 | # | Name | Notes |
@@ -229,6 +279,10 @@ Admin sidebar is grouped:
 | 037 | influencer_creator_type | `creator_type` column + partial index |
 | 038 | refer_earn_phase2 | `unlocks_at`, welcome bonus reason, available-balance view, fraud columns |
 | 039 | referrals_leaderboard | Monthly view + 2 SECURITY DEFINER RPCs |
+| 040 | admin_activity_log | Admin rate-limit + audit table (service-role only) |
+| 041 | security_hardening | OTP attempts col + `consume_otp_attempt` RPC, apply-campaign unique index, leaderboard anon revoke |
+| 042 | perf_indexes_and_stats | Hot-filter indexes + `get_referral_admin_stats()` RPC. **Renamed from 040** — it collided with `040_admin_activity_log` in `schema_migrations` (version tracked by numeric prefix), which aborted a `db push`. Never reuse a version prefix. |
+| 043 | leaderboard_revoke_public | Completes 041's leaderboard revoke (also revoke from PUBLIC, not just anon) |
 
 ## Brand-side campaign lifecycle
 
