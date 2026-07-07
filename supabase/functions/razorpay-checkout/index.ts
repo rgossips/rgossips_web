@@ -20,6 +20,44 @@ const corsHeaders = {
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
+// Idempotency guard. Before minting a new subscription, look for one this
+// user already has for the SAME plan that hasn't reached a terminal state.
+// Prevents rapid double-submits (or a retry after a slow first attempt)
+// from creating a second parallel subscription — which is how a user can
+// end up double-billed. Returns the reusable sub + its state, or null.
+//   - active      → the user is already subscribed to this plan; the client
+//                   should reconcile the profile rather than open checkout.
+//   - authenticated/created → an in-flight attempt; reuse it so the client
+//                   opens checkout on the same subscription.
+async function findReusableSubscription(auth: string, userId: string, planId: string) {
+  const REUSE_STATES = ["active", "authenticated", "created"];
+  // Only the first couple of pages — the user's newest subs are first.
+  for (let skip = 0; skip < 200; skip += 100) {
+    const res = await fetch(`https://api.razorpay.com/v1/subscriptions?count=100&skip=${skip}`, {
+      headers: { Authorization: auth },
+    });
+    if (!res.ok) break;
+    const body = await res.json().catch(() => ({}));
+    const items: any[] = Array.isArray(body?.items) ? body.items : [];
+    const mine = items.filter(
+      (s) =>
+        String(s?.notes?.user_id || "") === userId &&
+        String(s?.plan_id || "") === planId &&
+        REUSE_STATES.includes(String(s.status)),
+    );
+    if (mine.length) {
+      // Prefer active > authenticated > created, then newest.
+      mine.sort((a, b) => {
+        const rank = (s: any) => REUSE_STATES.indexOf(String(s.status));
+        return rank(a) - rank(b) || Number(b.created_at || 0) - Number(a.created_at || 0);
+      });
+      return mine[0];
+    }
+    if (items.length < 100) break;
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -46,6 +84,37 @@ Deno.serve(async (req) => {
 
     const appUrl = Deno.env.get("APP_URL") || "https://rgossips.com";
     const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
+
+    // Idempotency: reuse an existing non-terminal subscription for this
+    // user+plan instead of creating a duplicate. Done BEFORE any offer /
+    // customer / subscription creation so a double-submit is cheap and
+    // can't spawn a second sub.
+    try {
+      const reusable = await findReusableSubscription(auth, userId, planId);
+      if (reusable) {
+        const returnUrl = `${appUrl}/influencer/pricing?razorpay_success=1&subscription_id=${encodeURIComponent(reusable.id)}`;
+        return new Response(
+          JSON.stringify({
+            id: reusable.id,
+            subscription_id: reusable.id,
+            key_id: keyId,
+            customer_id: reusable.customer_id || null,
+            url: reusable.short_url || null,
+            return_url: returnUrl,
+            reused: true,
+            // Already paid/active — the client should reconcile the profile
+            // rather than reopen checkout (no second charge to collect).
+            already_active: String(reusable.status) === "active",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    } catch (e) {
+      // Non-fatal — if the lookup fails we fall through and create a new
+      // subscription (the previous behaviour). Better a rare duplicate than
+      // a blocked upgrade.
+      console.warn("razorpay-checkout idempotency lookup failed:", (e as any)?.message);
+    }
 
     // Refer & Earn — optional RC redemption on the first Razorpay invoice.
     // Razorpay applies discounts via `offer_id` on subscription creation.

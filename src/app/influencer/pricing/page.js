@@ -38,6 +38,21 @@ const PLAN_META = {
 
 const PLAN_ORDER = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
 
+// Renewal approximation. We don't surface `subscription_current_period_end`
+// from the gateways onto the profile, so — matching ProStatusCard — we
+// assume the active subscription renews `cycleDays` after the last profile
+// update (bumped on plan change / renewal). Good enough to give the user a
+// real "renews in N days" without a schema change.
+function getPlanRenewalInfo(profile) {
+  if (!profile?.updated_at) return { daysLeft: null, date: null };
+  const cycleDays = profile.billing_cycle === "annual" ? 365 : 30;
+  const start = new Date(profile.updated_at);
+  const elapsed = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.max(0, cycleDays - elapsed);
+  const date = new Date(start.getTime() + cycleDays * 24 * 60 * 60 * 1000);
+  return { daysLeft, cycleDays, date };
+}
+
 // Razorpay Checkout.js — lazy-loaded the first time the user picks
 // Razorpay so we don't drag a third-party script in on every pricing
 // page view. Re-uses the same <script> tag if it's already in flight.
@@ -99,6 +114,13 @@ export default function PricingPage() {
   const effectivePlan = getEffectivePlan(profile);
   const onTrial = isWithinTrial(profile);
   const daysLeft = trialDaysLeft(profile);
+  // Paid plans show a "renews in N days" line at the top. Gate on an
+  // actual paid subscription_plan (not a lapsed trial) — same rule as
+  // ProStatusCard's hasPaidPlan.
+  const renewal = getPlanRenewalInfo(profile);
+  const currentPlanRaw = (profile?.subscription_plan || "").toLowerCase();
+  const hasPaidPlan = !!currentPlanRaw && currentPlanRaw !== "free" && currentPlanRaw !== "trial";
+  const showRenewal = !onTrial && hasPaidPlan && renewal.daysLeft != null;
 
   // After Stripe / Razorpay redirects back with a success flag, the
   // webhook is the source of truth — it usually beats the user back to
@@ -149,6 +171,25 @@ export default function PricingPage() {
         }
         await new Promise((r) => setTimeout(r, 1500));
       }
+
+      // Reconcile fallback. The webhook is the normal source of truth, but
+      // if it's disabled/dropped the plan never flips. Ask the server to
+      // reconcile against Razorpay directly — it's idempotent and verifies
+      // the active subscription server-side, so it's a no-op when the
+      // webhook already did its job and a self-heal when it didn't.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await supabase.functions.invoke("reconcile-subscription", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            body: {},
+          });
+          await refreshProfileRef.current?.();
+        }
+      } catch (e) {
+        console.error("reconcile fallback failed:", e);
+      }
+
       // Always clear, even if the component unmounted — setState on
       // unmounted is a harmless no-op warning, but a stuck overlay is
       // user-facing breakage. Same reasoning for the URL replace.
@@ -166,11 +207,21 @@ export default function PricingPage() {
             null
           : null;
         void latestProfile;
+        // Recover the plan the user actually purchased (stashed before
+        // checkout) so the modal shows THAT, not a stale profile plan.
+        let purchased = null;
+        try {
+          const raw = window.sessionStorage.getItem("rg_pending_plan");
+          if (raw) purchased = JSON.parse(raw);
+          window.sessionStorage.removeItem("rg_pending_plan");
+        } catch { /* ignore */ }
         setSuccessDetails({
           gateway: capturedGateway,
           paymentId: capturedPayment,
           subscriptionId: capturedSubscription,
           sessionId: capturedSession,
+          plan: purchased?.plan || null,
+          cycle: purchased?.cycle || null,
           when: new Date(),
         });
         routerRef.current?.replace("/influencer/pricing");
@@ -231,6 +282,20 @@ export default function PricingPage() {
     setUpgrading(planId);
     setGatewayPickerPlan(null);
     setPreparingCheckout(gateway === "razorpay" ? "Razorpay" : "Stripe");
+    // Remember what the user is actually buying so the post-payment
+    // success modal shows the PURCHASED plan, not whatever the profile
+    // currently reads (the webhook that flips subscription_plan may not
+    // have landed yet — or, on a plan switch, may lag). sessionStorage
+    // survives both the Razorpay in-page modal and the Stripe redirect
+    // round-trip (same tab).
+    try {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          "rg_pending_plan",
+          JSON.stringify({ plan: planId, cycle: billing })
+        );
+      }
+    } catch { /* sessionStorage may be unavailable — modal falls back to profile */ }
     try {
       const email = profile?.email || user?.email || "";
       // Razorpay's prefill is finicky: it accepts E.164 (+91…), 10-digit
@@ -269,6 +334,18 @@ export default function PricingPage() {
         if (data?.error) throw new Error(data.error);
         if (!data?.subscription_id || !data?.key_id) {
           throw new Error("Razorpay didn't return a subscription / key.");
+        }
+
+        // Idempotency: the server found this plan is ALREADY active for the
+        // user (a prior successful checkout). Don't reopen Razorpay — that
+        // would collect a second charge. Route straight to the success flow,
+        // which reconciles the profile against the gateway.
+        if (data.already_active) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("razorpay_success", "1");
+          url.searchParams.set("subscription_id", data.subscription_id);
+          window.location.replace(url.toString());
+          return;
         }
 
         // Lazy-load Razorpay Checkout.js and open the embedded modal. We
@@ -412,13 +489,22 @@ export default function PricingPage() {
                   <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? "Free Trial" : effectivePlan}</h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">CURRENT</Badge>
                   {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">Pro features unlocked</Badge>}
+                  {showRenewal && (
+                    <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px] font-bold">
+                      Renews in {renewal.daysLeft} {renewal.daysLeft === 1 ? "day" : "days"}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {onTrial
                     ? `${daysLeft} days remaining on your 30-day free trial`
                     : effectivePlan === "starter"
                       ? "Upgrade to unlock more applications, analytics, and visibility"
-                      : `Active ${profile?.billing_cycle || "monthly"} subscription`}
+                      : `Active ${profile?.billing_cycle || "monthly"} subscription${
+                          renewal.date
+                            ? ` · renews on ${renewal.date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+                            : ""
+                        }`}
                 </p>
               </div>
             </div>
@@ -721,8 +807,13 @@ function FullPageLoader({ title, message, hint }) {
 // the date, and a Done button. Close affordance is a clear X in the
 // top-right corner per the requested spec.
 function PaymentSuccessModal({ details, profile, billing, onClose }) {
-  const plan = (profile?.subscription_plan || "").toLowerCase();
-  const cycle = profile?.billing_cycle || billing || "monthly";
+  // Prefer the plan/cycle the user actually purchased (captured before
+  // checkout). The profile's subscription_plan can lag — the webhook that
+  // flips it may not have landed, and on a plan switch it can briefly
+  // still read the old plan — which is exactly what showed "Elite" after
+  // a Pro purchase. Fall back to the profile only if we didn't capture it.
+  const plan = (details?.plan || profile?.subscription_plan || "").toLowerCase();
+  const cycle = details?.cycle || profile?.billing_cycle || billing || "monthly";
   const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "your new plan";
   const cycleLabel = cycle === "annual" ? "Annual" : "Monthly";
   const price = PLAN_PRICING[plan]?.[cycle === "annual" ? "annual" : "monthly"];
