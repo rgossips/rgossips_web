@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X } from "lucide-react";
+import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SharedGatewayPickerModal from "@/components/GatewayPickerModal";
@@ -222,9 +222,37 @@ export default function PricingPage() {
           sessionId: capturedSession,
           plan: purchased?.plan || null,
           cycle: purchased?.cycle || null,
+          invoiceUrl: null,
           when: new Date(),
         });
         routerRef.current?.replace("/influencer/pricing");
+
+        // Fetch the invoice link in the background and patch the modal when
+        // it arrives (so the "Open Invoice" button appears without holding
+        // up the success popup). subscription-history returns each invoice's
+        // hosted_url / pdf_url for both gateways.
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            const { data: hist } = await supabase.functions.invoke("subscription-history", {
+              body: { userId: session.user.id },
+            });
+            const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
+            const forSub = capturedSubscription
+              ? invoices.filter((i) => i.subscription_id === capturedSubscription)
+              : [];
+            const pool = (forSub.length ? forSub : invoices)
+              .slice()
+              .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+            const inv = pool.find((i) => i.status === "paid") || pool[0];
+            const invoiceUrl = inv ? inv.hosted_url || inv.pdf_url || null : null;
+            if (invoiceUrl) {
+              setSuccessDetails((prev) => (prev ? { ...prev, invoiceUrl } : prev));
+            }
+          }
+        } catch (e) {
+          console.error("invoice link fetch failed:", e);
+        }
       }
     })();
     return () => {
@@ -889,12 +917,31 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
         </div>
 
         {/* Actions */}
-        <div className="px-6 pb-6 pt-1">
+        <div className="px-6 pb-6 pt-1 space-y-2.5">
+          {details.invoiceUrl && (
+            <a
+              href={details.invoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3 rounded-2xl text-white text-sm font-bold cursor-pointer hover:opacity-90 flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            >
+              <ExternalLink size={15} strokeWidth={2.5} /> Open Invoice
+            </a>
+          )}
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-3 rounded-2xl text-white text-sm font-bold cursor-pointer hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            className={`w-full py-3 rounded-2xl text-sm font-bold cursor-pointer transition ${
+              details.invoiceUrl
+                ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "text-white hover:opacity-90"
+            }`}
+            style={
+              details.invoiceUrl
+                ? undefined
+                : { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
+            }
           >
             Done
           </button>

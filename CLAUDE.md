@@ -187,6 +187,28 @@ silently regress.
   events + fund-account validation.
 - **RazorpayX removed 2026-07** in favour of manual payouts. Admin has
   `/dashboard/payouts` queue.
+- **Reconcile fallback + checkout idempotency (2026-07)**. Webhooks are the
+  normal source of truth for flipping `subscription_plan`; if one is
+  disabled/dropped the plan never updates and prior subs never cancel
+  (multi-billing). Safety net:
+  - `reconcile-subscription` (edge fn, **caller-JWT auth**, users reconcile
+    only themselves). **CROSS-GATEWAY**: pulls the user's subs from BOTH
+    Stripe + Razorpay via `subscription-history`, keeps the single newest
+    active+paid sub, points the profile at it (correct gateway, clears the
+    other gateway's ids), and cancels every OTHER live sub on either
+    gateway. Idempotent. **Must stay cross-gateway** — a Razorpay-only
+    version wrongly re-activated a stale Razorpay sub after a user switched
+    to Stripe (regression, fixed). Web + Android pricing call it after the
+    post-payment poll.
+  - `razorpay-checkout` idempotency: reuses an existing non-terminal sub
+    for the same user+plan instead of creating a duplicate; returns
+    `already_active` so the client skips reopening checkout (no double
+    charge). Prevents the double-subscription seen on double-submit.
+  - Pricing success modal shows the plan the user PURCHASED (stashed
+    pre-checkout), not a possibly-stale profile plan; has an **Open Invoice**
+    button (invoice `hosted_url`/`pdf_url` from `subscription-history`).
+  - Pricing banner shows "Renews in N days" for paid plans (approx off
+    `updated_at` + cycle — exact `current_period_end` not stored).
 
 ## Signup: deferred auth-user creation (Option A, 2026-07)
 
