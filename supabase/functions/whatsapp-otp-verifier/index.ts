@@ -246,11 +246,15 @@ Deno.serve(async (req) => {
     }
 
     // OTP is being honoured for a real sign-in (or confirmed reactivation)
-    // — mark it consumed now so a stale client can't reuse it.
+    // — mark it consumed now so a stale client can't reuse it. The match
+    // path in consume_otp_attempt leaves the code un-consumed (so the
+    // reactivation re-submit can find it), so we burn it here by
+    // phone + code value instead of the row id.
     await supabaseAdmin
       .from("otp_verifications")
       .update({ verified: true })
-      .eq("id", otpRecord.id);
+      .eq("phone", normalizedPhone)
+      .eq("otp", String(otp));
 
     // Step 5: Generate session.
     //
