@@ -82,6 +82,7 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
               className="text-sm cursor-pointer text-[#6347F9] font-bold hover:underline"
               onClick={() => {
                 setTimer(RESEND_COOLDOWN_SECONDS);
+                setOtp("");
                 if (onResend) onResend();
               }}
             >
