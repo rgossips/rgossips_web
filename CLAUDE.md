@@ -111,10 +111,10 @@ neither refer nor earn RC.
   RC-cost strip (earned/redeemed/clawback/outstanding).
 - Home wallet tile (`ReferBalanceCard`) on influencer home in both
   web and mobile; self-hides at 0 RC.
-- Discoverability gap: **no persistent web nav entry**. Mobile has a
-  "Refer & Earn" row inside `DashboardView`. If a user has 0 RC and no
-  admin-granted balance, web has no way to reach `/influencer/refer`
-  outside typing the URL. Not fixed as of last touch.
+- Entry points: home wallet tile (`ReferBalanceCard`, self-hides at
+  0 RC) + a persistent "Refer & Earn" row in the profile dashboard's
+  Settings section on BOTH web (`DashboardView.jsx`, added 2026-07) and
+  mobile (`DashboardView.tsx`).
 
 ## Feature: Trust score (brand-side)
 
