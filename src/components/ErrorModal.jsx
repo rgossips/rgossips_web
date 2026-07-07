@@ -17,28 +17,22 @@ export default function ErrorModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm rounded-2xl p-6 shadow-lg">
-        <DialogHeader className="">
-          <div className="flex w-full items-center justify-center gap-3 ">
-            {" "}
-            <BsExclamationTriangle className="h-12 w-12 text-red-600" />
-            <div className="text-2xl font-bold text-red-700"> Error</div>
-          </div>
-          <DialogTitle></DialogTitle>
+      <DialogContent className="max-w-xs rounded-2xl p-5 shadow-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2.5 text-base font-bold text-red-700">
+            <BsExclamationTriangle className="h-5 w-5 text-red-600 shrink-0" />
+            Something went wrong
+          </DialogTitle>
         </DialogHeader>
 
         {/* Error message */}
-        <div className="mt-3">
-          <p className="text-center text-xl text-gray-700 leading-relaxed">
-            {errorText}
-          </p>
-        </div>
+        <p className="text-sm text-gray-600 leading-relaxed">{errorText}</p>
 
         {/* Action Button */}
-        <DialogFooter className="mt-6 flex justify-center">
+        <DialogFooter className="mt-2">
           <Button
             onClick={onClose}
-            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer px-6 py-2 rounded-lg font-medium"
+            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer px-5 py-2 h-9 rounded-lg text-sm font-medium w-full sm:w-auto"
           >
             Close
           </Button>
