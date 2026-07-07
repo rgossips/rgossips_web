@@ -5,7 +5,7 @@ import { Loader2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
-export default function LogoutConfirmDialog({ open, onClose, redirectTo = "/login" }) {
+export default function LogoutConfirmDialog({ open, onClose, redirectTo = "/" }) {
   const router = useRouter();
   const { signOut } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);

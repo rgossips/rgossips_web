@@ -157,7 +157,7 @@ const DashboardView = ({
     setLoggingOut(true);
     try {
       await signOut();
-      router.push("/login");
+      router.push("/");
     } finally {
       setLoggingOut(false);
       setShowLogout(false);
