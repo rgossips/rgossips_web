@@ -188,6 +188,41 @@ silently regress.
 - **RazorpayX removed 2026-07** in favour of manual payouts. Admin has
   `/dashboard/payouts` queue.
 
+## Signup: deferred auth-user creation (Option A, 2026-07)
+
+**Invariant: an `auth.users` row never exists without a matching profile.**
+Previously the OTP verifier created the auth user the moment the signup
+OTP was verified, but the profile was written minutes later by
+`create-profile` — so any abandoned/failed onboarding left an orphaned
+phone user (reads as "already registered" yet has no account to sign in
+to). Fixed by deferring user creation to the atomic profile step:
+
+- **`whatsapp-otp-verifier` (signup mode)** no longer creates a user or a
+  session. On OTP match it stamps the `otp_verifications` row
+  (`verified=true, verified_at=now()` — migration 044 added `verified_at`)
+  as a short-lived **proof-of-phone** and returns
+  `{ success, phoneVerified, phone }`. Sign-in mode is unchanged (still
+  returns `{ session, user }`, still has the reactivation short-circuit).
+- **`create-profile`** is now the single atomic create point. It: (1)
+  validates the proof (a `verified` OTP row for the phone, minted within a
+  30-min window); (2) creates the auth user, or reuses an existing
+  profile-less one (heals legacy orphans), or returns `already_registered`
+  if a profile already exists; (3) writes the profile; (4) **on profile
+  failure, deletes the auth user it just created (compensating rollback)**;
+  (5) issues a session (stable `app_metadata.session_password` scheme,
+  ported from the verifier) and consumes the proof. Returns
+  `{ success, userId, session }`. No longer accepts/ trusts a client
+  `userId` — `phone` is required instead.
+- **Clients** (`login/page.js`, Android `LoginScreen.tsx`): `verifyOtp`
+  branches on mode — signup no longer stashes session/userId (there is
+  none yet); `handleSignUpFormSubmit` calls `create-profile` with `phone`
+  (no userId) and takes `userId` + `session` back from the response, then
+  `setSession`. Categories/preferences steps run afterward with the
+  returned session.
+- Verified live: no-proof → rejected; valid proof → user+profile+session
+  atomically; duplicate → `already_registered`; **forced profile failure →
+  auth user rolled back, zero orphan.**
+
 ## Sessions + auth quirks
 
 - **Stable per-user password** in `app_metadata.session_password` — DO NOT

@@ -117,7 +117,29 @@ Deno.serve(async (req) => {
     // the phone are deleted at the end).
     log.info("otp.verify.matched", { rid, phoneHash, mode });
 
-    // Step 4: Resolve auth user by phone.
+    // ── Signup: prove phone ownership, but DON'T create the auth user ──
+    // Option A (deferred auth-user creation). On signup we no longer mint
+    // an auth user or a session here — that used to leave an orphaned
+    // phone user if onboarding was abandoned before create-profile ran.
+    // Instead we stamp the OTP row as a short-lived proof-of-phone and let
+    // create-profile create the user + profile atomically. The proof is
+    // the (phone, verified_at) marker on otp_verifications, consumed by
+    // create-profile. Reactivation is a sign-in-only concern, so signup
+    // never reaches the logic below.
+    if (!isSignIn) {
+      await supabaseAdmin
+        .from("otp_verifications")
+        .update({ verified: true, verified_at: new Date().toISOString() })
+        .eq("phone", normalizedPhone)
+        .eq("otp", String(otp));
+      log.info("otp.verify.phone_proved", { rid, phoneHash });
+      return new Response(
+        JSON.stringify({ success: true, phoneVerified: true, phone: normalizedPhone }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+
+    // Step 4: Resolve auth user by phone (sign-in only from here down).
     // Supabase stores phone WITHOUT '+' prefix (e.g., "917204909749").
     let userId: string;
 

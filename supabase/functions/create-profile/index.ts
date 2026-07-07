@@ -83,6 +83,71 @@ function renderEmailHtml(o: {
 </body></html>`;
 }
 
+// ── Auth-user helpers (Option A: create the user here, atomically) ──────
+// Direct calls to the GoTrue admin REST API with the service-role key.
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+async function authAdminFetch(path: string, method = "GET", body?: unknown) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      apikey: SERVICE_ROLE_KEY,
+      "Content-Type": "application/json",
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  return { data, ok: res.ok, status: res.status };
+}
+
+// Find an existing auth user by phone (matches the '91…' / bare-10 / '+91…'
+// variants GoTrue may hold).
+async function findAuthUserByPhone(normalizedPhone: string): Promise<any | null> {
+  const listRes = await authAdminFetch("users?page=1&per_page=1000");
+  if (!listRes.ok) return null;
+  return (
+    (listRes.data?.users || []).find(
+      (u: any) =>
+        u.phone === normalizedPhone ||
+        u.phone === normalizedPhone.slice(2) ||
+        u.phone === `+${normalizedPhone}`
+    ) || null
+  );
+}
+
+// Issue a session for a user via the stable per-user password stored in
+// app_metadata (same scheme as whatsapp-otp-verifier — never rotate it, or
+// GoTrue invalidates other-device sessions).
+async function issueSession(userId: string, normalizedPhone: string) {
+  const userLookup = await authAdminFetch(`users/${userId}`);
+  let sessionPassword: string | undefined =
+    userLookup?.data?.app_metadata?.session_password;
+  if (!sessionPassword) {
+    sessionPassword = crypto.randomUUID();
+    const setRes = await authAdminFetch(`users/${userId}`, "PUT", {
+      password: sessionPassword,
+      app_metadata: {
+        ...(userLookup?.data?.app_metadata || {}),
+        session_password: sessionPassword,
+      },
+    });
+    if (!setRes.ok) return null;
+  }
+  const tokenRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: SERVICE_ROLE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ phone: normalizedPhone, password: sessionPassword }),
+  });
+  const tokenData = await tokenRes.json().catch(() => ({}));
+  if (!tokenRes.ok) return null;
+  return {
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -91,17 +156,10 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { userId, table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId, referralCode, deviceFingerprint } = await req.json();
+    const { table, phone, name, username, instagram, profilePictureUrl, followersCount, followsCount, mediaCount, instagramAccessToken, instagramTokenExpiresAt, gstinData, gstin, invitationId, referralCode, deviceFingerprint } = await req.json();
     // Signup IP — best-effort read from the edge proxy's forwarded-for
     // header. Forwarded on to attribute-referral for fraud attribution.
     const signupIp = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "";
-
-    if (!userId || !table) {
-      return new Response(
-        JSON.stringify({ error: "userId and table are required" }),
-        { status: 200, headers: jsonHeaders }
-      );
-    }
 
     // Only allow known tables
     if (table !== "influencer_profiles" && table !== "brand_profiles") {
@@ -110,11 +168,94 @@ Deno.serve(async (req) => {
         { status: 200, headers: jsonHeaders }
       );
     }
+    if (!phone) {
+      return new Response(
+        JSON.stringify({ error: "phone is required" }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // ── Option A: create the auth user here, atomically with the profile ──
+    // The client no longer sends a userId — the signup verifier only proved
+    // phone ownership (it stamped otp_verifications.verified_at) and created
+    // NO auth user. We now (1) validate that proof, (2) create or reuse the
+    // auth user, (3) write the profile, rolling the user back if that fails.
+    const digits = String(phone).replace(/\D/g, "");
+    const last10 = digits.slice(-10);
+    const normalizedPhone = `91${last10}`;
+
+    // (1) Proof-of-phone: a verified OTP row for this phone, minted within
+    // the freshness window. Without it, refuse — nobody can create an
+    // account for a phone they didn't just verify.
+    const PROOF_MAX_AGE_MS = 30 * 60 * 1000;
+    const proofCutoff = new Date(Date.now() - PROOF_MAX_AGE_MS).toISOString();
+    const { data: proofRow } = await supabaseAdmin
+      .from("otp_verifications")
+      .select("id, verified_at")
+      .eq("phone", normalizedPhone)
+      .eq("verified", true)
+      .gte("verified_at", proofCutoff)
+      .order("verified_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!proofRow) {
+      return new Response(
+        JSON.stringify({
+          error: "phone_not_verified",
+          message: "Your phone verification has expired. Please verify your number again.",
+        }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
+
+    // (2) Resolve the auth user. If one already exists for this phone AND it
+    // has a profile in either table, this is a real duplicate — send them to
+    // sign in. If it exists with NO profile (a legacy orphan from the old
+    // flow), reuse it and heal. Otherwise create it fresh.
+    let userId: string;
+    let createdHere = false;
+    const existingUser = await findAuthUserByPhone(normalizedPhone);
+    if (existingUser) {
+      const [{ data: infP }, { data: brP }] = await Promise.all([
+        supabaseAdmin.from("influencer_profiles").select("influencer_id").eq("influencer_id", existingUser.id).maybeSingle(),
+        supabaseAdmin.from("brand_profiles").select("brand_id").eq("brand_id", existingUser.id).maybeSingle(),
+      ]);
+      if (infP || brP) {
+        return new Response(
+          JSON.stringify({
+            error: "already_registered",
+            message: "This number is already registered. Please sign in instead.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      userId = existingUser.id; // orphan → reuse and heal
+    } else {
+      const createRes = await authAdminFetch("users", "POST", {
+        phone: normalizedPhone,
+        phone_confirm: true,
+      });
+      if (!createRes.ok || !createRes.data?.id) {
+        // Race: another request created it between our lookup and now.
+        const raced = await findAuthUserByPhone(normalizedPhone);
+        if (!raced) {
+          console.error("create-profile: auth user creation failed:", createRes.status, JSON.stringify(createRes.data));
+          return new Response(
+            JSON.stringify({ error: "Could not create your account. Please try again." }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+        userId = raced.id;
+      } else {
+        userId = createRes.data.id;
+        createdHere = true;
+      }
+    }
 
     // Download Instagram profile picture and store in Supabase Storage (they expire otherwise)
     let storedProfilePictureUrl = profilePictureUrl || "";
@@ -262,6 +403,17 @@ Deno.serve(async (req) => {
 
     if (dbError) {
       console.error("DB Error:", dbError);
+      // Compensating rollback: if WE created the auth user this call, delete
+      // it so a failed profile write can't leave an orphaned phone user.
+      // (A reused legacy orphan is left alone — deleting it would be a
+      // surprise removal of a pre-existing account.)
+      if (createdHere) {
+        try {
+          await authAdminFetch(`users/${userId}`, "DELETE");
+        } catch (e) {
+          console.error("Rollback of auth user failed:", (e as any)?.message);
+        }
+      }
       return new Response(
         JSON.stringify({ error: "Failed to create profile: " + dbError.message }),
         { status: 200, headers: jsonHeaders }
@@ -481,8 +633,21 @@ Deno.serve(async (req) => {
       console.error("Welcome email send failed (non-fatal):", (e as any)?.message);
     }
 
+    // Profile is committed — the account now definitively exists. Issue a
+    // session so the client can sign the user in, and consume the phone
+    // proof so it can't be replayed to mint another account.
+    let session: { access_token: string; refresh_token: string } | null = null;
+    try {
+      session = await issueSession(userId, normalizedPhone);
+    } catch (e) {
+      console.error("Session issuance failed (profile still created):", (e as any)?.message);
+    }
+    try {
+      await supabaseAdmin.from("otp_verifications").delete().eq("phone", normalizedPhone);
+    } catch (_) { /* non-fatal */ }
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, userId, session }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

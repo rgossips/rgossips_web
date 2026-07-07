@@ -1,0 +1,21 @@
+-- Option A: defer auth-user creation until profile commit.
+--
+-- Previously whatsapp-otp-verifier created the auth.users row the moment
+-- the signup OTP was verified, but the profile row was written minutes
+-- later by create-profile (after the onboarding form). Any abandonment,
+-- crash, or error in that window left an auth user with no profile — a
+-- phone that reads as "already registered" yet has no account to sign in
+-- to.
+--
+-- New flow: on signup the verifier only PROVES phone ownership (marks the
+-- OTP row verified with a timestamp) and returns a proof, creating no
+-- user and no session. create-profile is now the single atomic step that
+-- creates the auth user AND the profile together, rolling back the user
+-- if the profile insert fails. This makes "registered without a profile"
+-- impossible in the happy path and self-heals any legacy orphan.
+--
+-- `verified_at` records WHEN the proof was minted so create-profile can
+-- enforce a freshness window (the proof is only good for a short time
+-- after verification).
+ALTER TABLE public.otp_verifications
+  ADD COLUMN IF NOT EXISTS verified_at timestamptz;
