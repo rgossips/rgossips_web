@@ -20,6 +20,7 @@ import {
   X,
   Hourglass,
   Briefcase,
+  Gift,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
@@ -554,6 +555,17 @@ const DashboardView = ({
                 sub="Manage payout accounts"
                 color="bg-[#F97316]"
               />
+              {/* Persistent Refer & Earn entry — the home wallet tile
+                  self-hides at 0 RC, so without this row a fresh
+                  subscriber had no way to find the page. Mirrors the
+                  mobile app's DashboardView row. */}
+              <SettingsItem
+                icon={Gift}
+                onClick={() => router.push("/influencer/refer")}
+                title="Refer & Earn"
+                sub="Share your link, earn Reward Credits"
+                color="bg-[#E60076]"
+              />
             </div>
           </section>
 
@@ -816,6 +828,13 @@ const DashboardView = ({
               title="Payment Methods"
               sub="Manage payout accounts"
               color="bg-[#F97316]"
+            />
+            <SettingsItem
+              icon={Gift}
+              onClick={() => router.push("/influencer/refer")}
+              title="Refer & Earn"
+              sub="Share your link, earn Reward Credits"
+              color="bg-[#E60076]"
             />
           </div>
         </section>
