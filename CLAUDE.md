@@ -115,6 +115,13 @@ neither refer nor earn RC.
   0 RC) + a persistent "Refer & Earn" row in the profile dashboard's
   Settings section on BOTH web (`DashboardView.jsx`, added 2026-07) and
   mobile (`DashboardView.tsx`).
+- **Missing-code self-heal (2026-07)**: `ensureReferralCode` only runs in
+  the payment webhooks, so subs that predate Phase 1 or admin-comped
+  plans (`updateInfluencerPlan` bypasses gateways) had a paid
+  `subscription_plan` but `referral_code=NULL` → blank share link. New
+  edge fn `ensure-referral-code` (caller JWT, server re-checks non-trial
+  plan) generates on demand; web `/influencer/refer` + Android
+  `ReferScreen` invoke it when subscribed && no code.
 
 ## Feature: Trust score (brand-side)
 

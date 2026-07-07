@@ -116,6 +116,28 @@ export default function ReferPage() {
   const isSubscribed = profile?.subscription_plan && profile.subscription_plan !== "trial";
   const shareUrl = referralCode ? `https://rgossips.com/?ref=${referralCode}` : "";
 
+  // Self-heal a missing code. ensureReferralCode normally runs in the
+  // payment webhooks, so subscriptions that predate the Refer & Earn
+  // deploy — or admin-comped plans that never touch a gateway — have an
+  // active plan but no code, which rendered a blank share link. The
+  // server re-verifies the subscription before generating.
+  useEffect(() => {
+    if (loading || !isSubscribed || referralCode || !user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const { data } = await supabase.functions.invoke("ensure-referral-code", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: {},
+        });
+        if (!cancelled && data?.referralCode) setReferralCode(data.referralCode);
+      } catch { /* next visit retries */ }
+    })();
+    return () => { cancelled = true; };
+  }, [loading, isSubscribed, referralCode, user?.id, supabase]);
+
   const copyLink = async () => {
     if (!shareUrl) return;
     try {
