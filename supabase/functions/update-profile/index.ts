@@ -166,6 +166,14 @@ Deno.serve(async (req) => {
     }
     if (fields.customProfilePhotoUrl !== undefined) updateData.custom_profile_photo_url = fields.customProfilePhotoUrl || null;
     if (fields.location !== undefined) updateData.location = fields.location;
+    // Gender — self-service (previously only admin could set it). Allow-
+    // listed to the values the brand-side Gender filter understands;
+    // anything else (including "") clears the field.
+    if (fields.gender !== undefined) {
+      const g = String(fields.gender || "").toLowerCase();
+      const ALLOWED_GENDERS = new Set(["male", "female", "non_binary", "prefer_not_to_say"]);
+      updateData.gender = ALLOWED_GENDERS.has(g) ? g : null;
+    }
     if (fields.email !== undefined) updateData.email = fields.email;
     if (fields.phone !== undefined) updateData.phone = fields.phone;
     if (fields.address !== undefined) updateData.address = fields.address;

@@ -525,6 +525,9 @@ const MyInformationDetail = ({ onBack }) => {
       : [],
   );
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // Gender — powers the brand-side Gender filter. Previously only
+  // settable by admins; creators can now maintain it themselves.
+  const [gender, setGender] = useState(profile?.gender || "");
   const [email, setEmail] = useState(profile?.email || user?.email || "");
   const [address, setAddress] = useState(profile?.address || "");
   const [tiktok, setTiktok] = useState(profile?.tiktok_url || "");
@@ -718,6 +721,7 @@ const MyInformationDetail = ({ onBack }) => {
           // fuzzy match in list-influencers + campaign matcher already
           // does substring matches so "Mumbai, Pune" matches both.
           location: locationList.join(", "),
+          gender,
           email,
           address,
           tiktokUrl: tiktok,
@@ -972,6 +976,22 @@ const MyInformationDetail = ({ onBack }) => {
               </div>
             )}
           </button>
+        </div>
+
+        {/* Gender — feeds the brand-side Gender filter. */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Gender</label>
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-2xl text-sm font-bold text-gray-700 outline-none transition-all appearance-none cursor-pointer"
+          >
+            <option value="">Prefer not to specify</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="non_binary">Non-binary</option>
+            <option value="prefer_not_to_say">Prefer not to say</option>
+          </select>
         </div>
         <InputGroup label="Email Address" value={email} onChange={setEmail} placeholder="you@email.com" icon={<Mail size={16} className="text-pink-500" />} />
         <InputGroup label="Phone Number" value={user?.phone || profile?.phone || ""} onChange={() => {}} placeholder="Not available" icon={<Phone size={16} className="text-pink-500" />} disabled />
