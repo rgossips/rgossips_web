@@ -341,8 +341,10 @@ metrics under the Applied / Completed tabs.
   client pre-compression source cap; web avatar picker guards 10MB
   before FileReader decode. Android picker crops to 800px so output is
   tiny.
-- Load test harness at scratchpad `loadtest.js` (read-only endpoints,
-  modest VUs). Baseline 2026-07: p50 ≈ 450ms, p95 < 1s, 0 errors at 10
+- Load testing lives in the admin console: `/dashboard/load-test`
+  (super-admin only). Fixed read-only scenario catalog, hard-capped at
+  20 VUs × 20 iterations, sequential per scenario, service key stays
+  server-side. Baseline 2026-07: p50 ≈ 450ms, p95 < 1s, 0 errors at 10
   concurrent per endpoint.
 
 ## Common commands
