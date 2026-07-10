@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import AlertPopup from "@/components/AlertPopup";
 import {
   Camera,
   User,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 const ProfileDetails = ({ onNext }) => {
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -36,7 +38,7 @@ const ProfileDetails = ({ onNext }) => {
   const validateInstagram = async () => {
     const targetUsername = formData.username.replace("@", "").trim();
     if (!targetUsername) {
-      alert("Please enter a username first");
+      setPopup({ title: "Username required", message: "Please enter a username first.", tone: "info" });
       return;
     }
     try {
@@ -67,10 +69,10 @@ const ProfileDetails = ({ onNext }) => {
         instaId: data.id,
       }));
 
-      alert(`Validated! ${data.followers_count} followers found. ✅`);
+      setPopup({ title: "Validated ✅", message: `${data.followers_count} followers found.`, tone: "success" });
     } catch (err) {
       console.error("Instagram validation failed");
-      alert(
+      setPopup(
         err.message ||
           "Validation failed. Ensure the account is Public & a Creator/Business account.",
       );
@@ -268,6 +270,7 @@ const ProfileDetails = ({ onNext }) => {
           Skip for now
         </button>
       </div>
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 };

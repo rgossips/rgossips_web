@@ -93,7 +93,16 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
             </p>
             <p className="text-xs font-bold text-slate-800">
               {campaign.deadline}
-              {campaign.daysLeft && <span className="text-[9px] text-red-500 ml-1">{campaign.daysLeft} left</span>}
+              {campaign.daysLeft && (
+                <span className="text-[9px] text-red-500 ml-1">
+                  {/* daysLeft is either a day count ("3d") or a status word
+                      ("Expired" / "Today"). Only append " left" to counts,
+                      so an expired campaign reads "Expired", not "Expired left". */}
+                  {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today"
+                    ? campaign.daysLeft
+                    : `${campaign.daysLeft} left`}
+                </span>
+              )}
             </p>
           </div>
           <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-50">

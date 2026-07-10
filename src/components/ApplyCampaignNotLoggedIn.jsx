@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import AlertPopup from "@/components/AlertPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORIES as STANDARD_CATEGORIES } from "@/utils/categories";
 import {
@@ -21,6 +22,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function CreatorOnboardingForm({ onClose }) {
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCustomLanguage, setIsCustomLanguage] = useState(false);
@@ -207,7 +209,7 @@ export default function CreatorOnboardingForm({ onClose }) {
       });
       nextStep(); // Move to success step
     } catch (e) {
-      alert("Submission failed. Please try again.");
+      setPopup("Submission failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -551,6 +553,7 @@ export default function CreatorOnboardingForm({ onClose }) {
           </Button>
         </div>
       </motion.div>
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 }

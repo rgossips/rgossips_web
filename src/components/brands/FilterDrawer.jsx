@@ -276,28 +276,32 @@ const FilterContent = ({ draft, toggleOption }) => {
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 bg-white">
-        <div className="flex justify-between items-center mb-3 px-2">
-          <h4 className="text-[13px] font-bold text-gray-900">
-            Filter by {activeTab}
-          </h4>
-          <span className="text-[10px] text-gray-400">
-            {currentOptions.length}
-            {q ? ` / ${allOptions.length}` : ""} Options
-          </span>
+      <div className="flex-1 flex flex-col min-h-0 bg-white">
+        {/* Fixed header + search — stays put while the options list below
+            scrolls (Location has ~600 entries). */}
+        <div className="p-4 pb-2 shrink-0">
+          <div className="flex justify-between items-center mb-3 px-2">
+            <h4 className="text-[13px] font-bold text-gray-900">
+              Filter by {activeTab}
+            </h4>
+            <span className="text-[10px] text-gray-400">
+              {currentOptions.length}
+              {q ? ` / ${allOptions.length}` : ""} Options
+            </span>
+          </div>
+
+          {allOptions.length > 20 && (
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Search ${activeTab.toLowerCase()}...`}
+              className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:border-[#5851DB] focus:bg-white text-[12px] font-medium outline-none transition-colors"
+            />
+          )}
         </div>
 
-        {allOptions.length > 20 && (
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${activeTab.toLowerCase()}...`}
-            className="w-full mb-3 px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:border-[#5851DB] focus:bg-white text-[12px] font-medium outline-none transition-colors"
-          />
-        )}
-
-        <div className="space-y-1">
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
           {currentOptions.map((option) => (
             <label
               key={`${activeTab}-${option}`}

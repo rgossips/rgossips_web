@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import AlertPopup from "@/components/AlertPopup";
 
 export default function OwnerControls({ influencer }) {
   const [generating, setGenerating] = useState(false);
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
 
   // dummy generation limit logic
   const lastGen = new Date(influencer.resume_last_generated_at);
@@ -17,7 +19,7 @@ export default function OwnerControls({ influencer }) {
 
   const handleGenerate = () => {
     if (sameMonth) {
-      alert("You can only generate 1 resume per month");
+      setPopup({ title: "Monthly limit reached", message: "You can only generate 1 resume per month.", tone: "info" });
       return;
     }
 
@@ -25,7 +27,7 @@ export default function OwnerControls({ influencer }) {
 
     setTimeout(() => {
       setGenerating(false);
-      alert("AI Resume Generated (dummy)");
+      setPopup({ title: "Resume generated", message: "Your AI resume has been generated.", tone: "success" });
     }, 2000);
   };
 
@@ -49,6 +51,7 @@ export default function OwnerControls({ influencer }) {
       <p className="text-sm text-gray-400 mt-4">
         Resume generation limit: <b>1 per month</b>
       </p>
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </motion.div>
   );
 }

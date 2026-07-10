@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import AlertPopup from "@/components/AlertPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 
 export default function AddReelFlow({ onBack }) {
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [step, setStep] = useState(1);
   const [uploadMethod, setUploadMethod] = useState("url"); // 'url' or 'file'
 
@@ -53,8 +55,9 @@ export default function AddReelFlow({ onBack }) {
   };
 
   const handlePublish = () => {
-    alert("Reel Published Successfully!");
-    if (onBack) onBack();
+    // Show a success popup; navigate back only once it's dismissed (else the
+    // component unmounts before the message is seen).
+    setPopup({ title: "Reel published", message: "Your reel was published successfully.", tone: "success" });
   };
 
   return (
@@ -477,6 +480,13 @@ export default function AddReelFlow({ onBack }) {
           )}
         </div>
       </div>
+      <AlertPopup
+        popup={popup}
+        onClose={() => {
+          setPopup(null);
+          if (onBack) onBack();
+        }}
+      />
     </div>
   );
 }

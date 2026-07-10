@@ -37,6 +37,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import RatingModal from "@/components/RatingModal";
 import ErrorModal from "@/components/ErrorModal";
+import AlertPopup from "@/components/AlertPopup";
 
 // The Create/Edit dialog is fat (form + image compression + upload
 // helpers) and only mounts on an Edit click, so lazy-load to keep the
@@ -50,6 +51,20 @@ const CreateCampaignDialog = dynamic(
 // subscription flow. Loaded lazily on first Approve click to keep the
 // initial bundle lean.
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+// Bound an edge-function invoke so a hung request can't leave the escrow
+// loader spinning forever. The server-side gateway fetches have their own
+// AbortSignal timeout; this is the client-side belt to that server braces.
+function withTimeout(promise, ms = 20000, label = "The request") {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} timed out. Please check your connection and try again.`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 
 function loadRazorpayCheckout() {
   if (typeof window === "undefined") return Promise.resolve();
@@ -781,6 +796,10 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionIndexes, setRevisionIndexes] = useState([]);
   const [showRating, setShowRating] = useState(false);
+  // Compact popup for escrow / validation errors — replaces window.alert().
+  // Uses AlertPopup (plain fixed z-[120]) so it renders above the z-[110]
+  // journey modal this row lives inside.
+  const [popup, setPopup] = useState(null);
 
   const inf = app.influencer_profiles || {};
   const st = appStatusConfig[app.status] || appStatusConfig.pending;
@@ -800,7 +819,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         },
       });
       if (error || data?.error) {
-        alert(error?.message || data?.error || "Failed to update");
+        setPopup(error?.message || data?.error || "Failed to update");
         return;
       }
       setMode(null);
@@ -819,7 +838,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // or withdraw. Escrow funding happens only after acceptance.
   const handleSendOffer = () => {
     const rate = parseInt(payAmount || "0", 10);
-    if (!rate || rate <= 0) return alert("Enter an offer amount first");
+    if (!rate || rate <= 0) { setPopup({ title: "Enter an amount", message: "Please enter an offer amount first.", tone: "info" }); return; }
     updateStatus("offer_sent", { agreedRate: rate });
   };
 
@@ -837,7 +856,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // If the brand dismisses Checkout, the application stays 'offer_accepted'.
   const handleApprove = async () => {
     const rate = Number(app.brand_offered_rate || 0);
-    if (!rate || rate <= 0) return alert("No accepted offer amount on this application");
+    if (!rate || rate <= 0) { setPopup("No accepted offer amount on this application."); return; }
     setLoading(true);
     startLoading("Preparing escrow…");
     try {
@@ -850,20 +869,24 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       // clients derive their key from the same project ref.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        alert("Your session expired. Please sign in again and retry.");
+        setPopup({ title: "Session expired", message: "Please sign in again and retry.", tone: "info" });
         return;
       }
-      const { data: fund, error: fundErr } = await supabase.functions.invoke("escrow-fund", {
-        body: { applicationId: app.id, agreedRate: rate },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const { data: fund, error: fundErr } = await withTimeout(
+        supabase.functions.invoke("escrow-fund", {
+          body: { applicationId: app.id, agreedRate: rate },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        20000,
+        "Escrow"
+      );
       if (fundErr || fund?.error) {
-        alert(fundErr?.message || fund?.error || "Could not create escrow");
+        setPopup(fundErr?.message || fund?.error || "Could not create escrow.");
         return;
       }
       await loadRazorpayCheckout();
       if (typeof window === "undefined" || !window.Razorpay) {
-        alert("Razorpay Checkout failed to load. Check your network and try again.");
+        setPopup("Razorpay Checkout failed to load. Check your network and try again.");
         return;
       }
 
@@ -901,14 +924,14 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       });
       rzp.on("payment.failed", (resp) => {
         console.error("Escrow payment failed:", resp?.error);
-        alert(resp?.error?.description || "Payment failed. Please try again.");
+        setPopup(resp?.error?.description || "Payment failed. Please try again.");
         setLoading(false);
         stopLoading();
       });
       rzp.open();
     } catch (e) {
       console.error("handleApprove failed:", e);
-      alert(e?.message || "Something went wrong");
+      setPopup(e?.message || "Something went wrong.");
       setLoading(false);
       stopLoading();
     }
@@ -932,7 +955,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       // key Bearer fails the same way.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        alert("Your session expired. Please sign in again and retry.");
+        setPopup({ title: "Session expired", message: "Please sign in again and retry.", tone: "info" });
         return;
       }
       const { data, error } = await supabase.functions.invoke("escrow-release", {
@@ -940,7 +963,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || data?.error) {
-        alert(error?.message || data?.error || "Could not release payment");
+        setPopup(error?.message || data?.error || "Could not release payment.");
         return;
       }
       onRefresh?.();
@@ -952,7 +975,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 
   const handleRevision = () => {
     if (revisionIndexes.length === 0) {
-      return alert("Select at least one deliverable that needs revision");
+      { setPopup({ title: "Nothing selected", message: "Select at least one deliverable that needs revision.", tone: "info" }); return; }
     }
     const selectedLabels = revisionIndexes.map((i) => links[i]?.label || links[i]?.type || `Deliverable ${i + 1}`);
     updateStatus("revision_needed", {
@@ -1287,6 +1310,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         onPrimary={() => releaseEscrow()}
         onSkip={() => releaseEscrow()}
       />
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 };
@@ -1359,7 +1383,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -1441,7 +1465,7 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -1496,7 +1520,7 @@ function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div

@@ -216,7 +216,11 @@ const JourneyCarousel = () => {
               location: c.location || "Pan India",
               rating: 4.5 + Math.random() * 0.5,
               price: parseInt(c.budget?.replace(/[^\d]/g, "")) || 0,
-              duration: c.daysLeft ? `${c.daysLeft} left` : "Open",
+              duration: c.daysLeft
+                ? c.daysLeft === "Expired" || c.daysLeft === "Today"
+                  ? c.daysLeft
+                  : `${c.daysLeft} left`
+                : "Open",
               image: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
             })),
           );

@@ -28,6 +28,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import AlertPopup from "@/components/AlertPopup";
 import BrandAccountActionsModal from "@/components/brands/BrandAccountActionsModal";
 import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
 import InfoBadge from "@/components/brands/InfoBadge";
@@ -67,6 +68,7 @@ const BrandProfile = () => {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [brandInfoOpen, setBrandInfoOpen] = useState(false);
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [contactOpen, setContactOpen] = useState(false);
   const [trustInfoOpen, setTrustInfoOpen] = useState(false);
   const [accountAction, setAccountAction] = useState(null); // "deactivate" | "delete" | null
@@ -208,7 +210,7 @@ const BrandProfile = () => {
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
     } catch (err) {
-      alert("Failed to update categories: " + err.message);
+      setPopup("Failed to update categories: " + err.message);
     } finally {
       stopLoading();
     }
@@ -232,7 +234,7 @@ const BrandProfile = () => {
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
     } catch (err) {
-      alert("Failed to save: " + err.message);
+      setPopup("Failed to save: " + err.message);
       throw err;
     } finally {
       stopLoading();
@@ -800,6 +802,7 @@ const BrandProfile = () => {
           }}
         />
       )}
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 };

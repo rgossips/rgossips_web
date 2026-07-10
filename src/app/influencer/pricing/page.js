@@ -53,6 +53,21 @@ function getPlanRenewalInfo(profile) {
   return { daysLeft, cycleDays, date };
 }
 
+// Bound a promise (edge-function invoke) so a hung request can't leave the
+// "Opening checkout" overlay spinning forever. The loser is just ignored —
+// the server-side fetches to the gateway have their own AbortSignal timeout,
+// so this is the client's belt to the server's braces.
+function withTimeout(promise, ms = 20000, label = "The request") {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} timed out. Please check your connection and try again.`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // Razorpay Checkout.js — lazy-loaded the first time the user picks
 // Razorpay so we don't drag a third-party script in on every pricing
 // page view. Re-uses the same <script> tag if it's already in flight.
@@ -158,36 +173,50 @@ export default function PricingPage() {
     let unmounted = false;
     setVerifying(true);
     (async () => {
-      // Poll up to ~12s, refreshing the profile every 1.5s. Webhooks
-      // typically land in 1–3s, so most users see one pass and they're
-      // done. Hard ceiling guarantees the overlay clears even if the
-      // webhook never fires (e.g. test-mode account misconfig).
-      const deadline = Date.now() + 12_000;
-      while (Date.now() < deadline) {
-        try {
-          await refreshProfileRef.current?.();
-        } catch (e) {
-          console.error("refreshProfile during verify failed:", e);
-        }
-        await new Promise((r) => setTimeout(r, 1500));
-      }
+      // Recover the plan the user purchased (stashed pre-checkout) — used
+      // both as the reconcile hint and for the success modal.
+      let purchased = null;
+      try {
+        const raw = window.sessionStorage.getItem("rg_pending_plan");
+        if (raw) purchased = JSON.parse(raw);
+        window.sessionStorage.removeItem("rg_pending_plan");
+      } catch { /* ignore */ }
 
-      // Reconcile fallback. The webhook is the normal source of truth, but
-      // if it's disabled/dropped the plan never flips. Ask the server to
-      // reconcile against Razorpay directly — it's idempotent and verifies
-      // the active subscription server-side, so it's a no-op when the
-      // webhook already did its job and a self-heal when it didn't.
+      let token = null;
+      let userId = null;
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await supabase.functions.invoke("reconcile-subscription", {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            body: {},
+        token = session?.access_token || null;
+        userId = session?.user?.id || null;
+      } catch { /* ignore */ }
+
+      // Reconcile is authoritative and fast: when we pass the just-paid sub
+      // id it verifies that subscription directly against the gateway, so we
+      // no longer need the old fixed 12s poll (that was the slow loader).
+      // Retry only if the new sub isn't visible yet — Razorpay activates a
+      // sub asynchronously, Stripe needs a moment to propagate. Attempt 0
+      // runs immediately, so the happy path is ~1s.
+      let reconciled = false;
+      for (let attempt = 0; token && attempt < 4 && !reconciled; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1200));
+        try {
+          const { data } = await supabase.functions.invoke("reconcile-subscription", {
+            headers: { Authorization: `Bearer ${token}` },
+            body: {
+              preferSubscriptionId: capturedSubscription || undefined,
+              preferGateway: capturedGateway || undefined,
+              preferPlan: purchased?.plan || undefined,
+            },
           });
-          await refreshProfileRef.current?.();
+          if (data?.reconciled) reconciled = true;
+        } catch (e) {
+          console.error("reconcile attempt failed:", e);
         }
+      }
+      try {
+        await refreshProfileRef.current?.();
       } catch (e) {
-        console.error("reconcile fallback failed:", e);
+        console.error("refreshProfile after reconcile failed:", e);
       }
 
       // Always clear, even if the component unmounted — setState on
@@ -195,26 +224,6 @@ export default function PricingPage() {
       // user-facing breakage. Same reasoning for the URL replace.
       if (!unmounted) {
         setVerifying(false);
-        // The latest profile (from refreshProfile) carries the just-paid
-        // plan + cycle the webhook wrote. AuthContext is async wrt this
-        // closure, so we read once more after the poll for the modal.
-        const latestProfile = refreshProfileRef.current
-          ? // refreshProfile returns void, so read from the latest snapshot via the ref.
-            // We use the most-current `profile` via React's render — but
-            // since we're inside the effect closure, we just trust the
-            // PLAN_PRICING + the URL data. The actual plan will reflow
-            // on the next render from AuthContext.
-            null
-          : null;
-        void latestProfile;
-        // Recover the plan the user actually purchased (stashed before
-        // checkout) so the modal shows THAT, not a stale profile plan.
-        let purchased = null;
-        try {
-          const raw = window.sessionStorage.getItem("rg_pending_plan");
-          if (raw) purchased = JSON.parse(raw);
-          window.sessionStorage.removeItem("rg_pending_plan");
-        } catch { /* ignore */ }
         setSuccessDetails({
           gateway: capturedGateway,
           paymentId: capturedPayment,
@@ -223,19 +232,20 @@ export default function PricingPage() {
           plan: purchased?.plan || null,
           cycle: purchased?.cycle || null,
           invoiceUrl: null,
+          // Button shows immediately in a loading state; flips to a real
+          // link (or hides) once this fetch resolves.
+          invoiceLoading: true,
           when: new Date(),
         });
         routerRef.current?.replace("/influencer/pricing");
 
-        // Fetch the invoice link in the background and patch the modal when
-        // it arrives (so the "Open Invoice" button appears without holding
-        // up the success popup). subscription-history returns each invoice's
-        // hosted_url / pdf_url for both gateways.
+        // Fetch the invoice link and patch the modal. subscription-history
+        // returns each invoice's hosted_url / pdf_url for both gateways.
+        let invoiceUrl = null;
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.id) {
+          if (userId) {
             const { data: hist } = await supabase.functions.invoke("subscription-history", {
-              body: { userId: session.user.id },
+              body: { userId },
             });
             const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
             const forSub = capturedSubscription
@@ -245,14 +255,14 @@ export default function PricingPage() {
               .slice()
               .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
             const inv = pool.find((i) => i.status === "paid") || pool[0];
-            const invoiceUrl = inv ? inv.hosted_url || inv.pdf_url || null : null;
-            if (invoiceUrl) {
-              setSuccessDetails((prev) => (prev ? { ...prev, invoiceUrl } : prev));
-            }
+            invoiceUrl = inv ? inv.hosted_url || inv.pdf_url || null : null;
           }
         } catch (e) {
           console.error("invoice link fetch failed:", e);
         }
+        setSuccessDetails((prev) =>
+          prev ? { ...prev, invoiceUrl, invoiceLoading: false } : prev
+        );
       }
     })();
     return () => {
@@ -345,19 +355,23 @@ export default function PricingPage() {
           );
           return;
         }
-        const { data, error } = await supabase.functions.invoke("razorpay-checkout", {
-          body: {
-            userId: user.id,
-            planId: razorpayPlanId,
-            plan: planId,
-            cycle: billing,
-            email,
-            name: profile?.full_name || "",
-            contact: phoneForPrefill,
-            applyRc: applyRc && availableRc > 0,
-            planPriceRupees,
-          },
-        });
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke("razorpay-checkout", {
+            body: {
+              userId: user.id,
+              planId: razorpayPlanId,
+              plan: planId,
+              cycle: billing,
+              email,
+              name: profile?.full_name || "",
+              contact: phoneForPrefill,
+              applyRc: applyRc && availableRc > 0,
+              planPriceRupees,
+            },
+          }),
+          20000,
+          "Checkout"
+        );
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
         if (!data?.subscription_id || !data?.key_id) {
@@ -461,18 +475,22 @@ export default function PricingPage() {
       // the user actually is (localhost in dev, production in prod) —
       // otherwise the edge function falls back to APP_URL and you land
       // on a 404 if that host isn't serving the app.
-      const { data, error } = await supabase.functions.invoke("stripe-checkout", {
-        body: {
-          userId: user.id,
-          priceId,
-          plan: planId,
-          cycle: billing,
-          email,
-          origin: typeof window !== "undefined" ? window.location.origin : "",
-          applyRc: applyRc && availableRc > 0,
-          planPriceRupees,
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("stripe-checkout", {
+          body: {
+            userId: user.id,
+            priceId,
+            plan: planId,
+            cycle: billing,
+            email,
+            origin: typeof window !== "undefined" ? window.location.origin : "",
+            applyRc: applyRc && availableRc > 0,
+            planPriceRupees,
+          },
+        }),
+        20000,
+        "Checkout"
+      );
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       if (data?.url) {
@@ -918,7 +936,19 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
 
         {/* Actions */}
         <div className="px-6 pb-6 pt-1 space-y-2.5">
-          {details.invoiceUrl && (
+          {/* Invoice button: visible immediately. While the link is still
+              being fetched it's a disabled "Preparing invoice…" state (so it
+              doesn't pop in suddenly); becomes a real link when ready, and
+              hides only if no invoice exists. */}
+          {details.invoiceLoading ? (
+            <div
+              className="w-full py-3 rounded-2xl text-white text-sm font-bold flex items-center justify-center gap-2 opacity-70 cursor-wait"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+              aria-busy="true"
+            >
+              <Loader2 size={15} className="animate-spin" /> Preparing invoice…
+            </div>
+          ) : details.invoiceUrl ? (
             <a
               href={details.invoiceUrl}
               target="_blank"
@@ -928,17 +958,17 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
             >
               <ExternalLink size={15} strokeWidth={2.5} /> Open Invoice
             </a>
-          )}
+          ) : null}
           <button
             type="button"
             onClick={onClose}
             className={`w-full py-3 rounded-2xl text-sm font-bold cursor-pointer transition ${
-              details.invoiceUrl
+              details.invoiceLoading || details.invoiceUrl
                 ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 : "text-white hover:opacity-90"
             }`}
             style={
-              details.invoiceUrl
+              details.invoiceLoading || details.invoiceUrl
                 ? undefined
                 : { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
             }

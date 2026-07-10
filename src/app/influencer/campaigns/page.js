@@ -83,28 +83,39 @@ export default function CampaignsPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [campaigns]);
 
+  // Which tab a campaign belongs to. "Completed" surfaces only campaigns
+  // the user applied to AND finished — not any brand-side-closed campaign.
+  const tabMatches = (campaign, tab) =>
+    tab === "Completed"
+      ? campaign.applicationStatus === "completed"
+      : campaign.status === tab;
+
+  // Non-tab filters (search / category / brand / budget). Extracted so the
+  // tab COUNT badges and the rendered LIST use the SAME predicate — otherwise
+  // an active filter (e.g. a category prefilled from the URL) hides a card
+  // while the badge still counts it, so a tab reads "2" but shows 1.
+  const passesFilters = (campaign) => {
+    const matchesSearch =
+      campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategories.length === 0 ||
+      campaign.tags.some((t) => selectedCategories.some((c) => t.toLowerCase().includes(c.toLowerCase())));
+    const matchesBrand =
+      selectedBrands.length === 0 || selectedBrands.includes(campaign.brandName);
+    const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
+    const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
+    return matchesSearch && matchesCategory && matchesBrand && matchesBudget;
+  };
+
+  // Count for a tab that respects the same active filters as the list.
+  const tabCount = (tab) =>
+    campaigns.filter((c) => tabMatches(c, tab) && passesFilters(c)).length;
+
   const filteredCampaigns = useMemo(() => {
-    const passed = campaigns.filter((campaign) => {
-      // The "Completed" tab should only surface campaigns this user has
-      // actually applied to and that finished — not any campaign whose
-      // brand-side status is closed.
-      const matchesTab =
-        activeTab === "Completed"
-          ? campaign.applicationStatus === "completed"
-          : campaign.status === activeTab;
-      const matchesSearch = campaign.title
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-        campaign.brandName.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        selectedCategories.length === 0 ||
-        campaign.tags.some((t) => selectedCategories.some((c) => t.toLowerCase().includes(c.toLowerCase())));
-      const matchesBrand =
-        selectedBrands.length === 0 || selectedBrands.includes(campaign.brandName);
-      const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
-      const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-      return matchesTab && matchesSearch && matchesCategory && matchesBrand && matchesBudget;
-    });
+    const passed = campaigns.filter(
+      (campaign) => tabMatches(campaign, activeTab) && passesFilters(campaign)
+    );
 
     // Sort by match score (highest first) so the best fit lands at the
     // top of the grid. Equal scores keep their server-side order
@@ -114,6 +125,7 @@ export default function CampaignsPage() {
       .map((c) => ({ c, score: calculateCampaignMatchScore(profile, c) }))
       .sort((a, b) => b.score - a.score)
       .map(({ c }) => c);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange, profile]);
 
   return (
@@ -199,10 +211,7 @@ export default function CampaignsPage() {
               <h2 className="font-black text-slate-800 text-lg mb-4">Status</h2>
               <div className="space-y-1">
                 {["Active", "Applied", "Completed"].map((tab) => {
-                  const count =
-                    tab === "Completed"
-                      ? campaigns.filter((c) => c.applicationStatus === "completed").length
-                      : campaigns.filter((c) => c.status === tab).length;
+                  const count = tabCount(tab);
                   const isActive = activeTab === tab;
                   return (
                     <button
@@ -260,19 +269,19 @@ export default function CampaignsPage() {
               {[
                 {
                   label: "Active",
-                  val: campaigns.filter((c) => c.status === "Active").length,
+                  val: tabCount("Active"),
                   icon: <Activity className="text-[#00BA88]" />,
                   bg: "bg-emerald-50",
                 },
                 {
                   label: "Applied",
-                  val: campaigns.filter((c) => c.status === "Applied").length,
+                  val: tabCount("Applied"),
                   icon: <Clock className="text-blue-500" />,
                   bg: "bg-blue-50",
                 },
                 {
                   label: "Completed",
-                  val: campaigns.filter((c) => c.applicationStatus === "completed").length,
+                  val: tabCount("Completed"),
                   icon: <CheckCircle className="text-emerald-500" />,
                   bg: "bg-emerald-50",
                 },

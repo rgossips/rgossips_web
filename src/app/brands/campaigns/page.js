@@ -202,9 +202,15 @@ const CampaignsPage = () => {
           open={createOpen}
           onOpenChange={setCreateOpen}
           brandId={user?.id}
-          onCreated={() => {
+          onCreated={(newId) => {
             setCreateOpen(false);
-            loadCampaigns();
+            // Land the brand on the new campaign's detail page. Fall back to
+            // reloading the list if the id didn't come back for some reason.
+            if (newId) {
+              router.push(`/brands/campaign/${newId}`);
+            } else {
+              loadCampaigns();
+            }
           }}
         />
       )}

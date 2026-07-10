@@ -22,6 +22,7 @@ import {
   Briefcase,
   Gift,
 } from "lucide-react";
+import AlertPopup from "./AlertPopup";
 import { StatCard } from "./StatCard";
 import { HubCard } from "./HubCard";
 import { useRouter } from "next/navigation";
@@ -49,6 +50,25 @@ const parseBudgetINR = (s) => {
   const digits = String(s).replace(/[^\d]/g, "");
   return digits ? parseInt(digits, 10) : 0;
 };
+
+// What a campaign actually earns/will earn = the negotiated rate
+// (finalAgreedRate stamped at escrow, else the brand's offered rate) — NOT
+// the campaign's listed budget, which can differ from what was negotiated +
+// paid. Falls back to the listed budget only when no rate exists yet.
+const earnedAmountINR = (c) => {
+  const final = Number(c?.finalAgreedRate) || 0;
+  if (final > 0) return final;
+  const offered = Number(c?.brandOfferedRate) || 0;
+  if (offered > 0) return offered;
+  return parseBudgetINR(c?.budget);
+};
+
+// COMMITTED amount for "expected earnings" — only money the creator is
+// actually in line to receive: a negotiated/agreed rate. NO listed-budget
+// fallback, so a still-pending application (applied, no accepted offer) does
+// NOT inflate expected earnings. Completed campaigns are excluded upstream.
+const committedAmountINR = (c) =>
+  Number(c?.finalAgreedRate) || Number(c?.brandOfferedRate) || 0;
 
 const formatINRCompact = (n) => {
   if (!Number.isFinite(n) || n <= 0) return "₹0";
@@ -115,8 +135,11 @@ const DashboardView = ({
   const campaignStats = useMemo(() => {
     const completed = myCampaigns.filter((c) => c.applicationStatus === "completed");
     const active = myCampaigns.filter((c) => ACTIVE_APP_STATUSES.has(c.applicationStatus));
-    const totalEarnings = completed.reduce((s, c) => s + parseBudgetINR(c.budget), 0);
-    const expectedEarnings = active.reduce((s, c) => s + parseBudgetINR(c.budget), 0);
+    const totalEarnings = completed.reduce((s, c) => s + earnedAmountINR(c), 0);
+    // Expected = money still to be received (in-flight campaigns), counting
+    // ONLY committed amounts — never completed (excluded here) and never a
+    // pending application's listed budget.
+    const expectedEarnings = active.reduce((s, c) => s + committedAmountINR(c), 0);
     return {
       totalEarnings,
       expectedEarnings,
@@ -127,6 +150,7 @@ const DashboardView = ({
 
   const [showLogout, setShowLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [showCropper, setShowCropper] = useState(false);
   const [imageSrc, setImageSrc] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -239,7 +263,7 @@ const DashboardView = ({
       setImageSrc(null);
     } catch (err) {
       console.error("Failed to upload photo:", err);
-      alert("Failed to upload photo. Please try again.");
+      setPopup("Failed to upload photo. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -967,6 +991,7 @@ const DashboardView = ({
           </div>
         </div>
       )}
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </main>
   );
 };

@@ -46,6 +46,7 @@ import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import RatingModal from "@/components/RatingModal";
+import AlertPopup from "@/components/AlertPopup";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
@@ -733,6 +734,14 @@ export default function CampaignDetailsPage() {
   const isActive = campaign.status === "Active";
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
+  // A withdrawn/rejected application sends the campaign back to Active and is
+  // re-appliable, so it must NOT count as an "in-flight" application — else
+  // the apply button stays hidden and the (dead) status timeline shows.
+  // Treat only non-terminal statuses as a live application.
+  const hasLiveApplication =
+    !!campaign.applicationStatus &&
+    campaign.applicationStatus !== "withdrawn" &&
+    campaign.applicationStatus !== "rejected";
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] pb-20 lg:pb-0 font-sans lg:mt-20">
@@ -886,8 +895,8 @@ export default function CampaignDetailsPage() {
             <div className="lg:sticky lg:top-8 space-y-5">
               <ActiveSidebar
                 campaign={campaign}
-                onApply={isActive && !campaign.applicationStatus ? () => setIsApplyOpen(true) : null}
-                appliedStatus={campaign.applicationStatus || null}
+                onApply={isActive && !hasLiveApplication ? () => setIsApplyOpen(true) : null}
+                appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
               />
 
@@ -899,7 +908,7 @@ export default function CampaignDetailsPage() {
       </div>
 
       {/* Mobile floating bar */}
-      {isActive && !campaign.applicationStatus && (
+      {isActive && !hasLiveApplication && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <button
             onClick={() => setIsApplyOpen(true)}
@@ -909,7 +918,7 @@ export default function CampaignDetailsPage() {
           </button>
         </div>
       )}
-      {campaign.applicationStatus && (
+      {hasLiveApplication && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
           <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
@@ -981,7 +990,14 @@ function ActiveContent({ campaign }) {
           </div>
           <div>
             <p className="text-xs font-black text-slate-800">{campaign.deadline}</p>
-            <p className="text-[9px] text-red-400">{campaign.daysLeft} left</p>
+            {campaign.daysLeft && (
+              <p className="text-[9px] text-red-400">
+                {/* "Expired"/"Today" are status words; only counts get " left". */}
+                {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today"
+                  ? campaign.daysLeft
+                  : `${campaign.daysLeft} left`}
+              </p>
+            )}
           </div>
         </div>
         {campaign.slots && (
@@ -1595,6 +1611,7 @@ function OfferResponseCard({ campaign, refetch }) {
   const supabase = createClient();
   const [busy, setBusy] = useState(null); // "accept" | "withdraw" | null
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [popup, setPopup] = useState(null);
   const offer = Number(campaign?.brandOfferedRate || 0);
 
   const respond = async (nextStatus) => {
@@ -1609,7 +1626,7 @@ function OfferResponseCard({ campaign, refetch }) {
         },
       });
       if (error || data?.error) {
-        alert(error?.message || data?.error || "Could not update the application");
+        setPopup(error?.message || data?.error || "Could not update the application.");
         return;
       }
       refetch?.();
@@ -1680,6 +1697,7 @@ function OfferResponseCard({ campaign, refetch }) {
           </div>
         </div>
       )}
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 }
@@ -2101,6 +2119,11 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             const analysis = linkAnalysis[d.key] || {};
             const { detected, expected, mismatch, duplicate } = analysis;
             const hasUrl = !!links[d.key]?.trim();
+            // Drafts are the content file for brand review (Drive, WeTransfer,
+            // an mp4, etc.) — NOT the live post. If the creator pastes an
+            // Instagram link here, gently tell them it isn't needed yet.
+            const isDraftInstagramLink =
+              !isLiveLinksFlow && hasUrl && !!normaliseInstagramUrl(links[d.key]);
             const placeholder = !isLiveLinksFlow
               ? "https://… (any media link)"
               : expected === "story"
@@ -2137,6 +2160,16 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                           : "bg-slate-50 border-slate-100 focus:border-pink-200 focus:bg-white"
                   }`}
                 />
+                {isDraftInstagramLink && (
+                  <div className="flex items-start gap-1.5 text-[10.5px] font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg leading-relaxed">
+                    <span className="shrink-0 font-black">ℹ</span>
+                    <span>
+                      Instagram links aren&apos;t needed for drafts — share the draft file
+                      (Google Drive, WeTransfer, an mp4, etc.). You&apos;ll add the live
+                      Instagram link after the brand approves.
+                    </span>
+                  </div>
+                )}
                 {hasUrl && (detected || mismatch || duplicate) && (
                   <div className="flex items-center gap-2 text-[10px] font-bold flex-wrap">
                     {detected && detected !== "unknown" && !mismatch && (

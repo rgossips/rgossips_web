@@ -39,6 +39,19 @@ const parseBudget = (s) => {
   return digits ? parseInt(digits, 10) : 0;
 };
 
+// What a completed campaign actually earned = the negotiated/paid rate
+// (finalAgreedRate stamped at escrow, else the brand's offered rate). The
+// campaign's listed `budget` can differ from what was negotiated + paid
+// (e.g. a ₹2,996 listed campaign paid out ₹5,000), so earnings must use
+// this — falling back to the listed budget only when no rate is present.
+const earnedAmount = (c) => {
+  const final = Number(c?.finalAgreedRate) || 0;
+  if (final > 0) return final;
+  const offered = Number(c?.brandOfferedRate) || 0;
+  if (offered > 0) return offered;
+  return parseBudget(c?.budget);
+};
+
 const monthLabel = (d) =>
   d.toLocaleDateString("en-IN", { month: "short" });
 
@@ -117,7 +130,7 @@ const AnalyticsPage = ({ onBack }) => {
       ["approved", "accepted", "completed", "submitted", "payment"].includes(c.applicationStatus)
     );
 
-    const totalEarnings = completed.reduce((s, c) => s + parseBudget(c.budget), 0);
+    const totalEarnings = completed.reduce((s, c) => s + earnedAmount(c), 0);
 
     // Earnings this month (uses endDate, falls back to applicationDeadline)
     const now = new Date();
@@ -127,7 +140,7 @@ const AnalyticsPage = ({ onBack }) => {
         const d = c.endDate ? new Date(c.endDate) : c.applicationDeadline ? new Date(c.applicationDeadline) : null;
         return d && d >= thisMonthStart;
       })
-      .reduce((s, c) => s + parseBudget(c.budget), 0);
+      .reduce((s, c) => s + earnedAmount(c), 0);
 
     // Last 6 months earnings buckets
     const months = [];
@@ -140,7 +153,7 @@ const AnalyticsPage = ({ onBack }) => {
       if (!d) return;
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const m = months.find((x) => x.key === key);
-      if (m) m.value += parseBudget(c.budget);
+      if (m) m.value += earnedAmount(c);
     });
     const earningsTrend = (() => {
       if (months.length < 2) return null;
@@ -156,7 +169,7 @@ const AnalyticsPage = ({ onBack }) => {
       const cat = (c.tags && c.tags[0]) || "Other";
       const cur = catMap.get(cat) || { name: cat, count: 0, total: 0 };
       cur.count += 1;
-      cur.total += parseBudget(c.budget);
+      cur.total += earnedAmount(c);
       catMap.set(cat, cur);
     });
     const earningsByCategory = [...catMap.values()].sort((a, b) => b.total - a.total).slice(0, 5);
@@ -618,7 +631,7 @@ const RecentRow = ({ c, engagementPct }) => {
     status === "Completed"
       ? "bg-[#E6F1FB] text-[#1F6FB5]"
       : "bg-gradient-to-r from-[#FFC1D1] to-[#E94560] text-white";
-  const earnings = c.applicationStatus === "completed" ? parseBudget(c.budget) : 0;
+  const earnings = c.applicationStatus === "completed" ? earnedAmount(c) : 0;
   // Real per-campaign metrics from refresh-application-metrics, with the
   // influencer-level engagement rate as a fallback when no live links have
   // been measured yet.

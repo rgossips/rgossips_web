@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import AlertPopup from "@/components/AlertPopup";
 import { useAuth } from "@/context/AuthContext"; // Use the global hook
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -17,6 +18,7 @@ export default function UserHeader() {
   // Pull profile, role, and the setter from global context
   const { user, profile, setProfile, role } = useAuth();
 
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [pendingBanner, setPendingBanner] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState(null); // "select" | "upload"
@@ -59,7 +61,7 @@ export default function UserHeader() {
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to update banner URL:", err);
-      alert("Error updating banner. Please try again.");
+      setPopup("Error updating banner. Please try again.");
     }
   };
 
@@ -151,6 +153,7 @@ export default function UserHeader() {
           </div>
         </div>
       )}
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>
   );
 }

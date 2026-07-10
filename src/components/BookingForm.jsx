@@ -4,6 +4,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import AlertPopup from "@/components/AlertPopup";
 // Removed direct Firestore imports here as the parent handles them
 
 import {
@@ -58,6 +59,7 @@ const formSchema = z.object({
 export default function InfluencerCollabForm({ offer, onApply }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -86,7 +88,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
       form.reset();
     } catch (error) {
       console.error("Error submitting application:", error);
-      alert("Failed to submit. Please try again.");
+      setPopup("Failed to submit. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -311,6 +313,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </>
   );
 }

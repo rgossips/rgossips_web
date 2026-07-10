@@ -32,6 +32,7 @@ import {
   Globe,
 } from "lucide-react";
 import EditReelModal from "./EditReelModal";
+import AlertPopup from "./AlertPopup";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler } from "chart.js";
@@ -508,6 +509,9 @@ const InputGroup = ({ label, value, onChange, placeholder, icon, disabled }) => 
 const MyInformationDetail = ({ onBack }) => {
   const { profile, user, refreshProfile } = useAuth();
 
+  // Compact popup replacing window.alert() for upload / save errors.
+  const [popup, setPopup] = useState(null);
+
   // Editable fields initialized from profile
   const [name, setName] = useState(profile?.full_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
@@ -608,6 +612,7 @@ const MyInformationDetail = ({ onBack }) => {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [removingPhoto, setRemovingPhoto] = useState(false);
   const [customPhoto, setCustomPhoto] = useState(profile?.custom_profile_photo_url || null);
   const fileInputRef = useRef(null);
 
@@ -632,7 +637,7 @@ const MyInformationDetail = ({ onBack }) => {
     // but loading a huge source into FileReader + canvas can freeze
     // low-memory devices. Server enforces 5MB on the final upload.
     if (file.size > 10 * 1024 * 1024) {
-      alert("Image too large — please pick an image under 10MB.");
+      setPopup({ title: "Image too large", message: "Please pick an image under 10MB.", tone: "info" });
       e.target.value = "";
       return;
     }
@@ -689,24 +694,35 @@ const MyInformationDetail = ({ onBack }) => {
       setImageSrc(null);
     } catch (err) {
       console.error("Failed to upload photo:", err);
-      alert("Failed to upload photo. Please try again.");
+      setPopup("Failed to upload photo. Please try again.");
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemoveCustomPhoto = async () => {
+    if (removingPhoto) return;
+    setRemovingPhoto(true);
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-      await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+      const res = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
         body: JSON.stringify({ userId: user.id, table: "influencer_profiles", customProfilePhotoUrl: "" }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (data?.error) throw new Error(data.error);
       setCustomPhoto(null);
+      // Refresh the profile so custom_profile_photo_url actually clears —
+      // otherwise userPhoto/hasCustomPhoto fall back to the stale value and
+      // the photo doesn't visually update (and the X button stays).
+      await refreshProfile?.();
     } catch (err) {
       console.error("Failed to remove photo:", err);
+      setPopup("Failed to remove photo. Please try again.");
+    } finally {
+      setRemovingPhoto(false);
     }
   };
 
@@ -750,7 +766,7 @@ const MyInformationDetail = ({ onBack }) => {
       }, 1200);
     } catch (err) {
       console.error("Failed to save profile:", err);
-      alert("Failed to save. Please try again.");
+      setPopup("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -866,8 +882,12 @@ const MyInformationDetail = ({ onBack }) => {
                 <Camera size={12} className="text-white" />
               </div>
               {hasCustomPhoto && (
-                <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white cursor-pointer shadow-md" title="Remove custom photo">
-                  <X size={8} className="text-white" />
+                <div
+                  onClick={handleRemoveCustomPhoto}
+                  className={`absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white shadow-md ${removingPhoto ? "cursor-wait opacity-70" : "cursor-pointer"}`}
+                  title="Remove custom photo"
+                >
+                  {removingPhoto ? <Loader2 size={8} className="text-white animate-spin" /> : <X size={8} className="text-white" />}
                 </div>
               )}
             </div>
@@ -1410,6 +1430,7 @@ const MyInformationDetail = ({ onBack }) => {
           onClose={() => setShowServicesModal(false)}
         />
       )}
+      <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </main>
   );
 };
