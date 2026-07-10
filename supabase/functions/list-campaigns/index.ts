@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       let applications: any[] = [];
       const { data: appsData, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at, brand_offered_rate, proposed_rate")
+        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at, brand_offered_rate, proposed_rate, final_agreed_rate, escrow_amount")
         .eq("influencer_id", influencerId);
 
       if (appErr) {
@@ -88,6 +88,14 @@ Deno.serve(async (req) => {
           // render the Accept / Withdraw card on offer_sent.
           brandOfferedRate: app.brand_offered_rate || 0,
           proposedRate: app.proposed_rate || 0,
+          // Authoritative "what the creator actually earned" for a
+          // completed/paid campaign: the rate stamped at escrow time
+          // (falls back to the escrow_amount in paise ÷ 100). The campaign's
+          // budget_per_influencer is only the LISTED price and can differ
+          // from the negotiated amount — analytics must use this instead.
+          finalAgreedRate:
+            Number(app.final_agreed_rate || 0) ||
+            (app.escrow_amount ? Number(app.escrow_amount) / 100 : 0),
         };
       }
     }
@@ -226,6 +234,7 @@ Deno.serve(async (req) => {
       let metricsRefreshedAt: string | null = null;
       let brandOfferedRate = 0;
       let proposedRate = 0;
+      let finalAgreedRate = 0;
 
       if (appStatus) {
         applicationStatus = appStatus;
@@ -236,6 +245,7 @@ Deno.serve(async (req) => {
         metricsRefreshedAt = appData.metricsRefreshedAt || null;
         brandOfferedRate = Number(appData.brandOfferedRate || 0);
         proposedRate = Number(appData.proposedRate || 0);
+        finalAgreedRate = Number(appData.finalAgreedRate || 0);
 
         if (appStatus === "completed") {
           status = "Completed";
@@ -312,6 +322,7 @@ Deno.serve(async (req) => {
         metricsRefreshedAt,
         brandOfferedRate,
         proposedRate,
+        finalAgreedRate,
         contentTypesRequired: c.content_types_required || [],
         isExpired,
         // Audit fields packed in metadata

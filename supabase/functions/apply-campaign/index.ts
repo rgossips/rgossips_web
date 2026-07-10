@@ -28,7 +28,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check if already applied
+    // Check if already applied. A withdrawn or rejected application sends
+    // the campaign back to the influencer's Active tab (see list-campaigns),
+    // so re-applying is allowed — but the row still exists and there's a
+    // UNIQUE(campaign_id, influencer_id) index, so we must RE-ACTIVATE that
+    // row rather than insert a new one. Any other (still-live) status really
+    // is "already applied" and stays blocked.
+    const REAPPLIABLE = new Set(["withdrawn", "rejected"]);
     const { data: existing } = await supabaseAdmin
       .from("campaign_applications")
       .select("id, status")
@@ -36,12 +42,13 @@ Deno.serve(async (req) => {
       .eq("influencer_id", influencerId)
       .maybeSingle();
 
-    if (existing) {
+    if (existing && !REAPPLIABLE.has(existing.status)) {
       return new Response(
         JSON.stringify({ error: "already_applied", message: "You have already applied to this campaign", application: existing }),
         { status: 200, headers: jsonHeaders }
       );
     }
+    const reapplying = !!existing; // existing is withdrawn/rejected
 
     // Plan-based application limit (mirrors src/lib/plans.js values):
     //   starter → 3/month, pro/trial → 15/month, elite → unlimited
@@ -96,18 +103,42 @@ Deno.serve(async (req) => {
       console.error("Plan-limit check failed:", e);
     }
 
-    // Insert application
-    const { data: application, error: insertError } = await supabaseAdmin
-      .from("campaign_applications")
-      .insert({
-        campaign_id: campaignId,
-        influencer_id: influencerId,
-        initiated_by: "influencer",
-        status: "pending",
-        proposed_rate: proposedRate || null,
-      })
-      .select()
-      .single();
+    // Create OR re-activate the application. Re-applying updates the existing
+    // withdrawn/rejected row back to pending (the unique index forbids a
+    // second row), clearing any stale negotiation state from the prior round.
+    let application, insertError;
+    if (reapplying) {
+      const res = await supabaseAdmin
+        .from("campaign_applications")
+        .update({
+          status: "pending",
+          initiated_by: "influencer",
+          proposed_rate: proposedRate || null,
+          brand_offered_rate: null,
+          final_agreed_rate: null,
+          rejection_reason: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      application = res.data;
+      insertError = res.error;
+    } else {
+      const res = await supabaseAdmin
+        .from("campaign_applications")
+        .insert({
+          campaign_id: campaignId,
+          influencer_id: influencerId,
+          initiated_by: "influencer",
+          status: "pending",
+          proposed_rate: proposedRate || null,
+        })
+        .select()
+        .single();
+      application = res.data;
+      insertError = res.error;
+    }
 
     if (insertError) {
       console.error("Insert error:", insertError);
@@ -122,7 +153,7 @@ Deno.serve(async (req) => {
     try {
       await supabaseAdmin.from("application_status_history").insert({
         application_id: application.id,
-        from_status: null,
+        from_status: reapplying ? existing.status : null,
         to_status: "pending",
         changed_by: influencerId,
         changed_by_role: "influencer",

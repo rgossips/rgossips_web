@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
           couponParams.append("name", `RGossips RC (${applied})`);
           couponParams.append("max_redemptions", "1");
           const couponRes = await fetch("https://api.stripe.com/v1/coupons", {
+      signal: AbortSignal.timeout(15000),
             method: "POST",
             headers: {
               Authorization: `Bearer ${stripeKey}`,
@@ -154,6 +155,7 @@ Deno.serve(async (req) => {
     }
 
     const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      signal: AbortSignal.timeout(15000),
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeKey}`,

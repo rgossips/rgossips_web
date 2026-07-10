@@ -73,6 +73,62 @@ async function cancelRazorpaySub(subId: string): Promise<boolean> {
   }
 }
 
+// Fetch a single subscription straight from the gateway (authoritative,
+// no invoice-listing lag). Returns a normalised sub object owned by userId,
+// or null. Used to honour the client's "I just paid for THIS sub" hint even
+// before it shows up as active+paid in subscription-history.
+async function fetchSubDirect(
+  gateway: string,
+  subId: string,
+  userId: string,
+  fallbackPlan: string,
+): Promise<any | null> {
+  const DEAD = new Set(["cancelled", "canceled", "completed", "expired"]);
+  try {
+    if (gateway === "stripe") {
+      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+      if (!stripeKey) return null;
+      const res = await fetch(
+        `https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subId)}`,
+        { headers: { Authorization: `Bearer ${stripeKey}` } },
+      );
+      if (!res.ok) return null;
+      const s = await res.json().catch(() => ({}));
+      if (String(s?.metadata?.user_id || "") !== userId) return null;
+      if (DEAD.has(String(s?.status))) return null;
+      return {
+        id: s.id,
+        plan: String(s?.metadata?.plan || fallbackPlan || "").toLowerCase(),
+        cycle: String(s?.metadata?.cycle || "monthly"),
+        gateway: "stripe",
+        status: String(s?.status || "active"),
+      };
+    }
+    // Default: Razorpay.
+    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    if (!keyId || !keySecret) return null;
+    const res = await fetch(
+      `https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subId)}`,
+      { headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}` } },
+    );
+    if (!res.ok) return null;
+    const s = await res.json().catch(() => ({}));
+    if (String(s?.notes?.user_id || "") !== userId) return null;
+    if (DEAD.has(String(s?.status))) return null;
+    return {
+      id: s.id,
+      plan: String(s?.notes?.plan || fallbackPlan || "").toLowerCase(),
+      cycle: String(s?.notes?.cycle || "monthly"),
+      gateway: "razorpay",
+      status: String(s?.status || "active"),
+    };
+  } catch (e) {
+    log.warn("reconcile.direct_fetch_failed", { subId, gateway });
+    return null;
+  }
+}
+
 async function cancelStripeSub(subId: string): Promise<boolean> {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   if (!stripeKey) return false;
@@ -110,6 +166,16 @@ Deno.serve(async (req) => {
     );
     if (userErr || !userRes?.user) return json({ error: "unauthorized" }, 401);
     const userId = userRes.user.id;
+
+    // Optional hint: the subscription the client just paid for. Preferring it
+    // avoids a race — Razorpay activates/charges a new sub asynchronously, so
+    // right after checkout it may not be visible as active+paid in the
+    // invoice-based view yet, and "newest active+paid" would wrongly keep the
+    // OLD sub. We verify the preferred sub directly against the gateway.
+    const body = await req.json().catch(() => ({}));
+    const preferSubscriptionId = String(body?.preferSubscriptionId || "").trim();
+    const preferGateway = String(body?.preferGateway || "").toLowerCase();
+    const preferPlan = String(body?.preferPlan || "").toLowerCase();
 
     // Unified view of the user's subscriptions across both gateways.
     // subscription-history is invoice-based; group by subscription_id.
@@ -151,12 +217,21 @@ Deno.serve(async (req) => {
       .filter((s: any) => LIVE_STATES.has(s.status) && s.hasPaid)
       .sort((a: any, b: any) => (b.created || 0) - (a.created || 0));
 
-    if (live.length === 0) {
+    // Resolve the keeper. Honour the client's just-paid hint first (verified
+    // directly against the gateway so the async-activation lag can't make us
+    // keep the old sub); fall back to newest active+paid.
+    let keeper: any = null;
+    if (preferSubscriptionId) {
+      keeper =
+        live.find((s: any) => s.id === preferSubscriptionId) ||
+        (await fetchSubDirect(preferGateway, preferSubscriptionId, userId, preferPlan));
+    }
+    if (!keeper) keeper = live[0] || null;
+
+    if (!keeper) {
       log.info("reconcile.no_live_sub", { rid, userId });
       return json({ reconciled: false, reason: "no_active_subscription" });
     }
-
-    const keeper: any = live[0];
     if (!["starter", "pro", "elite"].includes(keeper.plan)) {
       log.warn("reconcile.unknown_plan", { rid, userId, subId: keeper.id, plan: keeper.plan });
       return json({ reconciled: false, reason: "unknown_plan" });
@@ -200,7 +275,8 @@ Deno.serve(async (req) => {
     // Single-active-subscription: cancel every OTHER live sub on either
     // gateway. This is what the webhook's cancelPriorSubscriptions does.
     const cancelled: string[] = [];
-    for (const s of live.slice(1)) {
+    for (const s of live) {
+      if (s.id === keeper.id) continue;
       const ok = s.gateway === "stripe" ? await cancelStripeSub(s.id) : await cancelRazorpaySub(s.id);
       if (ok) cancelled.push(s.id);
     }

@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
     const amountPaise = Math.round(rupees * 100);
 
     const orderRes = await fetch("https://api.razorpay.com/v1/orders", {
+      signal: AbortSignal.timeout(15000),
       method: "POST",
       headers: {
         Authorization: "Basic " + btoa(`${keyId}:${keySecret}`),

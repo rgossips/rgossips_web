@@ -35,6 +35,7 @@ async function findReusableSubscription(auth: string, userId: string, planId: st
   for (let skip = 0; skip < 200; skip += 100) {
     const res = await fetch(`https://api.razorpay.com/v1/subscriptions?count=100&skip=${skip}`, {
       headers: { Authorization: auth },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) break;
     const body = await res.json().catch(() => ({}));
@@ -142,6 +143,7 @@ Deno.serve(async (req) => {
         if (applied > 0) {
           const nowSec = Math.floor(Date.now() / 1000);
           const offerRes = await fetch("https://api.razorpay.com/v1/offers", {
+      signal: AbortSignal.timeout(15000),
             method: "POST",
             headers: { Authorization: auth, "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -192,6 +194,7 @@ Deno.serve(async (req) => {
     if (email || name || contact) {
       try {
         const custRes = await fetch("https://api.razorpay.com/v1/customers", {
+      signal: AbortSignal.timeout(15000),
           method: "POST",
           headers: { Authorization: auth, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -231,6 +234,7 @@ Deno.serve(async (req) => {
     if (rcOfferId) body.offer_id = rcOfferId;
 
     const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
+      signal: AbortSignal.timeout(15000),
       method: "POST",
       headers: {
         Authorization: auth,
