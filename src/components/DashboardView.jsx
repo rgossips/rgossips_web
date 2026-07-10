@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 import { useProfileCompletion } from "./CompleteProfileCard";
 
 const TRIAL_DAYS = 30;
@@ -409,6 +410,9 @@ const DashboardView = ({
             </Link>
           )}
 
+          {/* Reward Credits — above Profile Completion */}
+          <RewardCreditsCard />
+
           {/* Profile Completion */}
           <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
 
@@ -713,6 +717,9 @@ const DashboardView = ({
             <ChevronRight size={16} className="text-gray-300" />
           </Link>
         )}
+
+        {/* Reward Credits — above Profile Completion */}
+        <RewardCreditsCard />
 
         {/* Profile Completion */}
         <ProfileCompletionCard completion={completion} onOpenInfo={onOpenInfo} />
@@ -1085,6 +1092,70 @@ const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
     <ChevronRight size={18} className="text-gray-300" />
   </div>
 );
+
+// Reward Credits summary on the profile dashboard (above Profile Completion).
+// Unlike the home wallet strip it stays visible even when the balance is
+// only the still-locked welcome bonus, so the creator can always see their RC.
+function RewardCreditsCard() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClient();
+  const [avail, setAvail] = useState(0);
+  const [locked, setLocked] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("v_reward_credits_available_balance")
+          .select("available_balance, locked_balance")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setAvail(data?.available_balance || 0);
+        setLocked(data?.locked_balance || 0);
+      } catch { /* silent */ } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, supabase]);
+
+  // Nothing to show until we know the balance, and skip entirely if the user
+  // genuinely has zero RC (no bonus, no earnings).
+  if (!loaded || (avail <= 0 && locked <= 0)) return null;
+
+  return (
+    <button
+      onClick={() => router.push("/influencer/refer")}
+      className="w-full text-left flex items-center gap-3 rounded-2xl p-4 border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+    >
+      <div
+        className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0"
+        style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+      >
+        <Gift size={20} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reward Credits</p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <p className="text-xl font-black text-slate-900">
+            {avail} <span className="text-xs text-slate-400 font-bold">available</span>
+          </p>
+          {locked > 0 && (
+            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+              +{locked} locked
+            </span>
+          )}
+        </div>
+      </div>
+      <ChevronRight size={18} className="text-slate-300 shrink-0" />
+    </button>
+  );
+}
 
 function ProfileCompletionCard({ completion, onOpenInfo }) {
   const router = useRouter();

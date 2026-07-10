@@ -34,7 +34,10 @@ export default function ReferBalanceCard() {
     return () => { cancelled = true; };
   }, [user?.id, supabase]);
 
-  if (avail <= 0 && locked <= 0) return null;
+  // Only show once there's spendable RC. A brand-new signup whose only RC is
+  // the still-locked 50 welcome bonus is greeted by WelcomeRewardModal
+  // instead of a "0 available / +50 locked" strip.
+  if (avail <= 0) return null;
 
   return (
     <button
