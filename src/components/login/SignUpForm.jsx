@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { User, CheckCircle2, Loader2 } from "lucide-react";
+import { User, CheckCircle2, Loader2, Gift } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 const SignUpForm = ({
@@ -20,11 +20,13 @@ const SignUpForm = ({
   otpPreVerified = false,
   instagramProfile = null,
   initialName = "",
+  initialReferralCode = "",
 }) => {
   const supabase = createClient();
   const [formData, setFormData] = useState({
     name: initialName,
     phone: initialPhone,
+    referralCode: initialReferralCode,
   });
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -228,6 +230,28 @@ const SignUpForm = ({
                 </div>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Referral code (optional) — prefilled from a /login?ref= link. */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold text-slate-500 ml-1">
+            Referral Code <span className="text-slate-400 font-normal">(optional)</span>
+          </Label>
+          <div className="relative">
+            <Gift className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
+            <Input
+              placeholder="Enter referral code"
+              name="referralCode"
+              value={formData.referralCode}
+              onChange={handleChange}
+              className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]"
+            />
+          </div>
+          {formData.referralCode?.trim() && (
+            <p className="text-[11px] text-emerald-600 font-medium ml-1">
+              Referral code added 🎉
+            </p>
           )}
         </div>
       </div>

@@ -114,7 +114,7 @@ export default function ReferPage() {
   // Subscription-locked gate. `subscription_plan` is 'trial' for
   // unpaid users; anything else means they've paid at some point.
   const isSubscribed = profile?.subscription_plan && profile.subscription_plan !== "trial";
-  const shareUrl = referralCode ? `https://rgossips.com/?ref=${referralCode}` : "";
+  const shareUrl = referralCode ? `https://rgossips.com/login?ref=${referralCode}` : "";
 
   // Self-heal a missing code. ensureReferralCode normally runs in the
   // payment webhooks, so subscriptions that predate the Refer & Earn

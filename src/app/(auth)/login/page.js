@@ -66,12 +66,18 @@ const LoginInner = () => {
     router.replace(role === "brand" ? "/brands" : "/influencer");
   }, [authLoading, user, role, router]);
 
+  // A /login?ref=CODE referral link (influencer-only) drops the visitor
+  // straight into the influencer sign-up flow with the code prefilled. We
+  // seed the flow/step/role from it so there's no flash of the landing screen.
+  const initialRefCode = (searchParams?.get("ref") || "").trim();
+  const startWithReferralSignup = !!initialRefCode && !(searchParams?.get("invited") || "").trim();
+
   // --- UI & FLOW STATE ---
   // flow: "onboarding" | "signin" | "signup"
   // signin steps: 1=role, 2=phone entry, 3=otp verify
   // signup steps: 1=role, 2=instagram connect, 3=profile form, 4=categories, 5=preferences, 6=notifications, 7=success
-  const [flow, setFlow] = useState("onboarding");
-  const [step, setStep] = useState(1);
+  const [flow, setFlow] = useState(startWithReferralSignup ? "signup" : "onboarding");
+  const [step, setStep] = useState(startWithReferralSignup ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
@@ -100,12 +106,16 @@ const LoginInner = () => {
 
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
-    role: null,
+    role: startWithReferralSignup ? "influencer" : null,
     name: "",
     username: "",
     categories: [],
     services: [],
     notificationsEnabled: false,
+    // Referral code from a /login?ref=CODE link. Prefills the (editable)
+    // referral field on the sign-up form and is sent to create-profile →
+    // attribute-referral.
+    referralCode: initialRefCode,
   });
 
   // --- INVITATION LINK (?invited=<handle>) ---
@@ -175,6 +185,11 @@ const LoginInner = () => {
       cancelled = true;
     };
   }, [searchParams, supabase]);
+
+  // Referral link (/login?ref=CODE) is handled at state-init above:
+  // startWithReferralSignup seeds flow=signup / step=2 / role=influencer and
+  // signupData.referralCode, so the visitor lands on the influencer sign-up
+  // with the code prefilled (and editable) on the form. No effect needed.
 
   // --- NAVIGATION ---
   // Restore auth state after Instagram redirect (mobile or popup fallback)
@@ -531,11 +546,12 @@ const LoginInner = () => {
         name: formData.name || signupData.name,
         gstin: formData.gstin || "",
         invitationId: invitation?.id || null,
-        // Refer & Earn attribution — read once at page load, passed
-        // straight through to create-profile which forwards it to
-        // attribute-referral. Guarded server-side against self-referral
-        // + inactive referrer, so an empty string / bad code just no-ops.
-        referralCode: searchParams?.get("ref") || null,
+        // Refer & Earn attribution. Prefer the (editable) referral field on
+        // the form, falling back to the ?ref= link value. Forwarded to
+        // attribute-referral — guarded server-side against self-referral +
+        // inactive referrer, so an empty/bad code just no-ops.
+        referralCode:
+          (formData.referralCode || signupData.referralCode || searchParams?.get("ref") || "").trim() || null,
         // Device fingerprint for fraud attribution on the referral row.
         // Cheap non-cryptographic hash of UA + timezone + language +
         // screen size — stable across visits from the same browser,
@@ -807,6 +823,7 @@ const LoginInner = () => {
                           otpPreVerified={!!authUserId}
                           instagramProfile={instaProfile}
                           initialName={signupData.name}
+                          initialReferralCode={signupData.referralCode || ""}
                         />
                       )}
                       {step === 4 && <CategorySelection onNext={handleCategorySelection} onSkip={handleSkip} />}
