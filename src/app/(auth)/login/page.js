@@ -189,7 +189,23 @@ const LoginInner = () => {
   // Referral link (/login?ref=CODE) is handled at state-init above:
   // startWithReferralSignup seeds flow=signup / step=2 / role=influencer and
   // signupData.referralCode, so the visitor lands on the influencer sign-up
-  // with the code prefilled (and editable) on the form. No effect needed.
+  // with the code prefilled (and editable) on the form.
+  //
+  // Persist the code across the Instagram OAuth redirect: the callback returns
+  // to /login WITHOUT the ?ref= param, so we stash it in localStorage on the
+  // referral visit and restore it in the OAuth-restore effect below. Cleared
+  // on a fresh non-referral visit (no ?ref=, no OAuth in flight) so it can't
+  // leak into a later unrelated signup, and again once the profile is created.
+  useEffect(() => {
+    const ref = (searchParams?.get("ref") || "").trim();
+    const oauthInFlight =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("instagram_oauth_code") || localStorage.getItem("instagram_oauth_error"));
+    try {
+      if (ref) localStorage.setItem("rg_signup_ref", ref);
+      else if (!oauthInFlight) localStorage.removeItem("rg_signup_ref");
+    } catch { /* storage unavailable */ }
+  }, [searchParams]);
 
   // --- NAVIGATION ---
   // Restore auth state after Instagram redirect (mobile or popup fallback)
@@ -210,8 +226,11 @@ const LoginInner = () => {
         localStorage.removeItem("instagram_oauth_role");
         return;
       }
-      // Don't remove mode/role yet — InstagramConnect needs them to know it should process the code
-      setSignupData((prev) => ({ ...prev, role: savedRole }));
+      // Don't remove mode/role yet — InstagramConnect needs them to know it should process the code.
+      // Restore the referral code stashed before the OAuth redirect (the
+      // callback URL drops the ?ref= param) so it survives to the sign-up form.
+      const savedRef = (localStorage.getItem("rg_signup_ref") || "").trim();
+      setSignupData((prev) => ({ ...prev, role: savedRole, referralCode: prev.referralCode || savedRef }));
       setFlow("signup");
       setStep(2); // Instagram connect step
     }
@@ -601,6 +620,9 @@ const LoginInner = () => {
       const newSession = createResult?.session;
       if (!newUserId) throw new Error("Account creation did not complete. Please try again.");
       setAuthUserId(newUserId);
+      // Referral code is now consumed by create-profile → clear the stash so
+      // it can't leak into a later signup on this device.
+      try { localStorage.removeItem("rg_signup_ref"); } catch { /* ignore */ }
 
       if (newSession?.access_token) {
         setPendingSession(newSession);
