@@ -105,6 +105,8 @@ export default function PricingPage() {
   // the new remaining balance without a hard reload.
   const [availableRc, setAvailableRc] = useState(0);
   const [applyRc, setApplyRc] = useState(false);
+  // Referrer identity when a referral 50%-off-first-subscription is available.
+  const [referralDiscount, setReferralDiscount] = useState(null);
   const [verifying, setVerifying] = useState(false);
   // Locks the whole page while we're talking to the gateway between
   // "user picked Stripe / Razorpay" and "checkout UI is visible." The
@@ -286,14 +288,26 @@ export default function PricingPage() {
     }
     (async () => {
       try {
-        const { data } = await supabase
-          .from("v_reward_credits_available_balance")
-          .select("available_balance")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (!cancelled) setAvailableRc(data?.available_balance || 0);
+        const [{ data }, { data: refData }] = await Promise.all([
+          supabase
+            .from("v_reward_credits_available_balance")
+            .select("available_balance")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          // Referral perk — returns the referrer's identity only while the
+          // 50%-off first-subscription discount is still available (referee,
+          // active referral, not yet subscribed). null once used.
+          supabase.rpc("get_my_referrer"),
+        ]);
+        if (cancelled) return;
+        setAvailableRc(data?.available_balance || 0);
+        const ref = Array.isArray(refData) ? refData[0] : refData;
+        setReferralDiscount(ref && (ref.referrer_name || ref.referrer_username) ? ref : null);
       } catch {
-        if (!cancelled) setAvailableRc(0);
+        if (!cancelled) {
+          setAvailableRc(0);
+          setReferralDiscount(null);
+        }
       }
     })();
     return () => {
@@ -582,12 +596,46 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* Referral 50%-off — visible when this referred creator still has the
+            first-subscription discount available. It applies automatically at
+            checkout (and takes precedence over RC on that first invoice). */}
+        {referralDiscount && (
+          <div className="flex justify-center">
+            <div className="flex items-center gap-3 rounded-2xl px-4 py-3 border border-pink-200 bg-gradient-to-r from-purple-50 to-pink-50 shadow-sm max-w-md">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 text-base font-black bg-emerald-500">
+                %
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black text-slate-900">50% off your first subscription 🎉</p>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  <span className="text-[11px] text-slate-500 font-medium">Gifted by</span>
+                  {referralDiscount.referrer_photo ? (
+                    <img
+                      src={referralDiscount.referrer_photo}
+                      alt={referralDiscount.referrer_name || referralDiscount.referrer_username}
+                      className="w-4 h-4 rounded-full object-cover border border-white shadow-sm"
+                    />
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-[8px] font-black text-white">
+                      {(referralDiscount.referrer_name || referralDiscount.referrer_username || "?").charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-black text-slate-800">
+                    {referralDiscount.referrer_name || `@${referralDiscount.referrer_username}`}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-normal">· applied automatically at checkout</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* RC redemption toggle — shown only when the user has spendable RC.
-            The 50%-of-plan cap is enforced server-side in redeem-rc /
-            stripe-checkout / razorpay-checkout, so we advertise the raw
-            balance here and let the server compute the actual applied
-            amount at checkout time. */}
-        {availableRc > 0 && (
+            Hidden while the referral 50%-off is active (it wins on the first
+            invoice; the RC stays in the wallet for later). The 50%-of-plan cap
+            is enforced server-side in redeem-rc / stripe-checkout /
+            razorpay-checkout. */}
+        {availableRc > 0 && !referralDiscount && (
           <div className="flex justify-center">
             <label className="inline-flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm cursor-pointer">
               <input

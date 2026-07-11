@@ -37,6 +37,51 @@ Deno.serve(async (req) => {
       );
     }
 
+    const supaUrl0 = Deno.env.get("SUPABASE_URL")!;
+    const supaKey0 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Referral perk — a REFERRED creator gets 50% off their FIRST subscription
+    // (gifted by the referrer). Eligible = they're a referee on an active
+    // referral AND haven't subscribed yet. Takes precedence over RC redemption
+    // on this invoice (Stripe allows only one coupon per Checkout Session); the
+    // RC stays in the wallet for a later invoice. One-shot by nature: once they
+    // subscribe, subscription_plan flips and they no longer qualify.
+    let referralCouponId: string | null = null;
+    try {
+      const [refRes, profRes] = await Promise.all([
+        fetch(
+          `${supaUrl0}/rest/v1/referrals?referee_id=eq.${encodeURIComponent(userId)}&status=in.(SIGNED_UP,QUALIFIED,REWARDED)&select=id&limit=1`,
+          { headers: { apikey: supaKey0, Authorization: `Bearer ${supaKey0}` } }
+        ),
+        fetch(
+          `${supaUrl0}/rest/v1/influencer_profiles?influencer_id=eq.${encodeURIComponent(userId)}&select=subscription_plan`,
+          { headers: { apikey: supaKey0, Authorization: `Bearer ${supaKey0}` } }
+        ),
+      ]);
+      const refRows = await refRes.json().catch(() => []);
+      const profRows = await profRes.json().catch(() => []);
+      const plan0 = (Array.isArray(profRows) && profRows[0]?.subscription_plan) || "";
+      const notSubscribed = !plan0 || plan0 === "trial";
+      if (Array.isArray(refRows) && refRows.length > 0 && notSubscribed) {
+        const cp = new URLSearchParams();
+        cp.append("percent_off", "50");
+        cp.append("duration", "once");
+        cp.append("name", "RGossips referral — 50% off first plan");
+        cp.append("max_redemptions", "1");
+        const cr = await fetch("https://api.stripe.com/v1/coupons", {
+          signal: AbortSignal.timeout(15000),
+          method: "POST",
+          headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+          body: cp.toString(),
+        });
+        const c = await cr.json();
+        if (c?.id) referralCouponId = c.id;
+        else console.error("Referral coupon create failed:", c?.error?.message || JSON.stringify(c));
+      }
+    } catch (e) {
+      console.error("Referral discount (stripe) prep failed:", (e as any)?.message);
+    }
+
     // Refer & Earn — optional RC redemption on the first invoice.
     // We create an ad-hoc, one-time Stripe Coupon and stamp the applied
     // amount into session metadata. The actual ledger debit is inserted
@@ -44,10 +89,11 @@ Deno.serve(async (req) => {
     // so abandoned sessions leave the wallet untouched. Cap semantics
     // (available balance + 50% of plan) live in the redeem-rc function
     // — we mirror them client-side here for a live preview but the
-    // webhook re-checks before posting the ledger row.
+    // webhook re-checks before posting the ledger row. Skipped when the
+    // referral 50%-off is active (one coupon per session; referral wins).
     let rcCouponId: string | null = null;
     let rcAppliedRupees = 0;
-    if (applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+    if (!referralCouponId && applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
       try {
         const supaUrl = Deno.env.get("SUPABASE_URL")!;
         const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -124,9 +170,13 @@ Deno.serve(async (req) => {
     params.append("metadata[cycle]", cycle || "monthly");
     params.append("success_url", `${appUrl}/influencer/pricing?success=1&session_id={CHECKOUT_SESSION_ID}`);
     params.append("cancel_url", `${appUrl}/influencer/pricing?canceled=1`);
-    // `allow_promotion_codes` and `discounts[]` are mutually exclusive
-    // on a Checkout Session. Prefer the RC coupon when we have one.
-    if (rcCouponId) {
+    // `allow_promotion_codes` and `discounts[]` are mutually exclusive on a
+    // Checkout Session. Priority: referral 50%-off > RC redemption > promo box.
+    if (referralCouponId) {
+      params.append("discounts[0][coupon]", referralCouponId);
+      params.append("metadata[referral_discount]", "50");
+      params.append("subscription_data[metadata][referral_discount]", "50");
+    } else if (rcCouponId) {
       params.append("discounts[0][coupon]", rcCouponId);
       params.append("metadata[rc_applied]", String(rcAppliedRupees));
       params.append("subscription_data[metadata][rc_applied]", String(rcAppliedRupees));

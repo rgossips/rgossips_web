@@ -21,6 +21,9 @@ export default function WelcomeRewardModal() {
   const { user } = useAuth();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
+  // Referrer identity when this signup came through a referral link — drives
+  // the "50% off first subscription, gifted by <name>" row.
+  const [referrer, setReferrer] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -33,14 +36,21 @@ export default function WelcomeRewardModal() {
 
     (async () => {
       try {
-        const { data } = await supabase
-          .from("v_reward_credits_available_balance")
-          .select("available_balance, locked_balance")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const [{ data }, { data: refData }] = await Promise.all([
+          supabase
+            .from("v_reward_credits_available_balance")
+            .select("available_balance, locked_balance")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          // Returns the referrer's identity only while the 50%-off is still
+          // available (referee, active referral, not yet subscribed).
+          supabase.rpc("get_my_referrer"),
+        ]);
         if (cancelled) return;
         const avail = data?.available_balance || 0;
         const locked = data?.locked_balance || 0;
+        const ref = Array.isArray(refData) ? refData[0] : refData;
+        if (ref && (ref.referrer_name || ref.referrer_username)) setReferrer(ref);
         // Fresh-signup fingerprint: the 50 RC welcome bonus is still locked
         // and nothing has been unlocked/earned yet.
         if (locked >= 50 && avail <= 0) setOpen(true);
@@ -155,6 +165,35 @@ export default function WelcomeRewardModal() {
                     </p>
                   </div>
                 </div>
+
+                {/* Referral gift — only when this signup came via a referral. */}
+                {referrer && (
+                  <div className="flex items-center gap-3 rounded-2xl border border-pink-100 bg-pink-50/60 p-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 text-base font-black bg-emerald-500">
+                      %
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-black text-slate-900">50% off your first subscription</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] text-slate-500 font-medium">Gifted by</span>
+                        {referrer.referrer_photo ? (
+                          <img
+                            src={referrer.referrer_photo}
+                            alt={referrer.referrer_name || referrer.referrer_username}
+                            className="w-4 h-4 rounded-full object-cover border border-white shadow-sm"
+                          />
+                        ) : (
+                          <span className="w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-[8px] font-black text-white">
+                            {(referrer.referrer_name || referrer.referrer_username || "?").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        <span className="text-[11px] font-black text-slate-800 truncate">
+                          {referrer.referrer_name || `@${referrer.referrer_username}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* CTA */}

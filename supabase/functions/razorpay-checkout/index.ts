@@ -117,6 +117,60 @@ Deno.serve(async (req) => {
       console.warn("razorpay-checkout idempotency lookup failed:", (e as any)?.message);
     }
 
+    const supaUrl0 = Deno.env.get("SUPABASE_URL")!;
+    const supaKey0 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Referral perk — a REFERRED creator gets 50% off their FIRST subscription
+    // (gifted by the referrer). Eligible = they're a referee on an active
+    // referral AND haven't subscribed yet. Takes precedence over RC on this
+    // invoice; RC stays in the wallet for later. One-shot: once subscribed,
+    // subscription_plan flips and they no longer qualify.
+    let referralOfferId: string | null = null;
+    if (Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+      try {
+        const [refRes, profRes] = await Promise.all([
+          fetch(
+            `${supaUrl0}/rest/v1/referrals?referee_id=eq.${encodeURIComponent(userId)}&status=in.(SIGNED_UP,QUALIFIED,REWARDED)&select=id&limit=1`,
+            { headers: { apikey: supaKey0, Authorization: `Bearer ${supaKey0}` } }
+          ),
+          fetch(
+            `${supaUrl0}/rest/v1/influencer_profiles?influencer_id=eq.${encodeURIComponent(userId)}&select=subscription_plan`,
+            { headers: { apikey: supaKey0, Authorization: `Bearer ${supaKey0}` } }
+          ),
+        ]);
+        const refRows = await refRes.json().catch(() => []);
+        const profRows = await profRes.json().catch(() => []);
+        const plan0 = (Array.isArray(profRows) && profRows[0]?.subscription_plan) || "";
+        const notSubscribed = !plan0 || plan0 === "trial";
+        if (Array.isArray(refRows) && refRows.length > 0 && notSubscribed) {
+          const nowSec = Math.floor(Date.now() / 1000);
+          const halfPaise = Math.round(Number(planPriceRupees) * 0.5 * 100);
+          const offerRes = await fetch("https://api.razorpay.com/v1/offers", {
+            signal: AbortSignal.timeout(15000),
+            method: "POST",
+            headers: { Authorization: auth, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: "RGossips referral 50% off",
+              payment_method: "card",
+              discount_amount: halfPaise,
+              min_amount: Number(planPriceRupees) * 100,
+              redeem_type: "promo",
+              max_offer_usage: 1,
+              display_text: "Referral 50% off",
+              starts_at: nowSec,
+              ends_at: nowSec + 24 * 60 * 60,
+              notes: { user_id: userId, referral_discount: "50" },
+            }),
+          });
+          const offer = await offerRes.json();
+          if (offer?.id) referralOfferId = offer.id;
+          else console.error("razorpay referral offer create failed:", offer?.error?.description || JSON.stringify(offer));
+        }
+      } catch (e) {
+        console.error("Referral discount (razorpay) prep failed:", (e as any)?.message);
+      }
+    }
+
     // Refer & Earn — optional RC redemption on the first Razorpay invoice.
     // Razorpay applies discounts via `offer_id` on subscription creation.
     // Offers are created via POST /v1/offers with a validity window; the
@@ -125,10 +179,11 @@ Deno.serve(async (req) => {
     // no-discount subscription). The applied amount is stamped into the
     // subscription's `notes.rc_applied` and only debited by the webhook
     // AFTER a successful subscription.charged — abandoned checkouts leave
-    // the wallet untouched.
+    // the wallet untouched. Skipped when the referral 50%-off is active
+    // (one offer per subscription; referral wins).
     let rcOfferId: string | null = null;
     let rcAppliedRupees = 0;
-    if (applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+    if (!referralOfferId && applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
       try {
         const supaUrl = Deno.env.get("SUPABASE_URL")!;
         const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -231,7 +286,9 @@ Deno.serve(async (req) => {
       customer_notify: 1,
     };
     if (customerId) body.customer_id = customerId;
-    if (rcOfferId) body.offer_id = rcOfferId;
+    // Referral 50%-off takes precedence over RC (one offer per subscription).
+    if (referralOfferId) body.offer_id = referralOfferId;
+    else if (rcOfferId) body.offer_id = rcOfferId;
 
     const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
       signal: AbortSignal.timeout(15000),
