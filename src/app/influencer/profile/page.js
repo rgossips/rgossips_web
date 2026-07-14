@@ -13,10 +13,12 @@ import TrustedDevices from "@/components/TrustedDevices";
 import DeactivateAccount from "@/components/DeactiveAccount";
 import HelpSupport from "@/components/HelpAndSupport";
 import PaymentMethods from "@/components/PaymentMethods";
+import InfluencerAccountActionsModal from "@/components/InfluencerAccountActionsModal";
 
 export default function ProfilePage() {
   const router = useRouter();
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -67,6 +69,7 @@ export default function ProfilePage() {
             onBack={() => setView("dashboard")}
             onTrustedDevices={() => setView("trusted-devices")}
             onDeactiveAccount={() => setView("deactivate-account")}
+            onDeleteAccount={() => setDeleteOpen(true)}
           />
         )}
         {view === "trusted-devices" && (
@@ -88,6 +91,14 @@ export default function ProfilePage() {
           <HelpSupport key="help-support" onBack={() => setView("dashboard")} />
         )}
       </AnimatePresence>
+
+      {/* Permanent-delete flow (soft delete → pending_deletion, 30-day grace).
+          Deactivate keeps its existing full-page flow above. */}
+      <InfluencerAccountActionsModal
+        variant="delete"
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

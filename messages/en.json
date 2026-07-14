@@ -40,6 +40,56 @@
   "LanguageSwitcher": {
     "label": "Language"
   },
+  "InfluencerAccountActionsModal": {
+    "title": { "delete": "Delete Account", "deactivate": "Deactivate Account" },
+    "subtitle": {
+      "delete": "30-day grace period — admin can restore on request",
+      "deactivate": "Reversible — sign back in any time"
+    },
+    "close": "Close",
+    "deleteInfo": {
+      "heading": "This is a soft delete with a 30-day grace window.",
+      "point1": "• Your profile and all related data is hidden immediately.",
+      "point2": "• Sign-in is blocked while the account is pending deletion.",
+      "point3": "• Email <email>grievance@rgossips.com</email> within 30 days if you want it restored.",
+      "point4": "• After 30 days, your profile, applications, media kit and contact details are permanently removed."
+    },
+    "deactivateInfo": {
+      "heading": "Deactivating is reversible.",
+      "point1": "• Your profile stops appearing to brands.",
+      "point2": "• Active campaign applications are paused.",
+      "point3": "• Signing in again with the same number reactivates everything automatically."
+    },
+    "reasonHeading": {
+      "delete": "Tell us why you're leaving",
+      "deactivate": "Tell us why you're taking a break"
+    },
+    "reasonSubtext": "This helps us improve RGossips.",
+    "reasonsDeactivate": {
+      "break": "Taking a break from social media",
+      "otherPlatform": "Found another platform",
+      "privacy": "Privacy concerns",
+      "notEnoughCollabs": "Not getting enough collaboration opportunities",
+      "tooManyNotifications": "Too many notifications",
+      "security": "Account security issues",
+      "other": "Other"
+    },
+    "reasonsDelete": {
+      "leavingCreating": "Stepping away from creating",
+      "movingPlatform": "Moving to a different platform",
+      "privacy": "Privacy concerns",
+      "createdByMistake": "Created the account by mistake",
+      "duplicate": "Duplicate account",
+      "other": "Other"
+    },
+    "confirmCheckbox": {
+      "delete": "I understand my account will be hidden now and permanently removed after 30 days unless I contact admin.",
+      "deactivate": "I understand my account will be deactivated and brands will no longer see my profile."
+    },
+    "typeToConfirm": "Type <hl>DELETE</hl> to confirm",
+    "actions": { "cancel": "Cancel", "working": "Working…", "deleteAccount": "Delete Account", "deactivate": "Deactivate" },
+    "errors": { "failedToSubmit": "Failed to submit" }
+  },
   "InfluencerHome": {
     "loading": "Loading…",
     "nav": {
@@ -2034,8 +2084,8 @@
         "sub": "Control your data and access"
       },
       "payment": {
-        "title": "Payment Methods",
-        "sub": "Manage payout accounts"
+        "title": "Subscriptions and Payouts",
+        "sub": "Your plan, invoices and payout accounts"
       },
       "refer": {
         "title": "Refer & Earn",
@@ -4087,11 +4137,11 @@
     }
   },
   "PaymentMethods": {
-    "title": "Payments",
-    "subtitle": "Manage payment methods you use to receive earnings",
+    "title": "Subscriptions and Payouts",
+    "subtitle": "Manage your subscription and the accounts you use to receive earnings",
     "pendingWaiting": "₹{amount} is waiting for you",
     "pendingHint": "Add a UPI ID or bank account to receive your campaign earnings.",
-    "methodsHeading": "Payment Methods",
+    "methodsHeading": "Payout Methods",
     "addNew": "Add New",
     "noMethods": "No payment methods added",
     "noMethodsHint": "Add a UPI ID or bank account to receive payments",
@@ -4218,6 +4268,10 @@
     "deactivateAccount": {
       "title": "Deactivate Account",
       "description": "Temporarily disable your account"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "description": "Permanently remove your account (30-day grace)"
     },
     "securityTips": {
       "heading": "Security Tips",

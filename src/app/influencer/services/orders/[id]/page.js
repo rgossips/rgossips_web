@@ -201,7 +201,9 @@ export default function ServiceOrderDetailPage() {
   // disabled (actionLoading) only after the user has chosen.
   const openPayPicker = (phase) => {
     setError("");
-    setPickerPhase(phase);
+    // Razorpay is the only enabled gateway — skip the picker and pay directly.
+    // Restore `setPickerPhase(phase)` here to bring the picker back.
+    payViaGateway(phase, "razorpay");
   };
 
   // Routes the actual checkout call. Stripe → hosted page redirect;

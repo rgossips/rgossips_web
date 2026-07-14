@@ -29,6 +29,9 @@ export default function ServiceDetailPage() {
   // Latest order this user has for this service, if any. Shown in the right
   // rail so they can pick up where they left off.
   const [latestOrder, setLatestOrder] = useState(null);
+  // Navigation feedback — App Router transitions can take a beat, so the CTA
+  // shows a spinner the moment it's tapped instead of feeling dead.
+  const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,10 +226,14 @@ export default function ServiceDetailPage() {
 
             <div className="space-y-2 pt-1">
               <button
-                onClick={() => router.push(`/influencer/services/${service.slug}/quote`)}
-                className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100"
+                onClick={() => {
+                  setNavigating(true);
+                  router.push(`/influencer/services/${service.slug}/quote`);
+                }}
+                disabled={navigating}
+                className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-70"
               >
-                <MessageSquare size={15} /> {t("getCustomQuote")}
+                {navigating ? <Loader2 size={15} className="animate-spin" /> : <MessageSquare size={15} />} {t("getCustomQuote")}
               </button>
             </div>
 

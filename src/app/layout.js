@@ -8,6 +8,7 @@ import { LoadingProvider } from "@/context/LoadingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Script from "next/script";
 import NavigationLoader from "@/components/NavigationLoader";
+import ScrollReset from "@/components/ScrollReset";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -174,6 +175,7 @@ export default async function RootLayout({ children }) {
         </Script>
 
         <NavigationLoader />
+        <ScrollReset />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <LoadingProvider>
             <GlobalProvider>

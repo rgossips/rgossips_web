@@ -8,6 +8,13 @@ import { useTranslations } from "next-intl";
 // upgrades) and the service-orders page (advance + final payments).
 // Caller supplies a title/subtitle pair and an onPick(gateway) callback;
 // gateway is one of "razorpay" | "stripe".
+//
+// Stripe is currently DISABLED — only Razorpay is offered. All Stripe code
+// (this option, the StripeLogo, the stripe-* edge functions and the
+// gateway==="stripe" branches in callers) is intentionally kept so the option
+// can be re-enabled by flipping SHOW_STRIPE back to true.
+const SHOW_STRIPE = false;
+
 export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }) {
   const t = useTranslations("GatewayPickerModal");
   return (
@@ -38,13 +45,15 @@ export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }
             tagline={t("razorpay.tagline")}
             accent="border-[#0c2451]/15 hover:border-[#0c2451]/40 hover:bg-[#0c2451]/5"
           />
-          <GatewayOption
-            onClick={() => onPick("stripe")}
-            logo={<StripeLogo />}
-            title="Stripe"
-            tagline={t("stripe.tagline")}
-            accent="border-[#635BFF]/15 hover:border-[#635BFF]/40 hover:bg-[#635BFF]/5"
-          />
+          {SHOW_STRIPE && (
+            <GatewayOption
+              onClick={() => onPick("stripe")}
+              logo={<StripeLogo />}
+              title="Stripe"
+              tagline={t("stripe.tagline")}
+              accent="border-[#635BFF]/15 hover:border-[#635BFF]/40 hover:bg-[#635BFF]/5"
+            />
+          )}
 
           <p className="text-[10px] text-slate-400 text-center pt-2 leading-relaxed">
             {t("secureCheckoutNote")}

@@ -115,6 +115,11 @@ neither refer nor earn RC.
   0 RC) + a persistent "Refer & Earn" row in the profile dashboard's
   Settings section on BOTH web (`DashboardView.jsx`, added 2026-07) and
   mobile (`DashboardView.tsx`).
+- **Mobile route-name fix (2026-07)**: the Refer screen registers only as
+  `InfluencerRefer` (`App.tsx`), but three mobile entry points
+  (`ReferBalanceCard`, `WelcomeRewardModal`, `DashboardView` RC card) were
+  navigating to an unregistered `'Refer'` → silent no-op in prod. All three
+  now use `'InfluencerRefer'`. The Settings row was already correct.
 - **Missing-code self-heal (2026-07)**: `ensureReferralCode` only runs in
   the payment webhooks, so subs that predate Phase 1 or admin-comped
   plans (`updateInfluencerPlan` bypasses gateways) had a paid
@@ -224,6 +229,19 @@ silently regress.
     for the same user+plan instead of creating a duplicate; returns
     `already_active` so the client skips reopening checkout (no double
     charge). Prevents the double-subscription seen on double-submit.
+  - **Mobile annual-plan fix (2026-07)**: mobile annual cards use ids
+    `starter_annual`/`pro_annual`/`elite_annual`, but `PLAN_RAZORPAY_IDS` /
+    `PLAN_PRICING` / `PLAN_STRIPE_PRICES` (`lib/plans.ts`) are keyed by base
+    tier + a separate `billing` cycle — so `startRazorpay`/`startStripe` in
+    `InfluencerPricing.tsx` were looking up `PLAN_RAZORPAY_IDS['pro_annual']`
+    → `undefined` → "not configured" throw; annual checkout was impossible.
+    Fixed by stripping the suffix (`baseId = plan.id.replace(/_annual$/,'')`)
+    before every config lookup and before the backend-facing `plan`/`notes.plan`
+    /`finishSuccess` values (cycle still passed as `billing`). `planPriceRupees`
+    is now parsed from the **displayed card price** (`plan.price`) rather than
+    `PLAN_PRICING`, so the RC/discount cap can't drift from what the user sees
+    (the annual cards read ₹2,899/₹6,899 for Pro/Elite while `PLAN_PRICING` had
+    2,699/6,299 — display is now authoritative).
   - Pricing success modal shows the plan the user PURCHASED (stashed
     pre-checkout), not a possibly-stale profile plan; has an **Open Invoice**
     button (invoice `hosted_url`/`pdf_url` from `subscription-history`).
@@ -405,26 +423,33 @@ conversion is incremental (foundation + one reference surface each so far).
     quirk to know about: in `app/influencer/services/page.js` the tag-map uses a
     param named `t` that shadows the translation `t` — harmless (no `t()` call
     inside that scope) but don't "fix" it blindly.
-  - **MOBILE + ADMIN: IN PROGRESS, PAUSED (2026-07).** Two workflows (mobile =
-    i18next over ~108 `.tsx`; admin = next-intl over ~69 `.tsx`) were launched
-    then **stopped mid-run** by the user ("continue later"). State on disk:
-    SOME files in `rsgossips_app` + `rgossips-admin` are already edited to use
-    `t(...)`, and their namespace parts are written but **NOT merged** — mobile
-    parts in `rsgossips_app/src/i18n/parts/`, admin parts in
-    `rgossips-admin/messages/i18n-parts/`. Until merged, converted mobile/admin
-    components render raw keys / missing-key fallbacks. Neither app has been
-    re-built. Nothing committed.
-    **To finish (new session — same-session workflow resume/cache is gone):**
-    1. Re-discover the still-unconverted files per app (those NOT importing
-       `react-i18next` / `next-intl`) and re-run the same workflow pattern over
-       just those (mobile agents: i18next conventions — `useTranslation`,
-       `t('<Ns>.key')`, `{{var}}` interpolation, `key_one`/`key_other` plurals,
-       no `t.rich`; admin agents: same next-intl recipe as web).
-    2. Merge each app's `parts/` dir into its `en.json` (mobile
-       `src/i18n/en.json`, admin `messages/en.json`) with a deep-merge, then
-       delete the `parts/` dir.
-    3. Verify: admin `npx next build`; mobile `npx tsc --noEmit`. Fix any
-       agent-introduced compile errors (build/tsc names the file).
+  - **MOBILE: DONE (2026-07).** The paused workflow had already converted all
+    **108 `.tsx`** to `t(...)` (i18next) and written per-component parts to
+    `rsgossips_app/src/i18n/parts/`, but never merged them (en.json still had
+    only the 3 foundation namespaces, so converted screens rendered raw keys).
+    Completed by: deep-merging all 108 parts into `src/i18n/en.json`
+    (**111 namespaces / ~2,210 keys**, zero collisions), deleting the `parts/`
+    dir, and verifying — **1,803 static `t()` keys resolve with 0 missing**;
+    86 dynamic `t(\`ns.${x}\`)` sites (data-array maps, e.g. pricing
+    `plans.${plan.id}.name` which has both base + `_annual` keys). The 8 files
+    not importing react-i18next were confirmed to have **no user-facing copy**
+    (contexts, layouts, composition-only screens; `InfluencerLayout`'s only
+    `<Text>` is an unread badge count → its part is empty `{}`). `tsc --noEmit`
+    is **green (0 errors)** after fixing one conversion-introduced `t`-shadow
+    (`InfluencerMediaKit` `.map((t: MediaKitTemplate)…` renamed param → `tpl`
+    so the inner `t('…live')` resolves to the translation fn) and a pre-existing
+    `new Promise(r => setTimeout(r, 1200))` typing.
+  - **ADMIN: IN PROGRESS, PAUSED (2026-07).** next-intl over ~69 `.tsx` was
+    launched then **stopped mid-run**. State on disk: SOME `rgossips-admin`
+    files edited to use `t(...)`, namespace parts written to
+    `rgossips-admin/messages/i18n-parts/` but **NOT merged** → converted
+    components render raw keys. Not re-built. Nothing committed.
+    **To finish (new session):**
+    1. Re-discover still-unconverted files (those NOT importing `next-intl`) and
+       re-run the same next-intl recipe as web.
+    2. Deep-merge `messages/i18n-parts/` into `messages/en.json`, delete the
+       parts dir.
+    3. Verify `npx next build`; fix any agent-introduced compile errors.
   - Tradeoff: reading the cookie in `getRequestConfig` makes pages render
     dynamically (all routes `ƒ`). Fine here (auth-heavy app); revisit only if a
     public page needs static caching.

@@ -317,7 +317,10 @@ export default function PricingPage() {
       showError(t("errors.signInMessage"), t("errors.signInTitle"));
       return;
     }
-    setGatewayPickerPlan(planId);
+    // Razorpay is the only enabled gateway, so skip the picker and go
+    // straight to checkout. To bring the picker back (e.g. re-enabling
+    // Stripe), restore `setGatewayPickerPlan(planId)` here.
+    handleUpgrade(planId, "razorpay");
   };
 
   const handleUpgrade = async (planId, gateway) => {
