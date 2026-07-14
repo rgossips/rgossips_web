@@ -279,10 +279,31 @@ export default function ServiceOrderDetailPage() {
           email: user?.email || profile?.email || "",
           contact: prefillContact,
         },
-        handler: () => {
-          // Payment captured. The razorpay-webhook handler will flip the
-          // order's status; we hit the URL the Stripe path uses so the
-          // page picks up the payment-success state on next render.
+        handler: async () => {
+          // Payment captured. The razorpay-webhook is the normal source of
+          // truth for flipping the order status — but it may be disabled, so
+          // we verify server-side here (mirrors reconcile-subscription). This
+          // confirms with Razorpay that the order is actually paid, then
+          // applies the same status flip. Best-effort + awaited so the status
+          // is usually already updated by the time the success poll runs.
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/verify-service-payment`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: supabaseKey,
+                Authorization: `Bearer ${supabaseKey}`,
+              },
+              body: JSON.stringify({
+                userId: user?.id,
+                orderId: id,
+                phase,
+                razorpayOrderId: data.order_id,
+              }),
+            });
+          } catch {
+            /* non-fatal — the ?paid poll (and webhook, if enabled) will catch up */
+          }
           window.location.href = `/influencer/services/orders/${id}?paid=${phase}`;
         },
         modal: {

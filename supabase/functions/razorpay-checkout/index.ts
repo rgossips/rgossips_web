@@ -29,6 +29,10 @@ const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 //                   should reconcile the profile rather than open checkout.
 //   - authenticated/created → an in-flight attempt; reuse it so the client
 //                   opens checkout on the same subscription.
+//
+// A first-cycle-discount subscription is created on a THROWAWAY plan (see
+// below) with the real plan recorded in notes.base_plan_id, so we match on
+// either the live plan_id OR that note to stay idempotent for both paths.
 async function findReusableSubscription(auth: string, userId: string, planId: string) {
   const REUSE_STATES = ["active", "authenticated", "created"];
   // Only the first couple of pages — the user's newest subs are first.
@@ -43,7 +47,8 @@ async function findReusableSubscription(auth: string, userId: string, planId: st
     const mine = items.filter(
       (s) =>
         String(s?.notes?.user_id || "") === userId &&
-        String(s?.plan_id || "") === planId &&
+        (String(s?.plan_id || "") === planId ||
+          String(s?.notes?.base_plan_id || "") === planId) &&
         REUSE_STATES.includes(String(s.status)),
     );
     if (mine.length) {
@@ -87,7 +92,7 @@ Deno.serve(async (req) => {
     const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
 
     // Idempotency: reuse an existing non-terminal subscription for this
-    // user+plan instead of creating a duplicate. Done BEFORE any offer /
+    // user+plan instead of creating a duplicate. Done BEFORE any discount /
     // customer / subscription creation so a double-submit is cheap and
     // can't spawn a second sub.
     try {
@@ -120,13 +125,26 @@ Deno.serve(async (req) => {
     const supaUrl0 = Deno.env.get("SUPABASE_URL")!;
     const supaKey0 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Referral perk — a REFERRED creator gets 50% off their FIRST subscription
-    // (gifted by the referrer). Eligible = they're a referee on an active
-    // referral AND haven't subscribed yet. Takes precedence over RC on this
-    // invoice; RC stays in the wallet for later. One-shot: once subscribed,
-    // subscription_plan flips and they no longer qualify.
-    let referralOfferId: string | null = null;
-    if (Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+    // ── First-cycle discount ────────────────────────────────────────────────
+    // Either the referral 50%-off (a referred creator's first subscription,
+    // gifted by the referrer) or an RC redemption. Razorpay has NO programmatic
+    // create-offer API (POST /v1/offers 404s) and the Offers product isn't
+    // enabled on this account, so we can't discount via offer_id the way Stripe
+    // discounts via a coupon. Instead we deliver the discount natively:
+    //   1. create the subscription on a one-off DISCOUNTED plan (amount =
+    //      full − discount) so the FIRST charge shown at checkout is reduced,
+    //   2. schedule an automatic upgrade to the real plan at cycle end
+    //      (schedule_change_at: "cycle_end").
+    // Result: cycle 1 discounted, cycles 2..N at full price, auto-recurring,
+    // and the discount is visible at checkout — all with the public Plans +
+    // Subscriptions APIs (no Offers feature required). Referral takes
+    // precedence over RC (one discount per first cycle); RC stays in the wallet.
+    let discountPaise = 0;
+    let isReferralDiscount = false;
+    let rcAppliedRupees = 0;
+    const planPaise = Math.round(Number(planPriceRupees) * 100);
+    if (Number.isFinite(planPaise) && planPaise >= 100) {
+      // Referral eligibility: referee on an active referral AND not yet subscribed.
       try {
         const [refRes, profRes] = await Promise.all([
           fetch(
@@ -143,94 +161,38 @@ Deno.serve(async (req) => {
         const plan0 = (Array.isArray(profRows) && profRows[0]?.subscription_plan) || "";
         const notSubscribed = !plan0 || plan0 === "trial";
         if (Array.isArray(refRows) && refRows.length > 0 && notSubscribed) {
-          const nowSec = Math.floor(Date.now() / 1000);
-          const halfPaise = Math.round(Number(planPriceRupees) * 0.5 * 100);
-          const offerRes = await fetch("https://api.razorpay.com/v1/offers", {
-            signal: AbortSignal.timeout(15000),
-            method: "POST",
-            headers: { Authorization: auth, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: "RGossips referral 50% off",
-              payment_method: "card",
-              discount_amount: halfPaise,
-              min_amount: Number(planPriceRupees) * 100,
-              redeem_type: "promo",
-              max_offer_usage: 1,
-              display_text: "Referral 50% off",
-              starts_at: nowSec,
-              ends_at: nowSec + 24 * 60 * 60,
-              notes: { user_id: userId, referral_discount: "50" },
-            }),
-          });
-          const offer = await offerRes.json();
-          if (offer?.id) referralOfferId = offer.id;
-          else console.error("razorpay referral offer create failed:", offer?.error?.description || JSON.stringify(offer));
+          discountPaise = Math.round(planPaise * 0.5);
+          isReferralDiscount = true;
         }
       } catch (e) {
-        console.error("Referral discount (razorpay) prep failed:", (e as any)?.message);
+        console.error("Referral discount (razorpay) eligibility failed:", (e as any)?.message);
       }
-    }
 
-    // Refer & Earn — optional RC redemption on the first Razorpay invoice.
-    // Razorpay applies discounts via `offer_id` on subscription creation.
-    // Offers are created via POST /v1/offers with a validity window; the
-    // account must have Offers enabled (many test accounts don't, in
-    // which case the create call fails and we fall through to a normal
-    // no-discount subscription). The applied amount is stamped into the
-    // subscription's `notes.rc_applied` and only debited by the webhook
-    // AFTER a successful subscription.charged — abandoned checkouts leave
-    // the wallet untouched. Skipped when the referral 50%-off is active
-    // (one offer per subscription; referral wins).
-    let rcOfferId: string | null = null;
-    let rcAppliedRupees = 0;
-    if (!referralOfferId && applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
-      try {
-        const supaUrl = Deno.env.get("SUPABASE_URL")!;
-        const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const balRes = await fetch(
-          `${supaUrl}/rest/v1/v_reward_credits_available_balance?user_id=eq.${encodeURIComponent(userId)}&select=available_balance`,
-          { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }
-        );
-        const balRows = await balRes.json().catch(() => []);
-        const availableBalance = Array.isArray(balRows) && balRows[0]?.available_balance ? Number(balRows[0].available_balance) : 0;
-        const maxApply = Math.floor(Number(planPriceRupees) * 0.5);
-        const applied = Math.max(0, Math.min(availableBalance, maxApply));
-        if (applied > 0) {
-          const nowSec = Math.floor(Date.now() / 1000);
-          const offerRes = await fetch("https://api.razorpay.com/v1/offers", {
-      signal: AbortSignal.timeout(15000),
-            method: "POST",
-            headers: { Authorization: auth, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: `RGossips RC redemption (${applied})`,
-              // "all" covers card / UPI / netbanking / wallet on accounts
-              // where Offers is fully enabled. Some accounts require a
-              // single method — if that's your case, hard-code "card".
-              payment_method: "card",
-              discount_amount: applied * 100,
-              min_amount: Number(planPriceRupees) * 100,
-              redeem_type: "promo",
-              max_offer_usage: 1,
-              display_text: `RC applied (${applied})`,
-              starts_at: nowSec,
-              // 24h window. If the user waits longer to complete checkout,
-              // they'll retry from the pricing page and get a fresh offer.
-              ends_at: nowSec + 24 * 60 * 60,
-              notes: { user_id: userId, rc_applied: String(applied) },
-            }),
-          });
-          const offer = await offerRes.json();
-          if (offer?.id) {
-            rcOfferId = offer.id;
+      // RC redemption — only when no referral discount applies. Cap: available
+      // balance, and at most 50% of the plan price. The applied amount is
+      // stamped into notes.rc_applied and only debited by the webhook after a
+      // successful charge (abandoned checkouts leave the wallet untouched).
+      if (!isReferralDiscount && applyRc) {
+        try {
+          const balRes = await fetch(
+            `${supaUrl0}/rest/v1/v_reward_credits_available_balance?user_id=eq.${encodeURIComponent(userId)}&select=available_balance`,
+            { headers: { apikey: supaKey0, Authorization: `Bearer ${supaKey0}` } }
+          );
+          const balRows = await balRes.json().catch(() => []);
+          const availableBalance = Array.isArray(balRows) && balRows[0]?.available_balance ? Number(balRows[0].available_balance) : 0;
+          const maxApply = Math.floor(Number(planPriceRupees) * 0.5);
+          const applied = Math.max(0, Math.min(availableBalance, maxApply));
+          if (applied > 0) {
+            discountPaise = applied * 100;
             rcAppliedRupees = applied;
-          } else {
-            console.error("razorpay offer create failed:", offer?.error?.description || JSON.stringify(offer));
           }
+        } catch (e) {
+          console.error("RC redemption (razorpay) prep failed:", (e as any)?.message);
         }
-      } catch (e) {
-        console.error("RC redemption (razorpay) prep failed:", (e as any)?.message);
       }
     }
+    // Never let the first-cycle amount fall below Razorpay's ₹1 minimum.
+    if (discountPaise > planPaise - 100) discountPaise = Math.max(0, planPaise - 100);
 
     // total_count is the maximum number of billing cycles Razorpay will
     // charge. We pick a long horizon (≈10 years monthly / 50 years yearly)
@@ -238,57 +200,67 @@ Deno.serve(async (req) => {
     // flips the subscription to cancelled-at-period-end on the webhook.
     const totalCount = cycle === "annual" ? 50 : 120;
 
-    // Razorpay's POST /v1/subscriptions does NOT accept a customer_info
-    // field on the subscription itself — sending it returns
-    // `customer_info is/are not required and should not be sent`. If we
-    // want to pre-fill the user's email/name/phone on Razorpay's hosted
-    // checkout, we first POST /v1/customers and attach the resulting
-    // customer_id to the subscription. Failures here are non-fatal — we
-    // fall back to letting Razorpay collect those details during checkout.
-    let customerId: string | undefined;
-    if (email || name || contact) {
+    // NOTE: we deliberately do NOT pre-create a Razorpay customer and attach
+    // its customer_id to the subscription. On this account, POST
+    // /v1/subscriptions WITH a customer_id fails hard with 400 "Authentication
+    // failed" (customer-linked subscriptions aren't enabled), which blocked
+    // every Razorpay checkout that carried an email/name/contact — i.e. all of
+    // them. The customer_id was only ever used to prefill the hosted page; the
+    // embedded checkout already receives email/name/contact via its own
+    // `prefill` on the client, so dropping it costs nothing and unblocks
+    // checkout. `email`/`name`/`contact` remain in the request purely for that
+    // client-side prefill.
+
+    // Resolve the plan the FIRST cycle is billed on. With a discount we mint a
+    // one-off plan at (full − discount) so checkout shows the reduced amount;
+    // we upgrade back to the real plan at cycle end further below.
+    const period = cycle === "annual" ? "yearly" : "monthly";
+    let firstCyclePlanId = planId;
+    if (discountPaise > 0) {
       try {
-        const custRes = await fetch("https://api.razorpay.com/v1/customers", {
-      signal: AbortSignal.timeout(15000),
+        const dpRes = await fetch("https://api.razorpay.com/v1/plans", {
+          signal: AbortSignal.timeout(15000),
           method: "POST",
           headers: { Authorization: auth, "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: email || undefined,
-            name: name || undefined,
-            contact: contact || undefined,
-            // fail_existing=0 makes Razorpay return the existing customer
-            // (by email/contact) instead of 400'ing on a re-upgrade.
-            fail_existing: 0,
+            period,
+            interval: 1,
+            item: {
+              name: `RGossips ${plan || "plan"} — first ${period} ${isReferralDiscount ? "50% off" : `RC ${rcAppliedRupees}`}`,
+              amount: planPaise - discountPaise,
+              currency: "INR",
+            },
+            notes: { kind: "first_cycle_discount", base_plan_id: planId, user_id: userId },
           }),
         });
-        const cust = await custRes.json();
-        if (cust?.id) customerId = cust.id;
-        else console.warn("razorpay-customer create skipped:", cust?.error?.description || JSON.stringify(cust));
+        const dp = await dpRes.json();
+        if (dp?.id) firstCyclePlanId = dp.id;
+        else console.error("razorpay discounted-plan create failed:", dp?.error?.description || JSON.stringify(dp));
       } catch (e) {
-        console.warn("razorpay-customer create threw:", (e as any)?.message);
+        console.error("Discounted first-cycle plan (razorpay) failed:", (e as any)?.message);
       }
     }
 
     const body: Record<string, unknown> = {
-      plan_id: planId,
+      plan_id: firstCyclePlanId,
       total_count: totalCount,
       // metadata Razorpay echoes back on webhook events. user_id is our
       // primary join key; plan + cycle save a profile lookup on each event.
-      // rc_applied is the applied redemption amount (0 if none / offer
-      // creation failed) — the webhook uses it to insert the REDEMPTION
-      // ledger row after subscription.charged.
+      // base_plan_id is the REAL plan the profile should reflect — reconcile
+      // and the webhook must read `plan` here, never the possibly-discounted
+      // first-cycle plan_id. rc_applied is the applied redemption amount (0 if
+      // none) — the webhook uses it to insert the REDEMPTION ledger row after
+      // subscription.charged.
       notes: {
         user_id: userId,
         plan: plan || "",
         cycle: cycle || "monthly",
         rc_applied: String(rcAppliedRupees),
+        referral_discount: isReferralDiscount ? "50" : "",
+        base_plan_id: planId,
       },
       customer_notify: 1,
     };
-    if (customerId) body.customer_id = customerId;
-    // Referral 50%-off takes precedence over RC (one offer per subscription).
-    if (referralOfferId) body.offer_id = referralOfferId;
-    else if (rcOfferId) body.offer_id = rcOfferId;
 
     const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
       signal: AbortSignal.timeout(15000),
@@ -309,6 +281,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // NOTE: the automatic upgrade from the discounted first-cycle plan back to
+    // the real plan (so cycles 2..N charge full price) can NOT be scheduled
+    // here — Razorpay rejects a plan change while the subscription is still in
+    // `created` state ("not in Authenticated or Active state"). It only becomes
+    // authenticated/active once the user completes checkout. The upgrade is
+    // therefore deferred to `reconcile-subscription`, which the client always
+    // calls after a successful payment (and which the webhook backstops): it
+    // reads notes.base_plan_id and, if the sub is still on the throwaway
+    // discounted plan, PATCHes it to base_plan_id with schedule_change_at:
+    // "cycle_end". This keeps recurring revenue at full price.
+
     // Hand the subscription id back so the client can open Razorpay's
     // embedded Checkout modal (checkout.js) right on /influencer/pricing.
     // The hosted page at sub.short_url is unreliable on test accounts
@@ -322,7 +305,7 @@ Deno.serve(async (req) => {
         id: sub.id,
         subscription_id: sub.id,
         key_id: keyId,
-        customer_id: customerId || null,
+        customer_id: null,
         // Kept for any legacy callers; new clients should use the
         // embedded checkout (subscription_id + key_id) instead.
         url: sub.short_url,

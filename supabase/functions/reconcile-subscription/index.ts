@@ -129,6 +129,43 @@ async function fetchSubDirect(
   }
 }
 
+// First-cycle-discount finisher. razorpay-checkout bills the FIRST cycle on a
+// throwaway discounted plan (referral 50%-off or RC redemption) so the reduced
+// amount shows at checkout, and records the REAL plan in notes.base_plan_id.
+// The upgrade back to the real plan can't be scheduled at creation time
+// (Razorpay refuses a plan change on a `created` sub), so we finish it here —
+// reconcile runs post-payment, when the sub is authenticated/active and the
+// PATCH is accepted. Schedules the change for cycle end so cycles 2..N bill
+// full price. Idempotent: skips if already on the real plan or already
+// scheduled.
+async function upgradeRazorpayFirstCycleIfNeeded(subId: string): Promise<void> {
+  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  if (!keyId || !keySecret) return;
+  const H = { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, "Content-Type": "application/json" };
+  try {
+    const r = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subId)}`, { headers: H });
+    if (!r.ok) return;
+    const s = await r.json().catch(() => ({}));
+    const basePlan = String(s?.notes?.base_plan_id || "");
+    const curPlan = String(s?.plan_id || "");
+    const status = String(s?.status || "");
+    if (!basePlan || basePlan === curPlan) return; // no discount plan in play
+    if (s?.has_scheduled_changes) return; // already scheduled
+    if (!["authenticated", "active"].includes(status)) return; // PATCH not yet allowed
+    const up = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subId)}`, {
+      method: "PATCH",
+      headers: H,
+      body: JSON.stringify({ plan_id: basePlan, schedule_change_at: "cycle_end", customer_notify: 1 }),
+    });
+    const uj = await up.json().catch(() => ({}));
+    if (uj?.error) log.warn("reconcile.first_cycle_upgrade_failed", { subId, desc: uj?.error?.description });
+    else log.info("reconcile.first_cycle_upgraded", { subId, basePlan });
+  } catch (e) {
+    log.warn("reconcile.first_cycle_upgrade_threw", { subId });
+  }
+}
+
 async function cancelStripeSub(subId: string): Promise<boolean> {
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
   if (!stripeKey) return false;
@@ -271,6 +308,11 @@ Deno.serve(async (req) => {
       log.error("reconcile.profile_update_failed", { rid, userId }, upErr);
       return json({ error: "profile_update_failed" }, 200);
     }
+
+    // Finish a first-cycle-discount subscription: swap it off the throwaway
+    // discounted plan onto the real plan at cycle end (see helper). Only
+    // Razorpay ever uses this mechanism; Stripe discounts via a one-off coupon.
+    if (!isStripe) await upgradeRazorpayFirstCycleIfNeeded(keeper.id);
 
     // Single-active-subscription: cancel every OTHER live sub on either
     // gateway. This is what the webhook's cancelPriorSubscriptions does.

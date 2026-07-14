@@ -187,6 +187,26 @@ silently regress.
   events + fund-account validation.
 - **RazorpayX removed 2026-07** in favour of manual payouts. Admin has
   `/dashboard/payouts` queue.
+- **First-cycle discount on Razorpay = throwaway-plan + scheduled upgrade
+  (2026-07).** Razorpay has **no programmatic create-offer API** — `POST
+  /v1/offers` 404s ("no Route matched") and the Offers product isn't enabled
+  on the account, so the referral 50%-off / RC redemption can NOT be applied
+  via `offer_id` the way Stripe uses a coupon. (The old offer-create code was
+  dead — it silently fell through to full price.) Instead `razorpay-checkout`
+  now: (1) mints a one-off **discounted plan** at `full − discount` via `POST
+  /v1/plans`, (2) opens the subscription on THAT plan so the reduced amount
+  shows at checkout and is charged on cycle 1, recording the real plan in
+  `notes.base_plan_id`. The upgrade back to the real plan **cannot** be
+  scheduled at creation (`PATCH` is rejected while the sub is `created` —
+  "not in Authenticated or Active state"), so it's deferred: both
+  `reconcile-subscription` (client's post-payment call, the active path while
+  the webhook is off) and `razorpay-webhook` (`subscription.activated/charged`
+  backstop) `PATCH …/subscriptions/:id { plan_id: base_plan_id,
+  schedule_change_at: "cycle_end" }` once the sub is active. Result: cycle 1
+  discounted + visible at checkout, cycles 2..N full price, auto-recurring, no
+  Offers feature. `reconcile` reads `notes.plan` (real plan) so the profile
+  reflects the right tier regardless of the throwaway `plan_id`. Note: the
+  deployed Razorpay key is `rzp_test_…` (test mode).
 - **Reconcile fallback + checkout idempotency (2026-07)**. Webhooks are the
   normal source of truth for flipping `subscription_plan`; if one is
   disabled/dropped the plan never updates and prior subs never cancel
@@ -207,6 +227,19 @@ silently regress.
   - Pricing success modal shows the plan the user PURCHASED (stashed
     pre-checkout), not a possibly-stale profile plan; has an **Open Invoice**
     button (invoice `hosted_url`/`pdf_url` from `subscription-history`).
+  - **Service-order payments have the same fallback (2026-07).** Razorpay
+    service advance/final payments (`razorpay-service-checkout` → Razorpay
+    Order) were flipped to `in_progress`/`paid_final` ONLY by the
+    `razorpay-webhook` `payment.captured` handler — so with the webhook off,
+    paying the advance didn't change the order status. New edge fn
+    `verify-service-payment` (client calls it in the Razorpay success handler,
+    web + Android): fetches the Razorpay Order server-side, requires
+    `status="paid"` + matching `notes.order_id`/`phase` + caller owns the
+    order, then applies the flip. The actual flip/events/notifications now
+    live in `_shared/service-payment.ts` (`applyServicePaymentCaptured`),
+    called by BOTH the webhook and the verify fallback so they stay identical;
+    idempotent via `advance_paid`/`final_paid`. Stripe service payments are
+    unaffected (stripe-webhook works).
   - Pricing banner shows "Renews in N days" for paid plans (approx off
     `updated_at` + cycle — exact `current_period_end` not stored).
 

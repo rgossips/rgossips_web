@@ -24,6 +24,7 @@ import {
   qualifyReferralIfEligible,
   clawBackReferral,
 } from "../_shared/referrals.ts";
+import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -529,143 +530,16 @@ async function handlePayoutEvent(type: string, payout: any) {
 // Mirrors stripe-webhook's handleServicePayment. Idempotent: re-checks
 // advance_paid / final_paid before mutating so a webhook retry can't
 // double-progress an order.
+// Thin wrapper — the actual status flip / events / notifications live in the
+// shared helper so the webhook and the verify-service-payment fallback stay
+// byte-for-byte identical.
 async function handleServicePaymentCaptured(payment: any) {
-  const orderId = String(payment?.notes?.order_id || "");
-  const phase = String(payment?.notes?.phase || "advance");
-  if (!orderId) return { received: true, skipped: "service_payment: no order_id" };
-
-  const { data: order, error: oErr } = await supabase
-    .from("service_orders")
-    .select("id, user_id, status, service_title, advance_paid, final_paid")
-    .eq("id", orderId)
-    .maybeSingle();
-  if (oErr || !order) {
-    return { received: true, skipped: `service_payment: order ${orderId} not found` };
-  }
-
-  const now = new Date().toISOString();
-  const paymentId = String(payment?.id || "");
-  const amountPaise = Number(payment?.amount || 0);
-  const amountRupees = Math.round(amountPaise / 100);
-
-  if (phase === "advance") {
-    if (order.advance_paid) return { received: true, skipped: "advance already paid" };
-    const { error } = await supabase
-      .from("service_orders")
-      .update({
-        advance_paid: true,
-        advance_paid_at: now,
-        // Same column shape as the Stripe path — we just stamp the
-        // razorpay payment id where stripe would have stamped its
-        // session id. Down-stream readers don't care which gateway
-        // produced the value.
-        advance_stripe_session_id: paymentId,
-        status: "in_progress",
-        updated_at: now,
-      })
-      .eq("id", orderId);
-    if (error) {
-      console.error("Advance payment update failed:", error.message);
-      return { received: true, error: error.message };
-    }
-    await supabase.from("service_order_events").insert({
-      order_id: orderId,
-      type: "advance_paid",
-      label: `Quote accepted & advance paid (₹${amountRupees.toLocaleString("en-IN")})`,
-      meta: { amount: amountRupees, payment_id: paymentId, gateway: "razorpay" },
-    });
-    await supabase.from("notifications").insert({
-      user_id: order.user_id,
-      type: "service_advance_paid",
-      title: "Advance received — work begins",
-      body: JSON.stringify({
-        text: `${order.service_title}: advance received, our team is on it.`,
-        link: `/influencer/services/orders/${orderId}`,
-        orderId,
-      }),
-      is_read: false,
-    });
-    // Admin fan-out — so ops knows to start work and upload the draft URL.
-    try {
-      const { data: admins } = await supabase.from("admin_profiles").select("id");
-      if (Array.isArray(admins) && admins.length > 0) {
-        await supabase.from("notifications").insert(
-          admins.map((a: { id: string }) => ({
-            user_id: a.id,
-            type: "service_advance_paid_admin",
-            priority: "high",
-            title: "Advance paid — upload the draft",
-            body: JSON.stringify({
-              text: `${order.service_title}: advance of ₹${amountRupees.toLocaleString("en-IN")} received. Start work and deliver the draft URL.`,
-              link: `/dashboard/quote-requests/${orderId}`,
-              orderId,
-            }),
-            is_read: false,
-          }))
-        );
-      }
-    } catch (e) {
-      console.error("admin advance-paid fan-out failed:", e);
-    }
-  } else if (phase === "final") {
-    if (order.final_paid) return { received: true, skipped: "final already paid" };
-    const { error } = await supabase
-      .from("service_orders")
-      .update({
-        final_paid: true,
-        final_paid_at: now,
-        final_stripe_session_id: paymentId,
-        status: "paid_final",
-        updated_at: now,
-      })
-      .eq("id", orderId);
-    if (error) {
-      console.error("Final payment update failed:", error.message);
-      return { received: true, error: error.message };
-    }
-    await supabase.from("service_order_events").insert({
-      order_id: orderId,
-      type: "final_paid",
-      label: `Final payment received (₹${amountRupees.toLocaleString("en-IN")})`,
-      meta: { amount: amountRupees, payment_id: paymentId, gateway: "razorpay" },
-    });
-    await supabase.from("notifications").insert({
-      user_id: order.user_id,
-      type: "service_final_paid",
-      title: "Final payment received",
-      body: JSON.stringify({
-        text: `${order.service_title}: we'll deliver your final files shortly.`,
-        link: `/influencer/services/orders/${orderId}`,
-        orderId,
-      }),
-      is_read: false,
-    });
-    // Admin fan-out — final payment cleared, ops needs to upload the
-    // final deliverable files via DeliverFinalForm.
-    try {
-      const { data: admins } = await supabase.from("admin_profiles").select("id");
-      if (Array.isArray(admins) && admins.length > 0) {
-        await supabase.from("notifications").insert(
-          admins.map((a: { id: string }) => ({
-            user_id: a.id,
-            type: "service_final_paid_admin",
-            priority: "high",
-            title: "Final paid — deliver the files",
-            body: JSON.stringify({
-              text: `${order.service_title}: final ₹${amountRupees.toLocaleString("en-IN")} received. Upload the deliverable files to complete the order.`,
-              link: `/dashboard/quote-requests/${orderId}`,
-              orderId,
-            }),
-            is_read: false,
-          }))
-        );
-      }
-    } catch (e) {
-      console.error("admin final-paid fan-out failed:", e);
-    }
-  }
-
-  return { received: true, orderId, phase, gateway: "razorpay" };
+  return applyServicePaymentCaptured(supabase, {
+    orderId: String(payment?.notes?.order_id || ""),
+    phase: String(payment?.notes?.phase || "advance"),
+    paymentId: String(payment?.id || ""),
+    amountPaise: Number(payment?.amount || 0),
+  });
 }
 
 // ── RazorpayX fund-account validation handler ──────────────────────────
@@ -910,6 +784,34 @@ Deno.serve(async (req) => {
             }
           } catch (e) {
             console.error("RC redemption ledger insert (razorpay) failed:", (e as any)?.message || e);
+          }
+
+          // First-cycle-discount finisher (referral 50%-off / RC). razorpay-
+          // checkout bills the first cycle on a throwaway discounted plan so
+          // the reduced amount shows at checkout, and records the real plan in
+          // notes.base_plan_id. Now that the sub is active, swap it onto the
+          // real plan at cycle end so renewals charge full price. Backstops
+          // reconcile-subscription (which does the same on the client's post-
+          // payment call); idempotent — skips if already on the real plan or a
+          // change is already scheduled.
+          try {
+            const basePlanId = String(notes.base_plan_id || "");
+            const curPlanId = String(sub.plan_id || "");
+            if (basePlanId && basePlanId !== curPlanId && !sub.has_scheduled_changes) {
+              const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+              const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+              if (keyId && keySecret) {
+                const upRes = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+                  method: "PATCH",
+                  headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ plan_id: basePlanId, schedule_change_at: "cycle_end", customer_notify: 1 }),
+                });
+                const upJson = await upRes.json().catch(() => ({}));
+                if (upJson?.error) console.warn("razorpay first-cycle upgrade (webhook) skipped:", upJson?.error?.description);
+              }
+            }
+          } catch (e) {
+            console.error("first-cycle upgrade (webhook) failed:", (e as any)?.message || e);
           }
         }
         break;
