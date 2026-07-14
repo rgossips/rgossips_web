@@ -18,6 +18,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import SupportChat from "@/components/SupportChat";
@@ -25,22 +26,19 @@ import SupportChat from "@/components/SupportChat";
 const UserDoc = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("UserDoc");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const { profile } = useAuth();
 
   const navLinks = [
-    { label: "Home", icon: Home, path: "/influencer" },
-    { label: "Brands", icon: Search, path: "/influencer/brands" },
-    { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
-    { label: "Chats", icon: MessageSquare, path: "/influencer/chats" },
-    {
-      label: "Notifications",
-      icon: Bell,
-      path: "/influencer/notifications",
-    },
-    { label: "Profile", icon: User, path: "/influencer/profile" },
+    { key: "home", icon: Home, path: "/influencer" },
+    { key: "brands", icon: Search, path: "/influencer/brands" },
+    { key: "campaigns", icon: Briefcase, path: "/influencer/campaigns" },
+    { key: "chats", icon: MessageSquare, path: "/influencer/chats" },
+    { key: "notifications", icon: Bell, path: "/influencer/notifications" },
+    { key: "profile", icon: User, path: "/influencer/profile" },
   ];
 
   const navigateTo = (path) => {
@@ -124,9 +122,9 @@ const UserDoc = () => {
                     className="w-11 h-11 rounded-full border-2 border-white shadow-sm object-cover"
                   />
                   <div>
-                    <p className="text-sm font-bold text-slate-800">{profile?.full_name || "User"}</p>
+                    <p className="text-sm font-bold text-slate-800">{profile?.full_name || t("userFallback")}</p>
                     <p className="text-[11px] text-emerald-600 font-semibold">
-                      Pro Member
+                      {t("proMember")}
                     </p>
                   </div>
                 </div>
@@ -161,14 +159,14 @@ const UserDoc = () => {
                           isActive ? "font-bold" : "font-medium"
                         }`}
                       >
-                        {item.label}
+                        {t(`nav.${item.key}`)}
                       </span>
-                      {item.label === "Chats" && (
+                      {item.key === "chats" && (
                         <span className="ml-auto bg-pink-500 text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                           3
                         </span>
                       )}
-                      {item.label === "Notifications" && (
+                      {item.key === "notifications" && (
                         <span className="ml-auto w-2 h-2 bg-pink-500 rounded-full" />
                       )}
                     </button>
@@ -183,11 +181,11 @@ const UserDoc = () => {
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   <Settings size={20} />
-                  <span className="text-sm font-medium">Settings</span>
+                  <span className="text-sm font-medium">{t("settings")}</span>
                 </button>
                 <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
                   <HelpCircle size={20} />
-                  <span className="text-sm font-medium">Help & Support</span>
+                  <span className="text-sm font-medium">{t("help")}</span>
                 </button>
               </nav>
 
@@ -201,7 +199,7 @@ const UserDoc = () => {
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <LogOut size={20} />
-                  <span className="text-sm font-semibold">Log Out</span>
+                  <span className="text-sm font-semibold">{t("logout")}</span>
                 </button>
               </div>
             </motion.div>
@@ -227,10 +225,10 @@ const UserDoc = () => {
               </div>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-black text-slate-800 leading-tight">
-                  Hi, {profile?.full_name?.split(" ")[0] || "there"}
+                  {t("greeting", { name: profile?.full_name?.split(" ")[0] || t("greetingFallback") })}
                 </h1>
                 <p className="text-sm font-bold text-emerald-600">
-                  Total Earnings:{" "}
+                  {t("totalEarnings")}{" "}
                   <span className="text-slate-900">₹2,00,000</span>
                 </p>
               </div>
@@ -244,7 +242,7 @@ const UserDoc = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search campaigns, brands..."
+                  placeholder={t("searchPlaceholder")}
                   className="w-full bg-white py-4 lg:py-3.5 pl-12 pr-4 rounded-2xl text-sm font-medium border-none shadow-sm focus:ring-2 focus:ring-pink-500 transition-all placeholder:text-slate-400"
                 />
               </div>
@@ -258,7 +256,7 @@ const UserDoc = () => {
                 </button>
                 <button
                   onClick={() => setSupportOpen(true)}
-                  title="Support"
+                  title={t("support")}
                   className="p-3.5 cursor-pointer bg-white rounded-2xl shadow-sm text-slate-600 hover:text-pink-500 border border-slate-100 transition-colors"
                 >
                   <HeadphonesIcon size={22} />

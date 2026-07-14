@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Search,
   ChevronDown,
@@ -51,6 +52,7 @@ function filtersToWire(filters) {
 }
 
 const SortPopover = ({ value, onChange }) => {
+  const t = useTranslations("BrandsSearch");
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -62,7 +64,7 @@ const SortPopover = ({ value, onChange }) => {
               : "border-gray-200 text-gray-700"
           }`}
         >
-          {value || "Sort by"}
+          {value || t("sortBy")}
           <ChevronDown size={12} />
         </button>
       </PopoverTrigger>
@@ -94,7 +96,7 @@ const SortPopover = ({ value, onChange }) => {
             }}
             className="w-full text-left px-3 py-2.5 text-[11px] font-medium text-red-500 hover:bg-red-50 rounded-lg"
           >
-            Clear sort
+            {t("clearSort")}
           </button>
         )}
       </PopoverContent>
@@ -121,6 +123,7 @@ function bucketsForRange(followerMin, followerMax) {
 }
 
 const InfluencerDirectory = () => {
+  const t = useTranslations("BrandsSearch");
   const supabase = createClient();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category");
@@ -337,7 +340,7 @@ const InfluencerDirectory = () => {
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            placeholder='Enter Creator by "Username"'
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-8 text-sm text-gray-800 outline-hidden placeholder:text-gray-300"
           />
         </div>
@@ -351,7 +354,7 @@ const InfluencerDirectory = () => {
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            placeholder='Enter Creator by "Username"'
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-8 text-sm text-gray-700 outline-none placeholder:text-gray-400 bg-transparent"
           />
         </div>
@@ -385,9 +388,9 @@ const InfluencerDirectory = () => {
           </div>
         ) : filteredInfluencers.length === 0 ? (
           <div className="text-center py-20 px-6">
-            <p className="text-sm font-semibold text-gray-700">No influencers found</p>
+            <p className="text-sm font-semibold text-gray-700">{t("emptyTitle")}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Try adjusting your filters or search terms
+              {t("emptySubtitle")}
             </p>
           </div>
         ) : (
@@ -396,7 +399,7 @@ const InfluencerDirectory = () => {
                 the Load More button so paginating doesn't feel like the
                 list is complete when it isn't. */}
             <p className="text-[11px] font-semibold text-slate-400 px-6 lg:px-0 pb-3">
-              Showing {filteredInfluencers.length} of {total} creator{total === 1 ? "" : "s"}
+              {t("resultCount", { shown: filteredInfluencers.length, total })}
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {filteredInfluencers.map((inf) => (
@@ -411,7 +414,7 @@ const InfluencerDirectory = () => {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#5851DB] text-[#5851DB] bg-white hover:bg-purple-50 disabled:opacity-60 text-[12px] font-bold cursor-pointer"
                 >
                   {loadingMore && <Loader2 size={14} className="animate-spin" />}
-                  {loadingMore ? "Loading..." : `Load more (${total - filteredInfluencers.length} left)`}
+                  {loadingMore ? t("loading") : t("loadMore", { count: total - filteredInfluencers.length })}
                 </button>
               </div>
             )}

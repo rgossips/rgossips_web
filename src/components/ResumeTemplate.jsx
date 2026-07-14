@@ -8,6 +8,7 @@ import {
   Svg,
   Rect,
 } from "@react-pdf/renderer";
+import { getTranslations } from "next-intl/server";
 
 const styles = StyleSheet.create({
   page: {
@@ -111,7 +112,9 @@ const AudienceChart = ({ data }) => {
   );
 };
 
-export default function ResumeTemplate({ data }) {
+export default async function ResumeTemplate({ data }) {
+  const t = await getTranslations("ResumeTemplate");
+
   return (
     <Document>
       {/* PAGE 1 */}
@@ -135,17 +138,17 @@ export default function ResumeTemplate({ data }) {
 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>Followers</Text>
+            <Text style={styles.metricTitle}>{t("metrics.followers")}</Text>
             <Text style={styles.metricValue}>{data.followers}</Text>
           </View>
 
           <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>Engagement</Text>
+            <Text style={styles.metricTitle}>{t("metrics.engagement")}</Text>
             <Text style={styles.metricValue}>{data.engagement}</Text>
           </View>
 
           <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>Avg Reel Views</Text>
+            <Text style={styles.metricTitle}>{t("metrics.avgReelViews")}</Text>
             <Text style={styles.metricValue}>{data.avgReelViews}</Text>
           </View>
         </View>
@@ -153,36 +156,44 @@ export default function ResumeTemplate({ data }) {
         {/* SUMMARY */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Creator Summary</Text>
+          <Text style={styles.sectionTitle}>{t("creatorSummary")}</Text>
           <Text>{data.summary}</Text>
         </View>
 
         {/* CONTENT PERFORMANCE */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Content Performance</Text>
+          <Text style={styles.sectionTitle}>{t("contentPerformance")}</Text>
 
-          <Text style={styles.row}>Average Likes: {data.avgLikes}</Text>
-          <Text style={styles.row}>Average Comments: {data.avgComments}</Text>
-          <Text style={styles.row}>Average Saves: {data.avgSaves}</Text>
+          <Text style={styles.row}>
+            {t("averageLikes", { value: data.avgLikes })}
+          </Text>
+          <Text style={styles.row}>
+            {t("averageComments", { value: data.avgComments })}
+          </Text>
+          <Text style={styles.row}>
+            {t("averageSaves", { value: data.avgSaves })}
+          </Text>
         </View>
 
         {/* REEL PERFORMANCE */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reel Performance</Text>
-
-          <Text style={styles.row}>Best Reel Views: {data.bestReelViews}</Text>
+          <Text style={styles.sectionTitle}>{t("reelPerformance")}</Text>
 
           <Text style={styles.row}>
-            Watch Completion: {data.watchCompletion}%
+            {t("bestReelViews", { value: data.bestReelViews })}
+          </Text>
+
+          <Text style={styles.row}>
+            {t("watchCompletion", { value: data.watchCompletion })}
           </Text>
         </View>
 
         {/* CONTENT THEMES */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Content Themes</Text>
+          <Text style={styles.sectionTitle}>{t("contentThemes")}</Text>
 
           {data.topics.map((topic, i) => (
             <Text key={i} style={styles.bullet}>
@@ -198,7 +209,7 @@ export default function ResumeTemplate({ data }) {
         {/* AUDIENCE */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Audience Demographics</Text>
+          <Text style={styles.sectionTitle}>{t("audienceDemographics")}</Text>
 
           <AudienceChart data={data.audience} />
 
@@ -209,14 +220,17 @@ export default function ResumeTemplate({ data }) {
           ))}
 
           <Text style={{ marginTop: 6 }}>
-            Gender: {data.gender.male}% Male • {data.gender.female}% Female
+            {t("gender", {
+              male: data.gender.male,
+              female: data.gender.female,
+            })}
           </Text>
         </View>
 
         {/* BRAND FIT */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Best Brand Fit</Text>
+          <Text style={styles.sectionTitle}>{t("bestBrandFit")}</Text>
 
           {data.brandFit.map((item, i) => (
             <Text key={i}>• {item}</Text>
@@ -226,12 +240,12 @@ export default function ResumeTemplate({ data }) {
         {/* TOP POSTS */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Top Performing Content</Text>
+          <Text style={styles.sectionTitle}>{t("topPerformingContent")}</Text>
 
           {data.topPosts.map((post, i) => (
             <View key={i} style={styles.postRow}>
               <Text>{post.title}</Text>
-              <Text>{post.views} views</Text>
+              <Text>{t("views", { views: post.views })}</Text>
             </View>
           ))}
         </View>
@@ -239,7 +253,9 @@ export default function ResumeTemplate({ data }) {
         {/* BRAND COLLABS */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Past Brand Collaborations</Text>
+          <Text style={styles.sectionTitle}>
+            {t("pastBrandCollaborations")}
+          </Text>
 
           {data.collabs.map((brand, i) => (
             <Text key={i}>• {brand}</Text>
@@ -250,11 +266,13 @@ export default function ResumeTemplate({ data }) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Estimated Campaign Performance
+            {t("estimatedCampaignPerformance")}
           </Text>
 
-          <Text>Estimated Reach: {data.estimatedReach}</Text>
-          <Text>Estimated Engagement: {data.estimatedEngagement}</Text>
+          <Text>{t("estimatedReach", { value: data.estimatedReach })}</Text>
+          <Text>
+            {t("estimatedEngagement", { value: data.estimatedEngagement })}
+          </Text>
         </View>
       </Page>
     </Document>

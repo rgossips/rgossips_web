@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import { useTranslations } from "next-intl";
 
 const NOTIF_ICON = {
   welcome: <UserPlus size={14} className="text-purple-500" />,
@@ -76,20 +77,21 @@ const getNotifLink = (n) => {
 };
 const getNotifText = (n) => parseBody(n).text;
 
-const formatTime = (dateStr) => {
+const formatTime = (dateStr, t) => {
   const date = parseUtc(dateStr);
   if (!date) return "";
   const diff = Date.now() - date.getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "now";
-  if (min < 60) return `${min}m`;
+  if (min < 1) return t("time.now");
+  if (min < 60) return t("time.minutes", { min });
   const hr = Math.floor(diff / 3600000);
-  if (hr < 24) return `${hr}h`;
+  if (hr < 24) return t("time.hours", { hr });
   const day = Math.floor(diff / 86400000);
-  return `${day}d`;
+  return t("time.days", { day });
 };
 
 export function BrandNavbar() {
+  const t = useTranslations("BrandsBrandNavbar");
   const { user, profile } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -156,7 +158,7 @@ export function BrandNavbar() {
     navigateOrRefresh(router, pathname, getNotifLink(n));
   };
 
-  const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || "Brand";
+  const brandName = profile?.gstin_trade_name || profile?.brand_name || profile?.contact_name || t("defaultBrandName");
   const logoUrl = profile?.logo_url;
   const initials = brandName.charAt(0).toUpperCase();
 
@@ -166,7 +168,7 @@ export function BrandNavbar() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.push("/")}
-          aria-label="Go to home page"
+          aria-label={t("aria.goHome")}
           className="inline-block cursor-pointer hover:opacity-80 transition-opacity"
         >
           <Image src={logo} alt="logo" height={100} width={200} />
@@ -195,7 +197,7 @@ export function BrandNavbar() {
             type="search"
             value={headerQuery}
             onChange={(e) => setHeaderQuery(e.target.value)}
-            placeholder="Search creators by name, username or category…"
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-9 pr-4 h-10 rounded-lg border bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
@@ -208,7 +210,7 @@ export function BrandNavbar() {
           <button
             onClick={() => setShowPopover((v) => !v)}
             className="relative p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
-            title="Notifications"
+            title={t("notifications.title")}
           >
             <Bell size={18} />
             {unread > 0 && (
@@ -224,13 +226,13 @@ export function BrandNavbar() {
             // of the popover.
             <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[110] overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
-                <h3 className="text-sm font-black text-slate-800">Notifications</h3>
+                <h3 className="text-sm font-black text-slate-800">{t("notifications.title")}</h3>
                 {unread > 0 && (
                   <button
                     onClick={handleMarkAllRead}
                     className="text-[10px] font-bold text-[#5851DB] cursor-pointer hover:underline"
                   >
-                    Mark all read
+                    {t("notifications.markAllRead")}
                   </button>
                 )}
               </div>
@@ -239,7 +241,7 @@ export function BrandNavbar() {
                 {notifications.length === 0 ? (
                   <div className="text-center py-10">
                     <Bell size={28} className="text-slate-200 mx-auto mb-2" />
-                    <p className="text-xs text-slate-400 font-bold">No notifications</p>
+                    <p className="text-xs text-slate-400 font-bold">{t("notifications.empty")}</p>
                   </div>
                 ) : (
                   notifications.slice(0, 8).map((n, i) => (
@@ -267,7 +269,7 @@ export function BrandNavbar() {
                             {n.title}
                           </p>
                           <span className="text-[9px] text-slate-400 font-medium shrink-0">
-                            {formatTime(n.created_at)}
+                            {formatTime(n.created_at, t)}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
@@ -291,7 +293,7 @@ export function BrandNavbar() {
                     }}
                     className="w-full py-2.5 text-xs font-bold text-[#5851DB] hover:bg-purple-50 rounded-xl transition-colors cursor-pointer"
                   >
-                    Show All Notifications
+                    {t("notifications.showAll")}
                   </button>
                 </div>
               )}
@@ -303,7 +305,7 @@ export function BrandNavbar() {
         <button
           onClick={() => window.location.reload()}
           className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
-          title="Refresh"
+          title={t("actions.refresh")}
         >
           <RefreshCw size={18} />
         </button>
@@ -312,7 +314,7 @@ export function BrandNavbar() {
         <button
           onClick={() => router.push("/brands/profile")}
           className="flex items-center gap-2 cursor-pointer rounded-lg hover:bg-gray-50 px-2 py-1 transition-colors"
-          title="View profile"
+          title={t("actions.viewProfile")}
         >
           <div className="relative w-10 h-10 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center">
             {logoUrl ? (
@@ -336,7 +338,7 @@ export function BrandNavbar() {
         <button
           onClick={() => setLogoutOpen(true)}
           className="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
-          title="Log Out"
+          title={t("actions.logout")}
         >
           <LogOut size={18} />
         </button>

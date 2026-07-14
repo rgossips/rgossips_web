@@ -19,9 +19,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
+  const t = useTranslations("ApplyCampaignForm");
   const { profile, user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -80,7 +82,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       const data = await res.json();
 
       if (data?.error === "already_applied") {
-        setError("You have already applied to this campaign.");
+        setError(t("errors.alreadyApplied"));
         return;
       }
 
@@ -90,7 +92,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         // to copy a path.
         setError({
           kind: "plan_limit_reached",
-          message: data.message || "You've reached your plan's monthly application limit.",
+          message: data.message || t("errors.planLimitDefault"),
         });
         return;
       }
@@ -108,7 +110,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || "Failed to submit application");
+      setError(err.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -128,8 +130,8 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 size={32} className="text-emerald-500" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">Application Submitted!</h3>
-            <p className="text-sm text-slate-500">Your application is now under review. You'll be notified when the brand responds.</p>
+            <h3 className="text-xl font-black text-slate-900">{t("success.title")}</h3>
+            <p className="text-sm text-slate-500">{t("success.body")}</p>
           </div>
         </motion.div>
       </>
@@ -150,8 +152,8 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
           <div>
-            <h2 className="text-base lg:text-lg font-bold text-slate-900">Apply for Campaign</h2>
-            <p className="text-[11px] text-slate-400">{campaignData?.title || "Campaign"} &middot; {campaignData?.brandName || "Brand"}</p>
+            <h2 className="text-base lg:text-lg font-bold text-slate-900">{t("header.title")}</h2>
+            <p className="text-[11px] text-slate-400">{campaignData?.title || t("header.campaignFallback")} &middot; {campaignData?.brandName || t("header.brandFallback")}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors cursor-pointer">
             <X size={16} />
@@ -166,13 +168,13 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-amber-800">{error.message}</p>
                 <p className="text-[11px] text-amber-700/80 mt-1">
-                  Upgrade your plan to apply to more campaigns this month.
+                  {t("planLimit.hint")}
                 </p>
                 <Link
                   href="/influencer/pricing"
                   className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-[#9810fa] to-[#e60076] text-white text-xs font-bold shadow-md hover:opacity-90 cursor-pointer"
                 >
-                  Upgrade plan →
+                  {t("planLimit.cta")}
                 </Link>
               </div>
             </div>
@@ -188,27 +190,27 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           {/* Your Profile (Auto-populated, Non-editable) */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              Your Profile
-              <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Auto-filled</span>
+              {t("profile.heading")}
+              <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">{t("profile.autoFilled")}</span>
             </h3>
 
             <div className="space-y-2.5">
-              <ReadOnlyField icon={<User size={14} className="text-purple-500" />} label="Full Name" value={fullName || "Not set"} />
+              <ReadOnlyField icon={<User size={14} className="text-purple-500" />} label={t("profile.fullName")} value={fullName || t("profile.notSet")} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <ReadOnlyField icon={<Mail size={14} className="text-pink-500" />} label="Email" value={email || "Not set"} />
-                <ReadOnlyField icon={<Phone size={14} className="text-blue-500" />} label="Phone" value={phone || "Not set"} />
+                <ReadOnlyField icon={<Mail size={14} className="text-pink-500" />} label={t("profile.email")} value={email || t("profile.notSet")} />
+                <ReadOnlyField icon={<Phone size={14} className="text-blue-500" />} label={t("profile.phone")} value={phone || t("profile.notSet")} />
               </div>
-              <ReadOnlyField icon={<Instagram size={14} className="text-pink-500" />} label="Instagram" value={instagramHandle ? `@${instagramHandle}` : "Not connected"} />
+              <ReadOnlyField icon={<Instagram size={14} className="text-pink-500" />} label={t("profile.instagram")} value={instagramHandle ? `@${instagramHandle}` : t("profile.notConnected")} />
               <div className="grid grid-cols-2 gap-2.5">
-                <ReadOnlyField icon={<Users size={14} className="text-purple-500" />} label="Followers" value={formatCount(followersCount)} />
-                <ReadOnlyField icon={<Activity size={14} className="text-emerald-500" />} label="Engagement" value={engagementRate ? `${engagementRate}%` : "—"} />
+                <ReadOnlyField icon={<Users size={14} className="text-purple-500" />} label={t("profile.followers")} value={formatCount(followersCount)} />
+                <ReadOnlyField icon={<Activity size={14} className="text-emerald-500" />} label={t("profile.engagement")} value={engagementRate ? `${engagementRate}%` : "—"} />
               </div>
             </div>
           </section>
 
           {/* Media Kit */}
           <section className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">Media Kit</h3>
+            <h3 className="text-sm font-bold text-slate-900">{t("mediaKit.heading")}</h3>
             {mediaKitPublished && mediaKitSlug ? (
               <Link
                 href={mediaKitUrl}
@@ -219,16 +221,16 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
                   <ExternalLink size={18} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-800">View Media Kit</p>
+                  <p className="text-sm font-bold text-slate-800">{t("mediaKit.view")}</p>
                   <p className="text-[10px] text-slate-400 truncate">{mediaKitUrl}</p>
                 </div>
-                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Published</span>
+                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">{t("mediaKit.published")}</span>
               </Link>
             ) : (
               <div className="p-4 border border-dashed border-slate-200 rounded-xl text-center">
-                <p className="text-xs text-slate-400">Media kit not published yet</p>
+                <p className="text-xs text-slate-400">{t("mediaKit.notPublished")}</p>
                 <Link href="/influencer/media-kit" className="text-xs font-bold text-purple-500 hover:underline mt-1 inline-block">
-                  Generate Media Kit
+                  {t("mediaKit.generate")}
                 </Link>
               </div>
             )}
@@ -237,28 +239,28 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           {/* Proposed Rate — hidden for pure barter campaigns */}
           {campaignData?.campaignType !== "barter" && (
             <section className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-900">Your Proposed Rate</h3>
+              <h3 className="text-sm font-bold text-slate-900">{t("rate.heading")}</h3>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
                 <input
                   type="number"
-                  placeholder="Enter your rate for this campaign"
+                  placeholder={t("rate.placeholder")}
                   value={proposedRate}
                   onChange={(e) => setProposedRate(e.target.value)}
                   className="w-full py-3 pl-8 pr-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all"
                 />
               </div>
               {campaignData?.budget && (
-                <p className="text-[10px] text-slate-400">Campaign budget: {campaignData.budget}</p>
+                <p className="text-[10px] text-slate-400">{t("rate.budget", { budget: campaignData.budget })}</p>
               )}
             </section>
           )}
 
           {/* Why Choose You (Editable) */}
           <section className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">Why should we choose you?</h3>
+            <h3 className="text-sm font-bold text-slate-900">{t("why.heading")}</h3>
             <textarea
-              placeholder="Tell the brand why you're the perfect fit for this campaign..."
+              placeholder={t("why.placeholder")}
               value={whyChooseYou}
               onChange={(e) => setWhyChooseYou(e.target.value)}
               className="w-full p-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 min-h-[100px] outline-none transition-all resize-none"
@@ -269,7 +271,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white sticky bottom-0">
           <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -278,7 +280,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
-            {submitting ? "Submitting..." : "Submit Application"}
+            {submitting ? t("actions.submitting") : t("actions.submit")}
           </button>
         </div>
       </motion.div>
@@ -299,6 +301,7 @@ function ReadOnlyField({ icon, label, value }) {
 }
 
 function CampaignBriefing({ campaign }) {
+  const t = useTranslations("ApplyCampaignForm");
   if (!campaign) return null;
 
   const isBarter = campaign.campaignType === "barter";
@@ -312,16 +315,16 @@ function CampaignBriefing({ campaign }) {
   };
 
   const usageLabels = {
-    creator_only: "Influencer's page only",
-    brand_repost: "Brand can repost",
-    paid_ads: "Brand can use in paid ads",
-    full_rights: "Full rights transfer",
+    creator_only: t("usageRights.creator_only"),
+    brand_repost: t("usageRights.brand_repost"),
+    paid_ads: t("usageRights.paid_ads"),
+    full_rights: t("usageRights.full_rights"),
   };
   const paymentLabels = {
-    advance: "Advance",
-    on_approval: "On content approval",
-    "7_days": "Within 7 days of posting",
-    "30_days": "Within 30 days",
+    advance: t("paymentTimeline.advance"),
+    on_approval: t("paymentTimeline.on_approval"),
+    "7_days": t("paymentTimeline.7_days"),
+    "30_days": t("paymentTimeline.30_days"),
   };
 
   const appDeadline = formatDate(campaign.applicationDeadline);
@@ -330,9 +333,9 @@ function CampaignBriefing({ campaign }) {
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-        Before you apply
+        {t("briefing.heading")}
         <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
-          What you&apos;re committing to
+          {t("briefing.committing")}
         </span>
       </h3>
 
@@ -340,7 +343,7 @@ function CampaignBriefing({ campaign }) {
         {/* Headline */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Campaign type</p>
+            <p className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">{t("briefing.campaignType")}</p>
             <p className="text-sm font-extrabold text-slate-900 capitalize">
               {campaign.campaignType || "—"}
               {campaign.productName && (
@@ -350,13 +353,13 @@ function CampaignBriefing({ campaign }) {
           </div>
           {!isBarter && campaign.budget && (
             <div className="text-right shrink-0">
-              <p className="text-[10px] font-bold text-emerald-700 uppercase">Pay</p>
+              <p className="text-[10px] font-bold text-emerald-700 uppercase">{t("briefing.pay")}</p>
               <p className="text-sm font-extrabold text-emerald-700">{campaign.budget}</p>
             </div>
           )}
           {isBarter && campaign.productValue > 0 && (
             <div className="text-right shrink-0">
-              <p className="text-[10px] font-bold text-emerald-700 uppercase">Worth</p>
+              <p className="text-[10px] font-bold text-emerald-700 uppercase">{t("briefing.worth")}</p>
               <p className="text-sm font-extrabold text-emerald-700">₹{Number(campaign.productValue).toLocaleString("en-IN")}</p>
             </div>
           )}
@@ -371,22 +374,22 @@ function CampaignBriefing({ campaign }) {
           )}
           {appDeadline && (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-              <Calendar size={10} /> Apply by {appDeadline}
+              <Calendar size={10} /> {t("chips.applyBy", { date: appDeadline })}
             </span>
           )}
           {endDate && (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-white px-2.5 py-1 rounded-full border border-slate-200">
-              <Calendar size={10} /> Deliver by {endDate}
+              <Calendar size={10} /> {t("chips.deliverBy", { date: endDate })}
             </span>
           )}
           {!isService && campaign.shippingRequired === "yes" && (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-              <Truck size={10} /> Product shipped{campaign.shippingTimelineDays ? ` (${campaign.shippingTimelineDays}d)` : ""}
+              <Truck size={10} /> {campaign.shippingTimelineDays ? t("chips.productShippedDays", { days: campaign.shippingTimelineDays }) : t("chips.productShipped")}
             </span>
           )}
           {!isService && campaign.shippingRequired === "pickup" && (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-              <Truck size={10} /> Pickup required
+              <Truck size={10} /> {t("chips.pickupRequired")}
             </span>
           )}
           {isService && campaign.serviceLocation && (
@@ -399,7 +402,7 @@ function CampaignBriefing({ campaign }) {
         {/* Compensation summary */}
         {campaign.barterCompensation && (
           <div className="bg-white/60 rounded-xl p-3 border border-emerald-100">
-            <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">You get</p>
+            <p className="text-[10px] font-bold text-emerald-700 uppercase mb-1">{t("briefing.youGet")}</p>
             <p className="text-xs text-slate-700 leading-relaxed">{campaign.barterCompensation}</p>
           </div>
         )}
@@ -427,13 +430,13 @@ function CampaignBriefing({ campaign }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {campaign.requiredHashtags && (
               <div className="bg-white rounded-xl p-2.5 border border-slate-200">
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Hashtags</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("briefing.hashtags")}</p>
                 <p className="text-[11px] font-semibold text-slate-700 break-words">{campaign.requiredHashtags}</p>
               </div>
             )}
             {campaign.brandHandlesToTag && (
               <div className="bg-white rounded-xl p-2.5 border border-slate-200">
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Tag</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("briefing.tag")}</p>
                 <p className="text-[11px] font-semibold text-slate-700 break-words">{campaign.brandHandlesToTag}</p>
               </div>
             )}
@@ -445,17 +448,17 @@ function CampaignBriefing({ campaign }) {
           <div className="flex flex-wrap gap-2 pt-1">
             {campaign.usageRights && (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-full border border-slate-200">
-                Usage: {usageLabels[campaign.usageRights] || campaign.usageRights}
+                {t("terms.usage", { value: usageLabels[campaign.usageRights] || campaign.usageRights })}
               </span>
             )}
             {campaign.paymentTimeline && !isBarter && (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-600 bg-white px-2.5 py-1 rounded-full border border-slate-200">
-                Payment: {paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline}
+                {t("terms.payment", { value: paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline })}
               </span>
             )}
             {campaign.exclusivityDays && campaign.exclusivityDays !== "0" && (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-                <AlertCircle size={10} /> No competing brands for {campaign.exclusivityDays}d
+                <AlertCircle size={10} /> {t("terms.exclusivity", { days: campaign.exclusivityDays })}
               </span>
             )}
           </div>

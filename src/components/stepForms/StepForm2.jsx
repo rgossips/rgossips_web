@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -14,6 +15,7 @@ const StepForm2 = ({
   setStep,
   onSubmitSocial,
 }) => {
+  const t = useTranslations("StepFormsStepForm2");
   const SUB_RANGES = ["<1k", "1k-10k", "10k-50k", "50k-100k", "100k+"];
   const PLATFORMS = [
     "Instagram",
@@ -51,34 +53,36 @@ const StepForm2 = ({
                       onClick={() => remove(idx)}
                       className="cursor-pointer"
                     >
-                      Remove
+                      {t("remove")}
                     </Button>
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-sm">Handle</Label>
+                    <Label className="text-sm">{t("handle")}</Label>
                     <Input
-                      placeholder="@username"
+                      placeholder={t("handlePlaceholder")}
                       {...socialForm.register(`socials.${idx}.handle`)}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-sm">{item.platform} URL</Label>
+                    <Label className="text-sm">
+                      {t("platformUrl", { platform: item.platform })}
+                    </Label>
                     <Input
-                      placeholder="https://..."
+                      placeholder={t("urlPlaceholder")}
                       {...socialForm.register(`socials.${idx}.url`)}
                     />
                   </div>
 
                   {item.platform === "YouTube" && (
                     <div className="space-y-1">
-                      <Label className="text-sm">Subscriber Range</Label>
+                      <Label className="text-sm">{t("subscriberRange")}</Label>
                       <select
                         {...socialForm.register(`socials.${idx}.subsRange`)}
                         className="w-full p-2 border rounded"
                       >
-                        <option value="">Select</option>
+                        <option value="">{t("select")}</option>
                         {SUB_RANGES.map((r) => (
                           <option key={r}>{r}</option>
                         ))}
@@ -93,14 +97,14 @@ const StepForm2 = ({
         {/* Add new platform */}
         {fields.length < PLATFORMS.length && (
           <div className="space-y-2">
-            <Label className="font-medium">Add Another Platform</Label>
+            <Label className="font-medium">{t("addAnotherPlatform")}</Label>
             <div className="flex gap-2">
               <select
                 value={platformToAdd}
                 onChange={(e) => setPlatformToAdd(e.target.value)}
                 className="p-2 border rounded w-full"
               >
-                <option value="">Select a platform</option>
+                <option value="">{t("selectAPlatform")}</option>
                 {PLATFORMS.filter(
                   (p) => !fields.some((f) => f.platform === p)
                 ).map((p) => (
@@ -123,7 +127,7 @@ const StepForm2 = ({
                   setPlatformToAdd("");
                 }}
               >
-                Add
+                {t("add")}
               </Button>
             </div>
           </div>
@@ -131,7 +135,7 @@ const StepForm2 = ({
 
         {/* Primary platform */}
         <div className="space-y-2 pt-4 border-t">
-          <Label className="font-medium">Primary Platform</Label>
+          <Label className="font-medium">{t("primaryPlatform")}</Label>
           <select
             {...socialForm.register("primaryPlatform")}
             className="w-full p-2 rounded border"
@@ -154,10 +158,10 @@ const StepForm2 = ({
       {/* Fixed Footer */}
       <div className="sticky bottom-0 bg-white border-t py-3 flex justify-between mt-2">
         <Button type="button" variant="ghost" onClick={() => setStep(1)}>
-          Back
+          {t("back")}
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : "Save & Continue"}
+          {saving ? t("saving") : t("saveAndContinue")}
         </Button>
       </div>
     </form>

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Crown, Sparkles, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
 
@@ -53,6 +54,7 @@ const scrollToRecommendedCampaigns = () => {
 };
 
 export function ProStatusCard() {
+  const t = useTranslations("ProStatusCard");
   const { profile } = useAuth();
   const { daysLeft, progress, expired } = getTrialInfo(profile);
   const renewal = getPlanRenewalInfo(profile);
@@ -109,24 +111,24 @@ export function ProStatusCard() {
                 width={56}
                 height={56}
                 src={profile?.custom_profile_photo_url || profile?.profile_photo_url || "/default-avatar.svg"}
-                alt={profile?.full_name || "User"}
+                alt={profile?.full_name || t("userFallback")}
                 className="w-14 h-14 lg:w-12 lg:h-12 rounded-full border-2 border-white shadow-sm object-cover"
               />
               <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" />
             </div>
             <div className="space-y-1">
               <h1 className="text-xl lg:text-xl font-black text-slate-800 leading-tight">
-                Hi, {profile?.full_name?.split(" ")[0] || "Creator"}
+                {t("greeting", { name: profile?.full_name?.split(" ")[0] || t("creatorFallback") })}
               </h1>
               <div className="inline-flex items-center px-2 py-0.5 bg-emerald-50 rounded-md">
                 <p className="text-[10px] lg:text-xs font-bold text-emerald-600 tracking-tight">
-                  PLAN:{" "}
+                  {t("planLabel")}{" "}
                   <span className="text-slate-900 ml-1">
                     {hasPaidPlan
                         ? currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
                         : expired
-                        ? "Free"
-                        : "Starter Trial"}
+                        ? t("planFree")
+                        : t("planStarterTrial")}
                   </span>
                 </p>
               </div>
@@ -151,16 +153,14 @@ export function ProStatusCard() {
                 <p className="text-sm font-semibold text-slate-600 leading-snug">
                   <span className=" bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text font-bold">
                     {matchingBrandsCount == null
-                      ? "…"
-                      : matchingBrandsCount === 0
-                      ? "0 brands"
-                      : `${matchingBrandsCount} brand${matchingBrandsCount === 1 ? "" : "s"}`}
+                      ? t("brandsLoading")
+                      : t("brandsCount", { count: matchingBrandsCount })}
                   </span>
                   <br className="block lg:hidden" />
                   <span className="lg:ml-1">
                     {userCategories.length > 0
-                      ? "are looking for creators in your niche"
-                      : "have active campaigns right now"}
+                      ? t("lookingNiche")
+                      : t("activeNow")}
                   </span>
                 </p>
               </div>
@@ -185,11 +185,11 @@ export function ProStatusCard() {
                     <div className="flex items-center gap-2 mb-1">
                       <Zap size={14} className="text-purple-600 fill-purple-600" />
                       <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
-                        Active Plan
+                        {t("activePlan")}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                      {profile?.billing_cycle === "annual" ? "Annual" : "Monthly"} · renews in
+                      {t("renewsLine", { cycle: profile?.billing_cycle === "annual" ? t("cycleAnnual") : t("cycleMonthly") })}
                     </p>
                   </div>
                   <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
@@ -197,7 +197,7 @@ export function ProStatusCard() {
                       {renewal.daysLeft != null ? renewal.daysLeft : "—"}
                     </span>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
-                      days
+                      {t("days")}
                     </p>
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export function ProStatusCard() {
                     <div className="flex items-center gap-2 mb-3">
                       <Zap size={14} className={expired ? "text-slate-400 fill-slate-400" : "text-purple-600 fill-purple-600"} />
                       <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
-                        {expired ? "Trial Expired" : "Free Trial"}
+                        {expired ? t("trialExpired") : t("freeTrial")}
                       </span>
                     </div>
                     {/* Progress Bar */}
@@ -227,7 +227,7 @@ export function ProStatusCard() {
                       {daysLeft}
                     </span>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
-                      days left
+                      {t("daysLeft")}
                     </p>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export function ProStatusCard() {
                 style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
               >
                 <Crown size={16} />
-                <span className="hidden lg:inline">Upgrade</span>
+                <span className="hidden lg:inline">{t("upgrade")}</span>
               </Link>
             )}
           </div>

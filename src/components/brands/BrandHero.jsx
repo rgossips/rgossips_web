@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
@@ -18,6 +19,7 @@ const baseBrands = [
 ];
 
 const BrandHero = () => {
+  const t = useTranslations("BrandsBrandHero");
   const router = useRouter();
   const { profile } = useAuth();
   const { trust } = useBrandTrustScore();
@@ -59,7 +61,7 @@ const BrandHero = () => {
 
             <div>
               <p className="text-slate-300 text-xs md:text-sm font-medium">
-                Welcome back
+                {t("welcomeBack")}
               </p>
               <h3 className="text-white font-bold text-sm md:text-base">
                 {brandName}
@@ -69,7 +71,7 @@ const BrandHero = () => {
 
           {/* Mobile invite */}
           <button className="flex lg:hidden items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 py-2 px-4 rounded-full text-xs font-bold">
-            Invite & Earn ₹2500
+            {t("inviteEarn")}
             <div className="bg-white rounded-full p-0.5">
               <Plus size={14} className="text-[#1C115A]" />
             </div>
@@ -86,8 +88,10 @@ const BrandHero = () => {
             </div> */}
 
             <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight max-w-xl">
-              Connect with the <br />
-              right creators, <span className="text-indigo-300">fast.</span>
+              {t.rich("heading", {
+                br: () => <br />,
+                accent: (c) => <span className="text-indigo-300">{c}</span>,
+              })}
             </h1>
 
             {/* <p className="text-slate-300 text-sm md:text-base max-w-lg">
@@ -108,7 +112,7 @@ const BrandHero = () => {
                 ))}
               </div>
               <div className="text-slate-100 opacity-90 font-light">
-                2800+ Agencies
+                {t("agenciesCount")}
               </div>
             </div>
 
@@ -120,7 +124,7 @@ const BrandHero = () => {
                 }}
                 className="flex cursor-pointer items-center justify-center gap-2 bg-white text-black px-8 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-100 transition"
               >
-                Browse Creators
+                {t("browseCreators")}
               </button>
 
               <button
@@ -129,7 +133,7 @@ const BrandHero = () => {
                 }}
                 className="bg-[#5B3DF5] cursor-pointer px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition"
               >
-                Post Requirements
+                {t("postRequirements")}
               </button>
             </div>
           </div>
@@ -139,7 +143,7 @@ const BrandHero = () => {
             {/* Agencies Card */}
             <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl w-[400px]">
               <p className="text-sm text-slate-300 mb-4">
-                Trusted by 2800+ Agencies
+                {t("trustedByAgencies")}
               </p>
 
               <div className="flex items-center">
@@ -167,13 +171,13 @@ const BrandHero = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <p className="text-xs text-gray-400 uppercase">
-                    Your Trust Score
+                    {t("trustScoreLabel")}
                   </p>
                   <button
                     onClick={() => setTrustInfoOpen(true)}
                     className="cursor-pointer hover:scale-110 transition-transform inline-flex"
-                    aria-label="How is the trust score calculated?"
-                    title="How is this calculated?"
+                    aria-label={t("trustInfoAria")}
+                    title={t("trustInfoTitle")}
                   >
                     <InfoBadge size={16} />
                   </button>
@@ -187,7 +191,7 @@ const BrandHero = () => {
                 </div>
                 {trust?.coldStart && (
                   <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">
-                    Capped at {trust.coldStartCap} · 3 campaigns to lift
+                    {t("coldStartNote", { cap: trust.coldStartCap })}
                   </p>
                 )}
               </div>

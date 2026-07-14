@@ -5,6 +5,7 @@ import { Loader2, X, AlertTriangle, Trash2, UserMinus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 // Two flavours of "I want to leave" that share one shell so we don't ship two
 // near-identical modals. `variant="deactivate"` is the soft, self-restorable
@@ -12,25 +13,26 @@ import { useAuth } from "@/context/AuthContext";
 // purge — only admin can restore in the grace window.
 
 const REASONS_DEACTIVATE = [
-  "Taking a break from campaigns",
-  "Found another platform",
-  "Privacy concerns",
-  "Not finding the right creators",
-  "Too many notifications",
-  "Account security issues",
-  "Other",
+  { key: "break", value: "Taking a break from campaigns" },
+  { key: "otherPlatform", value: "Found another platform" },
+  { key: "privacy", value: "Privacy concerns" },
+  { key: "notFindingCreators", value: "Not finding the right creators" },
+  { key: "tooManyNotifications", value: "Too many notifications" },
+  { key: "security", value: "Account security issues" },
+  { key: "other", value: "Other" },
 ];
 
 const REASONS_DELETE = [
-  "Closing the business",
-  "Moving to a different platform",
-  "Privacy concerns",
-  "Created the account by mistake",
-  "Duplicate account",
-  "Other",
+  { key: "closingBusiness", value: "Closing the business" },
+  { key: "movingPlatform", value: "Moving to a different platform" },
+  { key: "privacy", value: "Privacy concerns" },
+  { key: "createdByMistake", value: "Created the account by mistake" },
+  { key: "duplicate", value: "Duplicate account" },
+  { key: "other", value: "Other" },
 ];
 
 export default function BrandAccountActionsModal({ variant, open, onClose }) {
+  const t = useTranslations("BrandsBrandAccountActionsModal");
   const router = useRouter();
   const supabase = createClient();
   const { user, signOut } = useAuth();
@@ -45,6 +47,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
 
   const isDelete = variant === "delete";
   const reasons = isDelete ? REASONS_DELETE : REASONS_DEACTIVATE;
+  const reasonsGroup = isDelete ? "reasonsDelete" : "reasonsDeactivate";
 
   // Delete needs an extra typed-confirmation gate ("DELETE") because the
   // grace window can be revoked but we want the user to feel the weight.
@@ -101,7 +104,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
       await signOut();
       router.replace("/login");
     } catch (e) {
-      setError(e.message || "Failed to submit");
+      setError(e.message || t("errors.failedToSubmit"));
       setSubmitting(false);
     }
   };
@@ -120,12 +123,12 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             </div>
             <div>
               <h3 className="text-lg font-black text-gray-900">
-                {isDelete ? "Delete Account" : "Deactivate Account"}
+                {isDelete ? t("title.delete") : t("title.deactivate")}
               </h3>
               <p className="text-[11px] text-gray-400 font-semibold">
                 {isDelete
-                  ? "30-day grace period — admin can restore on request"
-                  : "Reversible — sign back in any time"}
+                  ? t("subtitle.delete")
+                  : t("subtitle.deactivate")}
               </p>
             </div>
           </div>
@@ -133,7 +136,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             onClick={onClose}
             disabled={submitting}
             className="p-2 -mr-2 cursor-pointer disabled:opacity-50"
-            aria-label="Close"
+            aria-label={t("close")}
           >
             <X size={20} className="text-gray-400" />
           </button>
@@ -145,12 +148,12 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
               <div className="flex items-start gap-3">
                 <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
                 <div className="space-y-2">
-                  <p className="text-[12px] font-black text-red-900">This is a soft delete with a 30-day grace window.</p>
+                  <p className="text-[12px] font-black text-red-900">{t("deleteInfo.heading")}</p>
                   <ul className="space-y-1.5 text-[11px] font-bold text-red-700/90">
-                    <li>• Your brand and all related data is hidden immediately.</li>
-                    <li>• Sign-in is blocked while the account is pending deletion.</li>
-                    <li>• Email <span className="font-extrabold">grievance@rgossips.com</span> within 30 days if you want it restored.</li>
-                    <li>• After 30 days, the account, campaigns, applications and contact details are permanently removed.</li>
+                    <li>{t("deleteInfo.point1")}</li>
+                    <li>{t("deleteInfo.point2")}</li>
+                    <li>{t.rich("deleteInfo.point3", { email: (c) => <span className="font-extrabold">{c}</span> })}</li>
+                    <li>{t("deleteInfo.point4")}</li>
                   </ul>
                 </div>
               </div>
@@ -160,11 +163,11 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
               <div className="flex items-start gap-3">
                 <AlertTriangle size={18} className="text-amber-500 shrink-0 mt-0.5" />
                 <div className="space-y-2">
-                  <p className="text-[12px] font-black text-amber-900">Deactivating is reversible.</p>
+                  <p className="text-[12px] font-black text-amber-900">{t("deactivateInfo.heading")}</p>
                   <ul className="space-y-1.5 text-[11px] font-bold text-amber-700/90">
-                    <li>• Your brand stops appearing to creators.</li>
-                    <li>• Active campaigns are paused.</li>
-                    <li>• Signing in again with the same number reactivates everything automatically.</li>
+                    <li>{t("deactivateInfo.point1")}</li>
+                    <li>{t("deactivateInfo.point2")}</li>
+                    <li>{t("deactivateInfo.point3")}</li>
                   </ul>
                 </div>
               </div>
@@ -172,16 +175,16 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           )}
 
           <div>
-            <h4 className="text-sm font-black text-gray-900 mb-1">Tell us why you're {isDelete ? "leaving" : "taking a break"}</h4>
-            <p className="text-[11px] text-gray-400 font-bold mb-3">This helps us improve RGossips.</p>
+            <h4 className="text-sm font-black text-gray-900 mb-1">{isDelete ? t("reasonHeading.delete") : t("reasonHeading.deactivate")}</h4>
+            <p className="text-[11px] text-gray-400 font-bold mb-3">{t("reasonSubtext")}</p>
             <div className="space-y-2">
               {reasons.map((r) => (
                 <button
-                  key={r}
-                  onClick={() => setReason(r)}
+                  key={r.key}
+                  onClick={() => setReason(r.value)}
                   type="button"
                   className={`w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    reason === r
+                    reason === r.value
                       ? isDelete
                         ? "border-red-400 bg-red-50/60"
                         : "border-[#5851DB] bg-purple-50/60"
@@ -190,21 +193,21 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
                 >
                   <span
                     className={`text-[12px] font-bold ${
-                      reason === r ? (isDelete ? "text-red-700" : "text-[#5851DB]") : "text-gray-700"
+                      reason === r.value ? (isDelete ? "text-red-700" : "text-[#5851DB]") : "text-gray-700"
                     }`}
                   >
-                    {r}
+                    {t(`${reasonsGroup}.${r.key}`)}
                   </span>
                   <span
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      reason === r
+                      reason === r.value
                         ? isDelete
                           ? "border-red-500"
                           : "border-[#5851DB]"
                         : "border-gray-200"
                     }`}
                   >
-                    {reason === r && (
+                    {reason === r.value && (
                       <span className={`w-2 h-2 rounded-full ${isDelete ? "bg-red-500" : "bg-[#5851DB]"}`} />
                     )}
                   </span>
@@ -222,15 +225,15 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             />
             <span className="text-[12px] font-bold text-gray-700 leading-snug">
               {isDelete
-                ? "I understand my account will be hidden now and permanently removed after 30 days unless I contact admin."
-                : "I understand my account will be deactivated and creators will no longer see my brand."}
+                ? t("confirmCheckbox.delete")
+                : t("confirmCheckbox.deactivate")}
             </span>
           </label>
 
           {isDelete && (
             <div>
               <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
-                Type <span className="text-red-600">DELETE</span> to confirm
+                {t.rich("typeToConfirm", { hl: (c) => <span className="text-red-600">{c}</span> })}
               </label>
               <input
                 type="text"
@@ -253,7 +256,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             disabled={submitting}
             className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -263,7 +266,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             }`}
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            {submitting ? "Working…" : isDelete ? "Delete Account" : "Deactivate"}
+            {submitting ? t("actions.working") : isDelete ? t("actions.deleteAccount") : t("actions.deactivate")}
           </button>
         </div>
       </div>

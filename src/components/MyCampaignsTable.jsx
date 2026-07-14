@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 
 export default function MyCampaignsTable() {
+  const t = useTranslations("MyCampaignsTable");
   const brandNames = [
     "Zomato",
     "Swiggy",
@@ -71,17 +73,17 @@ export default function MyCampaignsTable() {
     <Card className="mt-4 shadow">
       <CardContent className="p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">My Campaigns</h2>
+          <h2 className="text-xl font-semibold">{t("title")}</h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="p-3 text-left">Brand</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Date</th>
-                <th className="p-3 text-left">Amount</th>
+                <th className="p-3 text-left">{t("columns.brand")}</th>
+                <th className="p-3 text-left">{t("columns.status")}</th>
+                <th className="p-3 text-left">{t("columns.date")}</th>
+                <th className="p-3 text-left">{t("columns.amount")}</th>
               </tr>
             </thead>
 
@@ -115,7 +117,7 @@ export default function MyCampaignsTable() {
             onClick={() => setCurrentPage((p) => p - 1)}
             className="px-3 py-1 rounded border bg-white hover:bg-gray-100 disabled:opacity-50"
           >
-            Prev
+            {t("pagination.prev")}
           </button>
 
           {Array.from({ length: totalPages }, (_, i) => (
@@ -137,7 +139,7 @@ export default function MyCampaignsTable() {
             onClick={() => setCurrentPage((p) => p + 1)}
             className="px-3 py-1 rounded border bg-white hover:bg-gray-100 disabled:opacity-50"
           >
-            Next
+            {t("pagination.next")}
           </button>
         </div>
       </CardContent>

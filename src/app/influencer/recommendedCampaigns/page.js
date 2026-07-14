@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import {
   Drawer,
@@ -132,16 +133,17 @@ const BUDGET_RANGES = [
 ];
 const CONTENT_TYPES = ["Posts", "Reels", "Shorts", "Stories", "Videos"];
 const SORT_OPTIONS = [
-  { label: "Recommended", sub: "" },
-  { label: "Most Engagement", sub: "" },
-  { label: "Highest Followers", sub: "" },
-  { label: "Lowest Collaboration Cost", sub: "Cheapest to work with" },
-  { label: "Highest Collaboration Cost", sub: "Biggest deal first" },
-  { label: "New Creators", sub: "" },
-  { label: "Nearby Creators", sub: "" },
+  { key: "recommended", label: "Recommended", sub: "" },
+  { key: "mostEngagement", label: "Most Engagement", sub: "" },
+  { key: "highestFollowers", label: "Highest Followers", sub: "" },
+  { key: "lowestCost", label: "Lowest Collaboration Cost", sub: "Cheapest to work with" },
+  { key: "highestCost", label: "Highest Collaboration Cost", sub: "Biggest deal first" },
+  { key: "newCreators", label: "New Creators", sub: "" },
+  { key: "nearbyCreators", label: "Nearby Creators", sub: "" },
 ];
 
 export default function RecommendedCampaigns() {
+  const t = useTranslations("InfluencerRecommendedCampaigns");
   const router = useRouter();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -288,7 +290,7 @@ export default function RecommendedCampaigns() {
           >
             <ChevronLeft size={22} />
           </button>
-          <h1 className="text-base font-bold text-slate-900">Recommended</h1>
+          <h1 className="text-base font-bold text-slate-900">{t("title")}</h1>
           <div className="flex items-center gap-2">
             {/* Sort Drawer */}
             <SortDrawer
@@ -319,7 +321,7 @@ export default function RecommendedCampaigns() {
             <Search size={16} className="text-slate-400 shrink-0" />
             <input
               type="text"
-              placeholder="Search campaigns or brands..."
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent text-sm w-full outline-none placeholder:text-slate-400"
@@ -371,25 +373,25 @@ export default function RecommendedCampaigns() {
           </div>
         ) : visibleCampaigns.length === 0 ? (
           <div className="text-center py-20 px-6">
-            <p className="text-sm font-bold text-slate-700">No campaigns match your filters</p>
-            <p className="text-xs text-slate-400 mt-1">Try clearing some filters or widening the budget range.</p>
+            <p className="text-sm font-bold text-slate-700">{t("emptyTitle")}</p>
+            <p className="text-xs text-slate-400 mt-1">{t("emptyDesc")}</p>
             <button
               onClick={resetFilters}
               className="mt-5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md cursor-pointer"
             >
-              Reset filters
+              {t("resetFilters")}
             </button>
           </div>
         ) : (
           <AnimatePresence>
             {visibleCampaigns.map((c, index) => {
               const cover = c.bannerImage || c.brandLogo;
-              const category = (Array.isArray(c.tags) ? c.tags[0] : "") || "Campaign";
-              const location = c.location || "Pan India";
-              const deliverables = c.deliverables || "Custom deliverables";
+              const category = (Array.isArray(c.tags) ? c.tags[0] : "") || t("card.categoryFallback");
+              const location = c.location || t("card.locationFallback");
+              const deliverables = c.deliverables || t("card.deliverablesFallback");
               const targetFollowers = c.targetFollowerMin
-                ? `${(c.targetFollowerMin / 1000).toFixed(0)}K+ Followers`
-                : "Open to all tiers";
+                ? t("card.followers", { count: (c.targetFollowerMin / 1000).toFixed(0) })
+                : t("card.openToAll");
               return (
                 <motion.div
                   key={c.id}
@@ -424,7 +426,7 @@ export default function RecommendedCampaigns() {
                         <div className="absolute top-3 right-3">
                           <span className="bg-slate-900/70 backdrop-blur-sm text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-amber-300 rounded-full" />
-                            {c.daysLeft}d left
+                            {t("card.daysLeft", { days: c.daysLeft })}
                           </span>
                         </div>
                       )}
@@ -457,7 +459,7 @@ export default function RecommendedCampaigns() {
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
                       <div className="flex items-center gap-1 text-xs text-slate-500">
                         <DollarSign size={12} className="text-green-500" />
-                        <span className="font-semibold">{c.budget || "On request"}</span>
+                        <span className="font-semibold">{c.budget || t("card.budgetFallback")}</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500">
                         <Users size={12} className="text-blue-500" />
@@ -470,7 +472,7 @@ export default function RecommendedCampaigns() {
                       onClick={() => router.push(`/influencer/offers/${c.id}`)}
                       className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md shadow-pink-100 active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      Apply
+                      {t("card.apply")}
                     </button>
                   </div>
                 </motion.div>
@@ -485,12 +487,13 @@ export default function RecommendedCampaigns() {
 
 /* ─── SORT DRAWER ─── */
 function SortDrawer({ selectedSort, setSelectedSort, asPill = false }) {
+  const t = useTranslations("InfluencerRecommendedCampaigns");
   return (
     <Drawer>
       <DrawerTrigger asChild>
         {asPill ? (
           <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-600">
-            <ArrowUpDown size={12} /> Sort
+            <ArrowUpDown size={12} /> {t("sort.pill")}
           </button>
         ) : (
           <button className="p-2 rounded-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white">
@@ -507,7 +510,7 @@ function SortDrawer({ selectedSort, setSelectedSort, asPill = false }) {
               </button>
             </DrawerClose>
             <DrawerTitle className="text-lg font-bold">
-              Sort Influencers
+              {t("sort.title")}
             </DrawerTitle>
             <div className="w-9" />
           </div>
@@ -540,10 +543,10 @@ function SortDrawer({ selectedSort, setSelectedSort, asPill = false }) {
                         : "text-slate-600"
                     }`}
                   >
-                    {option.label}
+                    {t(`sort.options.${option.key}.label`)}
                   </p>
                   {option.sub && (
-                    <p className="text-[11px] text-slate-400">{option.sub}</p>
+                    <p className="text-[11px] text-slate-400">{t(`sort.options.${option.key}.sub`)}</p>
                   )}
                 </div>
               </div>
@@ -554,12 +557,12 @@ function SortDrawer({ selectedSort, setSelectedSort, asPill = false }) {
         <DrawerFooter className="flex-row gap-3 pt-2">
           <DrawerClose asChild>
             <button className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600">
-              Cancel
+              {t("common.cancel")}
             </button>
           </DrawerClose>
           <DrawerClose asChild>
             <button className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md">
-              Apply
+              {t("common.apply")}
             </button>
           </DrawerClose>
         </DrawerFooter>
@@ -584,12 +587,13 @@ function FilterDrawer({
   resetFilters,
   asPill = false,
 }) {
+  const t = useTranslations("InfluencerRecommendedCampaigns");
   return (
     <Drawer>
       <DrawerTrigger asChild>
         {asPill ? (
           <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-600">
-            <SlidersHorizontal size={12} /> Filter
+            <SlidersHorizontal size={12} /> {t("filter.pill")}
           </button>
         ) : (
           <button className="p-2 rounded-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white">
@@ -605,7 +609,7 @@ function FilterDrawer({
                 <ChevronLeft size={20} />
               </button>
             </DrawerClose>
-            <DrawerTitle className="text-lg font-bold">Filters</DrawerTitle>
+            <DrawerTitle className="text-lg font-bold">{t("filter.title")}</DrawerTitle>
             <div className="w-9" />
           </div>
         </DrawerHeader>
@@ -614,7 +618,7 @@ function FilterDrawer({
           {/* Category */}
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Category
+              {t("filter.category")}
             </p>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((cat) => (
@@ -636,7 +640,7 @@ function FilterDrawer({
           {/* Platform */}
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Platform
+              {t("filter.platform")}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {PLATFORMS.map((platform) => (
@@ -661,14 +665,14 @@ function FilterDrawer({
           {/* Budget Range */}
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Budget Range
+              {t("filter.budgetRange")}
             </p>
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-1 flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2.5">
                 <span className="text-xs text-slate-400">₹</span>
                 <input
                   type="text"
-                  placeholder="Min"
+                  placeholder={t("budget.min")}
                   value={budgetMin}
                   onChange={(e) => setBudgetMin(e.target.value)}
                   className="w-full text-sm font-semibold outline-none bg-transparent"
@@ -679,14 +683,14 @@ function FilterDrawer({
                 <span className="text-xs text-slate-400">₹</span>
                 <input
                   type="text"
-                  placeholder="Max"
+                  placeholder={t("budget.max")}
                   value={budgetMax}
                   onChange={(e) => setBudgetMax(e.target.value)}
                   className="w-full text-sm font-semibold outline-none bg-transparent"
                 />
               </div>
               <button className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-xs font-bold">
-                Go
+                {t("budget.go")}
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -704,7 +708,7 @@ function FilterDrawer({
           {/* Content Type */}
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Content Type
+              {t("filter.contentType")}
             </p>
             <div className="flex flex-wrap gap-2">
               {CONTENT_TYPES.map((type) => (
@@ -729,11 +733,11 @@ function FilterDrawer({
             onClick={resetFilters}
             className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600"
           >
-            Reset
+            {t("common.reset")}
           </button>
           <DrawerClose asChild>
             <button className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md">
-              Apply Filters
+              {t("filter.applyFilters")}
             </button>
           </DrawerClose>
         </DrawerFooter>
@@ -744,11 +748,12 @@ function FilterDrawer({
 
 /* ─── BUDGET DRAWER ─── */
 function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
+  const t = useTranslations("InfluencerRecommendedCampaigns");
   return (
     <Drawer>
       <DrawerTrigger asChild>
         <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-600">
-          <DollarSign size={12} /> Budget
+          <DollarSign size={12} /> {t("budget.pill")}
           {(budgetMin || budgetMax) && (
             <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
           )}
@@ -763,7 +768,7 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
               </button>
             </DrawerClose>
             <DrawerTitle className="text-lg font-bold">
-              Budget Range
+              {t("budget.title")}
             </DrawerTitle>
             <div className="w-9" />
           </div>
@@ -775,7 +780,7 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
               <span className="text-xs text-slate-400">₹</span>
               <input
                 type="text"
-                placeholder="Min"
+                placeholder={t("budget.min")}
                 value={budgetMin}
                 onChange={(e) => setBudgetMin(e.target.value)}
                 className="w-full text-sm font-semibold outline-none bg-transparent"
@@ -786,7 +791,7 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
               <span className="text-xs text-slate-400">₹</span>
               <input
                 type="text"
-                placeholder="Max"
+                placeholder={t("budget.max")}
                 value={budgetMax}
                 onChange={(e) => setBudgetMax(e.target.value)}
                 className="w-full text-sm font-semibold outline-none bg-transparent"
@@ -813,11 +818,11 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
             }}
             className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600"
           >
-            Reset
+            {t("common.reset")}
           </button>
           <DrawerClose asChild>
             <button className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md">
-              Apply
+              {t("common.apply")}
             </button>
           </DrawerClose>
         </DrawerFooter>
@@ -828,11 +833,12 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
 
 /* ─── PLATFORM DRAWER ─── */
 function PlatformDrawer({ selectedPlatforms, toggleItem, setSelectedPlatforms }) {
+  const t = useTranslations("InfluencerRecommendedCampaigns");
   return (
     <Drawer>
       <DrawerTrigger asChild>
         <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-600">
-          Platform
+          {t("platform.pill")}
           {selectedPlatforms.length > 0 && (
             <span className="bg-pink-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
               {selectedPlatforms.length}
@@ -848,7 +854,7 @@ function PlatformDrawer({ selectedPlatforms, toggleItem, setSelectedPlatforms })
                 <ChevronLeft size={20} />
               </button>
             </DrawerClose>
-            <DrawerTitle className="text-lg font-bold">Platform</DrawerTitle>
+            <DrawerTitle className="text-lg font-bold">{t("platform.title")}</DrawerTitle>
             <div className="w-9" />
           </div>
         </DrawerHeader>
@@ -879,11 +885,11 @@ function PlatformDrawer({ selectedPlatforms, toggleItem, setSelectedPlatforms })
             onClick={() => setSelectedPlatforms([])}
             className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600"
           >
-            Reset
+            {t("common.reset")}
           </button>
           <DrawerClose asChild>
             <button className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white text-sm font-bold shadow-md">
-              Apply
+              {t("common.apply")}
             </button>
           </DrawerClose>
         </DrawerFooter>

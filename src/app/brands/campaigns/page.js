@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 // Heavy create form — code-split so list view loads fast
 const CreateCampaignDialog = dynamic(
@@ -29,6 +30,7 @@ const STATUS_TABS = [
 ];
 
 const CampaignsPage = () => {
+  const t = useTranslations("BrandsCampaigns");
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
   const router = useRouter();
@@ -96,14 +98,14 @@ const CampaignsPage = () => {
       <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-16 mb-16 lg:mb-24 rounded-b-[40px] text-white relative">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Campaigns</h1>
-            <p className="text-purple-100 text-xs">Manage your campaign requests</p>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+            <p className="text-purple-100 text-xs">{t("subtitle")}</p>
           </div>
           <button
             onClick={() => setCreateOpen(true)}
             className="hidden lg:flex items-center gap-2 bg-white text-[#5851DB] px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-purple-900/20 cursor-pointer"
           >
-            <Plus size={16} /> New Campaign
+            <Plus size={16} /> {t("newCampaign")}
           </button>
         </div>
 
@@ -114,7 +116,7 @@ const CampaignsPage = () => {
               type="text"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search campaigns..."
+              placeholder={t("searchPlaceholder")}
               className="w-full px-3 text-sm text-gray-800 outline-none placeholder:text-gray-300 bg-transparent"
             />
             {searchText && (
@@ -138,7 +140,7 @@ const CampaignsPage = () => {
                     : "bg-white text-gray-500"
                 }`}
               >
-                {tab.label}
+                {t(`tabs.${tab.key}`)}
                 {counts[tab.key] > 0 && (
                   <span className={`ml-1.5 text-[10px] ${activeTab === tab.key ? "text-white/80" : "text-gray-400"}`}>
                     {counts[tab.key]}
@@ -163,20 +165,20 @@ const CampaignsPage = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
               {searchText || activeTab !== "all"
-                ? "No campaigns match"
-                : "No campaigns yet"}
+                ? t("empty.noMatch")
+                : t("empty.noCampaigns")}
             </h3>
             <p className="text-xs text-gray-400 leading-relaxed max-w-sm">
               {searchText || activeTab !== "all"
-                ? "Try a different search or filter."
-                : "Create your first campaign to start connecting with creators."}
+                ? t("empty.noMatchHint")
+                : t("empty.noCampaignsHint")}
             </p>
             {!(searchText || activeTab !== "all") && (
               <button
                 onClick={() => setCreateOpen(true)}
                 className="mt-8 bg-[#5851DB] text-white px-8 py-4 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm cursor-pointer"
               >
-                Create Campaign <ArrowUpRight size={18} />
+                {t("createCampaign")} <ArrowUpRight size={18} />
               </button>
             )}
           </div>
@@ -194,7 +196,7 @@ const CampaignsPage = () => {
         onClick={() => setCreateOpen(true)}
         className="lg:hidden fixed cursor-pointer bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-40 active:scale-95"
       >
-        <Plus size={20} /> Create
+        <Plus size={20} /> {t("create")}
       </button>
 
       {createOpen && (

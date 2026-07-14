@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Instagram, Loader2, X, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 
 export default function InstagramReconnectBanner() {
+  const t = useTranslations("InstagramReconnectBanner");
   const { user, instagramTokenMissing, setInstagramTokenMissing, refreshProfile, refreshInstagram } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -18,7 +20,7 @@ export default function InstagramReconnectBanner() {
       if (event.data?.type !== "instagram-oauth") return;
 
       if (event.data.error) {
-        setError("Instagram connection was denied");
+        setError(t("denied"));
         setConnecting(false);
         return;
       }
@@ -64,7 +66,7 @@ export default function InstagramReconnectBanner() {
       // Trigger Instagram data + analytics refresh, then reload profile
       await refreshInstagram(user.id);
     } catch (err) {
-      setError(err.message || "Failed to reconnect Instagram");
+      setError(err.message || t("failed"));
     } finally {
       setConnecting(false);
     }
@@ -100,10 +102,10 @@ export default function InstagramReconnectBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <AlertTriangle size={14} className="text-amber-500" />
-            <p className="text-sm font-bold text-slate-900">Instagram Reconnection Required</p>
+            <p className="text-sm font-bold text-slate-900">{t("title")}</p>
           </div>
           <p className="text-xs text-slate-500">
-            Reconnect your Instagram to keep your followers, engagement rate, and analytics up to date.
+            {t("body")}
           </p>
           {error && (
             <p className="text-xs text-red-500 mt-1">{error}</p>
@@ -119,7 +121,7 @@ export default function InstagramReconnectBanner() {
           {connecting ? (
             <Loader2 size={14} className="animate-spin" />
           ) : (
-            "Reconnect"
+            t("reconnect")
           )}
         </button>
 

@@ -5,8 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useTranslations } from "next-intl";
 
 export default function HeroImage({ userData }) {
+  const t = useTranslations("HeroImg");
   const [imgWidth, setImgWidth] = useState(400);
   const [imgHeight, setImgHeight] = useState(550);
   const [openMenu, setOpenMenu] = useState(false);
@@ -122,7 +124,7 @@ export default function HeroImage({ userData }) {
           >
             <ul className="space-y-2 text-sm text-gray-700">
               <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
-                <Link href={"/profile"}>View Profile</Link>
+                <Link href={"/profile"}>{t("viewProfile")}</Link>
               </li>
               {/* <li className="cursor-pointer hover:bg-gray-100 p-2 rounded">
                 Settings
@@ -131,7 +133,7 @@ export default function HeroImage({ userData }) {
                 onClick={handleLogout}
                 className="cursor-pointer hover:bg-gray-100 p-2 rounded text-red-600"
               >
-                Logout
+                {t("logout")}
               </li>
             </ul>
           </div>

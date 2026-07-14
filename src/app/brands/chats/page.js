@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 export default function ChatModule() {
+  const t = useTranslations("BrandsChats");
   const [selectedChat, setSelectedChat] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("All");
@@ -37,8 +39,10 @@ export default function ChatModule() {
       <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 lg:px-10 pt-8 lg:pt-10 pb-10 lg:pb-14 mb-4 rounded-b-[40px] text-white relative z-10">
         <div className="flex justify-between items-start mb-5">
           <div>
-            <h1 className="text-2xl font-bold">Messages</h1>
-            <p className="text-white/70 text-xs mt-1">6 Running Projects</p>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+            <p className="text-white/70 text-xs mt-1">
+              {t("runningProjects", { count: 6 })}
+            </p>
           </div>
         </div>
 
@@ -46,7 +50,7 @@ export default function ChatModule() {
         <div className="absolute left-6 right-6 lg:left-10 lg:right-10 -bottom-6 flex items-center bg-white rounded-full p-2 shadow-lg shadow-gray-200/50">
           <input
             type="text"
-            placeholder="Search or start a new chat"
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-4 text-sm text-gray-800 outline-none placeholder:text-gray-400"
           />
           <button className="bg-[#5851DB] hover:bg-[#4338CA] p-2.5 rounded-full text-white shrink-0 transition-colors">
@@ -73,7 +77,7 @@ export default function ChatModule() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {tab}
+                {t(`tabs.${tab}`)}
               </button>
             ))}
           </div>
@@ -115,10 +119,10 @@ export default function ChatModule() {
                   <span
                     className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full mt-1 ${contact.tagColor}`}
                   >
-                    {contact.campaign}
+                    {t(`contacts.${contact.key}.campaign`)}
                   </span>
                   <p className="text-xs text-slate-500 truncate mt-1">
-                    {contact.lastMsg}
+                    {t(`contacts.${contact.key}.lastMsg`)}
                   </p>
                 </div>
               </motion.div>
@@ -158,9 +162,10 @@ export default function ChatModule() {
                           {selectedChat.name}
                         </h3>
                         <p className="text-xs text-slate-400">
-                          <span className="text-slate-500">★</span> Regarding:{" "}
+                          <span className="text-slate-500">★</span>{" "}
+                          {t("regarding")}{" "}
                           <span className="font-medium text-slate-600">
-                            {selectedChat.campaign}
+                            {t(`contacts.${selectedChat.key}.campaign`)}
                           </span>
                         </p>
                       </div>
@@ -260,7 +265,9 @@ export default function ChatModule() {
                                   : "bg-white text-slate-700 rounded-tl-sm border border-slate-100"
                               }`}
                             >
-                              <p className="leading-relaxed">{msg.text}</p>
+                              <p className="leading-relaxed">
+                                {t(`messages.${msg.key}`)}
+                              </p>
                             </div>
                           )}
                           <span
@@ -279,7 +286,7 @@ export default function ChatModule() {
                       <div className="flex-1 flex items-end gap-2 bg-[#F8F9FD] p-2.5 rounded-2xl border border-slate-100">
                         <textarea
                           rows={1}
-                          placeholder="Type a message..."
+                          placeholder={t("typePlaceholder")}
                           className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-1.5 resize-none max-h-32 outline-none text-slate-700 placeholder:text-slate-400"
                           onInput={(e) => {
                             e.target.style.height = "auto";
@@ -305,9 +312,7 @@ export default function ChatModule() {
                   <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                     <Send size={32} />
                   </div>
-                  <p className="font-medium">
-                    Select a conversation to start chatting
-                  </p>
+                  <p className="font-medium">{t("emptyState")}</p>
                 </div>
               )}
             </motion.div>
@@ -322,56 +327,50 @@ export default function ChatModule() {
 const CONTACTS = [
   {
     id: 1,
+    key: "faisal",
     name: "Faisal Shaikh",
-    campaign: "Food Campaign",
     tagColor: "bg-[#EAE7FF] text-[#4F46E5]",
-    lastMsg: "Hey, I can do this in 2 days",
     time: "3:45 PM",
     avatar: "https://i.pravatar.cc/150?u=faisal",
     unread: 1,
   },
   {
     id: 2,
+    key: "sarah",
     name: "Sarah Rahman",
-    campaign: "Skincare Launch",
     tagColor: "bg-[#FCE6F1] text-[#C5006A]",
-    lastMsg: "Let me check the brief again.",
     time: "1:16 PM",
     avatar: "https://i.pravatar.cc/150?u=sarah",
   },
   {
     id: 3,
+    key: "arjun",
     name: "Arjun Mehta",
-    campaign: "Tech Review",
     tagColor: "bg-[#E0F7EC] text-[#0D7C4A]",
-    lastMsg: "I'll send the draft by tonight",
     time: "12:30 PM",
     avatar: "https://i.pravatar.cc/150?u=arjun",
   },
   {
     id: 4,
+    key: "priya",
     name: "Priya Nair",
-    campaign: "Fashion Week",
     tagColor: "bg-[#FFF3E0] text-[#E65100]",
-    lastMsg: "Can we reschedule the shoot?",
     time: "11:45 AM",
     avatar: "https://i.pravatar.cc/150?u=priya",
   },
   {
     id: 5,
+    key: "ravi",
     name: "Ravi Kumar",
-    campaign: "Fitness Brand",
     tagColor: "bg-[#E3F2FD] text-[#1565C0]",
-    lastMsg: "The content is ready for review",
     time: "10:20 AM",
     avatar: "https://i.pravatar.cc/150?u=ravi",
   },
   {
     id: 6,
+    key: "meera",
     name: "Meera Joshi",
-    campaign: "Travel Vlog",
     tagColor: "bg-[#F3E5F5] text-[#7B1FA2]",
-    lastMsg: "Uploaded the final cut!",
     time: "Yesterday",
     avatar: "https://i.pravatar.cc/150?u=meera",
   },
@@ -380,20 +379,20 @@ const CONTACTS = [
 const MOCK_MESSAGES = [
   {
     id: 1,
+    key: "msg1",
     sender: "them",
-    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
     time: "04:45 PM",
   },
   {
     id: 2,
+    key: "msg2",
     sender: "me",
-    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
     time: "04:01 PM",
   },
   {
     id: 3,
+    key: "msg3",
     sender: "them",
-    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
     time: "04:33 PM",
   },
   {
@@ -405,8 +404,8 @@ const MOCK_MESSAGES = [
   },
   {
     id: 5,
+    key: "msg5",
     sender: "me",
-    text: "Oh, hello! All perfectly, I will check it and get back to you soon",
     time: "04:45 PM",
   },
 ];

@@ -1,18 +1,23 @@
+import { getTranslations } from "next-intl/server";
 import ConsentPolicyPage from "@/components/ConsentPolicyPage";
 import { consentHtml } from "@/lib/consent-influencer";
 
-export const metadata = {
-  title: "Influencer Consent Policy · RGossips",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("HomeConsentInfluencer");
+  return {
+    title: t("metaTitle"),
+  };
+}
 
 // Public route — no auth required. The role-scoped path
 // /influencer/consent-policy still works via a server-side redirect for
 // historic bookmarks, but new links should point at /consent/influencer.
-export default function InfluencerConsentPolicyRoute() {
+export default async function InfluencerConsentPolicyRoute() {
+  const t = await getTranslations("HomeConsentInfluencer");
   return (
     <ConsentPolicyPage
-      title="Influencer Consent Policy"
-      subtitle="Recent Gossips — Influencer Marketing Portal · operated by RUDE LABS Private Limited"
+      title={t("title")}
+      subtitle={t("subtitle")}
       html={consentHtml}
     />
   );

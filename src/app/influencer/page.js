@@ -3,6 +3,7 @@
 import React from "react";
 import { Star, Box, Compass, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import BrandsCarousel from "@/components/BrandsCarousel2";
 import CreatorsCarouselWithLink from "@/components/CreatorsCarouselWithLink";
 import JourneyCarousel from "@/components/JourneyCarousel";
@@ -22,15 +23,17 @@ import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 import ReferBalanceCard from "@/components/ReferBalanceCard";
 import WelcomeRewardModal from "@/components/WelcomeRewardModal";
 
+// `labelKey` maps to InfluencerHome.nav.<key>.
 const CATEGORIES = [
-  { id: 2, label: "Brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
-  { id: 3, label: "Top Services", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
-  { id: 4, label: "Top Creators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
-  { id: 5, label: "Campaigns For You", icon: <Star size={20} />, active: false, action: "scroll", target: "section-recommended-campaigns" },
+  { id: 2, labelKey: "brands", icon: <Box size={20} />, active: false, action: "navigate", target: "/influencer/brands" },
+  { id: 3, labelKey: "topServices", icon: <Compass size={20} />, active: false, action: "scroll", target: "section-top-services" },
+  { id: 4, labelKey: "topCreators", icon: <Crown size={20} />, active: false, action: "scroll", target: "section-top-creators" },
+  { id: 5, labelKey: "campaigns", icon: <Star size={20} />, active: false, action: "scroll", target: "section-recommended-campaigns" },
 ];
 
 export default function HomePage() {
   const router = useRouter();
+  const t = useTranslations("InfluencerHome");
   const { loading } = useAuth();
 
   const handleCategoryClick = (cat) => {
@@ -99,7 +102,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-[#E60076] animate-spin" />
-          <p className="text-sm text-slate-500 font-semibold">Loading...</p>
+          <p className="text-sm text-slate-500 font-semibold">{t("loading")}</p>
         </div>
       </div>
     );
@@ -150,7 +153,7 @@ export default function HomePage() {
                     }`}
                   >
                     <div className={`p-2.5 rounded-2xl ${cat.active ? "bg-pink-50 text-pink-500" : "bg-slate-50 text-slate-400"}`}>{React.cloneElement(cat.icon, { size: 20 })}</div>
-                    <span className={`text-sm font-bold ${cat.active ? "text-slate-900" : "text-slate-400"}`}>{cat.label}</span>
+                    <span className={`text-sm font-bold ${cat.active ? "text-slate-900" : "text-slate-400"}`}>{t(`nav.${cat.labelKey}`)}</span>
                   </button>
                 ))}
               </div>

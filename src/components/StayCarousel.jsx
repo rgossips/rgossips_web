@@ -6,6 +6,7 @@ import SectionTitle from "./SectionTitle";
 import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 // Fallback shown while featured_campaigns has no active rows.
 const FALLBACK_STAYS = [
@@ -51,15 +52,14 @@ const FALLBACK_STAYS = [
   },
 ];
 
-const DEFAULT_TITLE = "Plan your stay with us";
-
 export default function StayCarousel() {
+  const t = useTranslations("StayCarousel");
   const [api, setApi] = useState(null);
   const [current, setCurrent] = useState(0);
   const [stays, setStays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-  const [sectionTitle, setSectionTitle] = useState(DEFAULT_TITLE);
+  const [sectionTitle, setSectionTitle] = useState(t("defaultTitle"));
   const router = useRouter();
 
   // Same list-featured-campaigns response feeds Stay + the Deal Of The Day
@@ -88,7 +88,7 @@ export default function StayCarousel() {
               // Short description fed into the badge — trimmed so it fits
               // the pill without wrapping. Falls back to the campaign
               // category if no description is set.
-              description: (c.description || "").slice(0, 60) || c.category || "Brand Collab",
+              description: (c.description || "").slice(0, 60) || c.category || t("brandCollab"),
               location: c.location,
               imageUrl: c.bannerImage || c.brandLogo || "",
               priceType: c.priceType,
@@ -133,7 +133,7 @@ export default function StayCarousel() {
     return (
       <div className="w-full h-96 flex flex-col items-center justify-center gap-4">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500"></div>
-        <p className="text-slate-400 font-medium animate-pulse">Finding your next stay...</p>
+        <p className="text-slate-400 font-medium animate-pulse">{t("loading")}</p>
       </div>
     );
   }
@@ -196,7 +196,7 @@ export default function StayCarousel() {
                           }}
                           className="bg-gradient-to-r cursor-pointer from-[#8E2DE2] to-[#F6339A] text-white text-[10px] uppercase tracking-[0.2em] font-black px-7 py-3 rounded-full shadow-lg shadow-pink-200"
                         >
-                          Apply Now
+                          {t("applyNow")}
                         </span>
                       </div>
                     </div>

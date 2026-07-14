@@ -9,9 +9,11 @@ import { Star, ArrowRight, Building2, Users, TrendingUp } from "lucide-react";
 import { useGlobal } from "@/context/GlobalContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 import one from "@/assets/home1.png";
 
 const HomeHero = () => {
+  const t = useTranslations("HomeHero");
   const { setType } = useGlobal();
   const router = useRouter();
   const { user, profile, role, loading } = useAuth();
@@ -32,16 +34,20 @@ const HomeHero = () => {
             {/* <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             </span> */}
-            <span className="flex items-center gap-1.5 flex-wrap">Now live: AI-powered Influencer Matching: Try it free →</span>
+            <span className="flex items-center gap-1.5 flex-wrap">{t("badge")}</span>
           </Badge>
 
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
-            Where Global Brands Meet <br />
-            <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">The Right Creators.</span>
+            {t.rich("heading", {
+              br: () => <br />,
+              highlight: (chunks) => (
+                <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">{chunks}</span>
+              ),
+            })}
           </h1>
 
           <p className="text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-medium">
-            RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.
+            {t("subheading")}
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -50,7 +56,7 @@ const HomeHero = () => {
                 onClick={() => router.push(dashboardPath)}
                 className="cursor-pointer h-14 px-8 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold shadow-lg shadow-blue-200 group"
               >
-                Hi, {displayName}
+                {t("greeting", { name: displayName })}
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             ) : (
@@ -63,7 +69,7 @@ const HomeHero = () => {
                   className="cursor-pointer h-14 px-8 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white rounded-2xl text-lg font-bold shadow-lg shadow-blue-200 group"
                 >
                   <Building2 className="mr-2 h-5 w-5" />
-                  I&apos;m a Brand
+                  {t("ctaBrand")}
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
 
@@ -76,7 +82,7 @@ const HomeHero = () => {
                   className="cursor-pointer h-14 px-8 border-slate-200 text-slate-600 rounded-2xl text-lg font-bold hover:bg-slate-50 group"
                 >
                   <Users className="mr-2 h-5 w-5" />
-                  I&apos;m an Influencer
+                  {t("ctaInfluencer")}
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </>
@@ -135,8 +141,8 @@ const HomeHero = () => {
                 <TrendingUp size={20} />
               </div>
               <div>
-                <p className="text-xl font-bold text-slate-900">+245%</p>
-                <p className="text-xs text-slate-400 font-medium">ROI Increase</p>
+                <p className="text-xl font-bold text-slate-900">{t("stats.roiValue")}</p>
+                <p className="text-xs text-slate-400 font-medium">{t("stats.roiLabel")}</p>
               </div>
             </motion.div>
 
@@ -150,8 +156,8 @@ const HomeHero = () => {
                 <Users size={20} />
               </div>
               <div>
-                <p className="text-xl font-bold text-slate-900">50K+</p>
-                <p className="text-xs text-slate-400 font-medium">Active Users</p>
+                <p className="text-xl font-bold text-slate-900">{t("stats.usersValue")}</p>
+                <p className="text-xs text-slate-400 font-medium">{t("stats.usersLabel")}</p>
               </div>
             </motion.div>
           </motion.div>

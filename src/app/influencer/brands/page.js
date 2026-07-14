@@ -9,8 +9,10 @@ import BrandCard from "@/components/BrandCard";
 import FilterModal, { FilterSidebar } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateBrandMatchScore } from "@/utils/matchScore";
+import { useTranslations } from "next-intl";
 
 export default function DiscoverBrands() {
+  const t = useTranslations("InfluencerBrands");
   const { profile } = useAuth();
 
   const [brands, setBrands] = useState([]);
@@ -106,7 +108,7 @@ export default function DiscoverBrands() {
         {/* Mobile header */}
         <div className="lg:hidden space-y-4 mb-2">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-slate-800">Discover Brands</h1>
+            <h1 className="text-2xl font-bold text-slate-800">{t("title")}</h1>
             <Button
               variant="outline"
               onClick={() => setIsFiltersOpen(true)}
@@ -118,7 +120,7 @@ export default function DiscoverBrands() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <Input
-              placeholder="Search brands..."
+              placeholder={t("searchBrandsPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 bg-white border-none rounded-xl shadow-sm text-sm font-medium"
@@ -139,7 +141,7 @@ export default function DiscoverBrands() {
                 size={20}
               />
               <Input
-                placeholder="Search..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-14 bg-white border-none rounded-2xl shadow-sm text-sm font-medium"
@@ -162,7 +164,7 @@ export default function DiscoverBrands() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <Loader2 size={28} className="animate-spin text-purple-500" />
-                <p className="text-sm font-bold text-slate-400">Loading brands...</p>
+                <p className="text-sm font-bold text-slate-400">{t("loading")}</p>
               </div>
             ) : (
               <>
@@ -176,7 +178,7 @@ export default function DiscoverBrands() {
 
                 {filteredBrands.length === 0 && (
                   <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
-                    No brands match these filters.
+                    {t("empty")}
                   </div>
                 )}
               </>
@@ -188,7 +190,7 @@ export default function DiscoverBrands() {
       <AnimatePresence>
         {isFiltersOpen && (
           <FilterModal
-            title="Filter Brands"
+            title={t("filterTitle")}
             onClose={() => setIsFiltersOpen(false)}
             selectedCategories={selectedCategories}
             setSelectedCategories={setSelectedCategories}

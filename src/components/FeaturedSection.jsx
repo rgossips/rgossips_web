@@ -2,16 +2,18 @@ import React from "react";
 import one from "@/assets/influencers/1.jpg";
 import two from "@/assets/influencers/2.jpg";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 
-const FeaturedSection = () => {
+const FeaturedSection = async () => {
+  const t = await getTranslations("FeaturedSection");
   return (
     <div className="my-10 px-10 lg:px-20 grid grid-cols-2 gap-x-20">
       <div className="flex flex-col items-center justify-center gap-10">
         {/* Text Section */}
         <div className="flex flex-col gap-3 text-center lg:text-left">
-          <div className="text-lg text-gray-600">Featured Products</div>
+          <div className="text-lg text-gray-600">{t("eyebrow")}</div>
           <div className="font-bold text-4xl md:text-5xl text-gray-900">
-            Find Your Special Look With Us
+            {t("heading")}
           </div>
         </div>
 
@@ -19,7 +21,7 @@ const FeaturedSection = () => {
         <div className="relative w-full max-w-3xl h-[400px] md:h-[500px] overflow-hidden rounded-xl">
           <Image
             src={one}
-            alt="Featured Product"
+            alt={t("imageAlt")}
             fill
             className="object-cover hover:scale-105 transition-transform duration-500"
           />
@@ -29,10 +31,7 @@ const FeaturedSection = () => {
         {/* Text Section */}
         <div className="flex flex-col gap-3 text-center lg:text-left">
           <div className="text-lg text-gray-600">
-            Adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud. Wiusmod
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-            minim.
+            {t("description")}
           </div>
         </div>
 
@@ -40,7 +39,7 @@ const FeaturedSection = () => {
         <div className="relative w-full max-w-5xl h-[400px] md:h-[500px] overflow-hidden rounded-xl">
           <Image
             src={one}
-            alt="Featured Product"
+            alt={t("imageAlt")}
             fill
             className="object-cover hover:scale-105 transition-transform duration-500"
           />

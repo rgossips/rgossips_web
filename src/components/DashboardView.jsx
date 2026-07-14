@@ -32,6 +32,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfileCompletion } from "./CompleteProfileCard";
+import { useTranslations } from "next-intl";
 
 const TRIAL_DAYS = 30;
 
@@ -97,6 +98,7 @@ const DashboardView = ({
   onPaymentClick,
   onhelpSupportClick,
 }) => {
+  const t = useTranslations("DashboardView");
   const router = useRouter();
   const { profile, user, signOut } = useAuth();
   const completion = useProfileCompletion(profile);
@@ -161,7 +163,7 @@ const DashboardView = ({
   const [customPhoto, setCustomPhoto] = useState(profile?.custom_profile_photo_url || null);
   const fileInputRef = useRef(null);
 
-  const userName = profile?.full_name || "User";
+  const userName = profile?.full_name || t("profile.defaultName");
   const userHandle = profile?.username || profile?.instagram_handle || "";
   const userPhoto = customPhoto || profile?.custom_profile_photo_url || profile?.profile_photo_url;
   const initials = userName
@@ -264,7 +266,7 @@ const DashboardView = ({
       setImageSrc(null);
     } catch (err) {
       console.error("Failed to upload photo:", err);
-      setPopup("Failed to upload photo. Please try again.");
+      setPopup(t("errors.uploadPhoto"));
     } finally {
       setUploading(false);
     }
@@ -305,9 +307,9 @@ const DashboardView = ({
         <div className="col-span-3 flex flex-col gap-6">
           {/* Page Header */}
           <header>
-            <h1 className="text-2xl font-black text-[#1A1A1A]">Profile</h1>
+            <h1 className="text-2xl font-black text-[#1A1A1A]">{t("header.title")}</h1>
             <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-              Manage your creator account
+              {t("header.subtitle")}
             </p>
           </header>
 
@@ -327,7 +329,7 @@ const DashboardView = ({
                     <Edit2 size={10} className="text-white" />
                   </div>
                   {hasCustomPhoto && (
-                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white cursor-pointer shadow-md" title="Remove custom photo">
+                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white cursor-pointer shadow-md" title={t("profile.removeCustomPhoto")}>
                       <X size={8} className="text-white" />
                     </div>
                   )}
@@ -368,7 +370,7 @@ const DashboardView = ({
                   ))
                 ) : (
                   <span className="px-3 py-1 bg-[#F3F4F9] text-[#374151] text-[9px] font-bold rounded-full">
-                    Creator
+                    {t("profile.creator")}
                   </span>
                 )}
               </div>
@@ -376,17 +378,17 @@ const DashboardView = ({
             <div className="w-full mt-4 pt-3 border-t border-gray-100 flex justify-around items-center px-2">
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.media_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.posts")}</span>
               </div>
               <div className="w-px h-8 bg-gray-100" />
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.followers_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Followers</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.followers")}</span>
               </div>
               <div className="w-px h-8 bg-gray-100" />
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-sm">{formatCount(profile?.follows_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.following")}</span>
               </div>
             </div>
           </section>
@@ -401,9 +403,9 @@ const DashboardView = ({
                 <FileText size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-[#1A1A1A]">Media Kit</p>
+                <p className="text-sm font-bold text-[#1A1A1A]">{t("mediaKit.title")}</p>
                 <p className="text-[11px] text-gray-400 font-semibold">
-                  View or share your published kit
+                  {t("mediaKit.subtitle")}
                 </p>
               </div>
               <ChevronRight size={16} className="text-gray-300" />
@@ -430,10 +432,10 @@ const DashboardView = ({
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-sm text-[#1A1A1A]">
-                  Help & Support
+                  {t("support.title")}
                 </h4>
                 <p className="text-[10px] text-gray-400 font-medium">
-                  FAQs and contact
+                  {t("support.subtitleDesktop")}
                 </p>
               </div>
             </div>
@@ -441,7 +443,7 @@ const DashboardView = ({
               className="w-full py-2.5 bg-white border-t border-gray-100 text-[#FF2D78] font-black text-xs flex items-center justify-center gap-2 hover:bg-rose-50 active:scale-[0.98] transition-all"
               onClick={() => setShowLogout(true)}
             >
-              <LogOut size={16} /> Log Out
+              <LogOut size={16} /> {t("logout.button")}
             </button>
           </section>
         </div>
@@ -451,28 +453,28 @@ const DashboardView = ({
           {/* Stats Grid - 4 columns */}
           <section className="grid grid-cols-4 gap-3">
             <StatCard
-              title="Total Earnings"
+              title={t("stats.totalEarnings")}
               value={formatINRCompact(campaignStats.totalEarnings)}
               icon={CreditCard}
               color="text-emerald-500"
               bgColor="bg-gradient-to-br from-emerald-50 to-emerald-100"
             />
             <StatCard
-              title="Active Campaigns"
+              title={t("stats.activeCampaigns")}
               value={String(campaignStats.activeCount)}
               icon={Clock}
               color="text-blue-500"
               bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
             />
             <StatCard
-              title="Completed"
+              title={t("stats.completed")}
               value={String(campaignStats.completedCount)}
               icon={Award}
               color="text-emerald-500"
               bgColor="bg-gradient-to-br from-green-50 to-green-100"
             />
             <StatCard
-              title="Expected Earnings"
+              title={t("stats.expectedEarnings")}
               value={formatINRCompact(campaignStats.expectedEarnings)}
               icon={Hourglass}
               color="text-purple-500"
@@ -484,12 +486,12 @@ const DashboardView = ({
           <section className="bg-white rounded-xl shadow border border-gray-100 p-0 overflow-hidden">
             <div className="flex items-center gap-2 px-6 pt-5 pb-2">
               <span className="text-[#8B5CF6] text-lg">✦</span>
-              <h3 className="font-black text-[#2D2D2D]">Creator Hub</h3>
+              <h3 className="font-black text-[#2D2D2D]">{t("hub.title")}</h3>
             </div>
             <div className="flex flex-col gap-2 p-4">
               <HubCard
-                title="My Profile"
-                sub="View, edit and manage your profile"
+                title={t("hub.myProfile.title")}
+                sub={t("hub.myProfile.sub")}
                 bgColor="bg-[#EFECFF]"
                 icon={FileText}
                 iconGradient="from-[#8B5CF6] to-[#6366F1]"
@@ -498,7 +500,7 @@ const DashboardView = ({
                 <div className="mt-3">
                   <div className="flex justify-between items-center mb-1.5 px-1">
                     <span className="text-[8px] font-black text-gray-400 uppercase">
-                      Profile Complete
+                      {t("hub.profileComplete")}
                     </span>
                     <span className="text-[9px] font-black text-[#10B981]">
                       80%
@@ -512,8 +514,8 @@ const DashboardView = ({
 
               <HubCard
                 onClick={onOpenAnalytics}
-                title="Campaign Analytics"
-                sub="Track performance and campaign insights"
+                title={t("hub.analytics.title")}
+                sub={t("hub.analytics.sub")}
                 bgColor="bg-[#F0F9FF]"
                 icon={BarChart3}
                 iconGradient="from-[#3B82F6] to-[#60A5FA]"
@@ -521,7 +523,7 @@ const DashboardView = ({
                 <div className="mt-3 bg-white/60 p-2 rounded-xl border border-white/80 flex items-end justify-between shadow-sm">
                   <div>
                     <p className="text-[8px] text-gray-400 font-black uppercase">
-                      Last 7 Days
+                      {t("hub.analytics.last7Days")}
                     </p>
                     <p className="text-xs font-black text-gray-800">+2.4K</p>
                   </div>
@@ -539,16 +541,16 @@ const DashboardView = ({
 
               <HubCard
                 onClick={onOpenServiceRequests}
-                title="Service Requests"
-                sub="Your quote requests, orders & deliveries"
+                title={t("hub.serviceRequests.title")}
+                sub={t("hub.serviceRequests.sub")}
                 bgColor="bg-[#FEF3F2]"
                 icon={Briefcase}
                 iconGradient="from-[#F43F5E] to-[#FB7185]"
               >
                 <div className="mt-3 bg-white/60 p-2 rounded-xl border border-white/80 flex items-center justify-between shadow-sm">
                   <div>
-                    <p className="text-[8px] text-gray-400 font-black uppercase">Active orders</p>
-                    <p className="text-xs font-black text-gray-800 mt-0.5">View all</p>
+                    <p className="text-[8px] text-gray-400 font-black uppercase">{t("hub.serviceRequests.activeOrders")}</p>
+                    <p className="text-xs font-black text-gray-800 mt-0.5">{t("hub.serviceRequests.viewAll")}</p>
                   </div>
                   <ChevronRight size={14} className="text-rose-400" />
                 </div>
@@ -559,28 +561,28 @@ const DashboardView = ({
           {/* Settings */}
           <section className="bg-white rounded-xl shadow border border-gray-100 p-0 overflow-hidden">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] px-6 pt-5 pb-2">
-              Settings
+              {t("settings.heading")}
             </h3>
             <div className="flex flex-col gap-0 p-4">
               <SettingsItem
                 icon={Bell}
                 onClick={onNotificationClick}
-                title="Notifications"
-                sub="Manage alerts and updates"
+                title={t("settings.notifications.title")}
+                sub={t("settings.notifications.sub")}
                 color="bg-[#8B5CF6]"
               />
               <SettingsItem
                 onClick={onPrivacyClick}
                 icon={Lock}
-                title="Privacy & Security"
-                sub="Control your data and access"
+                title={t("settings.privacy.title")}
+                sub={t("settings.privacy.sub")}
                 color="bg-[#10B981]"
               />
               <SettingsItem
                 icon={CreditCard}
                 onClick={onPaymentClick}
-                title="Payment Methods"
-                sub="Manage payout accounts"
+                title={t("settings.payment.title")}
+                sub={t("settings.payment.sub")}
                 color="bg-[#F97316]"
               />
               {/* Persistent Refer & Earn entry — the home wallet tile
@@ -590,8 +592,8 @@ const DashboardView = ({
               <SettingsItem
                 icon={Gift}
                 onClick={() => router.push("/influencer/refer")}
-                title="Refer & Earn"
-                sub="Share your link, earn Reward Credits"
+                title={t("settings.refer.title")}
+                sub={t("settings.refer.sub")}
                 color="bg-[#E60076]"
               />
             </div>
@@ -605,9 +607,9 @@ const DashboardView = ({
         {/* Page Header */}
         <header className="flex justify-between items-center mb-2 px-1">
           <div>
-            <h1 className="text-2xl font-black text-[#1A1A1A]">Profile</h1>
+            <h1 className="text-2xl font-black text-[#1A1A1A]">{t("header.title")}</h1>
             <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
-              Manage your creator account
+              {t("header.subtitle")}
             </p>
           </div>
           <button className="p-2.5 bg-white rounded-xl shadow-sm border border-gray-50 text-gray-400">
@@ -632,7 +634,7 @@ const DashboardView = ({
                     <Edit2 size={12} className="text-white" />
                   </div>
                   {hasCustomPhoto && (
-                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1.5 rounded-full border-2 border-white cursor-pointer shadow-md" title="Remove custom photo">
+                    <div onClick={handleRemoveCustomPhoto} className="absolute -top-1 -left-1 bg-red-500 p-1.5 rounded-full border-2 border-white cursor-pointer shadow-md" title={t("profile.removeCustomPhoto")}>
                       <X size={10} className="text-white" />
                     </div>
                   )}
@@ -674,7 +676,7 @@ const DashboardView = ({
                   ))
                 ) : (
                   <span className="px-4 py-1.5 bg-[#F3F4F9] text-[#374151] text-[10px] font-bold rounded-full">
-                    Creator
+                    {t("profile.creator")}
                   </span>
                 )}
               </div>
@@ -683,17 +685,17 @@ const DashboardView = ({
             <div className="w-full mt-6 pt-5 border-t border-gray-100 flex justify-around items-center px-2">
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.media_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.posts")}</span>
               </div>
               <div className="w-px h-9 bg-gray-100" />
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.followers_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Followers</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.followers")}</span>
               </div>
               <div className="w-px h-9 bg-gray-100" />
               <div className="flex flex-col items-center">
                 <span className="font-black text-[#1A1A1A] text-base">{formatCount(profile?.follows_count)}</span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t("stats.following")}</span>
               </div>
             </div>
           </div>
@@ -709,9 +711,9 @@ const DashboardView = ({
               <FileText size={18} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-[#1A1A1A]">Media Kit</p>
+              <p className="text-sm font-bold text-[#1A1A1A]">{t("mediaKit.title")}</p>
               <p className="text-[11px] text-gray-400 font-semibold">
-                View or share your published kit
+                {t("mediaKit.subtitle")}
               </p>
             </div>
             <ChevronRight size={16} className="text-gray-300" />
@@ -727,28 +729,28 @@ const DashboardView = ({
         {/* Stats Grid */}
         <section className="grid grid-cols-2 gap-4">
           <StatCard
-            title="Total Earnings"
+            title={t("stats.totalEarnings")}
             value={formatINRCompact(campaignStats.totalEarnings)}
             icon={CreditCard}
             color="text-emerald-500"
             bgColor="bg-gradient-to-br from-[#FFFBF5] to-[#FFFFFF]"
           />
           <StatCard
-            title="Active Campaigns"
+            title={t("stats.activeCampaigns")}
             value={String(campaignStats.activeCount)}
             icon={Clock}
             color="text-blue-500"
             bgColor="bg-gradient-to-br from-[#F0F9FF] to-[#FFFFFF]"
           />
           <StatCard
-            title="Completed"
+            title={t("stats.completed")}
             value={String(campaignStats.completedCount)}
             icon={Award}
             color="text-emerald-500"
             bgColor="bg-gradient-to-br from-green-50 to-[#FFFFFF]"
           />
           <StatCard
-            title="Expected Earnings"
+            title={t("stats.expectedEarnings")}
             value={formatINRCompact(campaignStats.expectedEarnings)}
             icon={Hourglass}
             color="text-purple-500"
@@ -760,12 +762,12 @@ const DashboardView = ({
         <section className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <span className="text-[#8B5CF6] text-xl">✦</span>
-            <h3 className="font-black text-[#2D2D2D] text-lg">Creator Hub</h3>
+            <h3 className="font-black text-[#2D2D2D] text-lg">{t("hub.title")}</h3>
           </div>
           <div className="p-4 rounded-xl border border-[#FFF0F3] bg-white/50 space-y-4 shadow-sm">
             <HubCard
-              title="My Profile"
-              sub="View, edit and manage your profile"
+              title={t("hub.myProfile.title")}
+              sub={t("hub.myProfile.sub")}
               bgColor="bg-[#EFECFF]"
               icon={FileText}
               iconGradient="from-[#8B5CF6] to-[#6366F1]"
@@ -774,7 +776,7 @@ const DashboardView = ({
               <div className="mt-4">
                 <div className="flex justify-between items-center mb-1.5 px-1">
                   <span className="text-[9px] font-black text-gray-400 uppercase">
-                    Profile Complete
+                    {t("hub.profileComplete")}
                   </span>
                   <span className="text-[10px] font-black text-[#10B981]">
                     80%
@@ -788,8 +790,8 @@ const DashboardView = ({
 
             <HubCard
               onClick={onOpenAnalytics}
-              title="Campaign Analytics"
-              sub="Track performance and campaign insights"
+              title={t("hub.analytics.title")}
+              sub={t("hub.analytics.sub")}
               bgColor="bg-[#F0F9FF]"
               icon={BarChart3}
               iconGradient="from-[#3B82F6] to-[#60A5FA]"
@@ -797,7 +799,7 @@ const DashboardView = ({
               <div className="mt-4 bg-white/60 p-3 rounded-xl border border-white/80 flex items-end justify-between shadow-sm">
                 <div>
                   <p className="text-[8px] text-gray-400 font-black uppercase">
-                    Last 7 Days
+                    {t("hub.analytics.last7Days")}
                   </p>
                   <p className="text-sm font-black text-gray-800">+2.4K</p>
                 </div>
@@ -815,8 +817,8 @@ const DashboardView = ({
 
             <HubCard
               onClick={onOpenServiceRequests}
-              title="Service Requests"
-              sub="Your quote requests, orders & deliveries"
+              title={t("hub.serviceRequests.title")}
+              sub={t("hub.serviceRequests.sub")}
               bgColor="bg-[#FEF3F2]"
               icon={Briefcase}
               iconGradient="from-[#F43F5E] to-[#FB7185]"
@@ -824,9 +826,9 @@ const DashboardView = ({
               <div className="mt-4 bg-white/60 p-3 rounded-xl border border-white/80 flex items-center justify-between shadow-sm">
                 <div>
                   <p className="text-[8px] text-gray-400 font-black uppercase">
-                    Active orders
+                    {t("hub.serviceRequests.activeOrders")}
                   </p>
-                  <p className="text-sm font-black text-gray-800">View all</p>
+                  <p className="text-sm font-black text-gray-800">{t("hub.serviceRequests.viewAll")}</p>
                 </div>
                 <ChevronRight size={16} className="text-rose-400" />
               </div>
@@ -837,34 +839,34 @@ const DashboardView = ({
         {/* Settings Section */}
         <section className="space-y-3">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-2">
-            Settings
+            {t("settings.heading")}
           </h3>
           <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-50">
             <SettingsItem
               icon={Bell}
               onClick={onNotificationClick}
-              title="Notifications"
-              sub="Manage alerts and updates"
+              title={t("settings.notifications.title")}
+              sub={t("settings.notifications.sub")}
               color="bg-[#8B5CF6]"
             />
             <SettingsItem
               onClick={onPrivacyClick}
               icon={Lock}
-              title="Privacy & Security"
-              sub="Control your data and access"
+              title={t("settings.privacy.title")}
+              sub={t("settings.privacy.sub")}
               color="bg-[#10B981]"
             />
             <SettingsItem
               icon={CreditCard}
-              title="Payment Methods"
-              sub="Manage payout accounts"
+              title={t("settings.payment.title")}
+              sub={t("settings.payment.sub")}
               color="bg-[#F97316]"
             />
             <SettingsItem
               icon={Gift}
               onClick={() => router.push("/influencer/refer")}
-              title="Refer & Earn"
-              sub="Share your link, earn Reward Credits"
+              title={t("settings.refer.title")}
+              sub={t("settings.refer.sub")}
               color="bg-[#E60076]"
             />
           </div>
@@ -876,7 +878,7 @@ const DashboardView = ({
         {/* Support & Logout */}
         <section className="space-y-4 pt-2 pb-24 lg:pb-6">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-2">
-            Support
+            {t("support.heading")}
           </h3>
           <div
             onClick={onhelpSupportClick}
@@ -887,10 +889,10 @@ const DashboardView = ({
             </div>
             <div className="flex-1">
               <h4 className="font-bold text-sm text-[#1A1A1A]">
-                Help & Support
+                {t("support.title")}
               </h4>
               <p className="text-[11px] text-gray-400 font-medium">
-                FAQs and contact us
+                {t("support.subtitleMobile")}
               </p>
             </div>
             <ChevronRight size={18} className="text-gray-300" />
@@ -900,11 +902,11 @@ const DashboardView = ({
             className="w-full py-4 bg-white border-2 border-rose-50 rounded-xl text-[#FF2D78] font-black text-sm flex items-center justify-center gap-2 hover:bg-rose-50 active:scale-[0.98] transition-all"
             onClick={() => setShowLogout(true)}
           >
-            <LogOut size={18} /> Log Out
+            <LogOut size={18} /> {t("logout.button")}
           </button>
 
           <p className="text-center text-[10px] font-bold text-gray-300">
-            Recentgossips • Made for creators
+            {t("footerTagline")}
           </p>
         </section>
       </div>
@@ -927,9 +929,9 @@ const DashboardView = ({
               onClick={() => { setShowCropper(false); setImageSrc(null); }}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors"
             >
-              Cancel
+              {t("crop.cancel")}
             </button>
-            <h3 className="text-white text-sm font-bold">Crop Photo</h3>
+            <h3 className="text-white text-sm font-bold">{t("crop.title")}</h3>
             <button
               onClick={handleCropSave}
               disabled={uploading}
@@ -937,7 +939,7 @@ const DashboardView = ({
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}
             >
               {uploading ? <Loader2 size={14} className="animate-spin" /> : null}
-              {uploading ? "Saving..." : "Save"}
+              {uploading ? t("crop.saving") : t("crop.save")}
             </button>
           </div>
 
@@ -955,7 +957,7 @@ const DashboardView = ({
           </div>
 
           <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
-            <span className="text-white/60 text-xs font-bold shrink-0">Zoom</span>
+            <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
               min={1}
@@ -975,16 +977,16 @@ const DashboardView = ({
             <div className="w-12 h-12 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center mb-4">
               <LogOut size={28} />
             </div>
-            <h3 className="text-lg font-black text-gray-900 mb-2">Log out?</h3>
+            <h3 className="text-lg font-black text-gray-900 mb-2">{t("logoutModal.title")}</h3>
             <p className="text-xs text-gray-500 mb-6 text-center">
-              Are you sure you want to log out?
+              {t("logoutModal.message")}
             </p>
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowLogout(false)}
                 className="flex-1 py-3 rounded-xl border border-gray-100 font-bold text-gray-600 text-xs bg-white"
               >
-                Cancel
+                {t("logoutModal.cancel")}
               </button>
               <button
                 onClick={handleLogout}
@@ -992,7 +994,7 @@ const DashboardView = ({
                 className="flex-1 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 font-bold text-white text-xs shadow-lg shadow-pink-200 flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {loggingOut ? <Loader2 size={14} className="animate-spin" /> : null}
-                {loggingOut ? "Logging out..." : "Log out"}
+                {loggingOut ? t("logoutModal.loggingOut") : t("logoutModal.confirm")}
               </button>
             </div>
           </div>
@@ -1005,6 +1007,7 @@ const DashboardView = ({
 
 // Plan Card
 function PlanCard({ profile }) {
+  const t = useTranslations("DashboardView");
   const currentPlan = profile?.subscription_plan || "free";
   const hasPaidPlan = currentPlan !== "free";
   const { daysLeft, progress, expired } = getTrialInfo(profile);
@@ -1012,8 +1015,8 @@ function PlanCard({ profile }) {
   const planLabel = hasPaidPlan
     ? currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : expired
-    ? "Free"
-    : "Starter Trial";
+    ? t("plan.free")
+    : t("plan.starterTrial");
 
   return (
     <section className="bg-white rounded-xl shadow border border-gray-100 p-5 space-y-4">
@@ -1026,16 +1029,16 @@ function PlanCard({ profile }) {
             <h4 className="font-bold text-sm text-[#1A1A1A]">{planLabel}</h4>
             <p className="text-[10px] text-gray-400 font-medium">
               {hasPaidPlan
-                ? "Active subscription"
+                ? t("plan.activeSubscription")
                 : expired
-                ? "Trial expired"
-                : `${daysLeft} days left`}
+                ? t("plan.trialExpired")
+                : t("plan.daysLeft", { days: daysLeft })}
             </p>
           </div>
         </div>
         {hasPaidPlan && (
           <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-green-50 text-green-600">
-            Active
+            {t("plan.activeBadge")}
           </span>
         )}
       </div>
@@ -1046,11 +1049,11 @@ function PlanCard({ profile }) {
             <div className="flex items-center gap-1.5">
               <Zap size={12} className={expired ? "text-red-400" : "text-purple-500 fill-purple-500"} />
               <span className="text-[10px] font-bold text-gray-400 uppercase">
-                {expired ? "Expired" : "Trial Progress"}
+                {expired ? t("plan.expired") : t("plan.trialProgress")}
               </span>
             </div>
             <span className={`text-[10px] font-black ${expired ? "text-red-400" : "text-purple-600"}`}>
-              {daysLeft}/{TRIAL_DAYS} days
+              {t("plan.daysCount", { days: daysLeft, total: TRIAL_DAYS })}
             </span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -1068,7 +1071,7 @@ function PlanCard({ profile }) {
         style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
       >
         <Crown size={16} />
-        {hasPaidPlan ? "Manage Plan" : "Upgrade Now"}
+        {hasPaidPlan ? t("plan.managePlan") : t("plan.upgradeNow")}
       </Link>
     </section>
   );
@@ -1097,6 +1100,7 @@ const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
 // Unlike the home wallet strip it stays visible even when the balance is
 // only the still-locked welcome bonus, so the creator can always see their RC.
 function RewardCreditsCard() {
+  const t = useTranslations("DashboardView");
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -1140,14 +1144,14 @@ function RewardCreditsCard() {
         <Gift size={20} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reward Credits</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("rewardCredits.title")}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
           <p className="text-xl font-black text-slate-900">
-            {avail} <span className="text-xs text-slate-400 font-bold">available</span>
+            {avail} <span className="text-xs text-slate-400 font-bold">{t("rewardCredits.available")}</span>
           </p>
           {locked > 0 && (
             <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-              +{locked} locked
+              {t("rewardCredits.locked", { count: locked })}
             </span>
           )}
         </div>
@@ -1158,6 +1162,7 @@ function RewardCreditsCard() {
 }
 
 function ProfileCompletionCard({ completion, onOpenInfo }) {
+  const t = useTranslations("DashboardView");
   const router = useRouter();
   const { percent, completed, total, hasInstagram, hasMediaKit, hasRates } = completion;
   const isDone = percent === 100;
@@ -1198,22 +1203,22 @@ function ProfileCompletionCard({ completion, onOpenInfo }) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-extrabold text-[#1A1A1A]">
-            {isDone ? "Profile complete!" : "Profile completion"}
+            {isDone ? t("completion.done") : t("completion.title")}
           </h3>
           <p className="text-[11px] font-semibold text-gray-400 mt-0.5">
             {isDone
-              ? "You're discoverable to brands."
-              : `${completed}/${total} steps done — keep going!`}
+              ? t("completion.discoverable")
+              : t("completion.stepsDone", { completed, total })}
           </p>
         </div>
       </div>
 
       {!isDone && (
         <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] font-semibold">
-          <ChecklistItem done label="Account created" />
-          <ChecklistItem done={hasInstagram} label="Instagram connected" onClick={goToInfo} />
-          <ChecklistItem done={hasMediaKit} label="Media kit published" onClick={goToMediaKit} />
-          <ChecklistItem done={hasRates} label="Rate card set" onClick={goToInfo} />
+          <ChecklistItem done label={t("completion.accountCreated")} />
+          <ChecklistItem done={hasInstagram} label={t("completion.instagramConnected")} onClick={goToInfo} />
+          <ChecklistItem done={hasMediaKit} label={t("completion.mediaKitPublished")} onClick={goToMediaKit} />
+          <ChecklistItem done={hasRates} label={t("completion.rateCardSet")} onClick={goToInfo} />
         </div>
       )}
     </section>

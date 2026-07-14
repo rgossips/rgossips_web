@@ -12,17 +12,18 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { getDeviceId } from "@/utils/device-session";
+import { useTranslations } from "next-intl";
 
-const formatLastActive = (iso) => {
+const formatLastActive = (iso, t) => {
   if (!iso) return "—";
   const diff = Date.now() - new Date(iso).getTime();
-  if (diff < 60_000) return "Active now";
+  if (diff < 60_000) return t("time.activeNow");
   const min = Math.floor(diff / 60_000);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return t("time.minutesAgo", { min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return t("time.hoursAgo", { hr });
   const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
+  if (day < 7) return t("time.daysAgo", { day });
   return new Date(iso).toLocaleDateString();
 };
 
@@ -34,6 +35,7 @@ const iconFor = (name = "") => {
 };
 
 const TrustedDevices = ({ onBack }) => {
+  const t = useTranslations("TrustedDevices");
   const supabase = createClient();
   const { user } = useAuth();
   const [devices, setDevices] = useState([]);
@@ -91,10 +93,10 @@ const TrustedDevices = ({ onBack }) => {
         </button>
         <div>
           <h1 className="text-lg lg:text-2xl font-black tracking-tight">
-            Trusted Devices
+            {t("header.title")}
           </h1>
           <p className="hidden lg:block text-xs text-gray-400 font-bold">
-            Manage devices logged into your account
+            {t("header.subtitle")}
           </p>
         </div>
       </div>
@@ -106,24 +108,25 @@ const TrustedDevices = ({ onBack }) => {
               <Smartphone size={20} />
             </div>
             <p className="text-[11px] lg:text-[12px] font-bold text-gray-600 leading-relaxed">
-              These are the devices currently logged into your account. Remove
-              any devices you don't recognize.
+              {t("info.description")}
             </p>
           </div>
 
           <div className="flex justify-between items-end px-1">
             <div className="space-y-0.5">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                {devices.length} Active
+                {t("activeCount", { count: devices.length })}
               </span>
-              <h3 className="text-sm font-black text-gray-900">Devices</h3>
+              <h3 className="text-sm font-black text-gray-900">
+                {t("devicesLabel")}
+              </h3>
             </div>
             {devices.length > 1 && (
               <button
                 onClick={() => setIsLogoutAllOpen(true)}
                 className="text-[11px] font-black text-rose-500 hover:underline cursor-pointer"
               >
-                Logout from others
+                {t("logoutFromOthers")}
               </button>
             )}
           </div>
@@ -135,8 +138,8 @@ const TrustedDevices = ({ onBack }) => {
           ) : devices.length === 0 ? (
             <div className="text-center py-12">
               <Smartphone size={36} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-gray-400">No active devices</p>
-              <p className="text-[11px] text-gray-300 mt-1">Sign in on a device to see it here</p>
+              <p className="text-sm font-bold text-gray-400">{t("empty.title")}</p>
+              <p className="text-[11px] text-gray-300 mt-1">{t("empty.subtitle")}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -157,11 +160,10 @@ const TrustedDevices = ({ onBack }) => {
             </div>
             <div className="space-y-2">
               <h4 className="text-[12px] lg:text-[13px] font-black text-amber-700">
-                Security Tip
+                {t("security.title")}
               </h4>
               <p className="text-[11px] lg:text-[12px] font-bold text-amber-600/80 leading-relaxed">
-                If you see a device you don't recognize, remove it immediately.
-                That device will be signed out within a minute.
+                {t("security.description")}
               </p>
             </div>
           </div>
@@ -178,6 +180,7 @@ const TrustedDevices = ({ onBack }) => {
 };
 
 const DeviceCard = ({ device, isCurrent, onRevoke }) => {
+  const t = useTranslations("TrustedDevices");
   const Icon = iconFor(device.device_name || device.user_agent || "");
   return (
     <div className="bg-white border border-gray-100 rounded-[2rem] p-5 flex items-start gap-4 shadow-sm">
@@ -191,11 +194,11 @@ const DeviceCard = ({ device, isCurrent, onRevoke }) => {
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
           <h4 className="text-sm font-black text-gray-900">
-            {device.device_name || "Unknown device"}
+            {device.device_name || t("unknownDevice")}
           </h4>
           {isCurrent && (
             <span className="px-2 py-0.5 bg-indigo-50 text-indigo-500 text-[9px] font-black rounded-full border border-indigo-100">
-              This device
+              {t("thisDevice")}
             </span>
           )}
         </div>
@@ -205,7 +208,7 @@ const DeviceCard = ({ device, isCurrent, onRevoke }) => {
               isCurrent ? "text-emerald-500" : ""
             }`}
           >
-            {formatLastActive(device.last_active_at)}
+            {formatLastActive(device.last_active_at, t)}
           </span>
         </div>
         {!isCurrent && (
@@ -213,7 +216,7 @@ const DeviceCard = ({ device, isCurrent, onRevoke }) => {
             onClick={onRevoke}
             className="mt-3 px-4 py-2 border border-rose-100 text-rose-500 text-[10px] font-black rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
           >
-            Remove Device
+            {t("removeDevice")}
           </button>
         )}
       </div>
@@ -222,6 +225,7 @@ const DeviceCard = ({ device, isCurrent, onRevoke }) => {
 };
 
 const LogoutAllModal = ({ isOpen, onClose, onConfirm }) => {
+  const t = useTranslations("TrustedDevices");
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
@@ -230,24 +234,23 @@ const LogoutAllModal = ({ isOpen, onClose, onConfirm }) => {
           <X size={28} className="text-rose-500" strokeWidth={3} />
         </div>
         <h3 className="text-xl font-black text-gray-900 mb-2">
-          Logout from other devices?
+          {t("modal.title")}
         </h3>
         <p className="text-sm font-medium text-gray-400 mb-8 leading-relaxed">
-          You will be logged out from every device except this one. They'll
-          have to sign in again.
+          {t("modal.description")}
         </p>
         <div className="flex gap-3 w-full">
           <button
             onClick={onClose}
             className="flex-1 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-black text-gray-500 cursor-pointer"
           >
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 py-4 bg-[#EF4444] rounded-2xl text-sm font-black text-white shadow-lg shadow-rose-100 cursor-pointer"
           >
-            Logout Others
+            {t("logoutOthers")}
           </button>
         </div>
       </div>

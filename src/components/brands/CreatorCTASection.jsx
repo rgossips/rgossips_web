@@ -1,19 +1,21 @@
 import { MessageCircle, Instagram, Hash } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 // Public-facing contact targets. wa.me uses E.164 without the leading +.
 const WHATSAPP_URL = "https://wa.me/918802907907";
 const INSTAGRAM_URL = "https://www.instagram.com/rgossips.agency/";
 
-export function CreatorCTASection() {
+export async function CreatorCTASection() {
+  const t = await getTranslations("BrandsCreatorCTASection");
   return (
     <>
       <section className="w-full px-4 lg:px-6 text-center lg:hidden pb-20">
         <h2 className="text-xl font-black bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
-          Home of creator collaborations.
+          {t("heading")}
         </h2>
 
         <p className="text-sm text-gray-500 mt-2">
-          One place. Every Creator Need 🎯
+          {t("subheading")}
         </p>
 
         <div className="mt-8 flex flex-col gap-4">
@@ -24,7 +26,7 @@ export function CreatorCTASection() {
             className="flex items-center justify-center gap-2 bg-green-500 text-white font-medium py-3 rounded-full hover:bg-green-600 transition cursor-pointer"
           >
             <MessageCircle size={18} />
-            Talk to us
+            {t("talkToUs")}
           </a>
 
           <a
@@ -34,7 +36,7 @@ export function CreatorCTASection() {
             className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 py-3 rounded-full hover:bg-gray-50 transition cursor-pointer"
           >
             <Instagram size={18} />
-            Follow us
+            {t("followUs")}
           </a>
         </div>
 
@@ -44,7 +46,7 @@ export function CreatorCTASection() {
             <span>Recentgossips</span>
           </div>
 
-          <p>© 2026 recentgossips. All rights reserved.</p>
+          <p>{t("copyright")}</p>
         </div>
       </section>
 
@@ -61,10 +63,10 @@ export function CreatorCTASection() {
 
             <div>
               <h2 className="text-2xl md:text-3xl font-black leading-tight bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
-                Home of creator collaborations.
+                {t("heading")}
               </h2>
               <p className="text-slate-500 text-sm md:text-base mt-1 font-medium">
-                One place. Every Creator Need 🎯
+                {t("subheading")}
               </p>
             </div>
           </div>
@@ -78,7 +80,7 @@ export function CreatorCTASection() {
               className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-8 py-4 rounded-2xl font-bold text-sm transition-all w-full sm:w-auto cursor-pointer"
             >
               <MessageCircle size={20} fill="white" />
-              WhatsApp Us
+              {t("whatsappUs")}
             </a>
 
             <a
@@ -88,7 +90,7 @@ export function CreatorCTASection() {
               className="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-2xl font-bold text-sm transition-all w-full sm:w-auto shadow-sm cursor-pointer"
             >
               <Instagram size={20} className="text-slate-600" />
-              Follow Us
+              {t("followUsButton")}
             </a>
           </div>
         </div>

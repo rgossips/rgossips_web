@@ -2,17 +2,20 @@ import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Star } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import mobileImg from "@/assets/mobile1.png";
 import gplay from "@/assets/gplay.png";
 import appstore from "@/assets/apple.png";
 
-const AppSection = () => {
+const AppSection = async () => {
+  const t = await getTranslations("AppComponent");
+
   const features = [
-    "Real-time campaign notifications",
-    "In-app creator messaging",
-    "One-tap content approval",
-    "Live analytics",
-    "Payment tracking",
+    "realtimeNotifications",
+    "messaging",
+    "approval",
+    "analytics",
+    "paymentTracking",
   ];
 
   return (
@@ -21,7 +24,7 @@ const AppSection = () => {
         {/* Left Side: Content - Pushed up slightly to center with the phone body */}
         <div className="w-full lg:w-1/2 pb-20 space-y-8 lg:pr-10">
           <h2 className="text-5xl md:text-6xl font-bold text-slate-900 leading-tight tracking-tight">
-            Manage Everything <br /> From Your Pocket.
+            {t.rich("heading", { br: () => <br /> })}
           </h2>
 
           <ul className="space-y-5">
@@ -34,7 +37,7 @@ const AppSection = () => {
                 className="flex items-center gap-3 text-slate-600 text-lg md:text-xl font-medium"
               >
                 <ArrowRight className="text-purple-500 w-5 h-5 flex-shrink-0" />
-                {feature}
+                {t(`features.${feature}`)}
               </motion.li>
             ))}
           </ul>
@@ -45,7 +48,7 @@ const AppSection = () => {
               <Image src={appstore} alt="Apple" width={22} height={22} />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-bold text-zinc-400">
-                  Download on the
+                  {t("appStore.label")}
                 </p>
                 <p className="text-lg font-semibold leading-none">App Store</p>
               </div>
@@ -54,7 +57,7 @@ const AppSection = () => {
               <Image src={gplay} alt="Google" width={22} height={22} />
               <div className="text-left">
                 <p className="text-[10px] uppercase font-bold text-zinc-400">
-                  Get it on
+                  {t("googlePlay.label")}
                 </p>
                 <p className="text-lg font-semibold leading-none">
                   Google Play
@@ -71,7 +74,7 @@ const AppSection = () => {
                   <Star key={i} size={16} fill="currentColor" />
                 ))}
               </div>
-              <span className="text-sm font-bold text-slate-700">4.8★ IOS</span>
+              <span className="text-sm font-bold text-slate-700">{t("ratings.ios")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex text-yellow-500">
@@ -80,7 +83,7 @@ const AppSection = () => {
                 ))}
               </div>
               <span className="text-sm font-bold text-slate-700">
-                4.7★ Android
+                {t("ratings.android")}
               </span>
             </div>
           </div>
@@ -112,7 +115,7 @@ const AppSection = () => {
             >
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
               <p className="text-xs md:text-sm font-bold text-slate-800 whitespace-nowrap">
-                New campaign match!
+                {t("notification")}
               </p>
             </motion.div>
           </motion.div>

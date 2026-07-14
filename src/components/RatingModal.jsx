@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Star, X, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 
-const StarRow = ({ value, onChange, max = 5 }) => (
+const StarRow = ({ value, onChange, max = 5 }) => {
+  const t = useTranslations("RatingModal");
+  return (
   <div className="flex items-center gap-1.5">
     {Array.from({ length: max }, (_, i) => {
       const v = i + 1;
@@ -15,7 +18,7 @@ const StarRow = ({ value, onChange, max = 5 }) => (
           type="button"
           onClick={() => onChange(v)}
           className="cursor-pointer p-1.5 rounded-full transition-colors hover:bg-amber-50"
-          aria-label={`${v} star${v === 1 ? "" : "s"}`}
+          aria-label={t("starLabel", { count: v })}
         >
           <Star
             size={28}
@@ -29,7 +32,8 @@ const StarRow = ({ value, onChange, max = 5 }) => (
       );
     })}
   </div>
-);
+  );
+};
 
 /**
  * RatingModal — multi-section star rating used in two places:
@@ -54,12 +58,15 @@ export default function RatingModal({
   title,
   subtitle,
   sections, // [{ key: 'target_rating', label: '…' }, ...]
-  primaryCta = "Submit Rating",
-  secondaryCta = "Skip",
+  primaryCta,
+  secondaryCta,
   onPrimary, // optional async, runs AFTER successful save (e.g. brand: release payment)
   onSkip, // optional, runs when secondary clicked
   onSaved, // optional, fired with the saved values map after a successful upsert
 }) {
+  const t = useTranslations("RatingModal");
+  const primaryLabel = primaryCta ?? t("submit");
+  const secondaryLabel = secondaryCta === undefined ? t("skip") : secondaryCta;
   const supabase = createClient();
   const [values, setValues] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -105,7 +112,7 @@ export default function RatingModal({
   const handleSubmit = async () => {
     const missing = (sections || []).find((s) => !values[s.key]);
     if (missing) {
-      setError(`Please rate "${missing.label}" before submitting`);
+      setError(t("errors.pleaseRate", { label: missing.label }));
       return;
     }
     setSubmitting(true);
@@ -130,7 +137,7 @@ export default function RatingModal({
       reset();
       onClose?.();
     } catch (e) {
-      setError(e.message || "Failed to submit rating");
+      setError(e.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +161,7 @@ export default function RatingModal({
             onClick={handleClose}
             disabled={busy}
             className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 cursor-pointer disabled:opacity-50"
-            aria-label="Close"
+            aria-label={t("close")}
           >
             <X size={18} />
           </button>
@@ -179,7 +186,7 @@ export default function RatingModal({
         )}
 
         <div className="flex gap-3 mt-6">
-          {secondaryCta && (
+          {secondaryLabel && (
             <button
               onClick={handleSkip}
               disabled={busy}
@@ -188,10 +195,10 @@ export default function RatingModal({
               {skipping ? (
                 <span className="inline-flex items-center gap-2 justify-center">
                   <Loader2 size={14} className="animate-spin" />
-                  Working…
+                  {t("working")}
                 </span>
               ) : (
-                secondaryCta
+                secondaryLabel
               )}
             </button>
           )}
@@ -201,7 +208,7 @@ export default function RatingModal({
             className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-lg shadow-pink-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            {submitting ? "Submitting…" : primaryCta}
+            {submitting ? t("submitting") : primaryLabel}
           </button>
         </div>
       </div>

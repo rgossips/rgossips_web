@@ -2,12 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import MediaKitLayout from "@/components/MediaKitLayout";
 import { Loader2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
 
 export default function PublicMediaKitPage() {
+  const t = useTranslations("KitId");
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,11 +38,11 @@ export default function PublicMediaKitPage() {
         if (data?.profile) {
           setProfile(data.profile);
         } else {
-          setError("Media kit not found");
+          setError(t("errors.notFound"));
         }
       } catch (err) {
         console.error("Error fetching media kit:", err);
-        setError("Failed to load media kit");
+        setError(t("errors.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,7 @@ export default function PublicMediaKitPage() {
       <div className="min-h-screen bg-[#F8F7FB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={32} className="animate-spin text-purple-500" />
-          <p className="text-sm text-slate-500 font-semibold">Loading media kit...</p>
+          <p className="text-sm text-slate-500 font-semibold">{t("loading")}</p>
         </div>
       </div>
     );
@@ -69,13 +71,13 @@ export default function PublicMediaKitPage() {
           </div>
           <h1 className="text-xl font-bold text-slate-900">{error}</h1>
           <p className="text-sm text-slate-500">
-            This media kit may have been removed or the link is invalid.
+            {t("errors.removedOrInvalid")}
           </p>
           <a
             href="/"
             className="inline-block px-6 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors"
           >
-            Go to RGossips
+            {t("goToRgossips")}
           </a>
         </div>
       </div>
@@ -95,7 +97,7 @@ export default function PublicMediaKitPage() {
             className="text-xs font-bold px-4 py-2 rounded-xl text-white transition-all hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Join RGossips
+            {t("joinRgossips")}
           </a>
         </div>
       </div>

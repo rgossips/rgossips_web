@@ -5,28 +5,29 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Search, ChevronRight, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 import { formatINR } from "@/lib/services";
 
 const STATUS_PILL = {
-  pending_quote: { label: "Awaiting quote", class: "bg-amber-50 text-amber-700" },
-  quoted: { label: "Quote ready", class: "bg-emerald-50 text-emerald-700" },
-  counter_offered: { label: "Counter sent", class: "bg-orange-50 text-orange-700" },
-  accepted: { label: "Quote accepted", class: "bg-emerald-50 text-emerald-700" },
-  paid_advance: { label: "Advance paid", class: "bg-violet-50 text-violet-700" },
-  in_progress: { label: "In progress", class: "bg-violet-50 text-violet-700" },
-  draft_ready: { label: "Draft ready", class: "bg-amber-50 text-amber-700" },
-  revision_requested: { label: "Revision sent", class: "bg-orange-50 text-orange-700" },
-  paid_final: { label: "Final paid", class: "bg-emerald-50 text-emerald-700" },
-  completed: { label: "Completed", class: "bg-blue-50 text-blue-700" },
-  declined: { label: "Declined", class: "bg-gray-100 text-gray-500" },
-  expired: { label: "Expired", class: "bg-gray-100 text-gray-500" },
+  pending_quote: { key: "pendingQuote", class: "bg-amber-50 text-amber-700" },
+  quoted: { key: "quoted", class: "bg-emerald-50 text-emerald-700" },
+  counter_offered: { key: "counterOffered", class: "bg-orange-50 text-orange-700" },
+  accepted: { key: "accepted", class: "bg-emerald-50 text-emerald-700" },
+  paid_advance: { key: "paidAdvance", class: "bg-violet-50 text-violet-700" },
+  in_progress: { key: "inProgress", class: "bg-violet-50 text-violet-700" },
+  draft_ready: { key: "draftReady", class: "bg-amber-50 text-amber-700" },
+  revision_requested: { key: "revisionRequested", class: "bg-orange-50 text-orange-700" },
+  paid_final: { key: "paidFinal", class: "bg-emerald-50 text-emerald-700" },
+  completed: { key: "completed", class: "bg-blue-50 text-blue-700" },
+  declined: { key: "declined", class: "bg-gray-100 text-gray-500" },
+  expired: { key: "expired", class: "bg-gray-100 text-gray-500" },
 };
 
 const TABS = [
-  { id: "all", label: "All" },
-  { id: "active", label: "Active" },
-  { id: "completed", label: "Completed" },
-  { id: "declined", label: "Closed" },
+  { id: "all", key: "all" },
+  { id: "active", key: "active" },
+  { id: "completed", key: "completed" },
+  { id: "declined", key: "declined" },
 ];
 
 const ACTIVE_STATUSES = new Set([
@@ -54,6 +55,7 @@ const effectiveStatus = (order) =>
   isQuoteExpired(order) ? "expired" : order.status;
 
 export default function ServiceRequestsHistoryPage() {
+  const t = useTranslations("InfluencerServicesOrders");
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -127,25 +129,25 @@ export default function ServiceRequestsHistoryPage() {
           <button
             onClick={() => router.push("/influencer/profile")}
             className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors"
-            aria-label="Back"
+            aria-label={t("back")}
           >
             <ArrowLeft size={16} />
           </button>
           <div className="flex-1">
             <h1 className="text-xl lg:text-2xl font-black text-slate-900 leading-tight tracking-tight">
-              Service Requests
+              {t("title")}
             </h1>
             <p className="text-xs text-slate-400 font-medium">
-              Every brief you've sent — quote, in progress or done
+              {t("subtitle")}
             </p>
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            title="Refresh status"
+            title={t("refreshStatus")}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-white transition-all cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
+            <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> {t("refresh")}
           </button>
         </div>
 
@@ -155,28 +157,28 @@ export default function ServiceRequestsHistoryPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by service or order number…"
+            placeholder={t("searchPlaceholder")}
             className="w-full pl-10 h-11 bg-white border-none rounded-2xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
           />
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2 flex-wrap">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tabItem.id}
+              onClick={() => setTab(tabItem.id)}
               className={`text-[12px] font-bold px-3.5 py-2 rounded-full whitespace-nowrap transition cursor-pointer inline-flex items-center gap-1.5 ${
-                tab === t.id
+                tab === tabItem.id
                   ? "bg-slate-900 text-white"
                   : "bg-white text-slate-600 border border-slate-200"
               }`}
             >
-              {t.label}
+              {t(`tabs.${tabItem.key}`)}
               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
-                tab === t.id ? "bg-white/20" : "bg-slate-100 text-slate-600"
+                tab === tabItem.id ? "bg-white/20" : "bg-slate-100 text-slate-600"
               }`}>
-                {counts[t.id] || 0}
+                {counts[tabItem.id] || 0}
               </span>
             </button>
           ))}
@@ -188,14 +190,14 @@ export default function ServiceRequestsHistoryPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl text-slate-400 font-bold">
-            {orders.length === 0 ? "You haven't requested any services yet." : "Nothing in this view."}
+            {orders.length === 0 ? t("empty.noOrders") : t("empty.noneInView")}
             {orders.length === 0 && (
               <div className="mt-3">
                 <button
                   onClick={() => router.push("/influencer/services")}
                   className="text-sm font-bold text-pink-500 hover:underline cursor-pointer"
                 >
-                  Browse services →
+                  {t("empty.browseServices")}
                 </button>
               </div>
             )}
@@ -213,8 +215,12 @@ export default function ServiceRequestsHistoryPage() {
 }
 
 function OrderRow({ order, onClick }) {
+  const t = useTranslations("InfluencerServicesOrders");
   const s = effectiveStatus(order);
-  const pill = STATUS_PILL[s] || { label: s, class: "bg-slate-100 text-slate-600" };
+  const pillDef = STATUS_PILL[s];
+  const pill = pillDef
+    ? { label: t(`status.${pillDef.key}`), class: pillDef.class }
+    : { label: s, class: "bg-slate-100 text-slate-600" };
   const amount = order.total_amount || order.quoted_amount || 0;
   return (
     <button

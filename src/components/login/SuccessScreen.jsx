@@ -2,11 +2,14 @@
 
 import React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Tick from "@/assets/login/SuccessIllustration.webp";
 
-const SuccessScreen = ({ onNext, loading = false }) => (
+const SuccessScreen = ({ onNext, loading = false }) => {
+  const t = useTranslations("Auth.success");
+  return (
   <div className="flex flex-col items-center justify-center text-center space-y-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
     {/* Animated Illustration Container */}
     <div className="relative">
@@ -36,12 +39,8 @@ const SuccessScreen = ({ onNext, loading = false }) => (
     </div>
 
     <div className="space-y-3 px-4">
-      <h2 className="text-2xl font-bold text-slate-900">You're All Set!</h2>
-      <p className="text-sm text-slate-500 leading-relaxed">
-        Your profile is ready. Now let's verify your{" "}
-        <br className="hidden md:block" />
-        phone number to start closing deals.
-      </p>
+      <h2 className="text-2xl font-bold text-slate-900">{t("title")}</h2>
+      <p className="text-sm text-slate-500 leading-relaxed">{t("subtitle")}</p>
     </div>
 
     <div className="w-full pt-4">
@@ -50,10 +49,11 @@ const SuccessScreen = ({ onNext, loading = false }) => (
         disabled={loading}
         className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
       >
-        {loading ? "Creating Account..." : "Start Using Platform"}
+        {loading ? t("creating") : t("start")}
       </Button>
     </div>
   </div>
-);
+  );
+};
 
 export default SuccessScreen;

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import AlertPopup from "@/components/AlertPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import { CATEGORIES as STANDARD_CATEGORIES } from "@/utils/categories";
@@ -22,6 +23,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function CreatorOnboardingForm({ onClose }) {
+  const t = useTranslations("ApplyCampaignNotLoggedIn");
   const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -209,7 +211,7 @@ export default function CreatorOnboardingForm({ onClose }) {
       });
       nextStep(); // Move to success step
     } catch (e) {
-      setPopup("Submission failed. Please try again.");
+      setPopup(t("errors.submitFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -227,11 +229,11 @@ export default function CreatorOnboardingForm({ onClose }) {
         <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-              Creator Application
+              {t("header.title")}
             </h2>
             {step < totalSteps && (
               <p className="text-xs text-[#E60076] font-bold uppercase tracking-widest">
-                Step {step} of {totalSteps - 1}
+                {t("header.step", { step, total: totalSteps - 1 })}
               </p>
             )}
           </div>
@@ -246,25 +248,25 @@ export default function CreatorOnboardingForm({ onClose }) {
         <div className="flex-1 overflow-y-auto p-6 lg:p-10">
           <AnimatePresence mode="wait">
             {step === 1 && (
-              <StepContent title="Basic Information">
+              <StepContent title={t("steps.basicInfo")}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
-                    label="Full Name"
-                    placeholder="Full Name"
+                    label={t("fields.fullName")}
+                    placeholder={t("fields.fullName")}
                     value={formData.fullName}
                     onChange={(e) =>
                       handleInputChange("fullName", e.target.value)
                     }
                   />
                   <InputField
-                    label="Email Address"
+                    label={t("fields.email")}
                     type="email"
                     placeholder="email@example.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                   />
                   <InputField
-                    label="Phone (WhatsApp)"
+                    label={t("fields.phone")}
                     type="tel"
                     maxLength={10}
                     placeholder="6399..."
@@ -272,7 +274,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                   />
                   <SelectBox
-                    label="Age Group"
+                    label={t("fields.ageGroup")}
                     options={ageGroups}
                     value={formData.ageGroup}
                     onChange={(e) =>
@@ -280,7 +282,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                     }
                   />
                   <SelectBox
-                    label="Gender"
+                    label={t("fields.gender")}
                     options={["Male", "Female", "Other"]}
                     value={formData.gender}
                     onChange={(e) =>
@@ -292,11 +294,11 @@ export default function CreatorOnboardingForm({ onClose }) {
             )}
 
             {step === 2 && (
-              <StepContent title="Content Details">
+              <StepContent title={t("steps.contentDetails")}>
                 {/* Existing Step 2 Content: Niches, Styles, Face Reveal */}
                 <div className="space-y-6">
                   <SelectBox
-                    label="Primary Niche"
+                    label={t("fields.primaryNiche")}
                     options={categories}
                     value={formData.primaryNiche}
                     onChange={(e) =>
@@ -305,7 +307,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                   />
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                      Secondary Niches
+                      {t("fields.secondaryNiches")}
                     </label>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
                       {categories.map((cat) => (
@@ -323,7 +325,7 @@ export default function CreatorOnboardingForm({ onClose }) {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                      Content Styles (Select multiple)
+                      {t("fields.contentStyles")}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {contentStyles.map((style) => (
@@ -340,7 +342,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                      Do you do face videos?
+                      {t("fields.faceVideos")}
                     </label>
                     <div className="flex gap-4">
                       {["Yes", "No"].map((opt) => (
@@ -360,10 +362,10 @@ export default function CreatorOnboardingForm({ onClose }) {
             )}
 
             {step === 3 && (
-              <StepContent title="Social Metrics">
+              <StepContent title={t("steps.socialMetrics")}>
                 <div className="space-y-4">
                   <InputField
-                    label="Instagram Profile Link"
+                    label={t("fields.instaLink")}
                     icon={<Instagram size={16} />}
                     value={formData.instaLink}
                     onChange={(e) =>
@@ -371,9 +373,9 @@ export default function CreatorOnboardingForm({ onClose }) {
                     }
                   />
                   <InputField
-                    label="Instagram Username"
+                    label={t("fields.instaUsername")}
                     icon={<AtSign size={16} />}
-                    placeholder="@username"
+                    placeholder={t("placeholders.instaUsername")}
                     value={formData.instaUsername}
                     onChange={(e) =>
                       handleInputChange("instaUsername", e.target.value)
@@ -381,7 +383,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <SelectBox
-                      label="Follower Tier"
+                      label={t("fields.followerTier")}
                       options={followerOptions.map((f) => f.label)}
                       value={formData.followerTier}
                       onChange={(e) =>
@@ -389,9 +391,9 @@ export default function CreatorOnboardingForm({ onClose }) {
                       }
                     />
                     <InputField
-                      label="Followers (Exact)"
+                      label={t("fields.followersExact")}
                       type="number"
-                      placeholder="e.g. 10200"
+                      placeholder={t("placeholders.followersExact")}
                       value={formData.exactFollowers}
                       onChange={(e) =>
                         handleInputChange("exactFollowers", e.target.value)
@@ -409,7 +411,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                       }
                     /> */}
                     <SelectBox
-                      label="Primary Language"
+                      label={t("fields.primaryLanguage")}
                       icon={<Languages size={16} />}
                       options={languagesList}
                       value={isCustomLanguage ? "Other" : formData.language}
@@ -429,7 +431,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                       animate={{ opacity: 1, height: "auto" }}
                     >
                       <InputField
-                        label="Type your language"
+                        label={t("fields.typeLanguage")}
                         value={formData.language}
                         onChange={(e) =>
                           handleInputChange("language", e.target.value)
@@ -443,11 +445,11 @@ export default function CreatorOnboardingForm({ onClose }) {
             )}
 
             {step === 4 && (
-              <StepContent title="Shipping & Agreement">
+              <StepContent title={t("steps.shipping")}>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <SelectBox
-                      label="State"
+                      label={t("fields.state")}
                       icon={<MapPin size={16} />}
                       options={states}
                       value={formData.state}
@@ -456,7 +458,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                       }
                     />
                     <InputField
-                      label="City"
+                      label={t("fields.city")}
                       value={formData.city}
                       onChange={(e) =>
                         handleInputChange("city", e.target.value)
@@ -464,7 +466,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                     />
                   </div>
                   <InputField
-                    label="Pincode"
+                    label={t("fields.pincode")}
                     maxLength={6}
                     placeholder="560001"
                     value={formData.pincode}
@@ -473,9 +475,9 @@ export default function CreatorOnboardingForm({ onClose }) {
                     }
                   />
                   <InputField
-                    label="Full Residential Address"
+                    label={t("fields.residentialAddress")}
                     icon={<Package size={16} />}
-                    placeholder="House No, Street, Landmark..."
+                    placeholder={t("placeholders.residentialAddress")}
                     value={formData.residentialAddress}
                     onChange={(e) =>
                       handleInputChange("residentialAddress", e.target.value)
@@ -493,10 +495,7 @@ export default function CreatorOnboardingForm({ onClose }) {
                         }
                       />
                       <span className="text-xs text-slate-600 leading-relaxed">
-                        <b>Important:</b> I understand the agency role is to
-                        connect creators with brands. Commercials and payments
-                        are handled directly by the brand/agency. I agree to the
-                        terms.
+                        {t.rich("agreement", { b: (c) => <b>{c}</b> })}
                       </span>
                     </label>
                   </div>
@@ -510,10 +509,10 @@ export default function CreatorOnboardingForm({ onClose }) {
                   <CheckCircle2 size={40} />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-800">
-                  Application Submitted!
+                  {t("success.title")}
                 </h3>
                 <p className="text-slate-500 mt-2">
-                  We have received your details for the master database.
+                  {t("success.subtitle")}
                 </p>
               </div>
             )}
@@ -528,7 +527,7 @@ export default function CreatorOnboardingForm({ onClose }) {
               onClick={prevStep}
               className="flex-1 h-14 rounded-2xl font-bold cursor-pointer"
             >
-              Back
+              {t("buttons.back")}
             </Button>
           )}
           <Button
@@ -541,12 +540,12 @@ export default function CreatorOnboardingForm({ onClose }) {
             className="flex-[2] h-14 cursor-pointer rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-pink-100"
           >
             {isSubmitting
-              ? "Submitting..."
+              ? t("buttons.submitting")
               : step === 4
-                ? "Submit Application"
+                ? t("buttons.submit")
                 : step === 5
-                  ? "Finish"
-                  : "Next Step"}
+                  ? t("buttons.finish")
+                  : t("buttons.next")}
             {!isSubmitting && step < 4 && (
               <ArrowRight size={18} className="ml-2" />
             )}
@@ -595,6 +594,7 @@ function InputField({ label, icon, ...props }) {
 }
 
 function SelectBox({ label, options, icon, ...props }) {
+  const t = useTranslations("ApplyCampaignNotLoggedIn");
   return (
     <div className="space-y-1.5 flex-1">
       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
@@ -611,7 +611,7 @@ function SelectBox({ label, options, icon, ...props }) {
           className={`w-full h-12 bg-slate-50 border-none rounded-xl ${icon ? "pl-10" : "pl-4"} pr-10 text-sm font-medium focus:ring-2 focus:ring-pink-100 outline-none appearance-none cursor-pointer custom-scrollbar max-h-56 relative z-0`}
         >
           <option value="" disabled>
-            Select Option
+            {t("select.placeholder")}
           </option>
           {options.map((opt) => (
             <option key={opt} value={opt}>

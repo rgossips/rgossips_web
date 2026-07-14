@@ -24,6 +24,7 @@ import {
   Info,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
@@ -56,6 +57,7 @@ const CATEGORIES = [
 ];
 
 const BrandProfile = () => {
+  const t = useTranslations("BrandsProfile");
   const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
   const supabase = createClient();
@@ -101,7 +103,7 @@ const BrandProfile = () => {
     profile.gstin_trade_name ||
     profile.brand_name ||
     profile.contact_name ||
-    "Brand";
+    t("fallbackBrandName");
   const displayName = profile.gstin_trade_name || profile.brand_name || brandName;
   const logoUrl = profile.logo_url;
   const initials = displayName.charAt(0).toUpperCase();
@@ -145,7 +147,7 @@ const BrandProfile = () => {
     if (!croppedAreaPixels || !imageSrc || !user?.id) return;
     setUploading(true);
     setUploadError("");
-    startLoading("Uploading logo…");
+    startLoading(t("loading.uploadingLogo"));
     try {
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels);
       const fd = new FormData();
@@ -160,7 +162,7 @@ const BrandProfile = () => {
       await refreshProfile();
       setImageSrc(null);
     } catch (err) {
-      setUploadError(err.message || "Failed to upload logo");
+      setUploadError(err.message || t("errors.uploadLogo"));
     } finally {
       setUploading(false);
       stopLoading();
@@ -172,10 +174,10 @@ const BrandProfile = () => {
   // signup and restores logo_url to point at it.
   const handleRevertLogo = async () => {
     if (!user?.id) return;
-    if (!window.confirm("Revert to your Instagram profile picture? Your custom upload will be replaced.")) return;
+    if (!window.confirm(t("revertConfirm"))) return;
     setUploading(true);
     setUploadError("");
-    startLoading("Reverting logo…");
+    startLoading(t("loading.revertingLogo"));
     try {
       const { data, error } = await supabase.functions.invoke("update-profile", {
         body: {
@@ -188,7 +190,7 @@ const BrandProfile = () => {
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
     } catch (err) {
-      setUploadError(err.message || "Failed to revert");
+      setUploadError(err.message || t("errors.revert"));
     } finally {
       setUploading(false);
       stopLoading();
@@ -197,7 +199,7 @@ const BrandProfile = () => {
 
   const saveCategories = async (next) => {
     if (!user?.id) return;
-    startLoading("Saving categories…");
+    startLoading(t("loading.savingCategories"));
     try {
       const { data, error } = await supabase.functions.invoke("update-profile", {
         body: {
@@ -210,7 +212,7 @@ const BrandProfile = () => {
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
     } catch (err) {
-      setPopup("Failed to update categories: " + err.message);
+      setPopup(t("errors.updateCategories", { message: err.message }));
     } finally {
       stopLoading();
     }
@@ -234,7 +236,7 @@ const BrandProfile = () => {
       if (data?.error) throw new Error(data.error);
       await refreshProfile();
     } catch (err) {
-      setPopup("Failed to save: " + err.message);
+      setPopup(t("errors.save", { message: err.message }));
       throw err;
     } finally {
       stopLoading();
@@ -245,7 +247,7 @@ const BrandProfile = () => {
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
       <div className="bg-linear-to-b from-[#4C75BE] to-[#4A3996] pt-12 pb-8 px-6 rounded-b-4xl mb-20">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold text-white">My Profile</h1>
+          <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
         </div>
       </div>
 
@@ -274,7 +276,7 @@ const BrandProfile = () => {
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
               className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-md cursor-pointer disabled:cursor-not-allowed"
-              title="Change logo"
+              title={t("changeLogo")}
             >
               <div className="bg-[#5851DB] p-1.5 rounded-full text-white">
                 <Camera size={12} />
@@ -318,7 +320,7 @@ const BrandProfile = () => {
               )}
               {(profile.categories?.length || 0) > 0 && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#5851DB] bg-[#EBE9FE] px-3 py-1.5 rounded-full">
-                  {profile.categories.length} categor{profile.categories.length === 1 ? "y" : "ies"}
+                  {t("categoriesBadge", { count: profile.categories.length })}
                 </span>
               )}
             </div>
@@ -328,7 +330,7 @@ const BrandProfile = () => {
                 disabled={uploading}
                 className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 hover:text-[#5851DB] cursor-pointer disabled:opacity-50"
               >
-                <RotateCcw size={12} /> Revert logo to default
+                <RotateCcw size={12} /> {t("revertLogo")}
               </button>
             )}
             {uploadError && (
@@ -343,7 +345,7 @@ const BrandProfile = () => {
         <div className="bg-white rounded-3xl p-5 border border-gray-100/50 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Profile completion
+              {t("completion.title")}
             </p>
             <span
               className={`text-xs font-bold px-2.5 py-1 rounded-full ${
@@ -371,7 +373,7 @@ const BrandProfile = () => {
           </div>
           {completion.missing.length > 0 ? (
             <p className="text-[11px] text-gray-500 leading-snug">
-              Add{" "}
+              {t("completion.addPrefix")}{" "}
               {completion.missing.map((label, i) => (
                 <React.Fragment key={label}>
                   {i > 0 && ", "}
@@ -384,11 +386,11 @@ const BrandProfile = () => {
                   </button>
                 </React.Fragment>
               ))}{" "}
-              to complete your profile.
+              {t("completion.completeSuffix")}
             </p>
           ) : (
             <p className="text-[11px] text-emerald-600 font-semibold">
-              Your brand profile is fully complete.
+              {t("completion.complete")}
             </p>
           )}
         </div>
@@ -397,13 +399,13 @@ const BrandProfile = () => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                Trust score
+                {t("trust.title")}
               </p>
               <button
                 type="button"
                 onClick={() => setTrustInfoOpen((v) => !v)}
-                aria-label="How is the trust score calculated?"
-                title="How is this calculated?"
+                aria-label={t("trust.infoAria")}
+                title={t("trust.infoTitle")}
                 className="cursor-pointer hover:scale-110 transition-transform inline-flex"
               >
                 <InfoBadge size={18} />
@@ -429,13 +431,16 @@ const BrandProfile = () => {
               cold-start caption reads identically on every surface. */}
           {trust.coldStart && (
             <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
-              Capped at {trust.coldStartCap} · {trust.coldStartThreshold ?? 3} campaigns to lift
+              {t("trust.coldStart", {
+                cap: trust.coldStartCap,
+                threshold: trust.coldStartThreshold ?? 3,
+              })}
             </p>
           )}
           <p className="text-[11px] text-gray-400 leading-snug">
-            A weighted blend of five pillars — influencer reviews, campaign
-            execution, verification, communication, and platform engagement.
-            Tap the <Info size={11} className="inline -translate-y-px" /> to see the breakdown.
+            {t.rich("trust.blend", {
+              icon: () => <Info size={11} className="inline -translate-y-px" />,
+            })}
           </p>
 
           <TrustScoreInfoModal open={trustInfoOpen} onClose={() => setTrustInfoOpen(false)} />
@@ -447,13 +452,13 @@ const BrandProfile = () => {
         <div className="space-y-8 min-w-0">
         {/* Brand Info */}
         <Section
-          title="Brand Information"
+          title={t("sections.brandInfo")}
           action={
             <button
               onClick={() => setBrandInfoOpen(true)}
               className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
             >
-              <Pencil size={11} /> Edit
+              <Pencil size={11} /> {t("edit")}
             </button>
           }
         >
@@ -463,7 +468,7 @@ const BrandProfile = () => {
               iconColor="text-blue-500"
               bgColor="bg-blue-50"
               label={profile.gstin_legal_name || profile.brand_name || "—"}
-              sub="Legal Name"
+              sub={t("brandInfo.legalName")}
             />
             {profile.gstin_trade_name &&
               profile.gstin_trade_name !== profile.gstin_legal_name && (
@@ -472,7 +477,7 @@ const BrandProfile = () => {
                   iconColor="text-blue-400"
                   bgColor="bg-blue-50"
                   label={profile.gstin_trade_name}
-                  sub="Trade Name"
+                  sub={t("brandInfo.tradeName")}
                 />
               )}
             {profile.gstin_business_type && (
@@ -481,7 +486,7 @@ const BrandProfile = () => {
                 iconColor="text-blue-400"
                 bgColor="bg-blue-50"
                 label={profile.gstin_business_type}
-                sub="Business Type"
+                sub={t("brandInfo.businessType")}
               />
             )}
             {(profile.gstin_address || profile.gstin_state) && (
@@ -493,7 +498,7 @@ const BrandProfile = () => {
                   profile.gstin_address ||
                   `${profile.gstin_state || ""} ${profile.gstin_pincode || ""}`.trim()
                 }
-                sub="Registered Address"
+                sub={t("brandInfo.registeredAddress")}
                 last
               />
             )}
@@ -502,13 +507,13 @@ const BrandProfile = () => {
 
         {/* Categories */}
         <Section
-          title="Categories"
+          title={t("sections.categories")}
           action={
             <button
               onClick={() => setCategoriesOpen(true)}
               className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
             >
-              <Pencil size={11} /> Edit
+              <Pencil size={11} /> {t("edit")}
             </button>
           }
         >
@@ -518,7 +523,7 @@ const BrandProfile = () => {
                 onClick={() => setCategoriesOpen(true)}
                 className="w-full flex items-center justify-center gap-2 py-3 text-xs font-semibold text-[#5851DB] border-2 border-dashed border-purple-200 rounded-2xl hover:bg-purple-50 cursor-pointer"
               >
-                <Plus size={14} /> Add categories
+                <Plus size={14} /> {t("addCategories")}
               </button>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -537,13 +542,13 @@ const BrandProfile = () => {
 
         {/* Contact Details */}
         <Section
-          title="Contact Details"
+          title={t("sections.contact")}
           action={
             <button
               onClick={() => setContactOpen(true)}
               className="flex items-center gap-1 text-[10px] font-bold text-[#5851DB] cursor-pointer"
             >
-              <Pencil size={11} /> Edit
+              <Pencil size={11} /> {t("edit")}
             </button>
           }
         >
@@ -552,16 +557,16 @@ const BrandProfile = () => {
               icon={<User />}
               iconColor="text-green-500"
               bgColor="bg-green-50"
-              label={profile.contact_name || "Add brand manager name"}
-              sub="Brand Manager"
+              label={profile.contact_name || t("contact.addManager")}
+              sub={t("contact.brandManager")}
               muted={!profile.contact_name}
             />
             <InfoRow
               icon={<Phone />}
               iconColor="text-green-500"
               bgColor="bg-green-50"
-              label={profile.contact_phone || "Add business mobile"}
-              sub="Business Mobile"
+              label={profile.contact_phone || t("contact.addMobile")}
+              sub={t("contact.businessMobile")}
               isVerified={!!profile.contact_phone}
               muted={!profile.contact_phone}
             />
@@ -569,8 +574,8 @@ const BrandProfile = () => {
               icon={<Mail />}
               iconColor="text-red-400"
               bgColor="bg-red-50"
-              label={profile.contact_email || "Add email address"}
-              sub="Email"
+              label={profile.contact_email || t("contact.addEmail")}
+              sub={t("contact.email")}
               last
               muted={!profile.contact_email}
             />
@@ -582,7 +587,7 @@ const BrandProfile = () => {
         <div className="space-y-8 min-w-0">
         {/* Social */}
         {profile.instagram_username && (
-          <Section title="Social">
+          <Section title={t("sections.social")}>
             <a
               href={`https://instagram.com/${profile.instagram_username}`}
               target="_blank"
@@ -607,7 +612,7 @@ const BrandProfile = () => {
 
         {/* GSTIN */}
         {profile.gstin && (
-          <Section title="Tax & Legal Documents">
+          <Section title={t("sections.taxLegal")}>
             <div className="bg-white rounded-[32px] p-6 border border-gray-100/50 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-400" />
               <div className="flex justify-between items-start mb-5">
@@ -617,10 +622,10 @@ const BrandProfile = () => {
                   </div>
                   <div>
                     <h4 className="text-[11px] font-extrabold text-gray-900">
-                      GST Registration
+                      {t("gst.registration")}
                     </h4>
                     <p className="text-[9px] text-gray-400 font-semibold">
-                      Goods & Services Tax
+                      {t("gst.goodsServices")}
                     </p>
                   </div>
                 </div>
@@ -637,7 +642,7 @@ const BrandProfile = () => {
 
               <div className="mb-4">
                 <p className="text-[8px] text-gray-400 font-extrabold uppercase mb-1">
-                  GSTIN Number
+                  {t("gst.gstinNumber")}
                 </p>
                 <p className="text-[13px] font-extrabold text-gray-900 tracking-wider">
                   {profile.gstin}
@@ -646,19 +651,19 @@ const BrandProfile = () => {
 
               <div className="grid grid-cols-2 gap-y-4">
                 {profile.gstin_business_type && (
-                  <Detail label="Business Type" value={profile.gstin_business_type} />
+                  <Detail label={t("gst.businessType")} value={profile.gstin_business_type} />
                 )}
                 {profile.gstin_state && (
-                  <Detail label="State" value={profile.gstin_state} />
+                  <Detail label={t("gst.state")} value={profile.gstin_state} />
                 )}
                 {profile.gstin_registration_date && (
                   <Detail
-                    label="Reg. Date"
+                    label={t("gst.regDate")}
                     value={profile.gstin_registration_date}
                   />
                 )}
                 {profile.gstin_pincode && (
-                  <Detail label="Pincode" value={profile.gstin_pincode} />
+                  <Detail label={t("gst.pincode")} value={profile.gstin_pincode} />
                 )}
               </div>
             </div>
@@ -666,7 +671,7 @@ const BrandProfile = () => {
         )}
 
         {/* Account */}
-        <Section title="Account">
+        <Section title={t("sections.account")}>
           <div className="bg-white rounded-3xl border border-gray-100/50 shadow-sm overflow-hidden divide-y divide-gray-50">
             <button
               onClick={() => setLogoutOpen(true)}
@@ -675,7 +680,7 @@ const BrandProfile = () => {
               <div className="p-2 bg-red-50 rounded-xl">
                 <LogOut size={18} />
               </div>
-              <span>Log Out</span>
+              <span>{t("account.logout")}</span>
             </button>
 
             <button
@@ -686,9 +691,9 @@ const BrandProfile = () => {
                 <UserMinus size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900">Deactivate Account</p>
+                <p className="text-sm font-bold text-gray-900">{t("account.deactivate")}</p>
                 <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
-                  Temporarily hide your brand. Sign back in to restore.
+                  {t("account.deactivateDesc")}
                 </p>
               </div>
             </button>
@@ -701,9 +706,9 @@ const BrandProfile = () => {
                 <Trash2 size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-red-600">Delete Account</p>
+                <p className="text-sm font-bold text-red-600">{t("account.delete")}</p>
                 <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
-                  Soft delete with a 30-day grace period — admin can restore on request.
+                  {t("account.deleteDesc")}
                 </p>
               </div>
             </button>
@@ -732,15 +737,15 @@ const BrandProfile = () => {
               disabled={uploading}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50"
             >
-              Cancel
+              {t("actions.cancel")}
             </button>
-            <h3 className="text-white text-sm font-bold">Crop Logo</h3>
+            <h3 className="text-white text-sm font-bold">{t("crop.title")}</h3>
             <button
               onClick={handleCropSave}
               disabled={uploading || !croppedAreaPixels}
               className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50 bg-[#5851DB] text-white"
             >
-              {uploading ? "Saving..." : "Save"}
+              {uploading ? t("crop.saving") : t("actions.save")}
             </button>
           </div>
           <div className="flex-1 relative">
@@ -756,7 +761,7 @@ const BrandProfile = () => {
             />
           </div>
           <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
-            <span className="text-white/60 text-xs font-bold shrink-0">Zoom</span>
+            <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
               min={1}
@@ -786,7 +791,7 @@ const BrandProfile = () => {
           profile={profile}
           onClose={() => setBrandInfoOpen(false)}
           onSave={async (payload) => {
-            await saveBrandFields(payload, "Saving brand information…");
+            await saveBrandFields(payload, t("loading.savingBrandInfo"));
             setBrandInfoOpen(false);
           }}
         />
@@ -797,7 +802,7 @@ const BrandProfile = () => {
           profile={profile}
           onClose={() => setContactOpen(false)}
           onSave={async (payload) => {
-            await saveBrandFields(payload, "Saving contact details…");
+            await saveBrandFields(payload, t("loading.savingContact"));
             setContactOpen(false);
           }}
         />
@@ -853,12 +858,14 @@ const Detail = ({ label, value }) => (
   </div>
 );
 
-const TrustComponent = ({ label, weight, percent, detail }) => (
+const TrustComponent = ({ label, weight, percent, detail }) => {
+  const t = useTranslations("BrandsProfile");
+  return (
   <div>
     <div className="flex items-center justify-between gap-2">
       <span className="text-[11px] font-bold text-gray-700">{label}</span>
       <span className="text-[10px] font-bold text-[#5851DB] shrink-0">
-        {percent}% · {weight} weight
+        {t("trustComponent.weight", { percent, weight })}
       </span>
     </div>
     <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-1.5">
@@ -869,9 +876,11 @@ const TrustComponent = ({ label, weight, percent, detail }) => (
     </div>
     <p className="text-[10px] text-gray-400 mt-1">{detail}</p>
   </div>
-);
+  );
+};
 
 const CategoriesModal = ({ initial, onClose, onSave }) => {
+  const t = useTranslations("BrandsProfile");
   const [selected, setSelected] = useState(initial || []);
   const [saving, setSaving] = useState(false);
 
@@ -885,9 +894,9 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
       <div className="w-full lg:max-w-md bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Edit Categories</h3>
+            <h3 className="text-lg font-bold text-gray-900">{t("categoriesModal.title")}</h3>
             <p className="text-[11px] text-gray-400">
-              {selected.length} selected
+              {t("categoriesModal.selectedCount", { count: selected.length })}
             </p>
           </div>
           <button
@@ -927,7 +936,7 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
             disabled={saving}
             className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             onClick={async () => {
@@ -938,7 +947,7 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
             disabled={saving}
             className="py-3.5 rounded-2xl font-bold text-sm text-white bg-[#5851DB] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : "Save"}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : t("actions.save")}
           </button>
         </div>
       </div>
@@ -947,7 +956,8 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
 };
 
 // Shared modal shell — same shape as CategoriesModal but reusable.
-const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel = "Save", canSave = true }) => {
+const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel, canSave = true }) => {
+  const t = useTranslations("BrandsProfile");
   const [saving, setSaving] = useState(false);
   return (
     <div className="fixed inset-0 z-50 flex items-end lg:items-center lg:justify-center bg-black/40">
@@ -970,7 +980,7 @@ const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel = "Sa
             disabled={saving}
             className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             onClick={async () => {
@@ -986,7 +996,7 @@ const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel = "Sa
             disabled={saving || !canSave}
             className="py-3.5 rounded-2xl font-bold text-sm text-white bg-[#5851DB] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : saveLabel}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : (saveLabel || t("actions.save"))}
           </button>
         </div>
       </div>
@@ -1012,6 +1022,7 @@ const Field = ({ label, value, onChange, type = "text", placeholder, hint, ...pr
 );
 
 const BrandInfoModal = ({ profile, onClose, onSave }) => {
+  const t = useTranslations("BrandsProfile");
   const [brandName, setBrandName] = useState(profile.brand_name || "");
   const [legalName, setLegalName] = useState(profile.gstin_legal_name || "");
   const [tradeName, setTradeName] = useState(profile.gstin_trade_name || "");
@@ -1022,8 +1033,8 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
 
   return (
     <EditModal
-      title="Edit Brand Information"
-      subtitle="Visible to brands and creators on your profile"
+      title={t("brandInfoModal.title")}
+      subtitle={t("brandInfoModal.subtitle")}
       onClose={onClose}
       onSave={() =>
         onSave({
@@ -1037,18 +1048,21 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
         })
       }
     >
-      <Field label="Brand Name" value={brandName} onChange={setBrandName} placeholder="e.g. Recent Gossips" hint="Used everywhere your brand is displayed." />
-      <Field label="Legal Name" value={legalName} onChange={setLegalName} placeholder="As per GSTIN" />
-      <Field label="Trade Name" value={tradeName} onChange={setTradeName} placeholder="Common name customers know you by" />
-      <Field label="Business Type" value={businessType} onChange={setBusinessType} placeholder="e.g. Private Limited Company" />
-      <Field label="Registered Address" value={address} onChange={setAddress} placeholder="Street, area" />
+      <Field label={t("brandInfoModal.brandName")} value={brandName} onChange={setBrandName} placeholder={t("brandInfoModal.brandNamePlaceholder")} hint={t("brandInfoModal.brandNameHint")} />
+      <Field label={t("brandInfoModal.legalName")} value={legalName} onChange={setLegalName} placeholder={t("brandInfoModal.legalNamePlaceholder")} />
+      <Field label={t("brandInfoModal.tradeName")} value={tradeName} onChange={setTradeName} placeholder={t("brandInfoModal.tradeNamePlaceholder")} />
+      <Field label={t("brandInfoModal.businessType")} value={businessType} onChange={setBusinessType} placeholder={t("brandInfoModal.businessTypePlaceholder")} />
+      <Field label={t("brandInfoModal.registeredAddress")} value={address} onChange={setAddress} placeholder={t("brandInfoModal.registeredAddressPlaceholder")} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label="State" value={state} onChange={setState} placeholder="State" />
-        <Field label="Pincode" value={pincode} onChange={(v) => setPincode(v.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" />
+        <Field label={t("brandInfoModal.state")} value={state} onChange={setState} placeholder={t("brandInfoModal.statePlaceholder")} />
+        <Field label={t("brandInfoModal.pincode")} value={pincode} onChange={(v) => setPincode(v.replace(/\D/g, "").slice(0, 6))} placeholder={t("brandInfoModal.pincodePlaceholder")} inputMode="numeric" />
       </div>
       {profile.gstin && (
         <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-          These fields were auto-filled from GSTIN <span className="font-bold">{profile.gstin}</span>. Edits override the auto-fill but the original GSTIN is still on file.
+          {t.rich("brandInfoModal.gstinNote", {
+            gstin: profile.gstin,
+            b: (c) => <span className="font-bold">{c}</span>,
+          })}
         </p>
       )}
     </EditModal>
@@ -1056,6 +1070,7 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
 };
 
 const ContactDetailsModal = ({ profile, onClose, onSave }) => {
+  const t = useTranslations("BrandsProfile");
   const [contactName, setContactName] = useState(profile.contact_name || "");
   const [contactEmail, setContactEmail] = useState(profile.contact_email || "");
 
@@ -1066,8 +1081,8 @@ const ContactDetailsModal = ({ profile, onClose, onSave }) => {
   // form would let a signed-in user lock themselves out. Surfaced read-only.
   return (
     <EditModal
-      title="Edit Contact Details"
-      subtitle="Used for campaign messaging and payouts"
+      title={t("contactModal.title")}
+      subtitle={t("contactModal.subtitle")}
       onClose={onClose}
       canSave={emailLooksOk}
       onSave={() =>
@@ -1077,22 +1092,22 @@ const ContactDetailsModal = ({ profile, onClose, onSave }) => {
         })
       }
     >
-      <Field label="Brand Manager" value={contactName} onChange={setContactName} placeholder="Person we'd reach out to" />
+      <Field label={t("contactModal.brandManager")} value={contactName} onChange={setContactName} placeholder={t("contactModal.brandManagerPlaceholder")} />
 
       <div>
         <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
-          Business Mobile
+          {t("contactModal.businessMobile")}
         </label>
         <div className="w-full p-3.5 bg-gray-100 border border-gray-100 rounded-xl text-sm font-bold text-gray-500 flex items-center justify-between gap-3">
           <span className="truncate">{profile.contact_phone || "—"}</span>
-          <span className="text-[10px] font-bold text-gray-400 shrink-0">Login number · not editable</span>
+          <span className="text-[10px] font-bold text-gray-400 shrink-0">{t("contactModal.loginNotEditable")}</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1 ml-1">Contact support to change the phone number on your account.</p>
+        <p className="text-[10px] text-gray-400 mt-1 ml-1">{t("contactModal.phoneHelp")}</p>
       </div>
 
-      <Field label="Email" value={contactEmail} onChange={setContactEmail} type="email" placeholder="hello@yourbrand.com" hint="We'll send campaign updates and invoices here." />
+      <Field label={t("contactModal.email")} value={contactEmail} onChange={setContactEmail} type="email" placeholder={t("contactModal.emailPlaceholder")} hint={t("contactModal.emailHint")} />
       {contactEmail && !emailLooksOk && (
-        <p className="text-[11px] text-rose-600 font-bold">That doesn't look like a valid email address.</p>
+        <p className="text-[11px] text-rose-600 font-bold">{t("contactModal.invalidEmail")}</p>
       )}
     </EditModal>
   );

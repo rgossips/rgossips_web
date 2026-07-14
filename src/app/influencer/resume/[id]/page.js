@@ -3,8 +3,10 @@
 import ResumeViewer from "@/components/ResumeViewer";
 import OwnerControls from "@/components/OwnerControls";
 import { Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function ResumePage({ params }) {
+  const t = useTranslations("InfluencerResumeId");
   const influencer = {
     id: "123",
     name: "Rohan Sharma",
@@ -29,10 +31,10 @@ export default function ResumePage({ params }) {
       <div className="max-w-[1400px] mx-auto mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Media Kit / Resume
+            {t("title")}
           </h1>
           <p className="text-gray-400 mt-2">
-            AI-Powered insights for {influencer.name}
+            {t("insightsFor", { name: influencer.name })}
           </p>
         </div>
 
@@ -41,7 +43,7 @@ export default function ResumePage({ params }) {
           className="flex items-center cursor-pointer justify-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all active:scale-95"
         >
           <Download size={20} />
-          Download PDF
+          {t("downloadPdf")}
         </button>
       </div>
 
@@ -58,7 +60,7 @@ export default function ResumePage({ params }) {
             </div>
           </div>
           <p className="text-center text-gray-500 text-sm mt-4 italic">
-            Scroll inside the viewer to see full details
+            {t("scrollHint")}
           </p>
         </div>
 
@@ -68,15 +70,15 @@ export default function ResumePage({ params }) {
             {/* Brand/Viewer Stats (Visible to everyone) */}
             <div className="bg-[#16161d] border border-white/10 rounded-2xl p-6">
               <h3 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">
-                Creator Snapshot
+                {t("creatorSnapshot")}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-white/5 rounded-xl text-center">
-                  <p className="text-xs text-gray-500">Reach</p>
+                  <p className="text-xs text-gray-500">{t("stats.reach")}</p>
                   <p className="text-xl font-bold">{influencer.followers}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-xl text-center">
-                  <p className="text-xs text-gray-500">Engagement</p>
+                  <p className="text-xs text-gray-500">{t("stats.engagement")}</p>
                   <p className="text-xl font-bold">{influencer.engagement}</p>
                 </div>
               </div>
@@ -88,13 +90,13 @@ export default function ResumePage({ params }) {
             ) : (
               <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6">
                 <h3 className="text-lg font-bold text-indigo-400 mb-2">
-                  Hire this Creator
+                  {t("hireCreator")}
                 </h3>
                 <p className="text-sm text-gray-400 mb-4">
-                  Contact {influencer.name} directly for your next campaign.
+                  {t("contactPrompt", { name: influencer.name })}
                 </p>
                 <button className="w-full py-3 bg-indigo-500 rounded-xl font-bold hover:bg-indigo-600 transition-colors">
-                  Send Collaboration Inquiry
+                  {t("sendInquiry")}
                 </button>
               </div>
             )}

@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import {
   Briefcase,
   Camera,
@@ -40,6 +41,7 @@ export const FilterContent = ({
   selectedBrands,
   setSelectedBrands,
 }) => {
+  const t = useTranslations("FilterModal");
   const handleBrandToggle = (name) => {
     if (!setSelectedBrands) return;
     setSelectedBrands((prev) =>
@@ -71,9 +73,9 @@ export const FilterContent = ({
       {/* Category */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-800">Category</h3>
+          <h3 className="text-sm font-bold text-slate-800">{t("category")}</h3>
           {selectedCategories.length > 0 && (
-            <span className="text-[10px] font-bold text-[#E60076]">{selectedCategories.length} selected</span>
+            <span className="text-[10px] font-bold text-[#E60076]">{t("selectedCount", { count: selectedCategories.length })}</span>
           )}
         </div>
         <div className="flex flex-wrap gap-3">
@@ -85,7 +87,7 @@ export const FilterContent = ({
                 : "border border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200"
             }`}
           >
-            All
+            {t("all")}
           </button>
           {CATEGORY_LIST.map((cat) => {
             const catData = FILTER_CATEGORIES.find((c) => c.label === cat);
@@ -110,11 +112,11 @@ export const FilterContent = ({
 
       {/* Budget Range */}
       <section className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-800">Budget Range</h3>
+        <h3 className="text-sm font-bold text-slate-800">{t("budgetRange")}</h3>
         <div className="flex items-center gap-4">
           <div className="flex-1 space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">
-              Min ($)
+              {t("minLabel")}
             </label>
             <Input
               type="number"
@@ -131,7 +133,7 @@ export const FilterContent = ({
           <div className="text-slate-300 pt-5">-</div>
           <div className="flex-1 space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">
-              Max ($)
+              {t("maxLabel")}
             </label>
             <Input
               type="number"
@@ -151,7 +153,7 @@ export const FilterContent = ({
       {/* Platform */}
       {selectedPlatforms && setSelectedPlatforms && (
         <section className="space-y-4">
-          <h3 className="text-sm font-bold text-slate-800">Platform</h3>
+          <h3 className="text-sm font-bold text-slate-800">{t("platform")}</h3>
           <div className="grid grid-cols-2 gap-3">
             {PLATFORMS.map((platform) => {
               const isSelected = selectedPlatforms.includes(platform.label);
@@ -178,13 +180,13 @@ export const FilterContent = ({
       {brands && setSelectedBrands && brands.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-800">Brand</h3>
+            <h3 className="text-sm font-bold text-slate-800">{t("brand")}</h3>
             {selectedBrands?.length > 0 && (
               <button
                 onClick={() => setSelectedBrands([])}
                 className="text-[11px] font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
               >
-                Clear
+                {t("clear")}
               </button>
             )}
           </div>
@@ -212,8 +214,8 @@ export const FilterContent = ({
       {/* Verified Only */}
       <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Verified Only</h3>
-          <p className="text-xs text-slate-400 mt-0.5">4.7+ rating brands</p>
+          <h3 className="text-sm font-bold text-slate-800">{t("verifiedOnly")}</h3>
+          <p className="text-xs text-slate-400 mt-0.5">{t("verifiedOnlyHint")}</p>
         </div>
         <Switch
           checked={isVerifiedOnly}
@@ -240,6 +242,7 @@ export const FilterSidebar = ({
   selectedBrands,
   setSelectedBrands,
 }) => {
+  const t = useTranslations("FilterModal");
   const activeFiltersCount =
     selectedCategories.length +
     (selectedPlatforms?.length || 0) +
@@ -268,20 +271,20 @@ export const FilterSidebar = ({
   return (
     <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-black text-slate-800 text-lg">Filters</h2>
+        <h2 className="font-black text-slate-800 text-lg">{t("filters")}</h2>
         {activeFiltersCount > 0 && (
           <button
             onClick={handleReset}
             className="text-xs font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
           >
-            Clear All
+            {t("clearAll")}
           </button>
         )}
       </div>
 
       {/* Category Group */}
       <div className="space-y-2">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Category</h3>
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">{t("category")}</h3>
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => handleCategoryToggle("All")}
@@ -291,7 +294,7 @@ export const FilterSidebar = ({
                 : "bg-slate-50 text-slate-500 hover:bg-slate-100"
             }`}
           >
-            All
+            {t("all")}
           </button>
           {["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].map((cat) => {
             const isActive = selectedCategories.includes(cat);
@@ -311,7 +314,7 @@ export const FilterSidebar = ({
           })}
           {selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length > 0 && (
             <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
-              +{selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length} more
+              {t("moreCount", { count: selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length })}
             </span>
           )}
         </div>
@@ -320,7 +323,7 @@ export const FilterSidebar = ({
       {/* Platform Group */}
       {selectedPlatforms && setSelectedPlatforms && (
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Platform</h3>
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">{t("platform")}</h3>
           <div className="flex flex-wrap gap-1.5">
             {PLATFORMS.slice(0, 3).map((platform) => {
               const isSelected = selectedPlatforms.includes(platform.label);
@@ -352,7 +355,7 @@ export const FilterSidebar = ({
       {/* Brand Group */}
       {brands && setSelectedBrands && brands.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">Brand</h3>
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">{t("brand")}</h3>
           <div className="flex flex-wrap gap-1.5">
             {brands.slice(0, 4).map((name) => {
               const isSelected = selectedBrands?.includes(name);
@@ -376,7 +379,7 @@ export const FilterSidebar = ({
             })}
             {brands.length > 4 && (
               <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
-                +{brands.length - 4} more
+                {t("moreCount", { count: brands.length - 4 })}
               </span>
             )}
           </div>
@@ -385,7 +388,7 @@ export const FilterSidebar = ({
 
       {/* Verified Toggle */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-slate-500">Verified Only</span>
+        <span className="text-[11px] font-bold text-slate-500">{t("verifiedOnly")}</span>
         <Switch
           checked={isVerifiedOnly}
           onCheckedChange={setIsVerifiedOnly}
@@ -399,7 +402,7 @@ export const FilterSidebar = ({
         className="w-full py-2.5 rounded-2xl text-xs font-bold text-white cursor-pointer transition-all hover:opacity-90"
         style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
       >
-        All Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+        {t("allFilters")} {activeFiltersCount > 0 && `(${activeFiltersCount})`}
       </button>
     </div>
   );
@@ -423,8 +426,10 @@ const FilterModal = ({
   brands,
   selectedBrands,
   setSelectedBrands,
-  title = "Filters",
+  title,
 }) => {
+  const t = useTranslations("FilterModal");
+  const resolvedTitle = title || t("filters");
   const handleReset = () => {
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
@@ -459,12 +464,12 @@ const FilterModal = ({
             >
               <ChevronLeft size={24} />
             </button>
-            <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+            <h2 className="text-lg font-bold text-slate-800">{resolvedTitle}</h2>
             <button
               onClick={handleReset}
               className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              Clear All
+              {t("clearAll")}
             </button>
           </div>
 
@@ -492,13 +497,13 @@ const FilterModal = ({
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
-              Clear All
+              {t("clearAll")}
             </Button>
             <Button
               onClick={handleApply}
               className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl cursor-pointer"
             >
-              Apply
+              {t("apply")}
             </Button>
           </div>
         </motion.div>
@@ -518,7 +523,7 @@ const FilterModal = ({
         >
           {/* Desktop Header */}
           <div className="flex items-center justify-between p-8 bg-white z-10 border-b border-slate-100 rounded-t-4xl">
-            <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
+            <h2 className="text-2xl font-bold text-slate-800">{resolvedTitle}</h2>
             <button
               onClick={onClose}
               className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
@@ -551,13 +556,13 @@ const FilterModal = ({
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
               onClick={handleReset}
             >
-              Clear All
+              {t("clearAll")}
             </Button>
             <Button
               onClick={handleApply}
               className="flex-1 h-14 rounded-2xl font-bold text-white bg-gradient-to-r from-[#9810FA] to-[#E60076] shadow-lg shadow-[#E60076]/25 hover:shadow-xl cursor-pointer"
             >
-              Apply Filters
+              {t("applyFilters")}
             </Button>
           </div>
         </motion.div>

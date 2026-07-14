@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { getTranslations } from "next-intl/server";
 
 // Asset Imports
 import gucci from "@/assets/brands/gucci.png";
@@ -60,49 +61,50 @@ const BrandSlider = () => {
   );
 };
 
-const Hero2 = () => {
+const Hero2 = async () => {
+  const t = await getTranslations("Hero2");
   return (
     <section className="bg-white pt-16 md:pt-24 overflow-hidden max-w-full px-10 lg:px-0 border-b border-slate-50">
       <div className="container mx-auto px-4 text-center">
         {/* Announcement Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer mb-8">
-          <span role="img" aria-label="rocket">
+          <span role="img" aria-label={t("badge.rocketLabel")}>
             🚀
           </span>
           <p className="text-sm font-medium text-slate-800">
-            Now live: AI-powered Influencer Matching —{" "}
-            <span className="text-slate-500">Try it free</span>
+            {t.rich("badge.text", {
+              free: (c) => <span className="text-slate-500">{c}</span>,
+            })}
           </p>
           <span className="text-indigo-600">→</span>
         </div>
 
         {/* Heading */}
         <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-6">
-          Where Global Brands <br className="hidden md:block" />
-          Meet The Right Creators.
+          {t.rich("heading", {
+            br: () => <br className="hidden md:block" />,
+          })}
         </h1>
 
         {/* Subtext */}
         <p className="max-w-3xl mx-auto text-lg md:text-xl text-slate-500 leading-relaxed mb-10">
-          RGossips is the all-in-one influencer campaign platform that connects
-          brands with verified creators globally — no agencies, no spreadsheets,
-          no guesswork.
+          {t("subtext")}
         </p>
 
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
           <button className="w-full cursor-pointer sm:w-auto px-8 py-4 bg-[#FF5A5F] text-white font-semibold rounded-xl shadow-lg shadow-rose-200 hover:bg-[#ff444a] hover:-translate-y-0.5 transition-all active:scale-95">
-            Start for Free — No credit card needed
+            {t("buttons.startFree")}
           </button>
           <button className="w-full cursor-pointer sm:w-auto px-8 py-4 border-2 border-indigo-400 text-indigo-600 font-semibold rounded-xl hover:bg-indigo-50 hover:-translate-y-0.5 transition-all active:scale-95">
-            I'm an Influencer — Join the Community
+            {t("buttons.joinInfluencer")}
           </button>
         </div>
 
         {/* Trust & Ratings */}
         <div className="mb-16">
           <p className="text-sm text-slate-400 font-medium mb-3 uppercase tracking-wider">
-            Trusted by 5,000+ brands & 200,000+ influencers across 30+ countries
+            {t("trust.trustedBy")}
           </p>
           <div className="flex flex-col md:flex-row items-center justify-center gap-3">
             <div className="flex text-yellow-400">
@@ -114,11 +116,11 @@ const Hero2 = () => {
             </div>
             <div className="hidden md:block h-4 w-px bg-slate-300 mx-2" />
             <p className="text-sm font-semibold text-slate-800">
-              4.8/5 from 2,400+ reviews
+              {t("trust.rating")}
             </p>
             <div className="hidden md:block h-4 w-px bg-slate-300 mx-2" />
             <p className="text-sm font-semibold text-slate-800">
-              #1 Rated Influencer Platform in India
+              {t("trust.ranking")}
             </p>
           </div>
         </div>

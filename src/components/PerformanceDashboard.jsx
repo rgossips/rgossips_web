@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import {
   DollarSign,
@@ -40,6 +41,8 @@ function createGradient(ctx, area, color) {
 }
 
 export default function PerformanceDashboard() {
+  const t = useTranslations("PerformanceDashboard");
+
   const miniChartData = {
     labels: ["1", "2", "3", "4", "5", "6", "7"],
     datasets: [
@@ -94,19 +97,21 @@ export default function PerformanceDashboard() {
         <div className="w-full lg:max-w-[50%] space-y-3 lg:space-y-4">
           <div className="flex items-center gap-2 text-[10px] lg:text-xs text-slate-500 font-semibold">
             <span className="text-indigo-500">✦</span>
-            PLAN THIS MONTH
+            {t("planThisMonth")}
           </div>
           <h1 className="text-3xl lg:text-5xl font-bold">
             <span className="text-4xl lg:text-7xl">26x</span>{" "}
-            <span className="text-green-600">Return</span>
+            <span className="text-green-600">{t("return")}</span>
           </h1>
           <p className="text-sm lg:text-lg text-slate-500">
-            Excellent performance on your{" "}
-            <span className="font-bold text-slate-700">₹699 Pro plan</span> this
-            month.
+            {t.rich("planPerformance", {
+              b: (chunks) => (
+                <span className="font-bold text-slate-700">{chunks}</span>
+              ),
+            })}
           </p>
           <div className="inline-flex items-center font-semibold gap-1.5 bg-green-100 text-green-700 text-[10px] lg:text-xs px-3 py-1.5 rounded-full">
-            <ArrowUpRight size={12} /> +340% growth vs last month
+            <ArrowUpRight size={12} /> {t("growthBadge")}
           </div>
         </div>
 
@@ -114,10 +119,10 @@ export default function PerformanceDashboard() {
         <div className="w-full lg:flex-1 h-36 lg:h-full bg-slate-50 rounded-xl p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[9px] lg:text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-              Trajectory
+              {t("trajectory")}
             </p>
             <Badge className="bg-blue-100 text-blue-600 text-[9px] lg:text-[10px] border-0">
-              30 days
+              {t("thirtyDays")}
             </Badge>
           </div>
           <div className="w-full flex-1 min-h-0">
@@ -137,7 +142,7 @@ export default function PerformanceDashboard() {
         <MetricRow
           icon={<DollarSign size={16} className="text-green-600" />}
           iconBg="bg-green-50"
-          title="Earnings"
+          title={t("metrics.earnings")}
           value="₹18,500"
           growth="+12%"
           positive
@@ -145,19 +150,19 @@ export default function PerformanceDashboard() {
         <MetricRow
           icon={<Target size={16} className="text-orange-500" />}
           iconBg="bg-orange-50"
-          title="Campaigns"
+          title={t("metrics.campaigns")}
           value="4"
         />
         <MetricRow
           icon={<Building2 size={16} className="text-indigo-500" />}
           iconBg="bg-indigo-50"
-          title="Brands"
+          title={t("metrics.brands")}
           value="12"
         />
         <MetricRow
           icon={<Activity size={16} className="text-pink-600" />}
           iconBg="bg-pink-50"
-          title="Avg Engagement"
+          title={t("metrics.avgEngagement")}
           value="8.5%"
           growth="+1.2%"
           positive
@@ -169,13 +174,13 @@ export default function PerformanceDashboard() {
         <div className="flex items-center gap-2 mb-1">
           <Wallet size={14} className="opacity-60" />
           <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
-            Available Balance
+            {t("availableBalance")}
           </p>
         </div>
         <h2 className="text-3xl font-bold mt-1">₹1,50,000</h2>
-        <p className="text-xs text-slate-400 mt-1 mb-4">Ready for withdrawal</p>
+        <p className="text-xs text-slate-400 mt-1 mb-4">{t("readyForWithdrawal")}</p>
         <button className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 transition-colors font-bold text-sm flex items-center justify-center gap-2">
-          Withdraw Funds <ArrowRight size={16} />
+          {t("withdrawFunds")} <ArrowRight size={16} />
         </button>
       </Card>
 
@@ -185,17 +190,17 @@ export default function PerformanceDashboard() {
         <Card className="w-full rounded-3xl p-4 lg:p-6 border bg-white flex flex-col h-[300px] lg:h-auto lg:col-span-3">
           <div className="flex justify-between items-start mb-3 lg:mb-4">
             <div>
-              <h3 className="font-bold text-base lg:text-lg">Earnings Overview</h3>
+              <h3 className="font-bold text-base lg:text-lg">{t("earningsOverview")}</h3>
               <p className="text-[11px] lg:text-xs text-slate-400">
-                Your revenue growth over time
+                {t("revenueSubtitle")}
               </p>
             </div>
             <div className="hidden lg:flex gap-2">
               <button className="text-xs px-3 py-1 rounded-lg bg-slate-100 text-slate-500">
-                Week
+                {t("week")}
               </button>
               <button className="text-xs px-3 py-1 rounded-lg bg-slate-900 text-white">
-                Month
+                {t("month")}
               </button>
             </div>
           </div>
@@ -229,13 +234,13 @@ export default function PerformanceDashboard() {
             <div className="flex items-center gap-2 mb-1">
               <Wallet size={14} className="opacity-60" />
               <p className="text-[10px] uppercase font-bold tracking-wider opacity-60">
-                Available Balance
+                {t("availableBalance")}
               </p>
             </div>
             <h2 className="text-4xl font-bold mt-1">₹1,50,000</h2>
-            <p className="text-xs text-slate-400 mt-1 mb-4">Ready for withdrawal</p>
+            <p className="text-xs text-slate-400 mt-1 mb-4">{t("readyForWithdrawal")}</p>
             <button className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 transition-colors font-bold text-sm flex items-center justify-center gap-2">
-              Withdraw Funds <ArrowRight size={16} />
+              {t("withdrawFunds")} <ArrowRight size={16} />
             </button>
           </Card>
 
@@ -243,17 +248,17 @@ export default function PerformanceDashboard() {
           <Card className="p-6 rounded-3xl border bg-white flex-1">
             <div className="flex justify-between items-center mb-5">
               <div className="flex items-center gap-3">
-                <p className="font-bold text-base">Today</p>
+                <p className="font-bold text-base">{t("today")}</p>
                 <span className="bg-red-100 text-red-500 px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  3 ACTIONS
+                  {t("actionsCount", { count: 3 })}
                 </span>
               </div>
               <span className="text-xs text-slate-400">Mar 1</span>
             </div>
             <div className="space-y-4">
-              <ActionItem title="Submit BoAt Reel" sub="overdue · 1 day" alert actionLabel="Upload" />
-              <ActionItem title="Reply to Mamaearth" sub="brief clarification" actionLabel="Reply" />
-              <ActionItem title="Sugar Cosmetics" sub="post scheduled content" actionLabel="View Brief" />
+              <ActionItem title={t("actions.submitBoatReel")} sub={t("actions.overdueDay")} alert actionLabel={t("actions.upload")} />
+              <ActionItem title={t("actions.replyMamaearth")} sub={t("actions.briefClarification")} actionLabel={t("actions.reply")} />
+              <ActionItem title={t("actions.sugarCosmetics")} sub={t("actions.postScheduled")} actionLabel={t("actions.viewBrief")} />
             </div>
           </Card>
         </div>
@@ -263,17 +268,17 @@ export default function PerformanceDashboard() {
       <Card className="p-5 rounded-3xl border bg-white lg:hidden">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-3">
-            <p className="font-bold text-base">Today</p>
+            <p className="font-bold text-base">{t("today")}</p>
             <span className="bg-red-100 text-red-500 px-2 py-0.5 rounded-full text-[10px] font-bold">
-              3 ACTIONS
+              {t("actionsCount", { count: 3 })}
             </span>
           </div>
           <span className="text-xs text-slate-400">Mar 1</span>
         </div>
         <div className="space-y-4">
-          <ActionItem title="Submit BoAt Reel" sub="overdue · 1 day" alert actionLabel="Upload" />
-          <ActionItem title="Reply to Mamaearth" sub="brief clarification" actionLabel="Reply" />
-          <ActionItem title="Sugar Cosmetics" sub="post scheduled content" actionLabel="View Brief" />
+          <ActionItem title={t("actions.submitBoatReel")} sub={t("actions.overdueDay")} alert actionLabel={t("actions.upload")} />
+          <ActionItem title={t("actions.replyMamaearth")} sub={t("actions.briefClarification")} actionLabel={t("actions.reply")} />
+          <ActionItem title={t("actions.sugarCosmetics")} sub={t("actions.postScheduled")} actionLabel={t("actions.viewBrief")} />
         </div>
       </Card>
       </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -13,6 +14,7 @@ const StepForm3 = ({
   setStep,
   onSubmitCollab,
 }) => {
+  const t = useTranslations("StepFormsStepForm3");
   const COLLAB_TYPES = [
     "Paid Partnership",
     "Barter",
@@ -35,7 +37,7 @@ const StepForm3 = ({
       {/* Scrollable Content */}
       <div className="flex-1 max-h-[60vh] overflow-y-auto pr-2 space-y-4">
         <div>
-          <Label>Collaboration Types (multi-select)</Label>
+          <Label>{t("collaborationTypesLabel")}</Label>
           <div className="flex gap-2 flex-wrap mt-2">
             {COLLAB_TYPES.map((ct) => (
               <button
@@ -57,12 +59,12 @@ const StepForm3 = ({
         </div>
 
         <div>
-          <Label>Budget Range (optional)</Label>
+          <Label>{t("budgetRangeLabel")}</Label>
           <select
             {...collabForm.register("budgetRange")}
             className="w-full mt-2 p-2 rounded border"
           >
-            <option value="">Select</option>
+            <option value="">{t("selectPlaceholder")}</option>
             {BUDGETS.map((b) => (
               <option key={b}>{b}</option>
             ))}
@@ -70,12 +72,12 @@ const StepForm3 = ({
         </div>
 
         <div>
-          <Label>Availability</Label>
+          <Label>{t("availabilityLabel")}</Label>
           <select
             {...collabForm.register("availability")}
             className="w-full mt-2 p-2 rounded border"
           >
-            <option value="">Select</option>
+            <option value="">{t("selectPlaceholder")}</option>
             {AVAILABILITY.map((a) => (
               <option key={a}>{a}</option>
             ))}
@@ -83,7 +85,7 @@ const StepForm3 = ({
         </div>
 
         <div>
-          <Label>Portfolio URL (optional)</Label>
+          <Label>{t("portfolioUrlLabel")}</Label>
           <Input
             placeholder="https://"
             {...collabForm.register("portfolioUrl")}
@@ -91,7 +93,7 @@ const StepForm3 = ({
         </div>
 
         <div className="pb-2">
-          <Label>Sample Links (up to 3)</Label>
+          <Label>{t("sampleLinksLabel")}</Label>
           <div className="space-y-2 mt-2">
             {sampleFields.map((f, idx) => (
               <div key={f.id} className="flex gap-2">
@@ -105,7 +107,7 @@ const StepForm3 = ({
                   className="cursor-pointer"
                   onClick={() => removeSample(idx)}
                 >
-                  Remove
+                  {t("remove")}
                 </Button>
               </div>
             ))}
@@ -116,7 +118,7 @@ const StepForm3 = ({
                 type="button"
                 onClick={() => appendSample("")}
               >
-                Add Link
+                {t("addLink")}
               </Button>
             )}
           </div>
@@ -126,10 +128,10 @@ const StepForm3 = ({
       {/* Fixed Footer Buttons */}
       <div className="sticky bottom-0 left-0 bg-white border-t py-3 flex justify-between mt-2">
         <Button type="button" variant="ghost" onClick={() => setStep(2)}>
-          Back
+          {t("back")}
         </Button>
         <Button type="submit" disabled={saving}>
-          {saving ? "Saving..." : "Save & Continue"}
+          {saving ? t("saving") : t("saveAndContinue")}
         </Button>
       </div>
     </form>

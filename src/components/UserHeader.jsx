@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import AlertPopup from "@/components/AlertPopup";
 import { useAuth } from "@/context/AuthContext"; // Use the global hook
@@ -15,6 +16,7 @@ const PEXELS_BANNERS = [
 ];
 
 export default function UserHeader() {
+  const t = useTranslations("UserHeader");
   // Pull profile, role, and the setter from global context
   const { user, profile, setProfile, role } = useAuth();
 
@@ -61,7 +63,7 @@ export default function UserHeader() {
       setIsDialogOpen(false);
     } catch (err) {
       console.error("Failed to update banner URL:", err);
-      setPopup("Error updating banner. Please try again.");
+      setPopup(t("errors.updateBanner"));
     }
   };
 
@@ -92,13 +94,13 @@ export default function UserHeader() {
         />
 
         <h2 className="text-2xl font-semibold mt-3">{profile?.name}</h2>
-        <p className="text-gray-500 text-sm capitalize">{role} • Creator</p>
+        <p className="text-gray-500 text-sm capitalize">{t("roleCreator", { role })}</p>
         <p className="text-pink-500 text-sm">{profile?.instagram}</p>
       </div>
 
       {/* Preset Selection */}
       <div className="px-6 pb-6">
-        <p className="text-sm font-medium mb-3">Choose a banner preset</p>
+        <p className="text-sm font-medium mb-3">{t("chooseBannerPreset")}</p>
         <div className="grid grid-cols-4 gap-3">
           {PEXELS_BANNERS.map((item) => (
             <button
@@ -124,7 +126,7 @@ export default function UserHeader() {
       {isDialogOpen && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white rounded-2xl p-6 w-[90%] max-w-sm text-center shadow-2xl">
-            <h3 className="text-lg font-bold mb-2">Apply this banner?</h3>
+            <h3 className="text-lg font-bold mb-2">{t("applyBannerTitle")}</h3>
 
             {pendingBanner && (
               <div className="relative h-32 w-full rounded-xl overflow-hidden mb-6 border">
@@ -141,13 +143,13 @@ export default function UserHeader() {
                 onClick={cancelBannerChange}
                 className="w-full py-3 rounded-xl border font-medium hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 onClick={confirmBannerChange}
                 className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
               >
-                Confirm
+                {t("confirm")}
               </button>
             </div>
           </div>

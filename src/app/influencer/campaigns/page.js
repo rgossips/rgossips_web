@@ -17,8 +17,10 @@ import FilterModal, { FilterSidebar } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export default function CampaignsPage() {
+  const t = useTranslations("InfluencerCampaigns");
   const { profile, user } = useAuth();
   const searchParams = useSearchParams();
 
@@ -135,15 +137,15 @@ export default function CampaignsPage() {
         <div className="lg:hidden space-y-4 mb-2">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Campaigns</h1>
+              <h1 className="text-2xl font-bold text-slate-800">{t("title")}</h1>
               <p className="text-xs text-slate-400 mt-1 font-medium">
-                Track and manage collaborations
+                {t("subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => window.location.reload()}
-                title="Refresh status"
+                title={t("refreshStatus")}
                 className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white shadow-sm text-slate-500 hover:text-pink-500 cursor-pointer"
               >
                 <RefreshCw size={16} />
@@ -160,7 +162,7 @@ export default function CampaignsPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <Input
-              placeholder="Search campaigns..."
+              placeholder={t("searchCampaignsPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-11 bg-white border-none rounded-xl shadow-sm text-sm font-medium"
@@ -180,7 +182,7 @@ export default function CampaignsPage() {
                   : "text-slate-400"
               }`}
             >
-              {tab}
+              {t(`tabs.${tab}`)}
             </button>
           ))}
         </div>
@@ -199,7 +201,7 @@ export default function CampaignsPage() {
                 size={20}
               />
               <Input
-                placeholder="Search..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-12 h-14 bg-white border-none rounded-2xl shadow-sm text-sm font-medium"
@@ -208,7 +210,7 @@ export default function CampaignsPage() {
 
             {/* Status Tabs */}
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-              <h2 className="font-black text-slate-800 text-lg mb-4">Status</h2>
+              <h2 className="font-black text-slate-800 text-lg mb-4">{t("statusHeading")}</h2>
               <div className="space-y-1">
                 {["Active", "Applied", "Completed"].map((tab) => {
                   const count = tabCount(tab);
@@ -223,7 +225,7 @@ export default function CampaignsPage() {
                           : "text-slate-500 hover:bg-slate-50"
                       }`}
                     >
-                      <span>{tab}</span>
+                      <span>{t(`tabs.${tab}`)}</span>
                       <span
                         className={`text-[11px] font-black px-2 py-0.5 rounded-md min-w-6 text-center ${
                           isActive
@@ -257,10 +259,10 @@ export default function CampaignsPage() {
             {/* Desktop Header */}
             <div className="hidden lg:flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-800">
-                {activeTab} Campaigns
+                {t("headerCampaigns", { tab: t(`tabs.${activeTab}`) })}
               </h2>
               <span className="text-sm font-bold text-slate-400">
-                {filteredCampaigns.length} campaigns
+                {t("campaignCount", { count: filteredCampaigns.length })}
               </span>
             </div>
 
@@ -294,7 +296,7 @@ export default function CampaignsPage() {
                     {stat.icon}
                   </div>
                   <p className="text-lg font-black text-slate-800 leading-none">{stat.val}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">{stat.label}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">{t(`tabs.${stat.label}`)}</p>
                 </div>
               ))}
             </div>
@@ -302,7 +304,7 @@ export default function CampaignsPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <Loader2 size={28} className="animate-spin text-purple-500" />
-                <p className="text-sm font-bold text-slate-400">Loading campaigns...</p>
+                <p className="text-sm font-bold text-slate-400">{t("loading")}</p>
               </div>
             ) : (
               <>
@@ -314,7 +316,7 @@ export default function CampaignsPage() {
 
                 {filteredCampaigns.length === 0 && (
                   <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
-                    No {activeTab.toLowerCase()} campaigns found.
+                    {t("empty", { tab: t(`tabsLower.${activeTab}`) })}
                   </div>
                 )}
               </>
@@ -326,7 +328,7 @@ export default function CampaignsPage() {
       <AnimatePresence>
         {isFiltersOpen && (
           <FilterModal
-            title="Filter Campaigns"
+            title={t("filterTitle")}
             onClose={() => setIsFiltersOpen(false)}
             selectedCategories={selectedCategories}
             setSelectedCategories={setSelectedCategories}

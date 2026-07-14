@@ -9,100 +9,58 @@ import {
   ChevronDown,
   HelpCircle,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import SupportChat from "@/components/SupportChat";
 
 // FAQ content — single source of truth for this page. Kept in lock-step with
 // the SupportChat decision tree where possible so users see the same answers
 // whether they search here or chat there.
+// User-facing title/q/a live in the HelpAndSupport namespace, resolved at
+// render via the `key` fields below.
 const FAQ_GROUPS = [
   {
     icon: "🚀",
-    title: "Getting Started",
+    key: "gettingStarted",
     items: [
-      {
-        q: "How do I complete my profile?",
-        a: "Open Profile → My Information and fill in your name, categories, location and bio. The progress bar on the profile page tells you what's left.",
-      },
-      {
-        q: "How do campaigns work?",
-        a: "Browse open campaigns from the Campaigns tab, apply with a short pitch, and once a brand approves you, post the deliverables and link them inside the campaign detail page.",
-      },
-      {
-        q: "What's the requirement to receive deals?",
-        a: "A connected Instagram (Business / Creator account), a published media kit, and a rate card. The profile completion checklist shows you exactly what's pending.",
-      },
+      { key: "completeProfile" },
+      { key: "howCampaignsWork" },
+      { key: "dealRequirements" },
     ],
   },
   {
     icon: "📸",
-    title: "Profile & Instagram",
+    key: "profileInstagram",
     items: [
-      {
-        q: "How do I refresh my Instagram stats?",
-        a: "Profile → tap the Instagram card → Refresh. Stats sync at most once per hour to stay within Instagram's API limits.",
-      },
-      {
-        q: "Instagram says reconnect — why?",
-        a: "Instagram access tokens expire every 60 days. Opening Profile while signed in usually auto-renews the token; if it's already expired, you'll see a Reconnect button.",
-      },
-      {
-        q: "My reels aren't showing up",
-        a: "Reels only sync from Business / Creator accounts. Switch in the Instagram app under Settings → Account type, then come back and tap Refresh on your Profile.",
-      },
+      { key: "refreshStats" },
+      { key: "reconnect" },
+      { key: "reelsMissing" },
     ],
   },
   {
     icon: "💰",
-    title: "Payments",
+    key: "payments",
     items: [
-      {
-        q: "When do I get paid?",
-        a: "Once the brand approves your live links, payment moves to Payment Released. Funds typically reflect within 7–10 business days.",
-      },
-      {
-        q: "How do I add a UPI ID or bank account?",
-        a: "Profile → Payment Methods → Add New. The first method you add becomes your primary payout destination.",
-      },
-      {
-        q: "Payment hasn't arrived",
-        a: "If the campaign is on Payment Released for more than 14 business days, tap Request a callback in support — we'll chase the brand.",
-      },
+      { key: "whenPaid" },
+      { key: "addPayoutMethod" },
+      { key: "paymentMissing" },
     ],
   },
   {
     icon: "📦",
-    title: "Services & Orders",
+    key: "servicesOrders",
     items: [
-      {
-        q: "How does Get Custom Quote work?",
-        a: "Pick a service, submit the brief, and the seller replies with a quote. Once you accept and pay the advance via Stripe, work begins.",
-      },
-      {
-        q: "Where do I track my orders?",
-        a: "Profile → Service Requests, or jump straight to /influencer/services/orders. Each order has its own page with status and payment breakdown.",
-      },
-      {
-        q: "Can I request a revision?",
-        a: "Yes. While the draft is in review, open the order and tap Request Revision. You'll be asked to describe what to change.",
-      },
+      { key: "customQuote" },
+      { key: "trackOrders" },
+      { key: "requestRevision" },
     ],
   },
   {
     icon: "🛡️",
-    title: "Account & Privacy",
+    key: "accountPrivacy",
     items: [
-      {
-        q: "How do I take a break without losing my data?",
-        a: "Profile → Privacy & Security → Deactivate Account. Your data is preserved; signing in with the same phone reactivates everything.",
-      },
-      {
-        q: "How do I remove a device that's logged in?",
-        a: "Profile → Privacy & Security → Trusted Devices. Tap Remove on any device that isn't yours.",
-      },
-      {
-        q: "Where are notification preferences?",
-        a: "Profile → Notifications. Toggles persist immediately and the disabled categories stop appearing in your bell and on the notifications page.",
-      },
+      { key: "takeBreak" },
+      { key: "removeDevice" },
+      { key: "notificationPrefs" },
     ],
   },
 ];
@@ -110,16 +68,28 @@ const FAQ_GROUPS = [
 const SUPPORT_EMAIL = "grievance@rgossips.com";
 
 const HelpSupport = ({ onBack }) => {
+  const t = useTranslations("HelpAndSupport");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   // Client-side fuzzy: lowercases the query and matches on either the
-  // question or answer. Empty query shows everything.
+  // question or answer. Empty query shows everything. FAQ text is resolved
+  // from the namespace here so search runs against the translated strings.
   const filteredGroups = useMemo(() => {
+    const resolved = FAQ_GROUPS.map((g) => ({
+      icon: g.icon,
+      key: g.key,
+      title: t(`faq.${g.key}.title`),
+      items: g.items.map((it) => ({
+        key: it.key,
+        q: t(`faq.${g.key}.${it.key}.q`),
+        a: t(`faq.${g.key}.${it.key}.a`),
+      })),
+    }));
     const q = query.trim().toLowerCase();
-    if (!q) return FAQ_GROUPS;
-    return FAQ_GROUPS
+    if (!q) return resolved;
+    return resolved
       .map((g) => ({
         ...g,
         items: g.items.filter(
@@ -128,7 +98,7 @@ const HelpSupport = ({ onBack }) => {
         ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [query]);
+  }, [query, t]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 font-sans lg:pt-24">
@@ -144,7 +114,7 @@ const HelpSupport = ({ onBack }) => {
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
           <h1 className="text-xl font-black tracking-tight text-gray-900">
-            Help & Support
+            {t("title")}
           </h1>
         </div>
       </div>
@@ -160,7 +130,7 @@ const HelpSupport = ({ onBack }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search the FAQs…"
+            placeholder={t("searchPlaceholder")}
             className="w-full bg-white border border-gray-100 rounded-xl py-5 pl-14 pr-6 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-pink-50 transition-all placeholder:text-gray-300 shadow-sm"
           />
         </div>
@@ -168,19 +138,19 @@ const HelpSupport = ({ onBack }) => {
         {/* Contact Us */}
         <section className="space-y-4">
           <h3 className="text-[11px] font-black text-gray-400 ml-2 uppercase tracking-[0.15em]">
-            Contact Us
+            {t("contactUs")}
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <ContactCard
               icon={<MessageCircle size={22} />}
-              title="Live Chat"
-              subtitle="Chat with our team — usually replies instantly"
+              title={t("liveChat.title")}
+              subtitle={t("liveChat.subtitle")}
               iconBg="bg-blue-500"
               onClick={() => setChatOpen(true)}
             />
             <ContactCard
               icon={<Mail size={22} />}
-              title="Email Support"
+              title={t("emailSupport.title")}
               subtitle={SUPPORT_EMAIL}
               iconBg="bg-pink-500"
               href={`mailto:${SUPPORT_EMAIL}`}
@@ -191,20 +161,20 @@ const HelpSupport = ({ onBack }) => {
         {/* FAQ */}
         <section className="space-y-6">
           <h3 className="text-[11px] font-black text-gray-400 ml-2 uppercase tracking-[0.15em]">
-            Frequently Asked Questions
+            {t("faqHeading")}
           </h3>
 
           {filteredGroups.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl border border-gray-50">
               <HelpCircle size={28} className="text-gray-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-gray-400">No matches for "{query}"</p>
-              <p className="text-[11px] text-gray-300 mt-1">Try a different keyword or start a live chat.</p>
+              <p className="text-sm font-bold text-gray-400">{t("noMatches", { query })}</p>
+              <p className="text-[11px] text-gray-300 mt-1">{t("noMatchesHint")}</p>
             </div>
           ) : (
             filteredGroups.map((group) => (
-              <FAQGroup key={group.title} icon={group.icon} title={group.title}>
+              <FAQGroup key={group.key} icon={group.icon} title={group.title}>
                 {group.items.map((item, i) => {
-                  const id = `${group.title}-${i}`;
+                  const id = `${group.key}-${i}`;
                   return (
                     <FAQItem
                       key={id}
@@ -228,11 +198,10 @@ const HelpSupport = ({ onBack }) => {
             </div>
             <div className="space-y-1">
               <h4 className="text-base font-black text-gray-900">
-                Still stuck?
+                {t("stillStuck.title")}
               </h4>
               <p className="text-[11px] font-bold text-gray-400 leading-relaxed">
-                Open a chat with our support team — for anything an FAQ
-                doesn't cover.
+                {t("stillStuck.subtitle")}
               </p>
             </div>
           </div>
@@ -241,7 +210,7 @@ const HelpSupport = ({ onBack }) => {
               onClick={() => setChatOpen(true)}
               className="px-6 py-4 cursor-pointer bg-linear-to-b from-[#B68C4A] to-[#9A7238] text-white rounded-[1.25rem] text-sm font-black shadow-xl active:scale-[0.98] transition-all"
             >
-              Open Live Chat
+              {t("openLiveChat")}
             </button>
           </div>
         </div>

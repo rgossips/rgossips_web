@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ const SignUpForm = ({
   initialName = "",
   initialReferralCode = "",
 }) => {
+  const t = useTranslations("Auth.signUpForm");
   const supabase = createClient();
   const [formData, setFormData] = useState({
     name: initialName,
@@ -70,7 +72,7 @@ const SignUpForm = ({
       // Check phone uniqueness first
       const { data: uniqueCheck } = await supabase.functions.invoke("check-uniqueness", { body: { phone: formData.phone } });
       if (uniqueCheck?.conflicts?.includes("phone")) {
-        setLocalError("This phone number is already registered. Please sign in instead.");
+        setLocalError(t("errors.phoneRegistered"));
         setOtpLoading(false);
         return;
       }
@@ -78,7 +80,7 @@ const SignUpForm = ({
       setOtpSent(true);
       setTimer(60);
     } catch (err) {
-      setLocalError(err.message || "Failed to send OTP");
+      setLocalError(err.message || t("errors.sendOtpFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -92,7 +94,7 @@ const SignUpForm = ({
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err) {
-      setLocalError(err.message || "Invalid OTP");
+      setLocalError(err.message || t("errors.invalidOtp"));
     } finally {
       setVerifyLoading(false);
     }
@@ -106,7 +108,7 @@ const SignUpForm = ({
       setTimer(60);
       setOtp("");
     } catch (err) {
-      setLocalError(err.message || "Failed to resend OTP");
+      setLocalError(err.message || t("errors.resendFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -114,15 +116,15 @@ const SignUpForm = ({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError("Please enter your full name");
+      setLocalError(t("errors.nameRequired"));
       return;
     }
     if (!otpVerified) {
-      setLocalError("Please verify your phone number");
+      setLocalError(t("errors.verifyPhone"));
       return;
     }
     if (!consentAgreed) {
-      setLocalError("Please accept the Influencer Consent Policy to continue");
+      setLocalError(t("errors.acceptConsent"));
       return;
     }
     onSubmit({ ...formData });
@@ -133,8 +135,8 @@ const SignUpForm = ({
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-1">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">Create Account</h2>
-        <p className="text-sm text-slate-500">Fill in your details to get started</p>
+        <h2 className="text-2xl font-bold text-slate-900">{t("title")}</h2>
+        <p className="text-sm text-slate-500">{t("subtitle")}</p>
       </div>
 
       {displayError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{displayError}</div>}
@@ -152,7 +154,7 @@ const SignUpForm = ({
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-900 truncate">@{instagramProfile.username}</p>
-              <p className="text-[10px] text-slate-400">Instagram connected</p>
+              <p className="text-[10px] text-slate-400">{t("instagramConnected")}</p>
             </div>
             <CheckCircle2 size={18} className="text-green-500 shrink-0" />
           </div>
@@ -160,16 +162,16 @@ const SignUpForm = ({
 
         {/* Full Name */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">Full Name</Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">{t("fullName")}</Label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
-            <Input placeholder="Your full name" name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
+            <Input placeholder={t("fullNamePlaceholder")} name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
           </div>
         </div>
 
         {/* Phone + OTP */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">Mobile Number</Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">{t("mobileNumber")}</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 border-r pr-2 border-slate-200">
@@ -177,7 +179,7 @@ const SignUpForm = ({
               </div>
               <Input
                 type="tel"
-                placeholder="Enter phone number"
+                placeholder={t("phonePlaceholder")}
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
@@ -187,7 +189,7 @@ const SignUpForm = ({
             </div>
             {!otpVerified && !otpSent && (
               <Button onClick={handleSendOtp} disabled={formData.phone.length < 10 || otpLoading} className="h-12 px-4 rounded-xl btn-purple text-sm font-semibold cursor-pointer whitespace-nowrap">
-                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : "Send OTP"}
+                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : t("sendOtp")}
               </Button>
             )}
             {otpVerified && (
@@ -201,7 +203,7 @@ const SignUpForm = ({
           {otpSent && !otpVerified && (
             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <p className="text-[11px] text-center text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                Your OTP just slid into WhatsApp — say hi to <span className="font-bold">Rgossips Media</span>!
+                {t.rich("whatsappHint", { strong: (c) => <span className="font-bold">{c}</span> })}
               </p>
               <div className="flex justify-center">
                 <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
@@ -215,16 +217,19 @@ const SignUpForm = ({
               <div className="flex flex-col items-center gap-2">
                 <Button onClick={handleVerifyOtp} disabled={otp.length < 6 || verifyLoading} className="h-9 px-8 rounded-lg btn-purple text-sm font-semibold cursor-pointer">
                   {verifyLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
-                  Verify
+                  {t("verify")}
                 </Button>
                 <div className="text-center">
                   {timer > 0 ? (
                     <p className="text-xs text-slate-400">
-                      Resend in <span className="text-[#6347F9] font-bold">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>
+                      {t.rich("resendIn", {
+                        time: `${Math.floor(timer / 60)}:${String(timer % 60).padStart(2, "0")}`,
+                        b: (c) => <span className="text-[#6347F9] font-bold">{c}</span>,
+                      })}
                     </p>
                   ) : (
                     <button className="text-xs cursor-pointer text-[#6347F9] font-bold hover:underline" onClick={handleResend}>
-                      Resend OTP
+                      {t("resend")}
                     </button>
                   )}
                 </div>
@@ -236,12 +241,12 @@ const SignUpForm = ({
         {/* Referral code (optional) — prefilled from a /login?ref= link. */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">
-            Referral Code <span className="text-slate-400 font-normal">(optional)</span>
+            {t("referralCode")} <span className="text-slate-400 font-normal">{t("optional")}</span>
           </Label>
           <div className="relative">
             <Gift className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
             <Input
-              placeholder="Enter referral code"
+              placeholder={t("referralPlaceholder")}
               name="referralCode"
               value={formData.referralCode}
               onChange={handleChange}
@@ -250,7 +255,7 @@ const SignUpForm = ({
           </div>
           {formData.referralCode?.trim() && (
             <p className="text-[11px] text-emerald-600 font-medium ml-1">
-              Referral code added 🎉
+              {t("referralAdded")}
             </p>
           )}
         </div>
@@ -265,16 +270,18 @@ const SignUpForm = ({
           className="mt-0.5 w-4 h-4 accent-[#6347F9] cursor-pointer"
         />
         <span className="text-[12px] text-slate-600 leading-snug">
-          I have read and agree to the{" "}
-          <a
-            href="/consent/influencer"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#6347F9] font-bold hover:underline"
-          >
-            Influencer Consent Policy
-          </a>
-          , Terms of Service, Privacy Policy and Community Guidelines of Recent Gossips.
+          {t.rich("consent", {
+            link: (c) => (
+              <a
+                href="/consent/influencer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#6347F9] font-bold hover:underline"
+              >
+                {c}
+              </a>
+            ),
+          })}
         </span>
       </label>
 
@@ -288,10 +295,10 @@ const SignUpForm = ({
           {loading ? (
             <>
               <Loader2 size={18} className="animate-spin mr-2" />
-              Creating account...
+              {t("creating")}
             </>
           ) : (
-            "Create Account"
+            t("title")
           )}
         </Button>
       </div>

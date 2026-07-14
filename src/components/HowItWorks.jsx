@@ -2,34 +2,27 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserPlus, Rocket, Users, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useGlobal } from "@/context/GlobalContext";
 
 const brandSteps = [
   {
-    title: "Create Brand Profile",
-    description:
-      "Sign up in minutes and create your brand profile with your campaign goals.",
+    key: "brand.createProfile",
     icon: <UserPlus className="w-6 h-6 text-indigo-600" />,
     side: "left",
   },
   {
-    title: "Launch Campaign",
-    description:
-      "Set your brief, budget, deliverables, and timeline. Go live instantly.",
+    key: "brand.launchCampaign",
     icon: <Rocket className="w-6 h-6 text-indigo-600" />,
     side: "right",
   },
   {
-    title: "Get Matched & Negotiate",
-    description:
-      "AI matches you with verified creators. Chat, negotiate, and finalize deals.",
+    key: "brand.getMatched",
     icon: <Users className="w-6 h-6 text-indigo-600" />,
     side: "left",
   },
   {
-    title: "Track, Approve & Pay",
-    description:
-      "Monitor campaign performance in real-time. Approve content and release payments.",
+    key: "brand.trackApprove",
     icon: <CheckCircle2 className="w-6 h-6 text-indigo-600" />,
     side: "right",
   },
@@ -37,35 +30,29 @@ const brandSteps = [
 
 const influencerSteps = [
   {
-    title: "Join the Network",
-    description:
-      "Complete your profile and connect your social accounts for verification.",
+    key: "influencer.joinNetwork",
     icon: <UserPlus className="w-6 h-6 text-indigo-600" />,
     side: "left",
   },
   {
-    title: "Browse Campaigns",
-    description:
-      "Explore available briefs from top brands that match your niche.",
+    key: "influencer.browseCampaigns",
     icon: <Rocket className="w-6 h-6 text-indigo-600" />,
     side: "right",
   },
   {
-    title: "Submit Proposals",
-    description: "Apply to campaigns with your creative ideas and pricing.",
+    key: "influencer.submitProposals",
     icon: <Users className="w-6 h-6 text-indigo-600" />,
     side: "left",
   },
   {
-    title: "Create & Earn",
-    description:
-      "Post your content, get brand approval, and receive direct payments.",
+    key: "influencer.createEarn",
     icon: <CheckCircle2 className="w-6 h-6 text-indigo-600" />,
     side: "right",
   },
 ];
 
 export default function HowItWorks() {
+  const t = useTranslations("HowItWorks");
   const { type } = useGlobal();
   const [activeTab, setActiveTab] = useState("brands");
 
@@ -84,9 +71,9 @@ export default function HowItWorks() {
     <section className="py-14 px-6 bg-[#F8F7FF]" id="works">
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-4xl font-extrabold text-slate-900 mb-2">
-          How It Works
+          {t("header.title")}
         </h2>
-        <p className="text-slate-500 mb-6">Get started in minutes, not days</p>
+        <p className="text-slate-500 mb-6">{t("header.subtitle")}</p>
 
         {/* Toggle Switch */}
         <div className="inline-flex p-1 bg-slate-100 rounded-full mb-8">
@@ -98,7 +85,7 @@ export default function HowItWorks() {
                 : "text-slate-500"
             }`}
           >
-            For Brands
+            {t("tabs.brands")}
           </button>
           <button
             onClick={() => setActiveTab("influencers")}
@@ -108,7 +95,7 @@ export default function HowItWorks() {
                 : "text-slate-500"
             }`}
           >
-            For Influencers
+            {t("tabs.influencers")}
           </button>
         </div>
 
@@ -135,6 +122,7 @@ export default function HowItWorks() {
 }
 
 function StepCard({ step, index }) {
+  const t = useTranslations("HowItWorks");
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -149,8 +137,12 @@ function StepCard({ step, index }) {
         </div>
         <div className="p-2 bg-indigo-50 rounded-xl shrink-0">{step.icon}</div>
       </div>
-      <h3 className="text-base font-bold text-slate-900 mb-1.5">{step.title}</h3>
-      <p className="text-slate-500 text-sm leading-relaxed">{step.description}</p>
+      <h3 className="text-base font-bold text-slate-900 mb-1.5">
+        {t(`${step.key}.title`)}
+      </h3>
+      <p className="text-slate-500 text-sm leading-relaxed">
+        {t(`${step.key}.description`)}
+      </p>
     </motion.div>
   );
 }

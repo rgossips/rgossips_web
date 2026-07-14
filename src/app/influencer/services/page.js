@@ -2,18 +2,20 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Search, Star, ChevronLeft, Loader2 } from "lucide-react";
 import { fetchServices, formatINR, iconForName } from "@/lib/services";
 
 const PRICE_BANDS = [
-  { id: "any", label: "Any price", test: () => true },
-  { id: "under-3k", label: "Under ₹3,000", test: (p) => p < 3000 },
-  { id: "3k-7k", label: "₹3,000 – ₹7,000", test: (p) => p >= 3000 && p < 7000 },
-  { id: "7k-15k", label: "₹7,000 – ₹15,000", test: (p) => p >= 7000 && p < 15000 },
-  { id: "15k-plus", label: "₹15,000+", test: (p) => p >= 15000 },
+  { id: "any", test: () => true },
+  { id: "under-3k", test: (p) => p < 3000 },
+  { id: "3k-7k", test: (p) => p >= 3000 && p < 7000 },
+  { id: "7k-15k", test: (p) => p >= 7000 && p < 15000 },
+  { id: "15k-plus", test: (p) => p >= 15000 },
 ];
 
 export default function ServicesPage() {
+  const t = useTranslations("InfluencerServices");
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
@@ -74,16 +76,16 @@ export default function ServicesPage() {
             <button
               onClick={() => router.back()}
               className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-full"
-              aria-label="Back"
+              aria-label={t("back")}
             >
               <ChevronLeft size={18} />
             </button>
             <div>
               <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-tight">
-                All Services
+                {t("title")}
               </h1>
               <p className="text-xs text-slate-400 font-medium">
-                Creator services brands are booking now
+                {t("subtitleMobile")}
               </p>
             </div>
           </div>
@@ -95,7 +97,7 @@ export default function ServicesPage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search services…"
+              placeholder={t("searchPlaceholderMobile")}
               className="w-full pl-10 h-11 bg-white border-none rounded-xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
             />
           </div>
@@ -126,16 +128,16 @@ export default function ServicesPage() {
               <button
                 onClick={() => router.back()}
                 className="p-2.5 cursor-pointer bg-pink-50 text-pink-500 rounded-full hover:bg-pink-100 transition-colors"
-                aria-label="Back"
+                aria-label={t("back")}
               >
                 <ArrowLeft size={16} />
               </button>
               <div>
                 <h1 className="text-xl font-black text-slate-900 leading-tight tracking-tight">
-                  All Services
+                  {t("title")}
                 </h1>
                 <p className="text-[11px] text-slate-400 font-medium">
-                  Creator services brands book
+                  {t("subtitleDesktop")}
                 </p>
               </div>
             </div>
@@ -150,7 +152,7 @@ export default function ServicesPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search…"
+                placeholder={t("searchPlaceholder")}
                 className="w-full pl-12 h-14 bg-white border-none rounded-2xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-300"
               />
             </div>
@@ -158,13 +160,13 @@ export default function ServicesPage() {
             {/* Categories */}
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-black text-slate-800 text-base">Categories</h2>
+                <h2 className="font-black text-slate-800 text-base">{t("categories")}</h2>
                 {selectedTags.length > 0 && (
                   <button
                     onClick={() => setSelectedTags([])}
                     className="text-[11px] font-bold text-slate-400 hover:text-pink-500 cursor-pointer"
                   >
-                    Clear
+                    {t("clear")}
                   </button>
                 )}
               </div>
@@ -190,7 +192,7 @@ export default function ServicesPage() {
 
             {/* Price band */}
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
-              <h2 className="font-black text-slate-800 text-base mb-4">Price</h2>
+              <h2 className="font-black text-slate-800 text-base mb-4">{t("price")}</h2>
               <div className="space-y-1">
                 {PRICE_BANDS.map((b) => (
                   <button
@@ -202,7 +204,7 @@ export default function ServicesPage() {
                         : "text-slate-500 hover:bg-slate-50"
                     }`}
                   >
-                    {b.label}
+                    {t(`priceBands.${b.id}`)}
                     {priceBand === b.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                   </button>
                 ))}
@@ -214,7 +216,7 @@ export default function ServicesPage() {
                 onClick={clearFilters}
                 className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-xs font-bold text-slate-500 hover:text-pink-500 hover:border-pink-200 cursor-pointer"
               >
-                Reset all filters
+                {t("resetFilters")}
               </button>
             )}
           </aside>
@@ -224,10 +226,10 @@ export default function ServicesPage() {
             {/* Desktop header */}
             <div className="hidden lg:flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-800">
-                {selectedTags.length === 1 ? selectedTags[0] : "Services"}
+                {selectedTags.length === 1 ? selectedTags[0] : t("servicesHeading")}
               </h2>
               <span className="text-sm font-bold text-slate-400">
-                {filtered.length} {filtered.length === 1 ? "service" : "services"}
+                {t("serviceCount", { count: filtered.length })}
               </span>
             </div>
 
@@ -243,7 +245,7 @@ export default function ServicesPage() {
                       : "bg-white text-slate-600 border border-slate-200"
                   }`}
                 >
-                  {b.label}
+                  {t(`priceBands.${b.id}`)}
                 </button>
               ))}
             </div>
@@ -254,7 +256,7 @@ export default function ServicesPage() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
-                No services match your filters.
+                {t("empty")}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -271,6 +273,7 @@ export default function ServicesPage() {
 }
 
 function ServiceCard({ service }) {
+  const t = useTranslations("InfluencerServices");
   const router = useRouter();
   const Icon = iconForName(service.icon_name);
   const open = () => router.push(`/influencer/services/${service.slug}`);
@@ -329,7 +332,7 @@ function ServiceCard({ service }) {
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-              Starting at
+              {t("startingAt")}
             </p>
             <p className="text-lg font-black text-slate-900 leading-tight">
               {formatINR(service.price_starting)}
@@ -347,7 +350,7 @@ function ServiceCard({ service }) {
             }}
             className="btn-purple px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-md shadow-pink-100 cursor-pointer"
           >
-            Get Quote
+            {t("getQuote")}
           </button>
         </div>
       </div>

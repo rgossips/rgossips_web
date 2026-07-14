@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 const RUPEE = "₹";
 
@@ -89,6 +90,7 @@ function buildChartPaths(values, w = 400, h = 160, padX = 10, padBot = 35, padTo
 }
 
 const AnalyticsPage = ({ onBack }) => {
+  const t = useTranslations("AnalyticsPage");
   const { user, profile } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -243,10 +245,10 @@ const AnalyticsPage = ({ onBack }) => {
           </button>
           <div>
             <h1 className="text-xl lg:text-[26px] font-bold text-[#1A1A2E] tracking-tight leading-tight">
-              Campaign Analytics
+              {t("title")}
             </h1>
             <p className="text-xs lg:text-[13px] text-[#6B7280] mt-0.5">
-              Your performance across all campaigns on RGossips
+              {t("subtitle")}
             </p>
           </div>
         </div>
@@ -258,42 +260,42 @@ const AnalyticsPage = ({ onBack }) => {
           <KPI
             iconClass="bg-gradient-to-br from-[#34D399] to-[#10B981]"
             icon={<Coins size={18} />}
-            label="Total earnings"
+            label={t("kpi.totalEarnings")}
             value={formatINR(aggregates.totalEarnings)}
             sub={
               aggregates.earningsThisMonth > 0 ? (
                 <span className="text-[#10B981] flex items-center gap-1">
-                  <TrendingUp size={11} /> +{formatINR(aggregates.earningsThisMonth)} this month
+                  <TrendingUp size={11} /> {t("kpi.thisMonthGain", { amount: formatINR(aggregates.earningsThisMonth) })}
                 </span>
               ) : (
-                <span className="text-[#6B7280]">no earnings this month</span>
+                <span className="text-[#6B7280]">{t("kpi.noEarningsThisMonth")}</span>
               )
             }
           />
           <KPI
             iconClass="bg-gradient-to-br from-[#FF5C8A] to-[#E94560]"
             icon={<Eye size={18} />}
-            label="Total reach"
+            label={t("kpi.totalReach")}
             value={formatCount(aggregates.totalReach)}
             sub={
               <span className="text-[#6B7280]">
-                across {aggregates.myCount} {aggregates.myCount === 1 ? "campaign" : "campaigns"}
+                {t("kpi.acrossCampaigns", { count: aggregates.myCount })}
               </span>
             }
           />
           <KPI
             iconClass="bg-gradient-to-br from-[#A78BFA] to-[#7F47CD]"
             icon={<Heart size={18} />}
-            label="Avg engagement"
+            label={t("kpi.avgEngagement")}
             value={`${engagementPct.toFixed(1)}%`}
-            sub={<span className="text-[#6B7280]">on your Instagram</span>}
+            sub={<span className="text-[#6B7280]">{t("kpi.onYourInstagram")}</span>}
           />
           <KPI
             iconClass="bg-gradient-to-br from-[#FBBF24] to-[#D97706]"
             icon={<Star size={18} />}
-            label="Brand rating"
+            label={t("kpi.brandRating")}
             value={"—"}
-            sub={<span className="text-[#6B7280]">no reviews yet</span>}
+            sub={<span className="text-[#6B7280]">{t("kpi.noReviewsYet")}</span>}
           />
         </div>
 
@@ -301,8 +303,8 @@ const AnalyticsPage = ({ onBack }) => {
         <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
           <Card>
             <CardHeader
-              title="Earnings over time"
-              sub="last 6 months on RGossips"
+              title={t("earnings.overTime")}
+              sub={t("earnings.last6Months")}
               right={
                 aggregates.earningsTrend != null && (
                   <span className="bg-gradient-to-r from-[#E94560] to-[#7F47CD] text-white text-[11px] font-semibold px-3 py-1 rounded-xl">
@@ -336,7 +338,7 @@ const AnalyticsPage = ({ onBack }) => {
                 </svg>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs text-[#9CA3AF]">
-                  No completed campaigns yet
+                  {t("earnings.noCompleted")}
                 </div>
               )}
             </div>
@@ -348,10 +350,10 @@ const AnalyticsPage = ({ onBack }) => {
           </Card>
 
           <Card>
-            <CardHeader title="Earnings by category" sub="where you earn most" />
+            <CardHeader title={t("earnings.byCategory")} sub={t("earnings.whereYouEarnMost")} />
             {aggregates.earningsByCategory.length === 0 ? (
               <div className="text-xs text-[#9CA3AF] py-6 text-center">
-                Complete a campaign to see your category split.
+                {t("earnings.categoryEmpty")}
               </div>
             ) : (
               aggregates.earningsByCategory.map((c, i) => (
@@ -364,7 +366,7 @@ const AnalyticsPage = ({ onBack }) => {
                   <div>
                     <div className="text-sm font-semibold text-[#1A1A2E]">{c.name}</div>
                     <div className="text-xs text-[#9CA3AF] mt-0.5">
-                      {c.count} {c.count === 1 ? "campaign" : "campaigns"}
+                      {t("campaignCount", { count: c.count })}
                     </div>
                   </div>
                   <div className="text-[15px] font-bold bg-gradient-to-r from-[#E94560] to-[#7F47CD] bg-clip-text text-transparent">
@@ -379,22 +381,22 @@ const AnalyticsPage = ({ onBack }) => {
         {/* Demographics + Discovery */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
-            <CardHeader title="Audience demographics" sub="from your Instagram account" />
+            <CardHeader title={t("demographics.title")} sub={t("demographics.sub")} />
             {Object.keys(audience).length === 0 ? (
               <div className="text-xs text-[#9CA3AF] py-6 text-center">
-                Refresh your Instagram in Profile to see audience insights.
+                {t("demographics.empty")}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <DemoTitle>Gender</DemoTitle>
-                  <DemoRow label="Female" pct={gender.female || 0} />
-                  <DemoRow label="Male" pct={gender.male || 0} />
-                  <DemoRow label="Other" pct={gender.other || 0} />
+                  <DemoTitle>{t("demographics.gender")}</DemoTitle>
+                  <DemoRow label={t("demographics.female")} pct={gender.female || 0} />
+                  <DemoRow label={t("demographics.male")} pct={gender.male || 0} />
+                  <DemoRow label={t("demographics.other")} pct={gender.other || 0} />
 
-                  <DemoTitle className="mt-4">Age</DemoTitle>
+                  <DemoTitle className="mt-4">{t("demographics.age")}</DemoTitle>
                   {ageRanges.length === 0 ? (
-                    <div className="text-[11px] text-[#9CA3AF]">Not enough data</div>
+                    <div className="text-[11px] text-[#9CA3AF]">{t("demographics.notEnoughData")}</div>
                   ) : (
                     ageRanges.slice(0, 5).map((a) => (
                       <DemoRow key={a.range} label={a.range} pct={a.pct || 0} />
@@ -402,18 +404,18 @@ const AnalyticsPage = ({ onBack }) => {
                   )}
                 </div>
                 <div>
-                  <DemoTitle>Top cities</DemoTitle>
+                  <DemoTitle>{t("demographics.topCities")}</DemoTitle>
                   {topCities.length === 0 ? (
-                    <div className="text-[11px] text-[#9CA3AF]">Not enough data</div>
+                    <div className="text-[11px] text-[#9CA3AF]">{t("demographics.notEnoughData")}</div>
                   ) : (
                     topCities.slice(0, 4).map((c) => (
                       <DemoRow key={c.name} label={c.name} pct={c.pct || 0} />
                     ))
                   )}
 
-                  <DemoTitle className="mt-4">Countries</DemoTitle>
+                  <DemoTitle className="mt-4">{t("demographics.countries")}</DemoTitle>
                   {topCountries.length === 0 ? (
-                    <div className="text-[11px] text-[#9CA3AF]">Not enough data</div>
+                    <div className="text-[11px] text-[#9CA3AF]">{t("demographics.notEnoughData")}</div>
                   ) : (
                     topCountries.slice(0, 3).map((c) => (
                       <DemoRow key={c.name} label={c.name} pct={c.pct || 0} />
@@ -425,29 +427,29 @@ const AnalyticsPage = ({ onBack }) => {
           </Card>
 
           <Card>
-            <CardHeader title="Discovery & growth" sub="across your campaigns" />
+            <CardHeader title={t("discovery.title")} sub={t("discovery.sub")} />
             <DiscoveryRow
               iconClass="bg-gradient-to-br from-[#FF5C8A] to-[#E94560]"
               icon={<Eye size={16} />}
-              label="Followers"
+              label={t("discovery.followers")}
               value={formatCount(profile?.followers_count || 0)}
-              sub={<span className="text-[#9CA3AF]">on Instagram</span>}
+              sub={<span className="text-[#9CA3AF]">{t("discovery.onInstagram")}</span>}
             />
             <DiscoveryRow
               iconClass="bg-gradient-to-br from-[#A78BFA] to-[#7F47CD]"
               icon={<Search size={16} />}
-              label="Accounts engaged"
+              label={t("discovery.accountsEngaged")}
               value={formatCount(profile?.accounts_engaged || 0)}
-              sub={<span className="text-[#9CA3AF]">last 28 days</span>}
+              sub={<span className="text-[#9CA3AF]">{t("discovery.last28Days")}</span>}
             />
             <DiscoveryRow
               iconClass="bg-gradient-to-br from-[#34D399] to-[#10B981]"
               icon={<Target size={16} />}
-              label="Application accept rate"
+              label={t("discovery.acceptRate")}
               value={`${aggregates.acceptRate}%`}
               sub={
                 <span className="text-[#9CA3AF]">
-                  {aggregates.approvedCount} of {aggregates.myCount}
+                  {t("discovery.ofCount", { approved: aggregates.approvedCount, my: aggregates.myCount })}
                 </span>
               }
             />
@@ -457,16 +459,16 @@ const AnalyticsPage = ({ onBack }) => {
         {/* Brands worked with */}
         <Card>
           <CardHeader
-            title="Brands you've worked with"
+            title={t("brands.title")}
             sub={
               aggregates.brands.length === 0
-                ? "no collaborations yet"
-                : `${aggregates.brands.length} brand${aggregates.brands.length === 1 ? "" : "s"} · ${aggregates.repeatCount} repeat collaboration${aggregates.repeatCount === 1 ? "" : "s"}`
+                ? t("brands.empty")
+                : t("brands.sub", { brands: aggregates.brands.length, repeat: aggregates.repeatCount })
             }
           />
           {aggregates.brands.length === 0 ? (
             <div className="text-xs text-[#9CA3AF] py-6 text-center">
-              Get approved on your first campaign to see brands here.
+              {t("brands.emptyState")}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -480,28 +482,28 @@ const AnalyticsPage = ({ onBack }) => {
         {/* Recent campaigns */}
         <Card>
           <CardHeader
-            title="Recent campaigns"
+            title={t("recent.title")}
             sub={
               aggregates.recent.length === 0
-                ? "no campaigns yet"
-                : `your latest ${aggregates.recent.length} campaign${aggregates.recent.length === 1 ? "" : "s"}`
+                ? t("recent.empty")
+                : t("recent.sub", { count: aggregates.recent.length })
             }
           />
           {aggregates.recent.length === 0 ? (
             <div className="text-xs text-[#9CA3AF] py-6 text-center">
-              Apply to a campaign to see it here.
+              {t("recent.emptyState")}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-[13px] border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    <Th>Campaign</Th>
-                    <Th>Brand</Th>
-                    <Th>Status</Th>
-                    <Th align="right">Reach</Th>
-                    <Th align="right">Engagement</Th>
-                    <Th align="right">Earnings</Th>
+                    <Th>{t("recent.colCampaign")}</Th>
+                    <Th>{t("recent.colBrand")}</Th>
+                    <Th>{t("recent.colStatus")}</Th>
+                    <Th align="right">{t("recent.colReach")}</Th>
+                    <Th align="right">{t("recent.colEngagement")}</Th>
+                    <Th align="right">{t("recent.colEarnings")}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -515,7 +517,7 @@ const AnalyticsPage = ({ onBack }) => {
         </Card>
 
         {loading && (
-          <div className="text-xs text-[#9CA3AF] text-center py-2">Loading your campaign data…</div>
+          <div className="text-xs text-[#9CA3AF] text-center py-2">{t("loading")}</div>
         )}
       </div>
     </div>
@@ -584,6 +586,7 @@ const DiscoveryRow = ({ iconClass, icon, label, value, sub }) => (
 );
 
 const BrandTile = ({ brand, index }) => {
+  const t = useTranslations("AnalyticsPage");
   const gradient = BRAND_GRADIENTS[index % BRAND_GRADIENTS.length];
   return (
     <div className="bg-[#FAFBFC] rounded-2xl p-3.5 text-center border border-[#EEF1F6] relative">
@@ -609,7 +612,7 @@ const BrandTile = ({ brand, index }) => {
       )}
       <div className="text-[13px] font-semibold text-[#1A1A2E] truncate">{brand.name}</div>
       <div className="text-[11px] text-[#9CA3AF] mt-0.5">
-        {brand.count} {brand.count === 1 ? "campaign" : "campaigns"}
+        {t("campaignCount", { count: brand.count })}
       </div>
     </div>
   );

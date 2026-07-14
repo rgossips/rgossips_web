@@ -2,11 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
 
 // Magazine-style editorial layout — Fraunces serif, paper background,
 // hard ink borders and offset shadows. Read-only.
 export default function TemplateEditorialNoir({ profile }) {
+  const t = useTranslations("MediaKitTemplatesTemplateEditorialNoir");
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -26,8 +28,8 @@ export default function TemplateEditorialNoir({ profile }) {
       <div className="max-w-[980px] mx-auto px-6 py-10 lg:py-12">
         {/* Masthead */}
         <div className="flex justify-between items-baseline gap-3 flex-wrap pb-3" style={{ borderBottom: `3px solid ${ink}` }}>
-          <span className="text-[11px] tracking-[.35em] uppercase font-bold">The Media Kit</span>
-          <span className="text-[11px] tracking-[.2em] uppercase" style={{ color: muted }}>Vol. 01 — {p.primaryCategory}</span>
+          <span className="text-[11px] tracking-[.35em] uppercase font-bold">{t("masthead")}</span>
+          <span className="text-[11px] tracking-[.2em] uppercase" style={{ color: muted }}>{t("volume", { category: p.primaryCategory })}</span>
         </div>
         <hr className="mt-2 mb-7" style={{ borderTop: `1px solid ${ink}` }} />
 
@@ -41,7 +43,7 @@ export default function TemplateEditorialNoir({ profile }) {
             )}
           </div>
           <div>
-            <div className="text-[12px] tracking-[.3em] uppercase font-bold mb-2" style={{ color: pink }}>Creator Profile</div>
+            <div className="text-[12px] tracking-[.3em] uppercase font-bold mb-2" style={{ color: pink }}>{t("creatorProfile")}</div>
             <h1 style={SER} className="font-black tracking-tight leading-[.92] text-[clamp(40px,8vw,80px)]">
               {p.name.split(" ").slice(0, 1)}<br />{p.name.split(" ").slice(1).join(" ") || ""}
             </h1>
@@ -61,7 +63,7 @@ export default function TemplateEditorialNoir({ profile }) {
           {/* LEFT */}
           <div>
             <Block>
-              <SecTitle>Expertise</SecTitle>
+              <SecTitle>{t("expertise")}</SecTitle>
               <div style={SER} className="text-[22px] leading-[1.7]">
                 {p.categories.length > 0
                   ? p.categories.map((c, i) => (
@@ -70,12 +72,12 @@ export default function TemplateEditorialNoir({ profile }) {
                       {c}
                     </React.Fragment>
                   ))
-                  : "Content Creation"}
+                  : t("contentCreation")}
               </div>
             </Block>
 
             <Block>
-              <SecTitle>On the Channels</SecTitle>
+              <SecTitle>{t("onTheChannels")}</SecTitle>
               <div style={{ borderTop: `1px solid ${line}` }}>
                 {socials.map((s) => (
                   <div key={s.key} className="flex items-baseline justify-between py-4" style={{ borderBottom: `1px solid ${line}` }}>
@@ -91,7 +93,7 @@ export default function TemplateEditorialNoir({ profile }) {
 
             {p.services.length > 0 && (
               <Block>
-                <SecTitle>Services &amp; Rates</SecTitle>
+                <SecTitle>{t("servicesAndRates")}</SecTitle>
                 <div style={{ borderTop: `2px solid ${ink}` }}>
                   {p.services.map((sv) => {
                     const rate = p.serviceRates[sv];
@@ -101,7 +103,7 @@ export default function TemplateEditorialNoir({ profile }) {
                         <span className="flex-1 mx-3 border-b border-dotted -translate-y-1" style={{ borderColor: muted }} />
                         {rate
                           ? <span style={SER} className="font-semibold text-[19px]">₹{Number(rate).toLocaleString("en-IN")}</span>
-                          : <span style={{ ...SER, color: "#b08545" }} className="italic text-[16px]">On request</span>}
+                          : <span style={{ ...SER, color: "#b08545" }} className="italic text-[16px]">{t("onRequest")}</span>}
                       </div>
                     );
                   })}
@@ -113,26 +115,26 @@ export default function TemplateEditorialNoir({ profile }) {
           {/* RIGHT */}
           <div>
             <Block>
-              <SecTitle>The Number That Matters</SecTitle>
+              <SecTitle>{t("theNumberThatMatters")}</SecTitle>
               <div className="grid grid-cols-2" style={{ border: `2px solid ${ink}` }}>
-                <Fig label="Accounts Reached" value={formatCount(p.totalReach || p.totalImpressions)} sub="last 30 days" />
-                <Fig label="Engagement Rate" value={`${p.engagementRate || 0}%`} sub="vs 1.9% category avg" hl />
-                <Fig label="Non-Follower Reach" value={`${p.nonFollowerReachPct}%`} sub="organic discovery" />
-                <Fig label="Interactions" value={formatCount(p.avgLikes + p.avgComments)} sub="avg per post" last />
+                <Fig label={t("stats.accountsReached")} value={formatCount(p.totalReach || p.totalImpressions)} sub={t("stats.last30Days")} />
+                <Fig label={t("stats.engagementRate")} value={`${p.engagementRate || 0}%`} sub={t("stats.categoryAvg")} hl />
+                <Fig label={t("stats.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("stats.organicDiscovery")} />
+                <Fig label={t("stats.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.avgPerPost")} last />
               </div>
             </Block>
 
             <Block>
-              <SecTitle>Who's Watching</SecTitle>
-              <SubH>Top Cities</SubH>
+              <SecTitle>{t("whosWatching")}</SecTitle>
+              <SubH>{t("topCities")}</SubH>
               {demo.topCities.map((c) => <NBar key={c.name} label={c.name} pct={c.pct} ink={ink} line={line} />)}
-              <SubH>Age Brackets</SubH>
+              <SubH>{t("ageBrackets")}</SubH>
               {demo.ageRanges.map((a) => <NBar key={a.range} label={a.range} pct={a.pct} ink={pink} line={line} />)}
-              <SubH>Gender Split</SubH>
+              <SubH>{t("genderSplit")}</SubH>
               <NoirDonut g={demo.gender} />
               {demo.topCountries.length > 0 && (
                 <>
-                  <SubH>Top Countries</SubH>
+                  <SubH>{t("topCountries")}</SubH>
                   {demo.topCountries.map((c) => <NBar key={c.name} label={c.name} pct={c.pct} ink={ink} line={line} />)}
                 </>
               )}
@@ -146,14 +148,14 @@ export default function TemplateEditorialNoir({ profile }) {
             symmetrically. */}
         {p.topReels.length > 0 && (
           <div className="mt-11 mx-auto" style={{ maxWidth: 760 }}>
-            <SecTitleCenter>Top Content</SecTitleCenter>
+            <SecTitleCenter>{t("topContent")}</SecTitleCenter>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 justify-items-center">
               {p.topReels.map((reel, i) => {
                 const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
                 return (
                   <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative aspect-[4/5] block overflow-hidden w-full" style={{ border: `1.5px solid ${ink}`, boxShadow: `5px 5px 0 ${ink}` }}>
                     {thumb
-                      ? <img src={thumb} alt={reel.caption || "Reel"} className="w-full h-full object-cover" />
+                      ? <img src={thumb} alt={reel.caption || t("reelAlt")} className="w-full h-full object-cover" />
                       : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#9b8a72,#1a2a3a)" }} />}
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(22,19,15,.85),transparent 50%)" }} />
                     {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-7 text-[14px] text-white leading-tight" style={SER}>{reel.caption.slice(0, 60)}</div>}
@@ -170,10 +172,10 @@ export default function TemplateEditorialNoir({ profile }) {
 
         {/* Colophon */}
         <div className="mt-12 pt-5 text-center" style={{ borderTop: `3px solid ${ink}` }}>
-          <div style={SER} className="font-black text-[30px] mb-1.5">Open for Collaborations</div>
-          <p style={{ ...SER, color: ink2 }} className="italic text-[15px]">Interested in working together? Reach out via Instagram or through the RGossips platform.</p>
+          <div style={SER} className="font-black text-[30px] mb-1.5">{t("openForCollaborations")}</div>
+          <p style={{ ...SER, color: ink2 }} className="italic text-[15px]">{t("collabCta")}</p>
         </div>
-        <div className="text-center mt-7 text-[11px] tracking-[.25em] uppercase" style={{ color: muted }}>Generated on RGossips</div>
+        <div className="text-center mt-7 text-[11px] tracking-[.25em] uppercase" style={{ color: muted }}>{t("generatedOn")}</div>
       </div>
     </div>
   );
@@ -227,10 +229,11 @@ function NBar({ label, pct, ink, line }) {
   );
 }
 function NoirDonut({ g }) {
+  const t = useTranslations("MediaKitTemplatesTemplateEditorialNoir");
   const segs = [
-    [g.female || 0, "#7F47CD", "Female"],
-    [g.male || 0, "#E94560", "Male"],
-    [g.other || 0, "#b08545", "Other"],
+    [g.female || 0, "#7F47CD", t("gender.female")],
+    [g.male || 0, "#E94560", t("gender.male")],
+    [g.other || 0, "#b08545", t("gender.other")],
   ];
   const C = 2 * Math.PI * 45;
   let off = 0;

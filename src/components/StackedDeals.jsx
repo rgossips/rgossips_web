@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
+import { useTranslations } from "next-intl";
 
 // Built-in fallback for when the admin hasn't picked any featured campaigns
 // yet. Same shape as the rows from list-featured-campaigns so the rest of
@@ -22,6 +23,7 @@ const FALLBACK_DEALS = [
 // at that scale) and roll to H:M:S once we cross under a day. Pass null
 // to hide the timer entirely (no deadline set).
 const RollingTimer = memo(({ deadline }) => {
+  const t = useTranslations("StackedDeals");
   const target = deadline ? new Date(deadline).getTime() : null;
   const [secondsLeft, setSecondsLeft] = useState(() => (target ? Math.max(0, Math.floor((target - Date.now()) / 1000)) : 0));
 
@@ -34,11 +36,11 @@ const RollingTimer = memo(({ deadline }) => {
   }, [target]);
 
   if (!target) {
-    return <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Open</span>;
+    return <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("timer.open")}</span>;
   }
 
   if (secondsLeft === 0) {
-    return <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">Closed</span>;
+    return <span className="text-xs font-bold text-rose-500 uppercase tracking-wider">{t("timer.closed")}</span>;
   }
 
   const days = Math.floor(secondsLeft / 86400);
@@ -46,7 +48,7 @@ const RollingTimer = memo(({ deadline }) => {
     return (
       <div className="flex items-center gap-1 font-bold text-slate-800 tabular-nums">
         <span className="text-lg font-black">{days}</span>
-        <span className="text-[10px] uppercase tracking-wider text-slate-500">{days === 1 ? "day left" : "days left"}</span>
+        <span className="text-[10px] uppercase tracking-wider text-slate-500">{t("timer.daysLeft", { count: days })}</span>
       </div>
     );
   }
@@ -76,6 +78,7 @@ RollingTimer.displayName = "RollingTimer";
 // Embla carousel (one campaign per slide, with a slim peek so the next
 // card hints from the right). Mobile-only — DealsLaptop covers desktop.
 export default function StackedDeals() {
+  const t = useTranslations("StackedDeals");
   const router = useRouter();
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +144,7 @@ export default function StackedDeals() {
     return (
       <div className="relative w-full h-[350px] flex flex-col items-center justify-center gap-4 mb-12">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500" />
-        <p className="text-slate-400 font-medium animate-pulse">Loading featured campaigns…</p>
+        <p className="text-slate-400 font-medium animate-pulse">{t("loading")}</p>
       </div>
     );
   }
@@ -159,12 +162,12 @@ export default function StackedDeals() {
                     if (typeof card.id === "string") router.push(`/influencer/offers/${card.id}`);
                   }}
                 >
-                  {card.img && <Image fill src={card.img} className="object-cover" alt={card.brandName || "deal"} draggable={false} />}
+                  {card.img && <Image fill src={card.img} className="object-cover" alt={card.brandName || t("dealImageAlt")} draggable={false} />}
                 </div>
 
                 <div className="px-4 py-4 flex flex-col h-[40%] gap-3">
                   <div className="flex flex-row items-center justify-between w-full gap-3">
-                    <h3 className="text-base font-extrabold text-slate-800 leading-tight line-clamp-1 flex-1 min-w-0">{card.brandName || "Featured Campaign"}</h3>
+                    <h3 className="text-base font-extrabold text-slate-800 leading-tight line-clamp-1 flex-1 min-w-0">{card.brandName || t("featuredCampaign")}</h3>
                     <RollingTimer deadline={card.deadline} />
                   </div>
                   <button
@@ -173,7 +176,7 @@ export default function StackedDeals() {
                     }}
                     className="relative z-10 w-full cursor-pointer bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] text-white py-3 rounded-xl font-black text-xs uppercase shadow-xl active:scale-95 transition-transform"
                   >
-                    Apply Now
+                    {t("applyNow")}
                   </button>
                 </div>
               </div>
@@ -189,7 +192,7 @@ export default function StackedDeals() {
             key={i}
             onClick={() => api?.scrollTo(i)}
             className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-8" : "bg-slate-200 w-2"}`}
-            aria-label={`Go to deal ${i + 1}`}
+            aria-label={t("goToDeal", { number: i + 1 })}
           />
         ))}
       </div>

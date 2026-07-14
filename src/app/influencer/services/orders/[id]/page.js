@@ -16,6 +16,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { formatINR } from "@/lib/services";
@@ -45,82 +46,74 @@ function loadRazorpayCheckout() {
   });
 }
 
+// Titles/bodies are resolved at render via t(`banner.${key}.title`) so
+// they can't be translated at module scope. Each entry carries a stable
+// `key` matching the message-catalog group.
 const STATUS_BANNER = {
   pending_quote: {
-    title: "Quote request submitted",
-    body: "Our team is reviewing your brief — we'll respond with a quote within the SLA.",
+    key: "pending_quote",
     accent: "from-amber-500 to-orange-500",
     icon: Clock,
   },
   quoted: {
-    title: "Your quote is ready!",
-    body: "Review the details below and pay 50% to kick off the project.",
+    key: "quoted",
     accent: "from-emerald-500 to-teal-500",
     icon: Mail,
   },
   counter_offered: {
-    title: "Counter offer sent",
-    body: "Awaiting the team's response to your counter offer.",
+    key: "counter_offered",
     accent: "from-orange-500 to-rose-500",
     icon: Send,
   },
   accepted: {
-    title: "Quote accepted — pay to start",
-    body: "Pay your advance to begin production.",
+    key: "accepted",
     accent: "from-emerald-500 to-teal-500",
     icon: CheckCircle2,
   },
   paid_advance: {
-    title: "Advance received — work starting",
-    body: "We've received your advance. Production begins now.",
+    key: "paid_advance",
     accent: "from-violet-500 to-fuchsia-500",
     icon: Check,
   },
   in_progress: {
-    title: "Work in progress",
-    body: "Our team is on it. Updates land in this thread.",
+    key: "in_progress",
     accent: "from-violet-500 to-fuchsia-500",
     icon: Clock,
   },
   draft_ready: {
-    title: "Your draft is ready for review",
-    body: "Preview the draft and either approve or request a revision.",
+    key: "draft_ready",
     accent: "from-amber-500 to-orange-500",
     icon: Mail,
   },
   revision_requested: {
-    title: "Revision in progress",
-    body: "Your notes are with the team — a new draft is on the way.",
+    key: "revision_requested",
     accent: "from-orange-500 to-rose-500",
     icon: Clock,
   },
   paid_final: {
-    title: "Final payment received — wrapping up",
-    body: "Your files are being prepared for delivery.",
+    key: "paid_final",
     accent: "from-emerald-500 to-teal-500",
     icon: Check,
   },
   completed: {
-    title: "Order completed! Your files are ready",
-    body: "Download your files below and leave a quick review.",
+    key: "completed",
     accent: "from-emerald-500 to-teal-500",
     icon: CheckCircle2,
   },
   declined: {
-    title: "Request declined",
-    body: "This request didn't move forward. You can submit a fresh brief any time.",
+    key: "declined",
     accent: "from-gray-400 to-gray-500",
     icon: X,
   },
   expired: {
-    title: "Quote expired",
-    body: "The validity period passed without action. Submit a fresh request to continue.",
+    key: "expired",
     accent: "from-gray-400 to-gray-500",
     icon: AlertCircle,
   },
 };
 
 export default function ServiceOrderDetailPage() {
+  const t = useTranslations("InfluencerServicesOrdersId");
   const router = useRouter();
   const { id } = useParams();
   const { user, profile, role } = useAuth();
@@ -196,11 +189,11 @@ export default function ServiceOrderDetailPage() {
   const validityRemaining = useMemo(() => {
     if (!order?.quote_valid_until) return null;
     const ms = new Date(order.quote_valid_until).getTime() - Date.now();
-    if (ms <= 0) return "Expired";
+    if (ms <= 0) return t("validity.expired");
     const d = Math.floor(ms / 86_400_000);
     const h = Math.floor((ms % 86_400_000) / 3_600_000);
-    return `${d}d ${h}h`;
-  }, [order?.quote_valid_until]);
+    return t("validity.remaining", { d, h });
+  }, [order?.quote_valid_until, t]);
 
   // Opens the gateway picker; the actual checkout call happens in
   // payViaGateway once the user picks Razorpay or Stripe. Keeping the
@@ -244,7 +237,7 @@ export default function ServiceOrderDetailPage() {
       if (data?.error) throw new Error(data.error);
 
       if (gateway === "stripe") {
-        if (!data?.url) throw new Error("No checkout URL returned");
+        if (!data?.url) throw new Error(t("errors.noCheckoutUrl"));
         window.location.href = data.url;
         return;
       }
@@ -252,7 +245,7 @@ export default function ServiceOrderDetailPage() {
       // Razorpay path — open the embedded Checkout against the order.
       await loadRazorpayCheckout();
       if (typeof window === "undefined" || !window.Razorpay) {
-        throw new Error("Razorpay Checkout failed to load — check your network.");
+        throw new Error(t("errors.razorpayLoad"));
       }
       // Razorpay prefill — saves the user from re-typing phone/email/
       // name in the checkout modal. Phone goes in with the +91 prefix
@@ -272,7 +265,7 @@ export default function ServiceOrderDetailPage() {
         amount: data.amount_paise,
         currency: data.currency || "INR",
         name: "RGossips",
-        description: data.line_label || (phase === "advance" ? "Service advance" : "Service final"),
+        description: data.line_label || (phase === "advance" ? t("razorpay.serviceAdvance") : t("razorpay.serviceFinal")),
         theme: { color: "#5851DB" },
         prefill: {
           name: profile?.full_name || profile?.username || "",
@@ -311,7 +304,7 @@ export default function ServiceOrderDetailPage() {
         },
       });
       rzp.on("payment.failed", (resp) => {
-        setError(resp?.error?.description || "Payment failed. Please try again.");
+        setError(resp?.error?.description || t("errors.paymentFailed"));
         setActionLoading(null);
       });
       rzp.open();
@@ -320,7 +313,7 @@ export default function ServiceOrderDetailPage() {
       // disabled until ondismiss / payment.failed clear it.)
       setPaymentBusy(false);
     } catch (e) {
-      setError(e.message || "Failed to start payment");
+      setError(e.message || t("errors.startPayment"));
       setActionLoading(null);
       setPaymentBusy(false);
     }
@@ -365,7 +358,7 @@ export default function ServiceOrderDetailPage() {
       setMyReview(review);
       await refresh();
     } catch (e) {
-      setError(e.message || "Failed to submit review");
+      setError(e.message || t("errors.submitReview"));
     } finally {
       setReviewSubmitting(false);
     }
@@ -394,7 +387,7 @@ export default function ServiceOrderDetailPage() {
       setRevisionNote("");
       await refresh();
     } catch (e) {
-      setError(e.message || "Failed to request revision");
+      setError(e.message || t("errors.requestRevision"));
     } finally {
       setActionLoading(null);
     }
@@ -423,7 +416,7 @@ export default function ServiceOrderDetailPage() {
       setDeclineReason("");
       await refresh();
     } catch (e) {
-      setError(e.message || "Failed");
+      setError(e.message || t("errors.generic"));
     } finally {
       setActionLoading(null);
     }
@@ -439,12 +432,12 @@ export default function ServiceOrderDetailPage() {
   if (!order) {
     return (
       <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-base font-bold text-slate-600">Order not found</p>
+        <p className="text-base font-bold text-slate-600">{t("orderNotFound")}</p>
         <button
           onClick={() => router.push("/influencer/services")}
           className="mt-4 text-sm font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          Back to Services
+          {t("backToServices")}
         </button>
       </div>
     );
@@ -486,14 +479,14 @@ export default function ServiceOrderDetailPage() {
             onClick={handleBack}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
           >
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t("back")}
           </button>
           <button
             onClick={() => refresh()}
-            title="Refresh status"
+            title={t("refreshTitle")}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-slate-500 hover:text-pink-500 px-3 py-1.5 rounded-full hover:bg-white transition-all cursor-pointer"
           >
-            <RefreshCw size={13} /> Refresh
+            <RefreshCw size={13} /> {t("refresh")}
           </button>
         </div>
 
@@ -503,14 +496,14 @@ export default function ServiceOrderDetailPage() {
             <BannerIcon size={24} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg lg:text-xl font-black leading-tight">{banner.title}</h1>
+            <h1 className="text-lg lg:text-xl font-black leading-tight">{t(`banner.${banner.key}.title`)}</h1>
             <p className="text-[12px] lg:text-[13px] text-white/85 mt-0.5">
-              Order #{order.order_number} · {order.service_title}
+              {t("orderLine", { number: order.order_number, title: order.service_title })}
             </p>
           </div>
           {isQuoted && validityRemaining && (
             <div className="hidden sm:block text-right shrink-0">
-              <p className="text-[10px] uppercase tracking-widest text-white/70">Quote valid for</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/70">{t("quoteValidFor")}</p>
               <p className="text-base font-black">{validityRemaining}</p>
             </div>
           )}
@@ -519,12 +512,12 @@ export default function ServiceOrderDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* ── LEFT ── */}
           <div className="lg:col-span-2 space-y-5">
-            <Card title="Project summary">
+            <Card title={t("cards.projectSummary")}>
               <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">{order.description}</p>
             </Card>
 
             {isQuoted && order.final_formats && (
-              <Card title="What you'll get">
+              <Card title={t("cards.whatYouGet")}>
                 <ul className="space-y-2">
                   {order.final_formats.split(/[\n,]/).map((line) => line.trim()).filter(Boolean).map((line) => (
                     <li key={line} className="flex items-start gap-2 text-[13px] text-slate-700">
@@ -537,21 +530,21 @@ export default function ServiceOrderDetailPage() {
             )}
 
             {isQuoted && (
-              <Card title="Project specifications">
+              <Card title={t("cards.projectSpecs")}>
                 <div className="grid grid-cols-2 gap-3">
                   <Spec
-                    label="Delivery date"
+                    label={t("specs.deliveryDate")}
                     value={order.quoted_delivery_date ? new Date(order.quoted_delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "—"}
                   />
-                  <Spec label="Turnaround" value={order.quoted_turnaround_days ? `${order.quoted_turnaround_days} days` : "—"} />
-                  <Spec label="Revisions" value={`${order.revisions_allowed} rounds`} />
-                  <Spec label="Final formats" value={order.final_formats || "—"} />
+                  <Spec label={t("specs.turnaround")} value={order.quoted_turnaround_days ? t("specs.daysValue", { days: order.quoted_turnaround_days }) : "—"} />
+                  <Spec label={t("specs.revisions")} value={t("specs.rounds", { count: order.revisions_allowed })} />
+                  <Spec label={t("specs.finalFormats")} value={order.final_formats || "—"} />
                 </div>
               </Card>
             )}
 
             {order.quote_message && (
-              <Card title="Note from our team">
+              <Card title={t("cards.noteFromTeam")}>
                 <p className="text-[13px] text-slate-700 bg-amber-50 border border-amber-100 rounded-xl p-3 leading-relaxed">
                   {order.quote_message}
                 </p>
@@ -559,7 +552,7 @@ export default function ServiceOrderDetailPage() {
             )}
 
             {messages.length > 0 && (
-              <Card title="Messages">
+              <Card title={t("cards.messages")}>
                 <div className="space-y-3">
                   {messages.map((m) => (
                     <Message key={m.id} message={m} mine={m.sender_id === user?.id} />
@@ -569,7 +562,7 @@ export default function ServiceOrderDetailPage() {
             )}
 
             {events.length > 0 && (
-              <Card title="Order timeline">
+              <Card title={t("cards.orderTimeline")}>
                 <ul className="space-y-3">
                   {events.map((e) => (
                     <li key={e.id} className="flex gap-3 text-[12px]">
@@ -607,16 +600,15 @@ export default function ServiceOrderDetailPage() {
                     <AlertCircle size={20} className="text-gray-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900">This quote has expired</p>
+                    <p className="text-sm font-black text-slate-900">{t("expired.heading")}</p>
                     <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed">
-                      Validity passed on{" "}
-                      {new Date(order.quote_valid_until).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
+                      {t("expired.body", {
+                        date: new Date(order.quote_valid_until).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        }),
                       })}
-                      . The price is no longer guaranteed — request a fresh
-                      quote to continue.
                     </p>
                   </div>
                 </div>
@@ -624,13 +616,13 @@ export default function ServiceOrderDetailPage() {
                   onClick={() => router.push(`/influencer/services/${order.service_slug || ""}`)}
                   className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black cursor-pointer shadow-md shadow-pink-100"
                 >
-                  Request new quote
+                  {t("expired.requestNew")}
                 </button>
                 <button
                   onClick={() => router.push("/influencer/services")}
                   className="w-full py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 text-[12px] font-black cursor-pointer hover:border-pink-200 hover:text-pink-500"
                 >
-                  Browse other services
+                  {t("expired.browseOther")}
                 </button>
               </div>
             )}
@@ -639,7 +631,7 @@ export default function ServiceOrderDetailPage() {
               <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Total project cost
+                    {t("pricing.totalProjectCost")}
                   </p>
                   <p className="text-3xl font-black text-slate-900 leading-tight">
                     {formatINR(order.total_amount)}
@@ -647,18 +639,18 @@ export default function ServiceOrderDetailPage() {
                 </div>
 
                 <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-[12px]">
-                  <Row label="Subtotal" value={formatINR(order.quoted_amount || 0)} />
+                  <Row label={t("pricing.subtotal")} value={formatINR(order.quoted_amount || 0)} />
                   {/* Platform fee removed — service orders don't charge one. */}
                   <div className="border-t border-slate-200 pt-1.5">
-                    <Row label="Total" value={formatINR(order.total_amount || 0)} bold />
+                    <Row label={t("pricing.total")} value={formatINR(order.total_amount || 0)} bold />
                   </div>
                   <Row
-                    label={`Pay now (${order.advance_pct}%)`}
+                    label={t("pricing.payNow", { pct: order.advance_pct })}
                     value={formatINR(Math.round((order.total_amount || 0) * order.advance_pct / 100))}
                     pink
                   />
                   <Row
-                    label={`Pay on delivery (${100 - order.advance_pct}%)`}
+                    label={t("pricing.payOnDelivery", { pct: 100 - order.advance_pct })}
                     value={formatINR((order.total_amount || 0) - Math.round((order.total_amount || 0) * order.advance_pct / 100))}
                     muted
                   />
@@ -674,21 +666,21 @@ export default function ServiceOrderDetailPage() {
                       className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
                     >
                       {actionLoading === "accept" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                      Accept &amp; Pay {formatINR(Math.round((order.total_amount || 0) * order.advance_pct / 100))}
+                      {t("pricing.acceptAndPay", { amount: formatINR(Math.round((order.total_amount || 0) * order.advance_pct / 100)) })}
                     </button>
                     <button
                       onClick={() => setMode("counter")}
                       disabled={!!actionLoading}
                       className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer hover:border-pink-200 hover:text-pink-500"
                     >
-                      <MessageSquare size={14} /> Negotiate
+                      <MessageSquare size={14} /> {t("pricing.negotiate")}
                     </button>
                     <button
                       onClick={() => setMode("decline")}
                       disabled={!!actionLoading}
                       className="w-full text-[12px] font-bold text-slate-400 hover:text-rose-500 cursor-pointer"
                     >
-                      Decline this quote
+                      {t("pricing.declineQuote")}
                     </button>
                   </>
                 )}
@@ -699,14 +691,14 @@ export default function ServiceOrderDetailPage() {
                       type="number"
                       value={counterAmount}
                       onChange={(e) => setCounterAmount(e.target.value)}
-                      placeholder="Your counter (₹)"
+                      placeholder={t("counter.amountPlaceholder")}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
                     />
                     <textarea
                       rows={3}
                       value={counterMessage}
                       onChange={(e) => setCounterMessage(e.target.value)}
-                      placeholder="Why does this price work better for you?"
+                      placeholder={t("counter.messagePlaceholder")}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
                     />
                     <div className="flex gap-2">
@@ -715,14 +707,14 @@ export default function ServiceOrderDetailPage() {
                         disabled={!!actionLoading}
                         className="flex-1 py-2 rounded-xl border border-slate-200 text-[12px] font-black text-slate-500 cursor-pointer disabled:opacity-50"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                       <button
                         onClick={() => respond("counter", { counterAmount, counterMessage })}
                         disabled={!!actionLoading || !counterAmount}
                         className="flex-1 py-2 rounded-xl btn-purple text-white text-[12px] font-black cursor-pointer disabled:opacity-60"
                       >
-                        {actionLoading === "counter" ? "Sending…" : "Send counter"}
+                        {actionLoading === "counter" ? t("common.sending") : t("counter.send")}
                       </button>
                     </div>
                   </div>
@@ -734,7 +726,7 @@ export default function ServiceOrderDetailPage() {
                       rows={3}
                       value={declineReason}
                       onChange={(e) => setDeclineReason(e.target.value)}
-                      placeholder="Optional — short reason"
+                      placeholder={t("decline.placeholder")}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 resize-none"
                     />
                     <div className="flex gap-2">
@@ -743,28 +735,28 @@ export default function ServiceOrderDetailPage() {
                         disabled={!!actionLoading}
                         className="flex-1 py-2 rounded-xl border border-slate-200 text-[12px] font-black text-slate-500 cursor-pointer disabled:opacity-50"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </button>
                       <button
                         onClick={() => respond("decline", { declineReason })}
                         disabled={!!actionLoading}
                         className="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-[12px] font-black cursor-pointer disabled:opacity-60"
                       >
-                        {actionLoading === "decline" ? "Declining…" : "Confirm decline"}
+                        {actionLoading === "decline" ? t("decline.confirming") : t("decline.confirm")}
                       </button>
                     </div>
                   </div>
                 )}
 
                 <div className="text-[10px] text-slate-400 flex items-center justify-center gap-1 pt-1">
-                  <Info size={10} /> Secure payment via Stripe
+                  <Info size={10} /> {t("pricing.securePayment")}
                 </div>
               </div>
             )}
 
             {/* Counter sent — shown to user while admin reviews */}
             {order.status === "counter_offered" && order.counter_amount && (
-              <Card title="Your counter offer">
+              <Card title={t("cards.yourCounterOffer")}>
                 <p className="text-2xl font-black text-slate-900 leading-tight">
                   {formatINR(order.counter_amount)}
                 </p>
@@ -772,7 +764,7 @@ export default function ServiceOrderDetailPage() {
                   <p className="text-[12px] text-slate-500 mt-2 italic">"{order.counter_message}"</p>
                 )}
                 <p className="text-[11px] text-slate-400 mt-3">
-                  Awaiting our team's response. We'll notify you on WhatsApp.
+                  {t("counterOffered.awaiting")}
                 </p>
               </Card>
             )}
@@ -793,12 +785,12 @@ export default function ServiceOrderDetailPage() {
             )}
 
             {order.status === "revision_requested" && (
-              <Card title="Revision in progress">
+              <Card title={t("cards.revisionInProgress")}>
                 <p className="text-[12px] text-slate-600 leading-relaxed">
-                  Our team is on your revision. {order.revisions_used} of {order.revisions_allowed} revision rounds used.
+                  {t("revisionRequested.body", { used: order.revisions_used, allowed: order.revisions_allowed })}
                 </p>
                 <p className="text-[11px] text-slate-400 mt-2">
-                  We'll notify you when the next draft lands.
+                  {t("revisionRequested.notify")}
                 </p>
               </Card>
             )}
@@ -811,16 +803,16 @@ export default function ServiceOrderDetailPage() {
               />
             )}
 
-            <Card title="Order details">
-              <Spec label="Order ID" value={order.order_number} />
-              <Spec label="Service" value={order.service_title} />
+            <Card title={t("cards.orderDetails")}>
+              <Spec label={t("specs.orderId")} value={order.order_number} />
+              <Spec label={t("specs.service")} value={order.service_title} />
               {order.quoted_delivery_date && (
                 <Spec
-                  label="Expected delivery"
+                  label={t("specs.expectedDelivery")}
                   value={new Date(order.quoted_delivery_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 />
               )}
-              <Spec label="Submitted" value={new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} />
+              <Spec label={t("specs.submitted")} value={new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} />
             </Card>
           </aside>
         </div>
@@ -828,8 +820,8 @@ export default function ServiceOrderDetailPage() {
 
       {pickerPhase && (
         <GatewayPickerModal
-          title={pickerPhase === "advance" ? "Pay your advance" : "Pay the final balance"}
-          subtitle="Choose a payment method to continue"
+          title={pickerPhase === "advance" ? t("gateway.payAdvance") : t("gateway.payFinal")}
+          subtitle={t("gateway.subtitle")}
           onCancel={() => setPickerPhase(null)}
           onPick={(g) => payViaGateway(pickerPhase, g)}
         />
@@ -845,7 +837,7 @@ export default function ServiceOrderDetailPage() {
             <div className="w-16 h-16 rounded-full border-4 border-white/20" />
             <Loader2 size={64} strokeWidth={2.5} className="absolute inset-0 animate-spin text-[#E60076]" />
           </div>
-          <p className="text-white text-sm font-bold">Opening secure checkout…</p>
+          <p className="text-white text-sm font-bold">{t("overlay.openingCheckout")}</p>
         </div>
       )}
     </div>
@@ -899,6 +891,7 @@ function Message({ message, mine }) {
 }
 
 function DraftPreviewBlock({ order }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   const isWatermarked = order.status === "draft_ready" || order.status === "revision_requested";
   return (
     <div className="bg-slate-900 rounded-3xl overflow-hidden relative">
@@ -910,7 +903,7 @@ function DraftPreviewBlock({ order }) {
         </div>
         {isWatermarked && (
           <p className="absolute inset-0 flex items-center justify-center text-white/15 text-7xl font-black tracking-widest rotate-[-15deg] select-none pointer-events-none">
-            PREVIEW
+            {t("draft.previewWatermark")}
           </p>
         )}
         <a
@@ -918,7 +911,7 @@ function DraftPreviewBlock({ order }) {
           target="_blank"
           rel="noopener noreferrer"
           className="absolute inset-0"
-          aria-label="Open draft preview"
+          aria-label={t("draft.openPreviewAria")}
         />
       </div>
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/95 text-[11px] text-slate-300">
@@ -929,26 +922,25 @@ function DraftPreviewBlock({ order }) {
           rel="noopener noreferrer"
           className="text-pink-400 hover:underline font-bold cursor-pointer"
         >
-          Open preview ↗
+          {t("draft.openPreview")}
         </a>
       </div>
       {isWatermarked && (
         <div className="px-4 py-2.5 bg-amber-50 border-t border-amber-200 text-[11px] text-amber-700 flex items-start gap-2">
           <Info size={12} className="text-amber-500 shrink-0 mt-0.5" />
           <p>
-            This draft is watermarked. You can review the full quality and approve, or request changes.
-            Watermarks will be removed and final files unlocked once you pay the remaining{" "}
-            {formatINR(
-              (order.total_amount || 0) -
-                Math.round(((order.total_amount || 0) * (order.advance_pct || 50)) / 100)
-            )}
-            .
+            {t("draft.watermarkNote", {
+              amount: formatINR(
+                (order.total_amount || 0) -
+                  Math.round(((order.total_amount || 0) * (order.advance_pct || 50)) / 100)
+              ),
+            })}
           </p>
         </div>
       )}
       {order.draft_note && (
         <div className="px-4 py-3 bg-white border-t border-slate-100">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Note from editor</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t("draft.noteFromEditor")}</p>
           <p className="text-[13px] text-slate-700 mt-1 leading-relaxed">{order.draft_note}</p>
         </div>
       )}
@@ -967,6 +959,7 @@ function DraftReviewSidebar({
   setRevisionNote,
   requestRevision,
 }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   const total = order.total_amount || 0;
   const advance = Math.round((total * (order.advance_pct || 50)) / 100);
   const dueNow = total - advance;
@@ -975,23 +968,23 @@ function DraftReviewSidebar({
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-        Two ways forward
+        {t("draftReview.twoWays")}
       </p>
 
       {/* Approve & pay final */}
       <div className="bg-emerald-50 rounded-xl p-3 space-y-1.5 text-[12px]">
         <p className="text-[11px] font-black text-emerald-700 inline-flex items-center gap-1">
-          <CheckCircle2 size={12} /> Looks good as-is?
+          <CheckCircle2 size={12} /> {t("draftReview.looksGood")}
         </p>
-        <Row label="Total project" value={formatINR(total)} />
-        <Row label="Paid (advance)" value={`–${formatINR(advance)}`} muted />
+        <Row label={t("draftReview.totalProject")} value={formatINR(total)} />
+        <Row label={t("draftReview.paidAdvance")} value={`–${formatINR(advance)}`} muted />
         <div className="border-t border-emerald-200 pt-1.5">
-          <Row label="Due now" value={formatINR(dueNow)} bold />
+          <Row label={t("draftReview.dueNow")} value={formatINR(dueNow)} bold />
         </div>
       </div>
 
       <div className="bg-pink-50 rounded-xl p-3 text-center">
-        <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider">Pay to unlock final files</p>
+        <p className="text-[10px] font-bold text-pink-600 uppercase tracking-wider">{t("draftReview.payToUnlock")}</p>
         <p className="text-xl font-black text-slate-900 mt-1">{formatINR(dueNow)}</p>
       </div>
 
@@ -1001,7 +994,7 @@ function DraftReviewSidebar({
         className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100 disabled:opacity-60"
       >
         {actionLoading === "approve" ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-        Approve &amp; Pay Final {formatINR(dueNow)}
+        {t("draftReview.approveAndPay", { amount: formatINR(dueNow) })}
       </button>
 
       {error && <p className="text-[12px] text-red-500 font-semibold">{error}</p>}
@@ -1009,12 +1002,12 @@ function DraftReviewSidebar({
       {/* Revision */}
       <div className="bg-amber-50 rounded-xl p-3 mt-2">
         <p className="text-[11px] font-black text-amber-700 inline-flex items-center gap-1">
-          ✎ Need changes?
+          {t("draftReview.needChanges")}
         </p>
         <p className="text-[11px] text-amber-700 mt-1 leading-snug">
           {revsLeft > 0
-            ? `Use one of your ${revsLeft} revision${revsLeft === 1 ? "" : "s"} to request changes. No additional payment required.`
-            : "You've used all your revision rounds. Reach out via support for additional changes."}
+            ? t("draftReview.revisionsLeft", { count: revsLeft })
+            : t("draftReview.noRevisionsLeft")}
         </p>
       </div>
 
@@ -1024,7 +1017,7 @@ function DraftReviewSidebar({
           disabled={revsLeft <= 0 || !!actionLoading}
           className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer hover:border-pink-200 hover:text-pink-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          ✎ Request Revision
+          {t("draftReview.requestRevision")}
         </button>
       )}
 
@@ -1034,7 +1027,7 @@ function DraftReviewSidebar({
             rows={4}
             value={revisionNote}
             onChange={(e) => setRevisionNote(e.target.value)}
-            placeholder="Be specific — which parts need to change?"
+            placeholder={t("draftReview.notePlaceholder")}
             className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
           />
           <div className="flex gap-2">
@@ -1046,34 +1039,35 @@ function DraftReviewSidebar({
               disabled={!!actionLoading}
               className="flex-1 py-2 rounded-xl border border-slate-200 text-[12px] font-black text-slate-500 cursor-pointer disabled:opacity-50"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               onClick={requestRevision}
               disabled={!!actionLoading || revisionNote.trim().length < 5}
               className="flex-1 py-2 rounded-xl btn-purple text-white text-[12px] font-black cursor-pointer disabled:opacity-60"
             >
-              {actionLoading === "revision" ? "Sending…" : "Send revision"}
+              {actionLoading === "revision" ? t("common.sending") : t("draftReview.send")}
             </button>
           </div>
         </div>
       )}
 
       <p className="text-[10px] text-slate-400 text-center pt-1">
-        Once approved, files become permanently available in your order history.
+        {t("draftReview.footer")}
       </p>
     </div>
   );
 }
 
 function DownloadList({ files }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-5">
       <div className="flex items-baseline justify-between">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Download your files
+          {t("download.title")}
         </p>
-        <span className="text-[10px] text-slate-400">All files available permanently in your order history</span>
+        <span className="text-[10px] text-slate-400">{t("download.permanentNote")}</span>
       </div>
       <ul className="mt-3 divide-y divide-slate-100">
         {files.map((f, i) => (
@@ -1089,7 +1083,7 @@ function DownloadList({ files }) {
               download
               className="text-pink-500 hover:underline font-bold text-[12px] whitespace-nowrap"
             >
-              Download ↓
+              {t("download.download")}
             </a>
           </li>
         ))}
@@ -1099,24 +1093,25 @@ function DownloadList({ files }) {
 }
 
 function ReviewPanel({ existing, submitting, onSubmit }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   // Read-only "thank you" if there's already a row.
   if (existing) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-5">
         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
-          Review submitted
+          {t("review.submitted")}
         </p>
         <p className="text-2xl font-black text-slate-900 mt-1 leading-tight">
           {existing.overall}.0 ★
         </p>
         <p className="text-[12px] text-slate-500 mt-2">
-          Thanks for the feedback — it helps other creators discover the service.
+          {t("review.thanks")}
         </p>
         <div className="grid grid-cols-2 gap-3 mt-4 text-[11px]">
-          <SubScore label="Quality" value={existing.quality} />
-          <SubScore label="Communication" value={existing.communication} />
-          <SubScore label="On-time delivery" value={existing.on_time_delivery} />
-          <SubScore label="Value for money" value={existing.value_for_money} />
+          <SubScore label={t("review.quality")} value={existing.quality} />
+          <SubScore label={t("review.communication")} value={existing.communication} />
+          <SubScore label={t("review.onTimeDelivery")} value={existing.on_time_delivery} />
+          <SubScore label={t("review.valueForMoney")} value={existing.value_for_money} />
         </div>
         {existing.text && (
           <p className="text-[12px] text-slate-600 mt-3 italic">"{existing.text}"</p>
@@ -1138,6 +1133,7 @@ function SubScore({ label, value }) {
 }
 
 function ReviewForm({ submitting, onSubmit }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   const [overall, setOverall] = useState(5);
   const [quality, setQuality] = useState(5);
   const [communication, setCommunication] = useState(5);
@@ -1149,13 +1145,13 @@ function ReviewForm({ submitting, onSubmit }) {
     <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
       <div>
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          Rate your experience
+          {t("review.rateExperience")}
         </p>
-        <p className="text-[11px] text-pink-500 mt-0.5">Help others discover the best RGossips services</p>
+        <p className="text-[11px] text-pink-500 mt-0.5">{t("review.helpOthers")}</p>
       </div>
 
       <div>
-        <p className="text-[11px] text-slate-500 text-center">Tap to rate ({overall} star{overall === 1 ? "" : "s"} selected)</p>
+        <p className="text-[11px] text-slate-500 text-center">{t("review.tapToRate", { count: overall })}</p>
         <div className="flex justify-center mt-1">
           <StarRow value={overall} onChange={setOverall} size={26} />
         </div>
@@ -1165,15 +1161,15 @@ function ReviewForm({ submitting, onSubmit }) {
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Share your experience… (optional)"
+        placeholder={t("review.sharePlaceholder")}
         className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
       />
 
       <div className="grid grid-cols-2 gap-3 pt-1">
-        <SubAxis label="Quality" value={quality} onChange={setQuality} />
-        <SubAxis label="Communication" value={communication} onChange={setCommunication} />
-        <SubAxis label="On-time delivery" value={onTime} onChange={setOnTime} />
-        <SubAxis label="Value for money" value={value} onChange={setValue} />
+        <SubAxis label={t("review.quality")} value={quality} onChange={setQuality} />
+        <SubAxis label={t("review.communication")} value={communication} onChange={setCommunication} />
+        <SubAxis label={t("review.onTimeDelivery")} value={onTime} onChange={setOnTime} />
+        <SubAxis label={t("review.valueForMoney")} value={value} onChange={setValue} />
       </div>
 
       <div className="flex gap-2 pt-1">
@@ -1182,7 +1178,7 @@ function ReviewForm({ submitting, onSubmit }) {
           disabled={submitting}
           className="flex-1 py-2.5 rounded-xl btn-purple text-white text-[13px] font-black cursor-pointer disabled:opacity-60"
         >
-          {submitting ? "Submitting…" : "Submit Review"}
+          {submitting ? t("review.submitting") : t("review.submit")}
         </button>
       </div>
     </div>
@@ -1199,6 +1195,7 @@ function SubAxis({ label, value, onChange }) {
 }
 
 function StarRow({ value, onChange, size = 18 }) {
+  const t = useTranslations("InfluencerServicesOrdersId");
   return (
     <div className="flex items-center gap-0.5 mt-0.5">
       {Array.from({ length: 5 }, (_, i) => {
@@ -1210,7 +1207,7 @@ function StarRow({ value, onChange, size = 18 }) {
             type="button"
             onClick={() => onChange(v)}
             className="cursor-pointer transition-transform hover:scale-110"
-            aria-label={`${v} star${v === 1 ? "" : "s"}`}
+            aria-label={t("review.starAria", { count: v })}
           >
             <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? "#fbbf24" : "transparent"} stroke={filled ? "#fbbf24" : "#cbd5e1"} strokeWidth="2">
               <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />

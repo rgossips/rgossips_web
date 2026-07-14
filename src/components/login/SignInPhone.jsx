@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,7 @@ const SignInPhone = ({
   role = "influencer",
   onSwitchToSignIn = () => {},
 }) => {
+  const t = useTranslations("Auth.phone");
   const [localPhone, setLocalPhone] = useState(phone);
 
   const handlePhoneChange = (e) => {
@@ -34,12 +36,10 @@ const SignInPhone = ({
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-slate-900">
-          {mode === "signup" ? "Create Account" : "Sign In"}
+          {mode === "signup" ? t("titleSignup") : t("titleSignin")}
         </h2>
         <p className="text-sm text-slate-500">
-          {mode === "signup"
-            ? "Enter your mobile number to create an account"
-            : "Enter your mobile number to continue"}
+          {mode === "signup" ? t("subtitleSignup") : t("subtitleSignin")}
         </p>
       </div>
 
@@ -51,12 +51,12 @@ const SignInPhone = ({
 
       {userExists && (
         <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800 flex items-center justify-between">
-          <span>User already exists.</span>
+          <span>{t("userExists")}</span>
           <button
             onClick={onSwitchToSignIn}
             className="text-sm font-semibold text-[#6347F9] hover:underline ml-4"
           >
-            Sign In
+            {t("signIn")}
           </button>
         </div>
       )}
@@ -73,7 +73,7 @@ const SignInPhone = ({
             value={localPhone}
             onChange={handlePhoneChange}
             className="h-14 pl-16 rounded-2xl border-slate-200 bg-white text-base focus-visible:ring-2 focus-visible:ring-[#6347F9] focus-visible:ring-offset-0 transition-all"
-            placeholder="Enter phone number"
+            placeholder={t("placeholder")}
             maxLength={maxLen}
             disabled={loading}
           />
@@ -87,10 +87,10 @@ const SignInPhone = ({
           className={`w-full cursor-pointer ${role == "influencer" ? "btn-purple" : "bg-linear-to-b from-[#5B3DF5] to-[#7A5CFF]"} h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100`}
         >
           {loading
-            ? "Sending OTP..."
+            ? t("sending")
             : mode === "signup"
-              ? "Create Account"
-              : "Send OTP"}
+              ? t("createAccount")
+              : t("sendOtp")}
         </Button>
       </div>
     </div>

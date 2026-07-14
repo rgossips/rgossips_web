@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useTranslations } from "next-intl";
 import {
   Users,
   Star,
@@ -13,41 +14,44 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function CampaignOverview() {
+  const t = useTranslations("CampaignOverview");
   return (
     <div className="space-y-10">
       {/* About Campaign */}
       <section className="space-y-3">
-        <h3 className="text-lg font-bold text-slate-800">About Campaign</h3>
+        <h3 className="text-lg font-bold text-slate-800">
+          {t("aboutCampaign.title")}
+        </h3>
         <p className="text-sm text-slate-500 leading-relaxed">
-          Join us in launching our exclusive Summer Collection! We're looking
-          for fashion-forward influencers who can showcase our latest designs
-          with authentic storytelling and creative content.
+          {t("aboutCampaign.description")}
         </p>
       </section>
 
       {/* Requirements */}
       <section className="space-y-4">
-        <h3 className="text-lg font-bold text-slate-800">Requirements</h3>
+        <h3 className="text-lg font-bold text-slate-800">
+          {t("requirements.title")}
+        </h3>
         <div className="grid gap-3">
           {[
             {
-              label: "Minimum 50k Followers",
-              sub: "Instagram or YouTube",
+              label: t("requirements.minFollowers.label"),
+              sub: t("requirements.minFollowers.sub"),
               icon: <Users size={18} />,
             },
             {
-              label: "Engagement Rate 3%+",
-              sub: "Average likes and comments",
+              label: t("requirements.engagement.label"),
+              sub: t("requirements.engagement.sub"),
               icon: <TrendingUp size={18} />,
             },
             {
-              label: "Fashion/Lifestyle Niche",
-              sub: "Content aligned with brand values",
+              label: t("requirements.niche.label"),
+              sub: t("requirements.niche.sub"),
               icon: <Star size={18} />,
             },
             {
-              label: "Active Profile",
-              sub: "Regular posting schedule",
+              label: t("requirements.activeProfile.label"),
+              sub: t("requirements.activeProfile.sub"),
               icon: <History size={18} />,
             },
           ].map((req, i) => (
@@ -71,30 +75,30 @@ export default function CampaignOverview() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-800">
-            Payment & Benefits
+            {t("payment.title")}
           </h3>
           <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 uppercase tracking-tight">
-            <ShieldCheck size={12} /> Verified
+            <ShieldCheck size={12} /> {t("payment.verified")}
           </span>
         </div>
 
         <div className="space-y-3">
           {[
             {
-              label: "Base Payment",
+              label: t("payment.basePayment.label"),
               val: "₹25,000",
               icon: <Wallet className="text-emerald-500" />,
             },
             {
-              label: "Performance Bonus",
+              label: t("payment.performanceBonus.label"),
               val: "₹5,000",
-              sub: "Per 100k+ views",
+              sub: t("payment.performanceBonus.sub"),
               icon: <TrendingUp className="text-blue-500" />,
             },
             {
-              label: "Product Worth ₹5,000",
-              val: "Free Gift",
-              sub: "Exclusive items from collection",
+              label: t("payment.productWorth.label"),
+              val: t("payment.productWorth.val"),
+              sub: t("payment.productWorth.sub"),
               icon: <Gift className="text-purple-500" />,
             },
           ].map((item, i) => (
@@ -154,9 +158,9 @@ export default function CampaignOverview() {
 
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Campaigns", val: "156" },
-            { label: "Success", val: "94%" },
-            { label: "Response", val: "24h" },
+            { label: t("aboutBrand.stats.campaigns"), val: "156" },
+            { label: t("aboutBrand.stats.success"), val: "94%" },
+            { label: t("aboutBrand.stats.response"), val: "24h" },
           ].map((stat, i) => (
             <div key={i} className="text-center p-2 bg-slate-50/50 rounded-2xl">
               <p className="text-xs font-black text-slate-800">{stat.val}</p>

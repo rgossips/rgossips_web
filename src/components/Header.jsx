@@ -26,7 +26,7 @@ const Header = () => {
 
   // Navigation items based on your reference images
   const navItems = [
-    { name: "Featuress", id: "features" },
+    { name: "Features", id: "features" },
     { name: "For Brands", id: "brands-influencers-section", type: "brands" },
     {
       name: "For Influencers",

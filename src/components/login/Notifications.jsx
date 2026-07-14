@@ -1,11 +1,13 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import Bell from "@/assets/login/BellIllustration.webp";
 import Image from "next/image";
 
 const Notifications = ({ onNext }) => {
+  const t = useTranslations("Auth.notifications");
   return (
     <div className="flex flex-col items-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Visual Header Section */}
@@ -23,12 +25,8 @@ const Notifications = ({ onNext }) => {
 
       {/* Text Content */}
       <div className="text-center space-y-2 px-4">
-        <h2 className="text-2xl font-bold text-slate-900 leading-tight">
-          Never Miss a Collab
-        </h2>
-        <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto">
-          Get instant updates on new campaigns, messages & payments
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 leading-tight">{t("title")}</h2>
+        <p className="text-sm text-slate-500 leading-relaxed max-w-[280px] mx-auto">{t("subtitle")}</p>
       </div>
 
       {/* Action Buttons — sticky on mobile so they stay visible without scrolling */}
@@ -37,13 +35,13 @@ const Notifications = ({ onNext }) => {
           onClick={() => onNext(true)}
           className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
-          Enable Notifications
+          {t("enable")}
         </Button>
         <button
           onClick={() => onNext(false)}
           className="w-full py-2 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors"
         >
-          Not Now
+          {t("notNow")}
         </button>
       </div>
     </div>

@@ -2,9 +2,11 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Search, ArrowLeft, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 
 export function SearchOverlay({ onClose, recentSearches }) {
+  const t = useTranslations("SearchOverlay");
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -29,7 +31,7 @@ export function SearchOverlay({ onClose, recentSearches }) {
           />
           <Input
             autoFocus
-            placeholder="Search campaigns..."
+            placeholder={t("searchPlaceholder")}
             className="pl-11 h-12 bg-slate-50 border-none rounded-2xl text-slate-800 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#E60076]/20"
           />
         </div>
@@ -38,9 +40,9 @@ export function SearchOverlay({ onClose, recentSearches }) {
       {/* Content */}
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-800">Recent Searches</h3>
+          <h3 className="text-sm font-bold text-slate-800">{t("recentSearches")}</h3>
           <button className="text-xs font-bold text-slate-400 hover:text-[#E60076]">
-            Clear All
+            {t("clearAll")}
           </button>
         </div>
 

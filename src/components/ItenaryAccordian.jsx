@@ -4,67 +4,61 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { getTranslations } from "next-intl/server";
 
-export default function ItineraryAccordion() {
+export default async function ItineraryAccordion() {
+  const t = await getTranslations("ItenaryAccordian");
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Itinerary</h2>
+      <h2 className="text-2xl font-semibold mb-4">{t("heading")}</h2>
 
       <Accordion type="single" collapsible>
         <AccordionItem value="day1">
-          <AccordionTrigger>Day 1 – Arrival in Jim Corbett</AccordionTrigger>
+          <AccordionTrigger>{t("day1.title")}</AccordionTrigger>
           <AccordionContent>
-            Arrive at Jim Corbett. Check into the resort. Enjoy welcome drinks,
-            explore the property, and relax near the pool or river.
+            {t("day1.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day2">
-          <AccordionTrigger>Day 2 – Jungle Safari</AccordionTrigger>
+          <AccordionTrigger>{t("day2.title")}</AccordionTrigger>
           <AccordionContent>
-            Early morning jeep safari inside Jim Corbett National Park. Spot
-            tigers, elephants, and birds. Afternoon local sightseeing and river
-            walk.
+            {t("day2.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day3">
-          <AccordionTrigger>Day 3 – Transfer to Nainital</AccordionTrigger>
+          <AccordionTrigger>{t("day3.title")}</AccordionTrigger>
           <AccordionContent>
-            After breakfast, drive to Nainital. Visit Hanuman Garhi, Eco Cave
-            Gardens, and enjoy a peaceful evening walk at Mall Road.
+            {t("day3.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day4">
-          <AccordionTrigger>Day 4 – Nainital Lake Tour</AccordionTrigger>
+          <AccordionTrigger>{t("day4.title")}</AccordionTrigger>
           <AccordionContent>
-            Visit Naini Lake, Bhimtal, Sattal, and Naukuchiatal. Enjoy boating,
-            photos, and café visits. Perfect day for exploring lakes.
+            {t("day4.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day5">
-          <AccordionTrigger>Day 5 – Transfer to Rishikesh</AccordionTrigger>
+          <AccordionTrigger>{t("day5.title")}</AccordionTrigger>
           <AccordionContent>
-            Drive to Rishikesh. Visit Ram Jhula, Laxman Jhula, Beatles Ashram.
-            Enjoy café hopping and Ganga ghats.
+            {t("day5.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day6">
-          <AccordionTrigger>Day 6 – Adventure Activities</AccordionTrigger>
+          <AccordionTrigger>{t("day6.title")}</AccordionTrigger>
           <AccordionContent>
-            Enjoy river rafting, bungee jumping, ziplining or cliff jumping
-            depending on your preference. Evening Ganga Aarti at Triveni Ghat.
+            {t("day6.body")}
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="day7">
-          <AccordionTrigger>Day 7 – Departure</AccordionTrigger>
+          <AccordionTrigger>{t("day7.title")}</AccordionTrigger>
           <AccordionContent>
-            Enjoy breakfast at the hotel. Check out and depart with beautiful
-            memories of Uttarakhand.
+            {t("day7.body")}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

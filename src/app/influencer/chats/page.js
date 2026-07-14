@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 const API_HEADERS = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,6 +19,7 @@ const API_HEADERS = () => {
 };
 
 export default function ChatModule() {
+  const t = useTranslations("InfluencerChats");
   const { user } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState([]);
@@ -117,7 +119,7 @@ export default function ChatModule() {
     const diffMs = now - d;
     const diffDay = Math.floor(diffMs / 86400000);
     if (diffDay === 0) return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-    if (diffDay === 1) return "Yesterday";
+    if (diffDay === 1) return t("time.yesterday");
     if (diffDay < 7) return d.toLocaleDateString("en-IN", { weekday: "short" });
     return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   };
@@ -140,11 +142,11 @@ export default function ChatModule() {
             <button onClick={() => router.back()} className="p-2 rounded-full bg-pink-50 hover:bg-pink-100 cursor-pointer transition-colors active:scale-90">
               <ChevronLeft className="w-5 h-5 text-[#E60076]" />
             </button>
-            <h1 className="text-xl font-bold text-slate-800">Messages</h1>
+            <h1 className="text-xl font-bold text-slate-800">{t("title")}</h1>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <Input className="pl-10 bg-slate-50 border-none rounded-xl h-11" placeholder="Search messages..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Input className="pl-10 bg-slate-50 border-none rounded-xl h-11" placeholder={t("searchPlaceholder")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
         </div>
 
@@ -152,13 +154,13 @@ export default function ChatModule() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 size={24} className="animate-spin text-purple-500" />
-              <p className="text-xs font-bold text-slate-400">Loading chats...</p>
+              <p className="text-xs font-bold text-slate-400">{t("loading")}</p>
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="text-center py-16">
               <Send size={32} className="text-slate-200 mx-auto mb-3" />
-              <p className="text-sm font-bold text-slate-400">No conversations yet</p>
-              <p className="text-xs text-slate-300 mt-1">Messages from brands will appear here</p>
+              <p className="text-sm font-bold text-slate-400">{t("empty.noConversations")}</p>
+              <p className="text-xs text-slate-300 mt-1">{t("empty.brandsHint")}</p>
             </div>
           ) : (
             filteredConversations.map((c) => (
@@ -188,7 +190,7 @@ export default function ChatModule() {
                     <span className="text-[9px] text-slate-400 font-medium shrink-0 ml-2">{formatTime(c.lastMessageTime)}</span>
                   </div>
                   <p className={`text-xs truncate mt-0.5 ${c.unread > 0 ? "text-slate-700 font-semibold" : "text-slate-400"}`}>
-                    {c.isLastMessageMine ? "You: " : ""}{c.lastMessage || "No messages yet"}
+                    {c.isLastMessageMine ? t("youPrefix") : ""}{c.lastMessage || t("noMessagesYet")}
                   </p>
                 </div>
               </div>
@@ -226,7 +228,7 @@ export default function ChatModule() {
                     <h3 className="font-bold text-slate-800 text-sm">{selectedChat.name}</h3>
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                      <span className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Online</span>
+                      <span className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">{t("online")}</span>
                     </div>
                   </div>
                 </header>
@@ -235,7 +237,7 @@ export default function ChatModule() {
                 <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-3 scrollbar-hide">
                   {messages.length === 0 && (
                     <div className="text-center py-16">
-                      <p className="text-sm text-slate-400">No messages yet. Start the conversation!</p>
+                      <p className="text-sm text-slate-400">{t("emptyThread")}</p>
                     </div>
                   )}
                   {messages.map((msg) => {
@@ -267,7 +269,7 @@ export default function ChatModule() {
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      placeholder="Type a message..."
+                      placeholder={t("inputPlaceholder")}
                       className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-2 resize-none max-h-28 outline-none text-slate-700 placeholder:text-slate-400"
                       onInput={(e) => { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; }}
                     />
@@ -286,7 +288,7 @@ export default function ChatModule() {
                 <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                   <Send size={32} />
                 </div>
-                <p className="font-medium">Select a conversation to start chatting</p>
+                <p className="font-medium">{t("selectPrompt")}</p>
               </div>
             )}
           </motion.div>

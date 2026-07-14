@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Target, Activity, Eye, DollarSign } from "lucide-react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
@@ -21,6 +22,8 @@ ChartJS.register(
 );
 
 const DetailedCampaignAnalytics = ({ onBack }) => {
+  const t = useTranslations("CampaignAnalytics");
+
   const barData = {
     labels: ["Nike Summer", "Spotify", "Sephora", "Disney", "Netflix"],
     datasets: [
@@ -57,10 +60,10 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         </button>
         <div>
           <h1 className="text-lg lg:text-2xl font-black text-gray-900 tracking-tight">
-            Campaign Analytics
+            {t("title")}
           </h1>
           <p className="hidden lg:block text-xs text-gray-400 font-bold">
-            Detailed analytics and performance metrics for all campaigns
+            {t("subtitle")}
           </p>
         </div>
       </div>
@@ -79,23 +82,23 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         <div className="col-span-12 grid grid-cols-4 gap-4">
           <StatMiniCard
             icon={<Target size={16} />}
-            label="Total Campaigns"
+            label={t("stats.totalCampaigns")}
             value="12"
-            trend="+3 this month"
+            trend={t("stats.trendThisMonth")}
             iconBg="bg-pink-500"
             trendColor="text-pink-500"
           />
           <StatMiniCard
             icon={<Activity size={16} />}
-            label="Active"
+            label={t("stats.active")}
             value="5"
-            trend="In progress"
+            trend={t("stats.trendInProgress")}
             iconBg="bg-emerald-400"
             trendColor="text-emerald-400"
           />
           <StatMiniCard
             icon={<Eye size={16} />}
-            label="Total Views"
+            label={t("stats.totalViews")}
             value="850K"
             trend="+15%"
             iconBg="bg-violet-500"
@@ -103,7 +106,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
           />
           <StatMiniCard
             icon={<DollarSign size={16} />}
-            label="Total Earnings"
+            label={t("stats.totalEarnings")}
             value="$24.5K"
             trend="+20%"
             iconBg="bg-pink-500"
@@ -114,7 +117,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Campaign Performance Bar Chart - Full Width */}
         <div className="col-span-12 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-black text-gray-900 text-sm mb-6">
-            Campaign Performance
+            {t("sections.campaignPerformance")}
           </h3>
           <div className="h-64">
             <Bar
@@ -149,7 +152,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Platform Distribution and Performance by Category - Side by side */}
         <div className="col-span-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="font-black text-gray-900 text-sm mb-6 text-center">
-            Platform Distribution
+            {t("sections.platformDistribution")}
           </h3>
           <div className="h-56 relative flex justify-center">
             <Doughnut
@@ -186,32 +189,32 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
 
         <div className="col-span-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-black text-gray-900 text-sm">
-            Performance by Category
+            {t("sections.performanceByCategory")}
           </h3>
           <CategoryProgress
-            label="Fashion"
-            count="4 campaigns"
+            label={t("categories.fashion")}
+            count={t("categories.campaigns", { count: 4 })}
             value="$90,500"
             progress="w-[90%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Beauty"
-            count="3 campaigns"
+            label={t("categories.beauty")}
+            count={t("categories.campaigns", { count: 3 })}
             value="$35,200"
             progress="w-[60%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Tech"
-            count="2 campaigns"
+            label={t("categories.tech")}
+            count={t("categories.campaigns", { count: 2 })}
             value="$65,300"
             progress="w-[75%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Lifestyle"
-            count="3 campaigns"
+            label={t("categories.lifestyle")}
+            count={t("categories.campaigns", { count: 3 })}
             value="$54,100"
             progress="w-[65%]"
             color="bg-pink-500"
@@ -221,7 +224,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Recent Campaigns Table Format */}
         <div className="col-span-12">
           <h3 className="font-black text-gray-900 text-sm mb-4 px-2">
-            Recent Campaigns
+            {t("sections.recentCampaigns")}
           </h3>
           {/* overflow-x-auto so the table scrolls horizontally on
               narrow viewports instead of being clipped by the parent's
@@ -233,22 +236,22 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Campaign
+                    {t("table.campaign")}
                   </th>
                   <th className="text-left px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Date
+                    {t("table.date")}
                   </th>
                   <th className="text-left px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Status
+                    {t("table.status")}
                   </th>
                   <th className="text-center px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Views
+                    {t("table.views")}
                   </th>
                   <th className="text-center px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Engagement
+                    {t("table.engagement")}
                   </th>
                   <th className="text-right px-6 py-4 font-black text-gray-400 text-[11px] uppercase tracking-wider">
-                    Revenue
+                    {t("table.revenue")}
                   </th>
                 </tr>
               </thead>
@@ -256,7 +259,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
                 <CampaignTableRow
                   title="Nike Summer Launch"
                   date="Jan 10 - Jan 31"
-                  status="Completed"
+                  status={t("status.completed")}
                   views="45K"
                   engagement="12.5%"
                   revenue="$2,500"
@@ -265,7 +268,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
                 <CampaignTableRow
                   title="Spotify Playlist Series"
                   date="Jan 15 - Feb 5"
-                  status="Active"
+                  status={t("status.active")}
                   views="11K"
                   engagement="8.8%"
                   revenue="$1,800"
@@ -274,7 +277,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
                 <CampaignTableRow
                   title="Sephora Tutorial"
                   date="Feb 1 - Feb 10"
-                  status="Active"
+                  status={t("status.active")}
                   views="8K"
                   engagement="7.2%"
                   revenue="$1,200"
@@ -301,23 +304,23 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         <div className="grid grid-cols-2 gap-4">
           <StatMiniCard
             icon={<Target size={16} />}
-            label="Total Campaigns"
+            label={t("stats.totalCampaigns")}
             value="12"
-            trend="+3 this month"
+            trend={t("stats.trendThisMonth")}
             iconBg="bg-pink-500"
             trendColor="text-pink-500"
           />
           <StatMiniCard
             icon={<Activity size={16} />}
-            label="Active"
+            label={t("stats.active")}
             value="5"
-            trend="In progress"
+            trend={t("stats.trendInProgress")}
             iconBg="bg-emerald-400"
             trendColor="text-emerald-400"
           />
           <StatMiniCard
             icon={<Eye size={16} />}
-            label="Total Views"
+            label={t("stats.totalViews")}
             value="850K"
             trend="+15%"
             iconBg="bg-violet-500"
@@ -325,7 +328,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
           />
           <StatMiniCard
             icon={<DollarSign size={16} />}
-            label="Total Earnings"
+            label={t("stats.totalEarnings")}
             value="$24.5K"
             trend="+20%"
             iconBg="bg-pink-500"
@@ -336,7 +339,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Campaign Performance Bar Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-black text-gray-900 text-[13px] mb-6">
-            Campaign Performance
+            {t("sections.campaignPerformance")}
           </h3>
           <div className="h-52">
             <Bar
@@ -371,7 +374,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Platform Distribution Doughnut */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-black text-gray-900 text-[13px] mb-6 text-center">
-            Platform Distribution
+            {t("sections.platformDistribution")}
           </h3>
           <div className="h-48 relative flex justify-center">
             <Doughnut
@@ -409,32 +412,32 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Missing Element: Performance by Category */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5">
           <h3 className="font-black text-gray-900 text-[13px]">
-            Performance by Category
+            {t("sections.performanceByCategory")}
           </h3>
           <CategoryProgress
-            label="Fashion"
-            count="4 campaigns"
+            label={t("categories.fashion")}
+            count={t("categories.campaigns", { count: 4 })}
             value="$90,500"
             progress="w-[90%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Beauty"
-            count="3 campaigns"
+            label={t("categories.beauty")}
+            count={t("categories.campaigns", { count: 3 })}
             value="$35,200"
             progress="w-[60%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Tech"
-            count="2 campaigns"
+            label={t("categories.tech")}
+            count={t("categories.campaigns", { count: 2 })}
             value="$65,300"
             progress="w-[75%]"
             color="bg-pink-500"
           />
           <CategoryProgress
-            label="Lifestyle"
-            count="3 campaigns"
+            label={t("categories.lifestyle")}
+            count={t("categories.campaigns", { count: 3 })}
             value="$54,100"
             progress="w-[65%]"
             color="bg-pink-500"
@@ -444,12 +447,12 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
         {/* Recent Campaigns with Full Metadata */}
         <div className="space-y-4">
           <h3 className="font-black text-gray-900 text-[13px] px-2">
-            Recent Campaigns
+            {t("sections.recentCampaigns")}
           </h3>
           <CampaignItem
             title="Nike Summer Launch"
             date="Jan 10 - Jan 31"
-            status="Completed"
+            status={t("status.completed")}
             views="45K"
             engagement="12.5%"
             revenue="$2,500"
@@ -458,7 +461,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
           <CampaignItem
             title="Spotify Playlist Series"
             date="Jan 15 - Feb 5"
-            status="Active"
+            status={t("status.active")}
             views="11K"
             engagement="8.8%"
             revenue="$1,800"
@@ -467,7 +470,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
           <CampaignItem
             title="Sephora Tutorial"
             date="Feb 1 - Feb 10"
-            status="Active"
+            status={t("status.active")}
             views="8K"
             engagement="7.2%"
             revenue="$1,200"
@@ -522,8 +525,10 @@ const CampaignItem = ({
   engagement,
   revenue,
   badgeColor,
-}) => (
-  <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
+}) => {
+  const t = useTranslations("CampaignAnalytics");
+  return (
+    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
     <div className="flex justify-between items-start">
       <div>
         <h4 className="text-sm font-black text-gray-900">{title}</h4>
@@ -536,12 +541,13 @@ const CampaignItem = ({
       </span>
     </div>
     <div className="grid grid-cols-3 gap-2">
-      <StatBox label="Views" value={views} />
-      <StatBox label="Engagement" value={engagement} />
-      <StatBox label="Revenue" value={revenue} color="text-pink-500" />
+      <StatBox label={t("metrics.views")} value={views} />
+      <StatBox label={t("metrics.engagement")} value={engagement} />
+      <StatBox label={t("metrics.revenue")} value={revenue} color="text-pink-500" />
     </div>
   </div>
-);
+  );
+};
 
 const StatBox = ({ label, value, color = "text-gray-900" }) => (
   <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-center">

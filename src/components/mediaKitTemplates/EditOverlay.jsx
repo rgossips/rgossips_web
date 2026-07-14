@@ -6,10 +6,12 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil, Loader2, X as XIcon, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const INSTAGRAM_LINK_RE = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\//;
 
 export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsSave }) {
+  const t = useTranslations("MediaKitTemplatesEditOverlay");
   const [open, setOpen] = useState(null); // "bio" | "reels" | null
 
   return (
@@ -22,8 +24,8 @@ export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsS
           On lg+ both BottomNav and ScrollToTop are out of the way and we
           revert to the tighter bottom-6 offset. */}
       <div className="fixed bottom-36 right-6 lg:bottom-6 z-[200] flex flex-col gap-2.5 items-end">
-        <EditPill onClick={() => setOpen("bio")} label="Edit Bio" />
-        <EditPill onClick={() => setOpen("reels")} label="Edit Top Reels" />
+        <EditPill onClick={() => setOpen("bio")} label={t("pills.editBio")} />
+        <EditPill onClick={() => setOpen("reels")} label={t("pills.editTopReels")} />
       </div>
 
       {open === "bio" && (
@@ -65,6 +67,7 @@ function EditPill({ onClick, label }) {
 }
 
 function ModalShell({ title, subtitle, onClose, children, footer }) {
+  const t = useTranslations("MediaKitTemplatesEditOverlay");
   return (
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -73,7 +76,7 @@ function ModalShell({ title, subtitle, onClose, children, footer }) {
             <h3 className="text-base font-bold text-slate-900">{title}</h3>
             {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
           </div>
-          <button onClick={onClose} className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer" aria-label="Close">
+          <button onClick={onClose} className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer" aria-label={t("common.close")}>
             <XIcon size={16} className="text-slate-400" />
           </button>
         </div>
@@ -85,6 +88,7 @@ function ModalShell({ title, subtitle, onClose, children, footer }) {
 }
 
 function BioModal({ initial, onClose, onSave }) {
+  const t = useTranslations("MediaKitTemplatesEditOverlay");
   const [draft, setDraft] = useState(initial);
   const [saving, setSaving] = useState(false);
   const ref = useRef(null);
@@ -104,14 +108,14 @@ function BioModal({ initial, onClose, onSave }) {
 
   return (
     <ModalShell
-      title="Edit your bio"
-      subtitle="Shown across every media-kit template"
+      title={t("bio.title")}
+      subtitle={t("bio.subtitle")}
       onClose={onClose}
       footer={
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[11px] text-slate-400 font-semibold">{draft.length}/500</span>
+          <span className="text-[11px] text-slate-400 font-semibold">{t("bio.charCount", { count: draft.length })}</span>
           <div className="flex gap-2">
-            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">Cancel</button>
+            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">{t("common.cancel")}</button>
             <button
               onClick={handleSave}
               disabled={saving}
@@ -119,7 +123,7 @@ function BioModal({ initial, onClose, onSave }) {
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
             >
               {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>
@@ -133,7 +137,7 @@ function BioModal({ initial, onClose, onSave }) {
           e.target.style.height = "auto";
           e.target.style.height = e.target.scrollHeight + "px";
         }}
-        placeholder="Write something about yourself…"
+        placeholder={t("bio.placeholder")}
         maxLength={500}
         rows={5}
         className="w-full text-sm text-slate-700 leading-relaxed bg-slate-50 border border-slate-200 focus:bg-white focus:border-purple-300 rounded-2xl p-3.5 resize-none focus:outline-none focus:ring-2 focus:ring-purple-100 transition-all"
@@ -143,6 +147,7 @@ function BioModal({ initial, onClose, onSave }) {
 }
 
 function ReelsModal({ initial, onClose, onSave }) {
+  const t = useTranslations("MediaKitTemplatesEditOverlay");
   const [links, setLinks] = useState(() =>
     initial?.length > 0 ? initial.map((r) => r.permalink || "") : [""]
   );
@@ -175,12 +180,12 @@ function ReelsModal({ initial, onClose, onSave }) {
 
   return (
     <ModalShell
-      title="Edit your top reels"
-      subtitle="Instagram post or reel links — thumbnails resolve automatically"
+      title={t("reels.title")}
+      subtitle={t("reels.subtitle")}
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">Cancel</button>
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">{t("common.cancel")}</button>
           <button
             onClick={handleSave}
             disabled={saving || invalid}
@@ -188,7 +193,7 @@ function ReelsModal({ initial, onClose, onSave }) {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-            {saving ? "Saving…" : "Save"}
+            {saving ? t("common.saving") : t("common.save")}
           </button>
         </div>
       }
@@ -210,7 +215,7 @@ function ReelsModal({ initial, onClose, onSave }) {
                   <XIcon size={14} />
                 </button>
               </div>
-              {!isValid && <p className="text-[10px] text-red-500 mt-1 ml-1">Only Instagram post / reel links are allowed.</p>}
+              {!isValid && <p className="text-[10px] text-red-500 mt-1 ml-1">{t("reels.invalidLink")}</p>}
             </div>
           );
         })}
@@ -218,7 +223,7 @@ function ReelsModal({ initial, onClose, onSave }) {
           onClick={handleAdd}
           className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 cursor-pointer"
         >
-          + Add reel link
+          {t("reels.addLink")}
         </button>
       </div>
     </ModalShell>

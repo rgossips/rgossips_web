@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import {
   X,
   Search,
@@ -20,76 +21,44 @@ const SUPPORT_INSTAGRAM = "https://www.instagram.com/rgossips.agency/";
 // FAQs live in src/components/HelpAndSupport.jsx.
 const FAQ_GROUPS = [
   {
+    key: "gettingStarted",
     icon: "🚀",
-    title: "Getting Started",
     items: [
-      {
-        q: "How do I post my first campaign?",
-        a: "Click the purple Post Requirement button in the sidebar (or any Create Campaign CTA) to launch the campaign builder. Set your brief, budget, deliverables and deadline — campaigns go live in under 10 minutes.",
-      },
-      {
-        q: "How do I find the right influencers?",
-        a: "Use Find Creators in the sidebar. You can filter by category, follower count, location, engagement and gender, then sort by relevance, followers or recent activity.",
-      },
-      {
-        q: "How does the matching work?",
-        a: "We surface creators whose audience demographics, niche and recent performance line up with your brief. Featured creators on the home page are hand-picked by our team.",
-      },
+      { key: "postFirstCampaign" },
+      { key: "findInfluencers" },
+      { key: "matching" },
     ],
   },
   {
+    key: "payments",
     icon: "💰",
-    title: "Payments & Pricing",
     items: [
-      {
-        q: "Is it free for brands?",
-        a: "Yes — brands pay zero subscription. You only pay the creator's negotiated rate plus any platform fee on completion of the campaign.",
-      },
-      {
-        q: "How are payments handled?",
-        a: "Payments are held in escrow when you approve a creator's deliverables, then released to them within 7–10 business days. No money leaves your account until you confirm the work.",
-      },
-      {
-        q: "How do I add or change my GST details?",
-        a: "Brand profiles capture GSTIN automatically during signup. To update it, contact us via the WhatsApp channel below and we'll help you re-verify.",
-      },
+      { key: "freeForBrands" },
+      { key: "paymentsHandled" },
+      { key: "gstDetails" },
     ],
   },
   {
+    key: "campaigns",
     icon: "📦",
-    title: "Campaign Management",
     items: [
-      {
-        q: "How do I review applications?",
-        a: "Open the campaign from Campaigns → it lists every applicant with their media kit and rate. Approve or decline directly from there.",
-      },
-      {
-        q: "Can I request revisions on deliverables?",
-        a: "Yes. When a creator submits, you can approve or request a revision with a note. They'll be notified and resubmit.",
-      },
-      {
-        q: "What if a creator goes dark?",
-        a: "Use the contact button on their application card to ping them, or message us via WhatsApp and we'll chase them on your behalf.",
-      },
+      { key: "reviewApplications" },
+      { key: "revisions" },
+      { key: "creatorDark" },
     ],
   },
   {
+    key: "account",
     icon: "🛡️",
-    title: "Account & Privacy",
     items: [
-      {
-        q: "Who can see my brand profile?",
-        a: "Influencers see the brand name, logo, categories and active campaigns. Internal contacts, GSTIN and payment details are private.",
-      },
-      {
-        q: "Can I have multiple team members?",
-        a: "Multi-seat brand accounts are on our roadmap. For now, one phone number = one brand account. Ping us if you need a workaround.",
-      },
+      { key: "whoSeesProfile" },
+      { key: "teamMembers" },
     ],
   },
 ];
 
 export default function BrandHelpAndSupport({ open, onClose }) {
+  const t = useTranslations("BrandsBrandHelpAndSupport");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -100,10 +69,24 @@ export default function BrandHelpAndSupport({ open, onClose }) {
     setMounted(true);
   }, []);
 
+  const translatedGroups = useMemo(
+    () =>
+      FAQ_GROUPS.map((g) => ({
+        key: g.key,
+        icon: g.icon,
+        title: t(`faqs.${g.key}.title`),
+        items: g.items.map((it) => ({
+          q: t(`faqs.${g.key}.items.${it.key}.q`),
+          a: t(`faqs.${g.key}.items.${it.key}.a`),
+        })),
+      })),
+    [t]
+  );
+
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return FAQ_GROUPS;
-    return FAQ_GROUPS
+    if (!q) return translatedGroups;
+    return translatedGroups
       .map((g) => ({
         ...g,
         items: g.items.filter(
@@ -111,7 +94,7 @@ export default function BrandHelpAndSupport({ open, onClose }) {
         ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [query]);
+  }, [query, translatedGroups]);
 
   if (!open || !mounted) return null;
 
@@ -129,13 +112,13 @@ export default function BrandHelpAndSupport({ open, onClose }) {
             <HelpCircle size={20} />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-black tracking-tight text-gray-900">Help & Support</h1>
-            <p className="text-[11px] text-gray-400 font-bold">FAQs and contact options</p>
+            <h1 className="text-lg font-black tracking-tight text-gray-900">{t("header.title")}</h1>
+            <p className="text-[11px] text-gray-400 font-bold">{t("header.subtitle")}</p>
           </div>
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"
-            aria-label="Close"
+            aria-label={t("close")}
           >
             <X size={18} />
           </button>
@@ -152,7 +135,7 @@ export default function BrandHelpAndSupport({ open, onClose }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search the FAQs…"
+              placeholder={t("search.placeholder")}
               className="w-full bg-slate-50 border border-slate-100 rounded-xl py-4 pl-11 pr-5 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-purple-50 transition-all placeholder:text-gray-300"
             />
           </div>
@@ -160,7 +143,7 @@ export default function BrandHelpAndSupport({ open, onClose }) {
           {/* Contact options */}
           <section className="space-y-3">
             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">
-              Contact Us
+              {t("contactUs")}
             </h3>
             <div className="grid grid-cols-1 gap-3">
               <a
@@ -171,7 +154,7 @@ export default function BrandHelpAndSupport({ open, onClose }) {
                   <Mail size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("labels.email")}</p>
                   <p className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate">
                     {SUPPORT_EMAIL}
                   </p>
@@ -218,14 +201,14 @@ export default function BrandHelpAndSupport({ open, onClose }) {
           {/* FAQ */}
           <section className="space-y-4">
             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">
-              Frequently Asked Questions
+              {t("faq.title")}
             </h3>
 
             {filteredGroups.length === 0 ? (
               <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-100">
                 <HelpCircle size={28} className="text-gray-200 mx-auto mb-2" />
-                <p className="text-sm font-bold text-gray-400">No matches for "{query}"</p>
-                <p className="text-[11px] text-gray-300 mt-1">Try a different keyword or message us on WhatsApp.</p>
+                <p className="text-sm font-bold text-gray-400">{t("noMatches", { query })}</p>
+                <p className="text-[11px] text-gray-300 mt-1">{t("noMatchesHint")}</p>
               </div>
             ) : (
               filteredGroups.map((group) => (

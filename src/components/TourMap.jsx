@@ -1,4 +1,8 @@
-export default function TourMap({ location = "" }) {
+import { getTranslations } from "next-intl/server";
+
+export default async function TourMap({ location = "" }) {
+  const t = await getTranslations("TourMap");
+
   // Build a reliable Google Maps embed URL.
   // Accepts:
   // - plain place/address string (e.g. "Jim Corbett National Park")
@@ -21,7 +25,7 @@ export default function TourMap({ location = "" }) {
 
   return (
     <div className="mb-5">
-      <h2 className="text-2xl font-semibold mb-4">Tour Map</h2>
+      <h2 className="text-2xl font-semibold mb-4">{t("heading")}</h2>
 
       <iframe
         title="location-map"

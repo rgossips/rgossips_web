@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { SlidersHorizontal, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
 
 // Filter options shown in the drawer. Keys that map to real DB columns drive
@@ -94,6 +95,7 @@ function useIsDesktop() {
 export { sortOptions };
 
 export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
+  const t = useTranslations("BrandsFilterDrawer");
   const isDesktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   // Draft filters while the drawer is open; committed to parent on Apply
@@ -133,7 +135,7 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
 
   const triggerButton = (
     <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-semibold cursor-pointer whitespace-nowrap">
-      Filter {activeCount > 0 && `(${activeCount})`}
+      {t("filterButton")} {activeCount > 0 && `(${activeCount})`}
       <SlidersHorizontal size={12} />
     </button>
   );
@@ -145,11 +147,11 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     <div className="flex flex-row items-center justify-between border-b px-6 py-4 shrink-0">
       <div className="flex flex-col text-left">
         {variant === "dialog" ? (
-          <DialogTitle className="text-xl font-bold text-gray-900">All Filters</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-gray-900">{t("title")}</DialogTitle>
         ) : (
-          <DrawerTitle className="text-xl font-bold text-gray-900">All Filters</DrawerTitle>
+          <DrawerTitle className="text-xl font-bold text-gray-900">{t("title")}</DrawerTitle>
         )}
-        <p className="text-[10px] text-gray-400">Refine your search</p>
+        <p className="text-[10px] text-gray-400">{t("subtitle")}</p>
       </div>
       {variant === "dialog" ? (
         <DialogClose asChild>
@@ -191,13 +193,13 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
         onClick={handleClear}
         className="py-4 bg-gray-50 text-gray-900 font-bold rounded-2xl cursor-pointer"
       >
-        Clear Filters
+        {t("clearFilters")}
       </button>
       <button
         onClick={handleApply}
         className="py-4 bg-[#5851DB] text-white font-bold rounded-2xl shadow-lg shadow-purple-200 cursor-pointer"
       >
-        {draftCount != null ? `Apply Filters (${draftCount})` : "Apply Filters"}
+        {draftCount != null ? t("applyFiltersCount", { count: draftCount }) : t("applyFilters")}
       </button>
     </div>
   );
@@ -236,6 +238,7 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
 }
 
 const FilterContent = ({ draft, toggleOption }) => {
+  const t = useTranslations("BrandsFilterDrawer");
   const [activeTab, setActiveTab] = useState("Categories");
   const [search, setSearch] = useState("");
   const allOptions = filterData[activeTab] || [];
@@ -282,11 +285,15 @@ const FilterContent = ({ draft, toggleOption }) => {
         <div className="p-4 pb-2 shrink-0">
           <div className="flex justify-between items-center mb-3 px-2">
             <h4 className="text-[13px] font-bold text-gray-900">
-              Filter by {activeTab}
+              {t("filterBy", { field: activeTab })}
             </h4>
             <span className="text-[10px] text-gray-400">
-              {currentOptions.length}
-              {q ? ` / ${allOptions.length}` : ""} Options
+              {q
+                ? t("optionsFiltered", {
+                    shown: currentOptions.length,
+                    total: allOptions.length,
+                  })
+                : t("optionsCount", { count: currentOptions.length })}
             </span>
           </div>
 
@@ -295,7 +302,7 @@ const FilterContent = ({ draft, toggleOption }) => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${activeTab.toLowerCase()}...`}
+              placeholder={t("searchPlaceholder", { field: activeTab.toLowerCase() })}
               className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:border-[#5851DB] focus:bg-white text-[12px] font-medium outline-none transition-colors"
             />
           )}

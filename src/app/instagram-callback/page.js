@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function InstagramCallback() {
+  const t = useTranslations("InstagramCallback");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
@@ -44,7 +46,7 @@ export default function InstagramCallback() {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-[#0F0F1A] gap-3">
       <Loader2 size={28} className="text-pink-500 animate-spin" />
-      <p className="text-white text-sm font-medium">Connecting to Instagram...</p>
+      <p className="text-white text-sm font-medium">{t("connecting")}</p>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import AlertPopup from "@/components/AlertPopup";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 
 export default function AddReelFlow({ onBack }) {
+  const t = useTranslations("AddReelFlow");
   const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [step, setStep] = useState(1);
   const [uploadMethod, setUploadMethod] = useState("url"); // 'url' or 'file'
@@ -40,14 +42,14 @@ export default function AddReelFlow({ onBack }) {
   });
 
   const categories = [
-    { name: "Beauty & Skincare", icon: Sparkles, color: "text-pink-500" },
-    { name: "Fashion & Lifestyle", icon: Shirt, color: "text-purple-500" },
-    { name: "Food & Beverage", icon: Utensils, color: "text-orange-500" },
-    { name: "Health, Fitness & Wellness", icon: Heart, color: "text-green-500" },
-    { name: "Travel & Hospitality", icon: Plane, color: "text-blue-500" },
-    { name: "Technology & Gadgets", icon: Camera, color: "text-slate-600" },
-    { name: "Gaming & Entertainment", icon: Smile, color: "text-red-500" },
-    { name: "Education & Career", icon: Sparkles, color: "text-blue-600" },
+    { key: "beautySkincare", name: "Beauty & Skincare", icon: Sparkles, color: "text-pink-500" },
+    { key: "fashionLifestyle", name: "Fashion & Lifestyle", icon: Shirt, color: "text-purple-500" },
+    { key: "foodBeverage", name: "Food & Beverage", icon: Utensils, color: "text-orange-500" },
+    { key: "healthFitnessWellness", name: "Health, Fitness & Wellness", icon: Heart, color: "text-green-500" },
+    { key: "travelHospitality", name: "Travel & Hospitality", icon: Plane, color: "text-blue-500" },
+    { key: "technologyGadgets", name: "Technology & Gadgets", icon: Camera, color: "text-slate-600" },
+    { key: "gamingEntertainment", name: "Gaming & Entertainment", icon: Smile, color: "text-red-500" },
+    { key: "educationCareer", name: "Education & Career", icon: Sparkles, color: "text-blue-600" },
   ];
 
   const handleNext = () => {
@@ -57,7 +59,7 @@ export default function AddReelFlow({ onBack }) {
   const handlePublish = () => {
     // Show a success popup; navigate back only once it's dismissed (else the
     // component unmounts before the message is seen).
-    setPopup({ title: "Reel published", message: "Your reel was published successfully.", tone: "success" });
+    setPopup({ title: t("publishedTitle"), message: t("publishedMessage"), tone: "success" });
   };
 
   return (
@@ -72,9 +74,9 @@ export default function AddReelFlow({ onBack }) {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Add New Reel</h1>
+            <h1 className="text-xl font-bold text-gray-900">{t("title")}</h1>
             <p className="text-xs text-gray-400 font-medium">
-              Step {step} of 3
+              {t("stepOf", { step })}
             </p>
           </div>
         </div>
@@ -97,19 +99,19 @@ export default function AddReelFlow({ onBack }) {
         <div className="flex justify-between items-center px-2 mb-4">
           <StepPill
             number={1}
-            label="Upload"
+            label={t("steps.upload")}
             active={step >= 1}
             current={step === 1}
           />
           <StepPill
             number={2}
-            label="Details"
+            label={t("steps.details")}
             active={step >= 2}
             current={step === 2}
           />
           <StepPill
             number={3}
-            label="Preview"
+            label={t("steps.preview")}
             active={step >= 3}
             current={step === 3}
           />
@@ -130,7 +132,7 @@ export default function AddReelFlow({ onBack }) {
             >
               <div className="space-y-3">
                 <h3 className="text-sm font-bold text-gray-800">
-                  Choose Upload Method
+                  {t("chooseUploadMethod")}
                 </h3>
                 <div className="flex bg-pink-50/50 p-1.5 rounded-xl">
                   <button
@@ -141,7 +143,7 @@ export default function AddReelFlow({ onBack }) {
                         : "text-gray-400"
                     }`}
                   >
-                    <LinkIcon size={16} /> Video URL
+                    <LinkIcon size={16} /> {t("videoUrl")}
                   </button>
                   <button
                     onClick={() => setUploadMethod("file")}
@@ -151,14 +153,14 @@ export default function AddReelFlow({ onBack }) {
                         : "text-gray-400"
                     }`}
                   >
-                    <Upload size={16} /> Upload File
+                    <Upload size={16} /> {t("uploadFile")}
                   </button>
                 </div>
               </div>
 
               {uploadMethod === "url" ? (
                 <div className="space-y-2">
-                  <Label text="Video URL" required />
+                  <Label text={t("videoUrl")} required />
                   <div className="relative">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                       <LinkIcon size={18} />
@@ -190,13 +192,13 @@ export default function AddReelFlow({ onBack }) {
                     <Upload size={32} />
                   </div>
                   <p className="text-sm font-bold text-gray-800 mb-1">
-                    Click to upload or drag and drop
+                    {t("clickToUpload")}
                   </p>
                   <p className="text-xs text-gray-400 mb-4">
-                    MP4, MOV up to 100MB
+                    {t("videoFormats")}
                   </p>
                   <button className="px-6 cursor-pointer py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg shadow-pink-200">
-                    Browse Files
+                    {t("browseFiles")}
                   </button>
                 </div>
               )}
@@ -204,18 +206,18 @@ export default function AddReelFlow({ onBack }) {
               {/* Thumbnail Section (Missing in previous code) */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label text="Thumbnail" />
-                  <span className="text-xs text-gray-400">(Optional)</span>
+                  <Label text={t("thumbnail")} />
+                  <span className="text-xs text-gray-400">{t("optional")}</span>
                 </div>
                 <div className="border border-gray-100 rounded-3xl h-40 flex flex-col items-center justify-center bg-white shadow-sm">
                   <div className="w-10 h-10 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center mb-2">
                     <ImageIcon size={20} />
                   </div>
                   <p className="text-xs font-bold text-gray-700">
-                    Upload custom thumbnail
+                    {t("uploadCustomThumbnail")}
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1">
-                    JPG or PNG, recommended 1080x1920
+                    {t("thumbnailFormats")}
                   </p>
                 </div>
               </div>
@@ -234,12 +236,12 @@ export default function AddReelFlow({ onBack }) {
               {/* Basic Info */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-gray-800">
-                  Basic Information
+                  {t("basicInformation")}
                 </h3>
                 <div>
-                  <Label text="Title" required />
+                  <Label text={t("titleLabel")} required />
                   <input
-                    placeholder="e.g., Summer Skincare Routine"
+                    placeholder={t("titlePlaceholder")}
                     className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-pink-500 transition-colors"
                     value={formData.title}
                     onChange={(e) =>
@@ -248,9 +250,9 @@ export default function AddReelFlow({ onBack }) {
                   />
                 </div>
                 <div>
-                  <Label text="Description" />
+                  <Label text={t("description")} />
                   <textarea
-                    placeholder="Describe your reel and what makes it special..."
+                    placeholder={t("descriptionPlaceholder")}
                     rows={4}
                     className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm font-medium outline-none focus:border-pink-500 transition-colors resize-none"
                     value={formData.description}
@@ -262,7 +264,7 @@ export default function AddReelFlow({ onBack }) {
                     }
                   />
                   <p className="text-[10px] text-gray-400 mt-2">
-                    Help brands understand your content better
+                    {t("descriptionHint")}
                   </p>
                 </div>
               </div>
@@ -270,12 +272,12 @@ export default function AddReelFlow({ onBack }) {
               {/* Category & Platform */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-gray-800">
-                  Category & Platform
+                  {t("categoryAndPlatform")}
                 </h3>
 
                 {/* Category Grid */}
                 <div>
-                  <Label text="Category" required />
+                  <Label text={t("category")} required />
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     {categories.map((cat) => (
                       <button
@@ -297,7 +299,7 @@ export default function AddReelFlow({ onBack }) {
                         <span
                           className={`text-xs font-bold ${formData.category === cat.name ? "text-gray-900" : "text-gray-500"}`}
                         >
-                          {cat.name}
+                          {t(`categories.${cat.key}`)}
                         </span>
                         {formData.category === cat.name && (
                           <div className="ml-auto text-pink-500">
@@ -311,7 +313,7 @@ export default function AddReelFlow({ onBack }) {
 
                 {/* Platform Buttons */}
                 <div>
-                  <Label text="Platform" required />
+                  <Label text={t("platform")} required />
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     <PlatformButton
                       name="Instagram"
@@ -349,15 +351,15 @@ export default function AddReelFlow({ onBack }) {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <h3 className="text-sm font-bold text-gray-800">
-                    Performance Metrics
+                    {t("performanceMetrics")}
                   </h3>
-                  <span className="text-xs text-gray-400">(Optional)</span>
+                  <span className="text-xs text-gray-400">{t("optional")}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label text="Views" />
+                    <Label text={t("views")} />
                     <input
-                      placeholder="e.g. 12.5K"
+                      placeholder={t("viewsPlaceholder")}
                       className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:border-pink-500"
                       value={formData.views}
                       onChange={(e) =>
@@ -366,9 +368,9 @@ export default function AddReelFlow({ onBack }) {
                     />
                   </div>
                   <div>
-                    <Label text="Engagement Rate" />
+                    <Label text={t("engagementRate")} />
                     <input
-                      placeholder="e.g. 8.5%"
+                      placeholder={t("engagementPlaceholder")}
                       className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:border-pink-500"
                       value={formData.engagement}
                       onChange={(e) =>
@@ -381,7 +383,7 @@ export default function AddReelFlow({ onBack }) {
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-400">
-                  Add metrics to help brands understand your reach
+                  {t("metricsHint")}
                 </p>
               </div>
             </motion.div>
@@ -399,10 +401,10 @@ export default function AddReelFlow({ onBack }) {
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
                 <div>
                   <h2 className="text-lg font-bold text-gray-900">
-                    Review Your Reel
+                    {t("reviewYourReel")}
                   </h2>
                   <p className="text-xs text-gray-400 mt-1">
-                    Check details before publishing
+                    {t("checkDetails")}
                   </p>
                 </div>
 
@@ -411,7 +413,7 @@ export default function AddReelFlow({ onBack }) {
                     <div className="flex items-center gap-2 mb-2 text-pink-500">
                       <Instagram size={16} />{" "}
                       <span className="text-[10px] font-bold uppercase">
-                        Platform
+                        {t("platform")}
                       </span>
                     </div>
                     <p className="font-bold text-gray-800">
@@ -422,7 +424,7 @@ export default function AddReelFlow({ onBack }) {
                     <div className="flex items-center gap-2 mb-2 text-pink-500">
                       <Sparkles size={16} />{" "}
                       <span className="text-[10px] font-bold uppercase">
-                        Category
+                        {t("category")}
                       </span>
                     </div>
                     <p className="font-bold text-gray-800">
@@ -437,11 +439,10 @@ export default function AddReelFlow({ onBack }) {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-gray-900">
-                      Ready to Publish?
+                      {t("readyToPublish")}
                     </h4>
                     <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                      Your reel will be added to your portfolio and become
-                      visible to brands looking for collaborations.
+                      {t("readyToPublishDesc")}
                     </p>
                   </div>
                 </div>
@@ -459,7 +460,7 @@ export default function AddReelFlow({ onBack }) {
               onClick={() => setStep(step - 1)}
               className="px-6 py-4 bg-white cursor-pointer border border-gray-100 text-gray-500 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors"
             >
-              ← Back
+              {t("back")}
             </button>
           )}
 
@@ -468,14 +469,16 @@ export default function AddReelFlow({ onBack }) {
               onClick={handleNext}
               className="flex-1 py-4 cursor-pointer bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-xl shadow-pink-200 hover:shadow-pink-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              Continue to {step === 1 ? "Details" : "Preview"} →
+              {t("continueTo", {
+                dest: step === 1 ? t("steps.details") : t("steps.preview"),
+              })}
             </button>
           ) : (
             <button
               onClick={handlePublish}
               className="flex-1 py-4 bg-[#10b981] cursor-pointer text-white font-bold rounded-xl shadow-xl shadow-emerald-200 hover:bg-[#059669] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <Check size={18} strokeWidth={3} /> Publish Reel
+              <Check size={18} strokeWidth={3} /> {t("publishReel")}
             </button>
           )}
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import MediaKitLayout from "@/components/MediaKitLayout";
 import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate } from "lucide-react";
@@ -8,6 +9,7 @@ import Link from "next/link";
 import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage } from "@/lib/plans";
 
 export default function MediaKitPage() {
+  const t = useTranslations("InfluencerMediaKit");
   const { profile, user, refreshProfile } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -58,12 +60,12 @@ export default function MediaKitPage() {
         }
       } catch (err) {
         console.error("Failed to save template:", err);
-        setTemplateError("Failed to save — please try again.");
+        setTemplateError(t("errors.saveFailed"));
       } finally {
         setSavingTemplate(null);
       }
     },
-    [user, refreshProfile],
+    [user, refreshProfile, t],
   );
 
   const handleBioSave = useCallback(
@@ -192,12 +194,12 @@ export default function MediaKitPage() {
     {
       name: "WhatsApp",
       color: "bg-green-500",
-      url: `https://wa.me/?text=${encodeURIComponent(`Check out my media kit: ${shareUrl}`)}`,
+      url: `https://wa.me/?text=${encodeURIComponent(t("share.message", { url: shareUrl }))}`,
     },
     {
       name: "Twitter",
       color: "bg-black",
-      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out my media kit!`)}&url=${encodeURIComponent(shareUrl)}`,
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(t("share.messageShort"))}&url=${encodeURIComponent(shareUrl)}`,
     },
     {
       name: "LinkedIn",
@@ -207,7 +209,7 @@ export default function MediaKitPage() {
     {
       name: "Email",
       color: "bg-slate-600",
-      url: `mailto:?subject=${encodeURIComponent(`${profile?.full_name}'s Media Kit`)}&body=${encodeURIComponent(`Check out my media kit: ${shareUrl}`)}`,
+      url: `mailto:?subject=${encodeURIComponent(t("share.emailSubject", { name: profile?.full_name || "" }))}&body=${encodeURIComponent(t("share.message", { url: shareUrl }))}`,
     },
   ];
 
@@ -238,8 +240,8 @@ export default function MediaKitPage() {
               <>
                 {/* Share Card — only after publish */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Share Your Media Kit</h3>
-                  <p className="text-xs text-slate-500">Share this link with brands and collaborators to showcase your profile.</p>
+                  <h3 className="text-sm font-bold text-slate-900">{t("share.cardTitle")}</h3>
+                  <p className="text-xs text-slate-500">{t("share.cardDescription")}</p>
 
                   {/* Copy Link */}
                   <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -271,9 +273,9 @@ export default function MediaKitPage() {
                 <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto">
                   <Share2 size={22} className="text-purple-500" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">Publish to Share</h3>
+                <h3 className="text-sm font-bold text-slate-900">{t("publish.title")}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Review your media kit, edit your bio, then hit <strong>Publish</strong> to get a shareable link you can send to brands and post on social media.
+                  {t.rich("publish.description", { b: (c) => <strong>{c}</strong> })}
                 </p>
                 <button
                   onClick={handlePublish}
@@ -282,26 +284,26 @@ export default function MediaKitPage() {
                   style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
                 >
                   {publishing ? <Loader2 size={16} className="animate-spin" /> : null}
-                  {publishing ? "Publishing..." : "Publish Media Kit"}
+                  {publishing ? t("publish.publishing") : t("publish.cta")}
                 </button>
               </div>
             )}
 
             {/* Tips */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100 p-5 space-y-3">
-              <h3 className="text-sm font-bold text-slate-900">Tips to stand out</h3>
+              <h3 className="text-sm font-bold text-slate-900">{t("tips.title")}</h3>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2 text-xs text-slate-600">
                   <span className="text-purple-500 mt-0.5">&#10003;</span>
-                  Keep your Instagram profile up to date
+                  {t("tips.item1")}
                 </li>
                 <li className="flex items-start gap-2 text-xs text-slate-600">
                   <span className="text-purple-500 mt-0.5">&#10003;</span>
-                  Add your niche categories in profile settings
+                  {t("tips.item2")}
                 </li>
                 <li className="flex items-start gap-2 text-xs text-slate-600">
                   <span className="text-purple-500 mt-0.5">&#10003;</span>
-                  Share your media kit link in your Instagram bio
+                  {t("tips.item3")}
                 </li>
               </ul>
             </div>
@@ -314,7 +316,7 @@ export default function MediaKitPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-slate-900">Share Media Kit</h3>
+              <h3 className="text-lg font-bold text-slate-900">{t("share.modalTitle")}</h3>
               <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-slate-100 rounded-xl">
                 ✕
               </button>
@@ -324,7 +326,7 @@ export default function MediaKitPage() {
             <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border">
               <p className="flex-1 text-xs text-slate-600 truncate font-mono">{shareUrl}</p>
               <button onClick={handleCopyLink} className="px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg">
-                {copied ? "Copied!" : "Copy"}
+                {copied ? t("share.copied") : t("share.copy")}
               </button>
             </div>
 
@@ -354,9 +356,10 @@ export default function MediaKitPage() {
 // dimmed + has a "not-allowed" cursor. The persistent upgrade nudge at
 // the bottom is the only path to action for a locked tier.
 function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplate, templateError, onPreview, onSave }) {
+  const t = useTranslations("InfluencerMediaKit");
   const effectivePlan = getEffectivePlan(profile);
   const hasUnsavedPreview = previewTemplate !== savedTemplate;
-  const previewMeta = MEDIA_KIT_TEMPLATES.find((t) => t.id === previewTemplate);
+  const previewMeta = MEDIA_KIT_TEMPLATES.find((tpl) => tpl.id === previewTemplate);
   const canUsePreview = profileCanUseMediaKitTemplate(profile, previewTemplate);
   const usage = getProfileTemplateChangeUsage(profile);
   const isUnlimited = !isFinite(usage.limit);
@@ -369,27 +372,27 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
       <div className="flex items-center gap-2">
         <LayoutTemplate size={16} className="text-purple-500" />
-        <h3 className="text-sm font-bold text-slate-900">Templates</h3>
+        <h3 className="text-sm font-bold text-slate-900">{t("templates.title")}</h3>
         <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-wider">{effectivePlan}</span>
       </div>
-      <p className="text-[11px] text-slate-500 leading-snug">Tap a template to preview. Pick the one you want shareable to brands and creators.</p>
+      <p className="text-[11px] text-slate-500 leading-snug">{t("templates.hint")}</p>
 
       <div className="space-y-2">
-        {MEDIA_KIT_TEMPLATES.map((t) => {
+        {MEDIA_KIT_TEMPLATES.map((tpl) => {
           // "Locked" still means the plan can't *save* this template, but we
           // let every plan preview every template so the upgrade upsell is
           // tangible — you see the design you'd be paying for before paying.
-          const locked = !profileCanUseMediaKitTemplate(profile, t.id);
-          const isSaved = savedTemplate === t.id;
-          const isPreviewing = previewTemplate === t.id;
+          const locked = !profileCanUseMediaKitTemplate(profile, tpl.id);
+          const isSaved = savedTemplate === tpl.id;
+          const isPreviewing = previewTemplate === tpl.id;
           return (
             <button
-              key={t.id}
+              key={tpl.id}
               type="button"
-              onClick={() => !locked && onPreview(t.id)}
+              onClick={() => !locked && onPreview(tpl.id)}
               disabled={locked}
               aria-disabled={locked}
-              title={locked ? `Available on the ${t.minPlan} plan and above` : undefined}
+              title={locked ? t("templates.lockedTitle", { plan: tpl.minPlan }) : undefined}
               className={`w-full text-left rounded-xl border p-2.5 flex items-center gap-3 transition-all ${
                 locked
                   ? "border-slate-100 bg-slate-50/60 opacity-60 cursor-not-allowed"
@@ -400,18 +403,18 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
             >
               <div
                 className={`w-12 h-12 rounded-lg shrink-0 border border-slate-100 ${locked ? "grayscale" : ""}`}
-                style={{ background: t.preview }}
+                style={{ background: tpl.preview }}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className={`text-xs font-bold truncate ${locked ? "text-slate-500" : "text-slate-800"}`}>{t.label}</p>
-                  {isSaved && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">Live</span>}
+                  <p className={`text-xs font-bold truncate ${locked ? "text-slate-500" : "text-slate-800"}`}>{tpl.label}</p>
+                  {isSaved && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 uppercase tracking-wider">{t("templates.live")}</span>}
                 </div>
-                <p className="text-[10px] text-slate-400 truncate">{t.description}</p>
+                <p className="text-[10px] text-slate-400 truncate">{tpl.description}</p>
               </div>
               {locked ? (
                 <span className="flex items-center gap-1 shrink-0 text-[9px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                  <Lock size={9} /> {t.minPlan}
+                  <Lock size={9} /> {tpl.minPlan}
                 </span>
               ) : isPreviewing ? (
                 <Check size={14} className="text-purple-500 shrink-0" />
@@ -433,7 +436,7 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90"
           style={{ background: "linear-gradient(135deg, #f59e0b 0%, #e60076 100%)" }}
         >
-          <Crown size={12} /> Upgrade to {previewMeta?.minPlan} to use {previewMeta?.label}
+          <Crown size={12} /> {t("templates.upgradeToUse", { plan: previewMeta?.minPlan || "", label: previewMeta?.label || "" })}
         </Link>
       )}
       {hasUnsavedPreview && canUsePreview && (
@@ -444,10 +447,10 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
           {savingTemplate === previewTemplate ? <Loader2 size={14} className="animate-spin" /> : null}
-          {savingTemplate === previewTemplate ? "Saving..." : `Use ${previewMeta?.label || "this template"}`}
+          {savingTemplate === previewTemplate ? t("templates.saving") : t("templates.useTemplate", { label: previewMeta?.label || t("templates.thisTemplate") })}
         </button>
       )}
-      {!hasUnsavedPreview && <p className="text-[10px] text-slate-400 text-center">{previewMeta?.label} is your live template.</p>}
+      {!hasUnsavedPreview && <p className="text-[10px] text-slate-400 text-center">{t("templates.liveTemplate", { label: previewMeta?.label || "" })}</p>}
 
       {/* Surface the server's reason (plan lock or change-cap exhausted) */}
       {templateError && (
@@ -462,27 +465,29 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
       {!isUnlimited && usage.limit > 0 && (
         <div className={`rounded-lg px-3 py-2 border text-[11px] font-bold leading-snug ${isCapped ? "border-rose-100 bg-rose-50 text-rose-600" : "border-slate-100 bg-slate-50 text-slate-600"}`}>
           {isCapped
-            ? `You've used all ${usage.limit} template change${usage.limit === 1 ? "" : "s"}. Upgrade to Elite for unlimited switches.`
-            : `${usage.remaining} of ${usage.limit} template change${usage.limit === 1 ? "" : "s"} remaining on ${effectivePlan}.`}
+            ? t("templates.capReached", { count: usage.limit })
+            : t("templates.remaining", { remaining: usage.remaining, count: usage.limit, plan: effectivePlan })}
         </div>
       )}
       {isUnlimited && effectivePlan === "elite" && (
-        <p className="text-[10px] text-emerald-600 font-bold text-center">Unlimited template switches — go wild.</p>
+        <p className="text-[10px] text-emerald-600 font-bold text-center">{t("templates.unlimited")}</p>
       )}
 
       {/* Upgrade nudge if any template above is locked OR the cap is hit */}
-      {(MEDIA_KIT_TEMPLATES.some((t) => !profileCanUseMediaKitTemplate(profile, t.id)) || isCapped) && (
+      {(MEDIA_KIT_TEMPLATES.some((tpl) => !profileCanUseMediaKitTemplate(profile, tpl.id)) || isCapped) && (
         <Link
           href="/influencer/pricing"
           className="block w-full text-center py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-[11px] font-bold hover:bg-amber-100 transition-colors"
         >
-          <Crown size={12} className="inline -translate-y-px mr-1" /> {isCapped ? "Upgrade for unlimited switches" : "Upgrade to unlock more templates"}
+          <Crown size={12} className="inline -translate-y-px mr-1" /> {isCapped ? t("templates.upgradeUnlimited") : t("templates.upgradeUnlock")}
         </Link>
       )}
 
       <p className="text-[10px] text-slate-400 leading-snug text-center pt-1">
-        Use the floating <span className="font-bold text-purple-500">Edit Bio</span> / <span className="font-bold text-purple-500">Edit Top Reels</span> buttons in the bottom-right to update content
-        on any template.
+        {t.rich("templates.editHint", {
+          editBio: (c) => <span className="font-bold text-purple-500">{c}</span>,
+          editReels: (c) => <span className="font-bold text-purple-500">{c}</span>,
+        })}
       </p>
     </div>
   );

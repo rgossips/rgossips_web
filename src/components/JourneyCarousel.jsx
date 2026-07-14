@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=800",
@@ -191,6 +192,7 @@ const _OLD_journeyData = [
 ];
 
 const JourneyCarousel = () => {
+  const t = useTranslations("JourneyCarousel");
   const [api, setApi] = useState(null);
   const [journeyData, setJourneyData] = useState([]);
   const router = useRouter();
@@ -213,14 +215,14 @@ const JourneyCarousel = () => {
             active.map((c, i) => ({
               id: c.id,
               title: c.title,
-              location: c.location || "Pan India",
+              location: c.location || t("panIndia"),
               rating: 4.5 + Math.random() * 0.5,
               price: parseInt(c.budget?.replace(/[^\d]/g, "")) || 0,
               duration: c.daysLeft
                 ? c.daysLeft === "Expired" || c.daysLeft === "Today"
                   ? c.daysLeft
-                  : `${c.daysLeft} left`
-                : "Open",
+                  : t("daysLeft", { days: c.daysLeft })
+                : t("open"),
               image: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
             })),
           );
@@ -244,7 +246,7 @@ const JourneyCarousel = () => {
     <section className="w-full py-6 lg:px-10 bg-white overflow-hidden">
       {/* Header Area */}
       <div className="flex justify-between items-center mb-4 px-6 lg:px-0">
-        <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">For You</h2>
+        <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">{t("forYou")}</h2>
         <button
           onClick={() => {
             const cat = profile?.categories?.[0] || "";
@@ -252,7 +254,7 @@ const JourneyCarousel = () => {
           }}
           className="text-sm font-bold text-pink-500 hover:opacity-80 transition-all cursor-pointer hover:underline"
         >
-          See all
+          {t("seeAll")}
         </button>
       </div>
 
@@ -288,7 +290,7 @@ const JourneyCarousel = () => {
                     {/* Footer: Price and Duration */}
                     <div className="flex justify-between items-end mt-5">
                       <div>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">Budget</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">{t("budget")}</p>
                         <p className="text-lg font-black text-slate-900">₹{item.price?.toLocaleString("en-IN") || 0}</p>
                       </div>
 

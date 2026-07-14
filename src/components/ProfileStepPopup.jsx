@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -72,6 +73,7 @@ const additionalSchema = z.object({
 
 // ---------- Component ----------
 export default function ProfileStepPopup({ userData }) {
+  const t = useTranslations("ProfileStepPopup");
   const { user } = useAuth();
   console.log("userdata", userData);
   const [open, setOpen] = useState(true);
@@ -414,7 +416,7 @@ export default function ProfileStepPopup({ userData }) {
     // You can return a simple spinner or a transparent placeholder here
     return (
       <div className="fixed inset-0 z-100 flex items-center justify-center bg-white/70">
-        <p>Loading Profile...</p>
+        <p>{t("loadingProfile")}</p>
       </div>
     );
   }
@@ -436,7 +438,7 @@ export default function ProfileStepPopup({ userData }) {
 
           <DialogHeader>
             <DialogTitle className="text-lg font-semibold">
-              Complete your creator profile
+              {t("title")}
             </DialogTitle>
           </DialogHeader>
 
@@ -472,11 +474,11 @@ export default function ProfileStepPopup({ userData }) {
 
             {/* Step Labels */}
             <div className="flex justify-between mb-4 text-sm text-center text-gray-600">
-              <div className="flex-1">Fundamental</div>
-              <div className="flex-1">Professional</div>
-              <div className="flex-1">Social</div>
-              <div className="flex-1">Collaboration</div>
-              <div className="flex-1">Additional</div>
+              <div className="flex-1">{t("steps.fundamental")}</div>
+              <div className="flex-1">{t("steps.professional")}</div>
+              <div className="flex-1">{t("steps.social")}</div>
+              <div className="flex-1">{t("steps.collaboration")}</div>
+              <div className="flex-1">{t("steps.additional")}</div>
             </div>
 
             <div className="h-[60vh] overflow-y-auto pr-2">
@@ -546,7 +548,7 @@ export default function ProfileStepPopup({ userData }) {
 
       <ErrorModal
         open={showError}
-        errorText={"Failed to save info. Please try again."}
+        errorText={t("saveError")}
         onClose={() => setShowError(false)}
       />
 
@@ -555,12 +557,11 @@ export default function ProfileStepPopup({ userData }) {
         <Dialog open={confirmClose} onOpenChange={setConfirmClose}>
           <DialogContent className="p-6 rounded-xl [&>button]:cursor-pointer">
             <DialogHeader>
-              <DialogTitle>Leave this step?</DialogTitle>
+              <DialogTitle>{t("confirmClose.title")}</DialogTitle>
             </DialogHeader>
 
             <p className="text-gray-600">
-              Progress for the current step will be lost. Do you still want to
-              exit?
+              {t("confirmClose.message")}
             </p>
 
             <DialogFooter className="flex justify-end gap-3 mt-4">
@@ -569,13 +570,13 @@ export default function ProfileStepPopup({ userData }) {
                 className="cursor-pointer"
                 onClick={() => setConfirmClose(false)}
               >
-                Cancel
+                {t("confirmClose.cancel")}
               </Button>
               <Button
                 className="bg-red-500 cursor-pointer text-white"
                 onClick={handleCloseNow}
               >
-                Yes, Close
+                {t("confirmClose.confirm")}
               </Button>
             </DialogFooter>
           </DialogContent>

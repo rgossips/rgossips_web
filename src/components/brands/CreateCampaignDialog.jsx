@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogClose, DialogTitle, DialogDescription } fr
 import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
+import { useTranslations } from "next-intl";
 
 const CATEGORIES = [
   "Beauty & Skincare",
@@ -34,33 +35,33 @@ const LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada", 
 const GENDERS = ["Male", "Female", "Any"];
 
 const USAGE_RIGHTS = [
-  { value: "creator_only", label: "Influencer's page only" },
-  { value: "brand_repost", label: "Brand can repost" },
-  { value: "paid_ads", label: "Brand can use in paid ads" },
-  { value: "full_rights", label: "Full rights transfer" },
+  { value: "creator_only" },
+  { value: "brand_repost" },
+  { value: "paid_ads" },
+  { value: "full_rights" },
 ];
 
 const PAYMENT_TIMELINES = [
-  { value: "advance", label: "Advance" },
-  { value: "on_approval", label: "On content approval" },
-  { value: "7_days", label: "Within 7 days of posting" },
-  { value: "30_days", label: "Within 30 days" },
+  { value: "advance" },
+  { value: "on_approval" },
+  { value: "7_days" },
+  { value: "30_days" },
 ];
 
 const KEEPUP_DURATIONS = [
-  { value: "24h", label: "24 hours (stories)" },
-  { value: "7d", label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "permanent", label: "Permanent" },
+  { value: "24h" },
+  { value: "7d" },
+  { value: "30d" },
+  { value: "permanent" },
 ];
 
 const EXCLUSIVITY_PERIODS = [
-  { value: "0", label: "No exclusivity" },
-  { value: "7", label: "7 days" },
-  { value: "15", label: "15 days" },
-  { value: "30", label: "30 days" },
-  { value: "60", label: "60 days" },
-  { value: "90", label: "90 days" },
+  { value: "0" },
+  { value: "7" },
+  { value: "15" },
+  { value: "30" },
+  { value: "60" },
+  { value: "90" },
 ];
 
 // Auto-fill follower ranges when tier is selected
@@ -126,8 +127,6 @@ const getServerSnapshot = () => false;
 function useIsDesktop() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
-
-const DESCRIPTION_TEMPLATE = "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?";
 
 // Trim a server-returned ISO date to YYYY-MM-DD for <input type="date">.
 // Postgres DATE columns already arrive as YYYY-MM-DD strings; DATETIME
@@ -220,6 +219,7 @@ export function CreateCampaignDialog({
   // the campaign detail page and closes the dialog.
   onUpdated,
 }) {
+  const t = useTranslations("BrandsCreateCampaignDialog");
   const supabase = createClient();
   const isDesktop = useIsDesktop();
   const { startLoading, stopLoading } = useGlobalLoading();
@@ -393,31 +393,31 @@ export function CreateCampaignDialog({
     // build jumps the user to a later section while an earlier one is
     // still failing.
     const errs = {};
-    if (!form.title.trim()) errs.title = "Title is required";
+    if (!form.title.trim()) errs.title = t("errors.titleRequired");
     // A published campaign must carry a banner — it's the hero image
     // creators see in every listing. Drafts can be saved without one.
     // In edit mode the existing banner counts.
     const hasAnyBanner = !!bannerFile || !!form.banner_image_url || !!existingBannerUrl;
     if (publish && !hasAnyBanner) {
-      errs.banner = "Add a campaign banner before publishing — it's the cover image creators see.";
+      errs.banner = t("errors.bannerRequired");
     }
-    if (platforms.length < 1) errs.platforms = "Select at least 1 platform";
-    if (totalDeliverables < 1) errs.deliverables = "Add at least 1 deliverable (reels, posts, stories, videos or blogs)";
-    if (categories.length < 1) errs.categories = "Select at least 1 category";
-    if (!form.campaign_start_date) errs.campaign_start_date = "Start date is required";
-    if (!form.application_deadline) errs.application_deadline = "Application deadline is required";
-    if (!form.campaign_end_date) errs.campaign_end_date = "Campaign end date is required";
+    if (platforms.length < 1) errs.platforms = t("errors.platformRequired");
+    if (totalDeliverables < 1) errs.deliverables = t("errors.deliverableRequired");
+    if (categories.length < 1) errs.categories = t("errors.categoryRequired");
+    if (!form.campaign_start_date) errs.campaign_start_date = t("errors.startDateRequired");
+    if (!form.application_deadline) errs.application_deadline = t("errors.deadlineRequired");
+    if (!form.campaign_end_date) errs.campaign_end_date = t("errors.endDateRequired");
     if (
       form.application_deadline &&
       form.campaign_end_date &&
       new Date(form.application_deadline) > new Date(form.campaign_end_date)
     ) {
-      errs.application_deadline = "Deadline must be on or before the campaign end date";
+      errs.application_deadline = t("errors.deadlineBeforeEnd");
     }
 
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
-      setError("Please fix the highlighted fields below.");
+      setError(t("errors.fixHighlighted"));
       // Scroll the first failing field into view AND focus its control
       // so the user can start typing immediately. data-field attributes
       // are stamped by the Field wrapper; banner/deliverables sections
@@ -440,17 +440,17 @@ export function CreateCampaignDialog({
     // invoke fell back to the publishable key and the write never
     // happened. Check the session explicitly and tell the user what's
     // wrong instead of doing nothing.
-    if (!brandId) return setError("You must be signed in");
+    if (!brandId) return setError(t("errors.signedIn"));
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      setError("Your session isn't ready yet. Wait a moment and try again — or sign in again if this persists.");
+      setError(t("errors.sessionNotReady"));
       return;
     }
 
     setSubmitting(true);
     const busyCopy = mode === "edit"
-      ? "Saving changes..."
-      : publish ? "Publishing campaign..." : "Saving draft...";
+      ? t("busy.saving")
+      : publish ? t("busy.publishing") : t("busy.savingDraft");
     startLoading(busyCopy);
     try {
       // Keep any existing images the brand didn't replace with a new upload.
@@ -458,12 +458,12 @@ export function CreateCampaignDialog({
       const galleryUrls = [...existingGalleryUrls];
 
       if (bannerFile) {
-        setStage("Uploading banner...");
+        setStage(t("busy.uploadingBanner"));
         bannerUrl = await uploadOne(bannerFile, "banners");
       }
       if (galleryFiles.length > 0) {
         for (let i = 0; i < galleryFiles.length; i++) {
-          setStage(`Uploading gallery image ${i + 1} of ${galleryFiles.length}...`);
+          setStage(t("busy.uploadingGallery", { index: i + 1, total: galleryFiles.length }));
           const url = await uploadOne(galleryFiles[i], "gallery");
           galleryUrls.push(url);
         }
@@ -521,7 +521,7 @@ export function CreateCampaignDialog({
         onCreated?.(data.campaignId);
       }
     } catch (e) {
-      setError(e.message || (mode === "edit" ? "Failed to save changes" : "Failed to create campaign"));
+      setError(e.message || (mode === "edit" ? t("errors.saveChangesFailed") : t("errors.createFailed")));
       setSubmitting(false);
       setStage("");
     } finally {
@@ -540,22 +540,22 @@ export function CreateCampaignDialog({
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
         {/* Basic Info */}
-        <Section title="Basic info">
-          <Field label="Title" required fieldKey="title" error={fieldErrors.title}>
-            <input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder="e.g. Summer Fashion 2026" className="input" />
+        <Section title={t("sections.basicInfo")}>
+          <Field label={t("fields.title")} required fieldKey="title" error={fieldErrors.title}>
+            <input value={form.title} onChange={(e) => update("title", e.target.value)} placeholder={t("placeholders.title")} className="input" />
           </Field>
-          <Field label="Description" hint="Helps creators understand what you need">
-            <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} placeholder={DESCRIPTION_TEMPLATE} className="input resize-none" />
+          <Field label={t("fields.description")} hint={t("fields.descriptionHint")}>
+            <textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={5} placeholder={t("descriptionTemplate")} className="input resize-none" />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Campaign Type" required>
+            <Field label={t("fields.campaignType")} required>
               <select value={form.campaign_type} onChange={(e) => update("campaign_type", e.target.value)} className="input">
-                <option value="barter">Barter</option>
-                <option value="paid">Paid</option>
-                <option value="hybrid">Hybrid</option>
+                <option value="barter">{t("campaignTypeOptions.barter")}</option>
+                <option value="paid">{t("campaignTypeOptions.paid")}</option>
+                <option value="hybrid">{t("campaignTypeOptions.hybrid")}</option>
               </select>
             </Field>
-            <Field label="Slots" hint="Number of creators">
+            <Field label={t("fields.slots")} hint={t("fields.slotsHint")}>
               <input type="number" min="1" value={form.max_influencers} onChange={(e) => update("max_influencers", e.target.value)} placeholder="10" className="input" />
             </Field>
           </div>
@@ -563,10 +563,10 @@ export function CreateCampaignDialog({
           {/* Budget — only when paid or hybrid */}
           {showBudget && (
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Budget (Total)">
+              <Field label={t("fields.budgetTotal")}>
                 <input type="number" min="0" value={form.budget_total} onChange={(e) => update("budget_total", e.target.value)} placeholder="50000" className="input" />
               </Field>
-              <Field label="Budget / Influencer" hint="Auto-calculated">
+              <Field label={t("fields.budgetPerInfluencer")} hint={t("fields.budgetPerInfluencerHint")}>
                 <input type="number" min="0" value={form.budget_per_influencer} readOnly placeholder="—" className="input bg-gray-100 cursor-not-allowed" />
               </Field>
             </div>
@@ -574,15 +574,15 @@ export function CreateCampaignDialog({
 
           {/* Product value — when barter or hybrid */}
           {showProductValue && (
-            <Field label="Product value (approx.)" hint="Helps creators evaluate the offer">
+            <Field label={t("fields.productValue")} hint={t("fields.productValueHint")}>
               <input type="number" min="0" value={form.product_value} onChange={(e) => update("product_value", e.target.value)} placeholder="3500" className="input" />
             </Field>
           )}
         </Section>
 
         {/* Product / Service */}
-        <Section title="Product / service">
-          <Field label="What are you promoting?" required>
+        <Section title={t("sections.productService")}>
+          <Field label={t("fields.whatPromoting")} required>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <button
                 type="button"
@@ -591,7 +591,7 @@ export function CreateCampaignDialog({
                   form.offering_type === "product" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                📦 Product
+                {t("offeringOptions.product")}
               </button>
               <button
                 type="button"
@@ -600,13 +600,13 @@ export function CreateCampaignDialog({
                   form.offering_type === "service" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                🛎️ Service / Experience
+                {t("offeringOptions.service")}
               </button>
             </div>
             <input
               value={form.product_name}
               onChange={(e) => update("product_name", e.target.value)}
-              placeholder={form.offering_type === "product" ? 'e.g. "Moisturizing cream — 50ml tube"' : 'e.g. "Weekend stay at our Mussoorie resort"'}
+              placeholder={form.offering_type === "product" ? t("placeholders.productNameProduct") : t("placeholders.productNameService")}
               className="input"
             />
           </Field>
@@ -614,15 +614,15 @@ export function CreateCampaignDialog({
           {/* Product-only fields */}
           {form.offering_type === "product" && (
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Will product be shipped?">
+              <Field label={t("fields.willShip")}>
                 <select value={form.shipping_required} onChange={(e) => update("shipping_required", e.target.value)} className="input">
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                  <option value="pickup">Pickup required</option>
+                  <option value="no">{t("shippingOptions.no")}</option>
+                  <option value="yes">{t("shippingOptions.yes")}</option>
+                  <option value="pickup">{t("shippingOptions.pickup")}</option>
                 </select>
               </Field>
               {form.shipping_required === "yes" && (
-                <Field label="Shipping timeline (days)">
+                <Field label={t("fields.shippingTimeline")}>
                   <input type="number" min="1" value={form.shipping_timeline_days} onChange={(e) => update("shipping_timeline_days", e.target.value)} placeholder="3" className="input" />
                 </Field>
               )}
@@ -631,18 +631,18 @@ export function CreateCampaignDialog({
 
           {/* Service-only fields */}
           {form.offering_type === "service" && (
-            <Field label="Service location" hint="Where the influencer experiences the service">
-              <input value={form.service_location} onChange={(e) => update("service_location", e.target.value)} placeholder='e.g. "Mussoorie, India" or "Online / virtual"' className="input" />
+            <Field label={t("fields.serviceLocation")} hint={t("fields.serviceLocationHint")}>
+              <input value={form.service_location} onChange={(e) => update("service_location", e.target.value)} placeholder={t("placeholders.serviceLocation")} className="input" />
             </Field>
           )}
 
           {showBarterCompensation && (
-            <Field label="What does the influencer get? (compensation details)">
+            <Field label={t("fields.compensationDetails")}>
               <textarea
                 value={form.barter_compensation}
                 onChange={(e) => update("barter_compensation", e.target.value)}
                 rows={2}
-                placeholder={form.offering_type === "product" ? 'e.g. "Full skincare kit worth ₹3,500"' : 'e.g. "Free 2-night stay + meals + spa session"'}
+                placeholder={form.offering_type === "product" ? t("placeholders.compensationProduct") : t("placeholders.compensationService")}
                 className="input resize-none"
               />
             </Field>
@@ -650,10 +650,10 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Banner */}
-        <Section title="Banner image" fieldKey="banner" error={fieldErrors.banner}>
+        <Section title={t("sections.bannerImage")} fieldKey="banner" error={fieldErrors.banner}>
           {bannerFile ? (
             <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
-              <img src={URL.createObjectURL(bannerFile)} alt="Banner preview" className="w-full h-full object-cover" />
+              <img src={URL.createObjectURL(bannerFile)} alt={t("banner.previewAlt")} className="w-full h-full object-cover" />
               <button type="button" onClick={() => setBannerFile(null)} className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-red-500 cursor-pointer shadow">
                 <Trash2 size={16} />
               </button>
@@ -663,13 +663,13 @@ export function CreateCampaignDialog({
             // (falls back to the upload prompt), or the brand can click
             // the image to swap in a new one via the file picker.
             <div className="relative rounded-2xl overflow-hidden h-40 bg-gray-100">
-              <img src={existingBannerUrl} alt="Banner" className="w-full h-full object-cover" />
+              <img src={existingBannerUrl} alt={t("banner.alt")} className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => bannerInputRef.current?.click()}
                 className="absolute bottom-2 left-2 px-3 py-1.5 bg-white/90 rounded-full text-xs font-bold text-[#5851DB] cursor-pointer shadow"
               >
-                Replace
+                {t("banner.replace")}
               </button>
               <button type="button" onClick={() => setExistingBannerUrl("")} className="absolute top-2 right-2 p-2 bg-white/90 rounded-full text-red-500 cursor-pointer shadow">
                 <Trash2 size={16} />
@@ -682,8 +682,8 @@ export function CreateCampaignDialog({
               className="w-full h-40 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-[#5851DB] hover:text-[#5851DB] cursor-pointer transition-colors"
             >
               <Upload size={24} />
-              <span className="text-xs font-semibold">Click to upload</span>
-              <span className="text-[10px]">PNG, JPG, WebP up to 10MB</span>
+              <span className="text-xs font-semibold">{t("banner.clickToUpload")}</span>
+              <span className="text-[10px]">{t("banner.fileHint")}</span>
             </button>
           )}
           <input
@@ -694,7 +694,7 @@ export function CreateCampaignDialog({
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f && f.size > MAX_SOURCE_IMAGE_BYTES) {
-                setError("Banner image too large — please pick a file under 15MB.");
+                setError(t("errors.bannerTooLarge"));
                 e.target.value = "";
                 return;
               }
@@ -705,12 +705,11 @@ export function CreateCampaignDialog({
 
         {/* Gallery */}
         <Section
-          title="Gallery"
+          title={t("sections.gallery")}
           right={
             (existingGalleryUrls.length + galleryFiles.length) > 0 && (
               <span className="text-[10px] text-gray-400">
-                {existingGalleryUrls.length + galleryFiles.length} image
-                {existingGalleryUrls.length + galleryFiles.length > 1 ? "s" : ""}
+                {t("galleryUi.count", { count: existingGalleryUrls.length + galleryFiles.length })}
               </span>
             )
           }
@@ -719,7 +718,7 @@ export function CreateCampaignDialog({
             <div className="grid grid-cols-3 gap-2">
               {existingGalleryUrls.map((url, i) => (
                 <div key={`existing-${i}`} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img src={url} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={url} alt={t("galleryUi.imageAlt", { index: i + 1 })} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setExistingGalleryUrls((prev) => prev.filter((_, x) => x !== i))}
@@ -731,7 +730,7 @@ export function CreateCampaignDialog({
               ))}
               {galleryFiles.map((f, i) => (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100">
-                  <img src={URL.createObjectURL(f)} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={URL.createObjectURL(f)} alt={t("galleryUi.imageAlt", { index: i + 1 })} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setGalleryFiles((prev) => prev.filter((_, x) => x !== i))}
@@ -748,7 +747,7 @@ export function CreateCampaignDialog({
             onClick={() => galleryInputRef.current?.click()}
             className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:border-[#5851DB] hover:text-[#5851DB] cursor-pointer text-xs font-semibold transition-colors"
           >
-            <ImageIcon size={16} /> Add gallery images
+            <ImageIcon size={16} /> {t("galleryUi.addImages")}
           </button>
           <input
             ref={galleryInputRef}
@@ -760,7 +759,7 @@ export function CreateCampaignDialog({
               const files = Array.from(e.target.files || []);
               const oversized = files.filter((f) => f.size > MAX_SOURCE_IMAGE_BYTES);
               if (oversized.length > 0) {
-                setError(`${oversized.length} image${oversized.length > 1 ? "s" : ""} skipped — each file must be under 15MB.`);
+                setError(t("errors.gallerySkipped", { count: oversized.length }));
               }
               setGalleryFiles((prev) => [...prev, ...files.filter((f) => f.size <= MAX_SOURCE_IMAGE_BYTES)]);
             }}
@@ -768,31 +767,31 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Platforms */}
-        <Section title="Platforms" required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{platforms.length} selected</span>}>
+        <Section title={t("sections.platforms")} required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{t("platformsSelected", { count: platforms.length })}</span>}>
           <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
         </Section>
 
         {/* Deliverables */}
         <Section
-          title="Content deliverables [per Creator]"
+          title={t("sections.deliverables")}
           required
           fieldKey="deliverables"
           error={fieldErrors.deliverables}
           right={
             <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
-              {totalDeliverables} piece{totalDeliverables !== 1 ? "s" : ""}
+              {t("deliverablesCount", { count: totalDeliverables })}
             </span>
           }
         >
           <div className="grid grid-cols-5 gap-3">
             {[
-              { k: "num_reels", label: "Reels" },
-              { k: "num_posts", label: "Posts" },
-              { k: "num_stories", label: "Stories" },
-              { k: "num_videos", label: "Videos" },
-              { k: "num_blogs", label: "Blogs" },
+              { k: "num_reels" },
+              { k: "num_posts" },
+              { k: "num_stories" },
+              { k: "num_videos" },
+              { k: "num_blogs" },
             ].map((d) => (
-              <Field key={d.k} label={d.label}>
+              <Field key={d.k} label={t(`deliverableLabels.${d.k}`)}>
                 <input type="number" min="0" value={form[d.k]} onChange={(e) => update(d.k, e.target.value)} placeholder="0" className="input text-center" />
               </Field>
             ))}
@@ -801,13 +800,13 @@ export function CreateCampaignDialog({
 
         {/* Categories */}
         <Section
-          title="Categories"
+          title={t("sections.categories")}
           required
           fieldKey="categories"
           error={fieldErrors.categories}
           right={
             <span className={`text-[11px] font-bold ${categories.length > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
-              {categories.length} of {CATEGORIES.length} selected
+              {t("categoriesSelected", { count: categories.length, total: CATEGORIES.length })}
             </span>
           }
         >
@@ -815,26 +814,26 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Influencer Requirements */}
-        <Section title="Influencer requirements">
+        <Section title={t("sections.influencerRequirements")}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Influencer Tier" hint="Auto-fills follower range">
+            <Field label={t("fields.influencerTier")} hint={t("fields.influencerTierHint")}>
               <select value={form.target_influencer_tier} onChange={(e) => update("target_influencer_tier", e.target.value)} className="input">
-                <option value="all">All Tiers</option>
-                <option value="nano">Nano (1K-10K)</option>
-                <option value="micro">Micro (10K-100K)</option>
-                <option value="macro">Macro (100K-1M)</option>
-                <option value="mega">Mega (1M+)</option>
+                <option value="all">{t("tierOptions.all")}</option>
+                <option value="nano">{t("tierOptions.nano")}</option>
+                <option value="micro">{t("tierOptions.micro")}</option>
+                <option value="macro">{t("tierOptions.macro")}</option>
+                <option value="mega">{t("tierOptions.mega")}</option>
               </select>
             </Field>
-            <Field label="Min. Engagement Rate (%)">
+            <Field label={t("fields.minEngagement")}>
               <input type="number" min="0" step="0.1" value={form.min_engagement_rate} onChange={(e) => update("min_engagement_rate", e.target.value)} placeholder="2.5" className="input" />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Min. Followers">
+            <Field label={t("fields.minFollowers")}>
               <input type="number" min="0" value={form.target_follower_min} onChange={(e) => update("target_follower_min", e.target.value)} placeholder="1000" className="input" />
             </Field>
-            <Field label="Max. Followers">
+            <Field label={t("fields.maxFollowers")}>
               <input type="number" min="0" value={form.target_follower_max} onChange={(e) => update("target_follower_max", e.target.value)} placeholder="100000" className="input" />
             </Field>
           </div>
@@ -842,91 +841,91 @@ export function CreateCampaignDialog({
 
         {/* Cities */}
         <Section
-          title="Locations"
+          title={t("sections.locations")}
           right={
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 cursor-pointer">
               <input type="checkbox" checked={allIndia} onChange={(e) => setAllIndia(e.target.checked)} className="w-3.5 h-3.5 accent-[#5851DB]" />
-              All India
+              {t("allIndia")}
             </label>
           }
         >
           {!allIndia && <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />}
-          {allIndia && <p className="text-[11px] text-gray-500 italic">Open to all creators across India.</p>}
+          {allIndia && <p className="text-[11px] text-gray-500 italic">{t("allIndiaNote")}</p>}
         </Section>
 
         {/* Audience preferences */}
-        <Section title="Audience preferences">
-          <Field label="Preferred gender">
+        <Section title={t("sections.audiencePreferences")}>
+          <Field label={t("fields.preferredGender")}>
             <ChipGroup options={GENDERS} selected={genders} onToggle={toggleGender} />
           </Field>
-          <Field label="Preferred languages">
+          <Field label={t("fields.preferredLanguages")}>
             <ChipGroup options={LANGUAGES} selected={languages} onToggle={toggleLanguage} />
           </Field>
         </Section>
 
         {/* Content Guidelines */}
-        <Section title="Content guidelines">
-          <Field label="Must include (Do's)" hint="What every creator must show or mention">
+        <Section title={t("sections.contentGuidelines")}>
+          <Field label={t("fields.mustInclude")} hint={t("fields.mustIncludeHint")}>
             <textarea
               value={form.content_dos}
               onChange={(e) => update("content_dos", e.target.value)}
               rows={2}
-              placeholder='e.g. "Show product packaging, mention discount code SAVE20"'
+              placeholder={t("placeholders.contentDos")}
               className="input resize-none"
             />
           </Field>
-          <Field label="Must avoid (Don'ts)" hint="Eliminates 80% of revisions">
+          <Field label={t("fields.mustAvoid")} hint={t("fields.mustAvoidHint")}>
             <textarea
               value={form.content_donts}
               onChange={(e) => update("content_donts", e.target.value)}
               rows={2}
-              placeholder='e.g. "Don&apos;t show competitor products, no copyrighted music"'
+              placeholder={t("placeholders.contentDonts")}
               className="input resize-none"
             />
           </Field>
-          <Field label="Required hashtags">
-            <input value={form.required_hashtags} onChange={(e) => update("required_hashtags", e.target.value)} placeholder="#RGossips #Ad #Paidpartnership" className="input" />
+          <Field label={t("fields.requiredHashtags")}>
+            <input value={form.required_hashtags} onChange={(e) => update("required_hashtags", e.target.value)} placeholder={t("placeholders.requiredHashtags")} className="input" />
           </Field>
-          <Field label="Brand handle(s) to tag">
-            <input value={form.brand_handles_to_tag} onChange={(e) => update("brand_handles_to_tag", e.target.value)} placeholder="@yourbrand" className="input" />
+          <Field label={t("fields.brandHandles")}>
+            <input value={form.brand_handles_to_tag} onChange={(e) => update("brand_handles_to_tag", e.target.value)} placeholder={t("placeholders.brandHandles")} className="input" />
           </Field>
         </Section>
 
         {/* Terms */}
-        <Section title="Terms & rights">
-          <Field label="Content usage rights">
+        <Section title={t("sections.termsRights")}>
+          <Field label={t("fields.usageRightsLabel")}>
             <select value={form.usage_rights} onChange={(e) => update("usage_rights", e.target.value)} className="input">
               {USAGE_RIGHTS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(`usageRights.${o.value}`)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Content keep-up duration">
+          <Field label={t("fields.keepupLabel")}>
             <select value={form.keepup_duration} onChange={(e) => update("keepup_duration", e.target.value)} className="input">
               {KEEPUP_DURATIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(`keepupDurations.${o.value}`)}
                 </option>
               ))}
             </select>
           </Field>
-          <Field label="Exclusivity (no competing brands)">
+          <Field label={t("fields.exclusivityLabel")}>
             <select value={form.exclusivity_days} onChange={(e) => update("exclusivity_days", e.target.value)} className="input">
               {EXCLUSIVITY_PERIODS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(`exclusivityPeriods.${o.value}`)}
                 </option>
               ))}
             </select>
           </Field>
           {!isBarter && (
-            <Field label="Payment timeline">
+            <Field label={t("fields.paymentTimelineLabel")}>
               <select value={form.payment_timeline} onChange={(e) => update("payment_timeline", e.target.value)} className="input">
                 {PAYMENT_TIMELINES.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(`paymentTimelines.${o.value}`)}
                   </option>
                 ))}
               </select>
@@ -935,19 +934,19 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Schedule — labels kept short so all 3 inputs line up across columns */}
-        <Section title="Schedule">
+        <Section title={t("sections.schedule")}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Field label="Start Date" required fieldKey="campaign_start_date" error={fieldErrors.campaign_start_date}>
+            <Field label={t("fields.startDate")} required fieldKey="campaign_start_date" error={fieldErrors.campaign_start_date}>
               <input type="date" value={form.campaign_start_date} onChange={(e) => update("campaign_start_date", e.target.value)} className="input" />
             </Field>
-            <Field label="Application Deadline" required fieldKey="application_deadline" error={fieldErrors.application_deadline}>
+            <Field label={t("fields.applicationDeadline")} required fieldKey="application_deadline" error={fieldErrors.application_deadline}>
               <input type="date" value={form.application_deadline} onChange={(e) => update("application_deadline", e.target.value)} className="input" />
             </Field>
-            <Field label="Campaign End Date" required fieldKey="campaign_end_date" error={fieldErrors.campaign_end_date}>
+            <Field label={t("fields.campaignEndDate")} required fieldKey="campaign_end_date" error={fieldErrors.campaign_end_date}>
               <input type="date" value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
             </Field>
           </div>
-          <p className="text-[10px] text-gray-400">Application deadline is the last day to apply. Campaign end date is when all content must be delivered.</p>
+          <p className="text-[10px] text-gray-400">{t("scheduleNote")}</p>
         </Section>
 
         <style jsx>{`
@@ -976,7 +975,7 @@ export function CreateCampaignDialog({
           disabled={submitting}
           className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
         >
-          Cancel
+          {t("footer.cancel")}
         </button>
         {mode === "edit" ? (
           // Edit mode never touches status — pause / publish are
@@ -989,7 +988,7 @@ export function CreateCampaignDialog({
             className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
-            {submitting && stage ? stage.split(" ")[0] : "Save Changes"}
+            {submitting && stage ? stage.split(" ")[0] : t("footer.saveChanges")}
           </button>
         ) : (
           <>
@@ -1000,7 +999,7 @@ export function CreateCampaignDialog({
               className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
-              Save Draft
+              {t("footer.saveDraft")}
             </button>
             <button
               type="button"
@@ -1009,7 +1008,7 @@ export function CreateCampaignDialog({
               className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && !stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
-              {submitting && stage ? stage.split(" ")[0] : "Publish"}
+              {submitting && stage ? stage.split(" ")[0] : t("footer.publish")}
             </button>
           </>
         )}
@@ -1017,10 +1016,10 @@ export function CreateCampaignDialog({
     </form>
   );
 
-  const titleText = mode === "edit" ? "Edit Campaign" : "New Campaign";
+  const titleText = mode === "edit" ? t("title.edit") : t("title.create");
   const subheadText = mode === "edit"
-    ? "Saved changes go live immediately unless the campaign is paused"
-    : "Will be saved as a draft unless you publish";
+    ? t("subhead.edit")
+    : t("subhead.create");
 
   // Header is rendered twice — once inside DialogContent, once inside
   // DrawerContent — because Radix requires Title/Description components

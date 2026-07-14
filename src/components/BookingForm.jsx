@@ -4,6 +4,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import AlertPopup from "@/components/AlertPopup";
 // Removed direct Firestore imports here as the parent handles them
 
@@ -43,20 +44,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Loader2, Info } from "lucide-react";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Enter a valid email"),
-  instagram: z.string().url("Enter a valid Instagram URL"),
-  niche: z.string().min(1, "Please select a niche"),
-  contentType: z.string().min(1, "Please select content type"),
-  why: z.string().min(10, "Please tell us a bit more about your plan"),
-  terms: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the terms to continue" }),
-  }),
-});
-
 // 1. Receive offer and onApply as props
 export default function InfluencerCollabForm({ offer, onApply }) {
+  const t = useTranslations("BookingForm");
+
+  const formSchema = z.object({
+    name: z.string().min(2, t("errors.nameRequired")),
+    email: z.string().email(t("errors.invalidEmail")),
+    instagram: z.string().url(t("errors.invalidInstagram")),
+    niche: z.string().min(1, t("errors.selectNiche")),
+    contentType: z.string().min(1, t("errors.selectContentType")),
+    why: z.string().min(10, t("errors.whyTooShort")),
+    terms: z.literal(true, {
+      errorMap: () => ({ message: t("errors.acceptTerms") }),
+    }),
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
@@ -88,7 +91,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
       form.reset();
     } catch (error) {
       console.error("Error submitting application:", error);
-      setPopup("Failed to submit. Please try again.");
+      setPopup(t("submitFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -99,10 +102,10 @@ export default function InfluencerCollabForm({ offer, onApply }) {
       <Card className="w-full shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-slate-100 rounded-[2rem] overflow-hidden">
         <CardHeader className="bg-slate-50/50 border-b border-slate-50 py-6">
           <CardTitle className="text-xl font-bold text-center text-slate-800">
-            Apply for This Campaign
+            {t("title")}
           </CardTitle>
           <p className="text-center text-slate-500 text-xs mt-1">
-            Campaign:{" "}
+            {t("campaignPrefix")}{" "}
             <span className="font-semibold text-purple-600">
               {offer?.metadata?.title}
             </span>
@@ -118,11 +121,11 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-slate-700">
-                      Name
+                      {t("fields.name")}
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="John Doe"
+                        placeholder={t("placeholders.name")}
                         className="rounded-xl bg-slate-50"
                         {...field}
                       />
@@ -138,11 +141,11 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-slate-700">
-                      Email
+                      {t("fields.email")}
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="example@gmail.com"
+                        placeholder={t("placeholders.email")}
                         className="rounded-xl bg-slate-50"
                         {...field}
                       />
@@ -158,11 +161,11 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-slate-700">
-                      Instagram URL
+                      {t("fields.instagram")}
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="https://instagram.com/..."
+                        placeholder={t("placeholders.instagram")}
                         className="rounded-xl bg-slate-50"
                         {...field}
                       />
@@ -179,7 +182,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-slate-700">
-                        Niche
+                        {t("fields.niche")}
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -187,14 +190,14 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                       >
                         <FormControl>
                           <SelectTrigger className="rounded-xl bg-slate-50">
-                            <SelectValue placeholder="Select" />
+                            <SelectValue placeholder={t("placeholders.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="travel">Travel</SelectItem>
-                          <SelectItem value="lifestyle">Lifestyle</SelectItem>
-                          <SelectItem value="food">Food</SelectItem>
-                          <SelectItem value="fashion">Fashion</SelectItem>
+                          <SelectItem value="travel">{t("niches.travel")}</SelectItem>
+                          <SelectItem value="lifestyle">{t("niches.lifestyle")}</SelectItem>
+                          <SelectItem value="food">{t("niches.food")}</SelectItem>
+                          <SelectItem value="fashion">{t("niches.fashion")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -208,7 +211,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-semibold text-slate-700">
-                        Type
+                        {t("fields.contentType")}
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -216,13 +219,13 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                       >
                         <FormControl>
                           <SelectTrigger className="rounded-xl bg-slate-50">
-                            <SelectValue placeholder="Select" />
+                            <SelectValue placeholder={t("placeholders.select")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="reels">Reels</SelectItem>
-                          <SelectItem value="posts">Posts</SelectItem>
-                          <SelectItem value="vlog">Vlog</SelectItem>
+                          <SelectItem value="reels">{t("contentTypes.reels")}</SelectItem>
+                          <SelectItem value="posts">{t("contentTypes.posts")}</SelectItem>
+                          <SelectItem value="vlog">{t("contentTypes.vlog")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -237,11 +240,11 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-slate-700">
-                      Your Plan
+                      {t("fields.why")}
                     </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Tell us your content ideas..."
+                        placeholder={t("placeholders.why")}
                         className="rounded-xl bg-slate-50 resize-none h-24"
                         {...field}
                       />
@@ -264,9 +267,11 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                         />
                       </FormControl>
                       <div className="text-[12px] leading-tight text-slate-600">
-                        I agree to the{" "}
-                        <span className="font-bold underline">terms</span> and
-                        will post content within 7 days.
+                        {t.rich("termsAgreement", {
+                          terms: (chunks) => (
+                            <span className="font-bold underline">{chunks}</span>
+                          ),
+                        })}
                       </div>
                     </div>
                     <FormMessage />
@@ -282,7 +287,7 @@ export default function InfluencerCollabForm({ offer, onApply }) {
                 {isSubmitting ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  "Submit Application"
+                  t("submit")
                 )}
               </Button>
             </form>
@@ -298,17 +303,16 @@ export default function InfluencerCollabForm({ offer, onApply }) {
               <CheckCircle2 className="w-10 h-10 text-green-500" />
             </div>
             <DialogTitle className="text-xl font-bold">
-              Applied Successfully!
+              {t("success.title")}
             </DialogTitle>
             <DialogDescription className="text-center">
-              The brand has been notified. You can track your status in your
-              dashboard.
+              {t("success.description")}
             </DialogDescription>
             <Button
               className="w-full rounded-xl"
               onClick={() => setShowSuccessModal(false)}
             >
-              Close
+              {t("success.close")}
             </Button>
           </div>
         </DialogContent>

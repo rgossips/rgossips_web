@@ -2,11 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
 
 // Glass-Blue editorial template. Frosted panels stacked over a soft
 // gradient background. Read-only — bio + reels editing live in Classic.
 export default function TemplateGlassBlue({ profile }) {
+  const t = useTranslations("MediaKitTemplatesTemplateGlassBlue");
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -57,53 +59,53 @@ export default function TemplateGlassBlue({ profile }) {
             </div>
           </div>
           <div className="flex border-t mt-5 pt-4" style={{ borderColor: "rgba(14,42,68,.10)" }}>
-            <Stat n={formatCount(p.followers)} l="Followers" />
-            <Stat n={formatCount(p.totalReach || p.totalImpressions)} l="Accounts Reached" />
-            <Stat n={`${p.engagementRate || 0}%`} l="Engagement" last />
+            <Stat n={formatCount(p.followers)} l={t("stats.followers")} />
+            <Stat n={formatCount(p.totalReach || p.totalImpressions)} l={t("stats.accountsReached")} />
+            <Stat n={`${p.engagementRate || 0}%`} l={t("stats.engagement")} last />
           </div>
         </div>
 
         {/* 01 PERFORMANCE */}
-        <SectionRow num="01" label="Performance">
+        <SectionRow num="01" label={t("sections.performance")}>
           <div style={glass} className="p-7">
-            <Label>The Number That Matters · Last 30 Days</Label>
+            <Label>{t("performance.label")}</Label>
             <div className="rounded-2xl p-5 text-white flex justify-between items-baseline flex-wrap gap-3 mb-3" style={{ background: grad, boxShadow: "0 18px 40px -20px rgba(21,100,214,.7)" }}>
               <div>
-                <div className="text-[11px] tracking-[.14em] uppercase font-bold opacity-90">Engagement Rate</div>
+                <div className="text-[11px] tracking-[.14em] uppercase font-bold opacity-90">{t("performance.engagementRate")}</div>
                 <div className="text-[46px] font-extrabold leading-none tracking-tight">{p.engagementRate || 0}%</div>
               </div>
-              <div className="text-[13px] opacity-90">vs 1.9% category average</div>
+              <div className="text-[13px] opacity-90">{t("performance.categoryAverage")}</div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <PStat label="Accounts Reached" value={formatCount(p.totalReach || p.totalImpressions)} sub="last 30 days" />
-              <PStat label="Non-Follower Reach" value={`${p.nonFollowerReachPct}%`} sub="organic discovery" />
-              <PStat label="Interactions" value={formatCount(p.avgLikes + p.avgComments)} sub="avg per post" />
+              <PStat label={t("performance.accountsReached")} value={formatCount(p.totalReach || p.totalImpressions)} sub={t("performance.accountsReachedSub")} />
+              <PStat label={t("performance.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("performance.nonFollowerReachSub")} />
+              <PStat label={t("performance.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.interactionsSub")} />
             </div>
           </div>
         </SectionRow>
 
         {/* 02 AUDIENCE */}
-        <SectionRow num="02" label="Audience">
+        <SectionRow num="02" label={t("sections.audience")}>
           <div style={glass} className="p-7">
-            <Label>Who's Watching</Label>
+            <Label>{t("audience.label")}</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
               <div>
-                <SubH>Top Cities</SubH>
+                <SubH>{t("audience.topCities")}</SubH>
                 {demo.topCities.map((c, i) => <Bar key={c.name} label={c.name} pct={c.pct} delay={i} grad={grad} />)}
               </div>
               <div>
-                <SubH>Age Brackets</SubH>
+                <SubH>{t("audience.ageBrackets")}</SubH>
                 {demo.ageRanges.map((a, i) => <Bar key={a.range} label={a.range} pct={a.pct} delay={i} grad={grad} />)}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 mt-6">
               <div>
-                <SubH>Gender Split</SubH>
+                <SubH>{t("audience.genderSplit")}</SubH>
                 <Donut g={demo.gender} colors={["#60a5fa", "#1564d6", "#06b6d4"]} />
               </div>
               {demo.topCountries.length > 0 && (
                 <div>
-                  <SubH>Top Countries</SubH>
+                  <SubH>{t("audience.topCountries")}</SubH>
                   {demo.topCountries.map((c, i) => <Bar key={c.name} label={c.name} pct={c.pct} delay={i} grad={grad} />)}
                 </div>
               )}
@@ -112,9 +114,9 @@ export default function TemplateGlassBlue({ profile }) {
         </SectionRow>
 
         {/* 03 SOCIAL */}
-        <SectionRow num="03" label="Channels">
+        <SectionRow num="03" label={t("sections.channels")}>
           <div style={glass} className="p-7">
-            <Label>Social Media</Label>
+            <Label>{t("channels.label")}</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2">
               {socials.map((s, i) => (
                 <SocRow key={s.key} s={s} idx={i} grad={grad} />
@@ -125,9 +127,9 @@ export default function TemplateGlassBlue({ profile }) {
 
         {/* 04 SERVICES */}
         {p.services.length > 0 && (
-          <SectionRow num="04" label="Rates">
+          <SectionRow num="04" label={t("sections.rates")}>
             <div style={glass} className="p-7">
-              <Label>Services &amp; Rates</Label>
+              <Label>{t("services.label")}</Label>
               {p.services.map((sv, i) => {
                 const rate = p.serviceRates[sv];
                 const last = i === p.services.length - 1;
@@ -135,7 +137,7 @@ export default function TemplateGlassBlue({ profile }) {
                   <div key={sv} className={`flex justify-between items-center py-4 ${last ? "" : "border-b"}`} style={{ borderColor: "rgba(14,42,68,.10)" }}>
                     <span className="font-semibold text-[15px]">{toServiceLabel(sv)}</span>
                     {rate ? <span className="text-[17px] font-extrabold tracking-tight">₹{Number(rate).toLocaleString("en-IN")}</span>
-                      : <span className="text-[13px] text-[#1564d6] font-bold">On request</span>}
+                      : <span className="text-[13px] text-[#1564d6] font-bold">{t("services.onRequest")}</span>}
                   </div>
                 );
               })}
@@ -145,15 +147,15 @@ export default function TemplateGlassBlue({ profile }) {
 
         {/* 05 TOP CONTENT */}
         {p.topReels.length > 0 && (
-          <SectionRow num="05" label="Work">
+          <SectionRow num="05" label={t("sections.work")}>
             <div style={glass} className="p-7">
-              <Label>Top Content</Label>
+              <Label>{t("content.label")}</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {p.topReels.map((reel, i) => {
                   const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
                   return (
                     <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden aspect-square block" style={{ background: thumb ? "transparent" : "linear-gradient(150deg,#4a5e72,#1a2a3a)" }}>
-                      {thumb && <img src={thumb} alt={reel.caption || "Reel"} className="absolute inset-0 w-full h-full object-cover" />}
+                      {thumb && <img src={thumb} alt={reel.caption || t("content.reelAlt")} className="absolute inset-0 w-full h-full object-cover" />}
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(8,24,40,.82),transparent 52%)" }} />
                       {reel.caption && <div className="absolute left-2 right-2 bottom-6 text-[11.5px] font-semibold text-white leading-tight">{reel.caption.slice(0, 60)}</div>}
                       <div className="absolute left-2 bottom-2 flex gap-3 text-[11px] text-white/90 font-semibold">
@@ -170,11 +172,11 @@ export default function TemplateGlassBlue({ profile }) {
 
         {/* CTA */}
         <div className="rounded-[22px] p-8 text-center text-white" style={{ background: grad, boxShadow: "0 22px 50px -22px rgba(21,100,214,.7)" }}>
-          <h3 className="text-2xl font-extrabold mb-1">Open for Collaborations</h3>
-          <p className="opacity-95 mb-4 text-sm">Interested in working together? Reach out via Instagram or through the RGossips platform.</p>
-          <a href={`https://instagram.com/${p.handle}`} target="_blank" rel="noreferrer" className="inline-block bg-white text-[#1564d6] font-bold px-6 py-3 rounded-xl text-sm">Start a Collaboration</a>
+          <h3 className="text-2xl font-extrabold mb-1">{t("cta.title")}</h3>
+          <p className="opacity-95 mb-4 text-sm">{t("cta.subtitle")}</p>
+          <a href={`https://instagram.com/${p.handle}`} target="_blank" rel="noreferrer" className="inline-block bg-white text-[#1564d6] font-bold px-6 py-3 rounded-xl text-sm">{t("cta.button")}</a>
         </div>
-        <div className="text-center text-xs text-[#48657e] font-medium">Generated on <b className="text-[#1564d6]">RGossips</b></div>
+        <div className="text-center text-xs text-[#48657e] font-medium">{t.rich("footer.generatedOn", { b: (c) => <b className="text-[#1564d6]">{c}</b> })}</div>
       </div>
     </div>
   );
@@ -226,10 +228,11 @@ function Bar({ label, pct, delay, grad }) {
   );
 }
 function Donut({ g, colors }) {
+  const t = useTranslations("MediaKitTemplatesTemplateGlassBlue");
   const segs = [
-    [g.female || 0, colors[0], "Female"],
-    [g.male || 0, colors[1], "Male"],
-    [g.other || 0, colors[2], "Other"],
+    [g.female || 0, colors[0], t("gender.female")],
+    [g.male || 0, colors[1], t("gender.male")],
+    [g.other || 0, colors[2], t("gender.other")],
   ];
   const C = 2 * Math.PI * 45;
   let off = 0;

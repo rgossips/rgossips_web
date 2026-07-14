@@ -21,14 +21,15 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { PLAN_PRICING } from "@/lib/plans";
+import { useTranslations } from "next-intl";
 
-const labelForMethod = (m) => {
-  if (m.type === "upi") return m.upi_id || "UPI";
+const labelForMethod = (m, t) => {
+  if (m.type === "upi") return m.upi_id || t("methods.upi");
   if (m.type === "bank") {
     const last4 = (m.account_number || "").slice(-4);
-    return `${m.bank_name || "Bank"} ••••${last4 || "0000"}`;
+    return `${m.bank_name || t("methods.bank")} ••••${last4 || "0000"}`;
   }
-  return m.label || "Payment Method";
+  return m.label || t("methods.paymentMethod");
 };
 
 // Renders the verification badge next to the method type. Validation
@@ -36,10 +37,11 @@ const labelForMethod = (m) => {
 // API); pending → verification webhook hasn't arrived yet, success →
 // safe to receive payouts, failed → name/account mismatch, fix needed.
 const ValidationChip = ({ status, reason }) => {
+  const t = useTranslations("PaymentMethods");
   if (status === "success") {
     return (
       <span className="text-[8px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-        Verified
+        {t("validation.verified")}
       </span>
     );
   }
@@ -47,15 +49,15 @@ const ValidationChip = ({ status, reason }) => {
     return (
       <span
         className="text-[8px] font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-full uppercase"
-        title={reason || "Could not verify the account holder"}
+        title={reason || t("validation.failedReason")}
       >
-        Verify failed
+        {t("validation.failed")}
       </span>
     );
   }
   return (
     <span className="text-[8px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase">
-      Verifying…
+      {t("validation.verifying")}
     </span>
   );
 };
@@ -93,23 +95,26 @@ const formatDate = (unixSeconds) => {
 // alphanumeric, allows ./_/-, 2–50 chars. Handle starts with alpha,
 // allows alphanumeric + dot, 2–30 chars. Total commonly < 50 chars.
 // Returns null when valid, or a human-readable reason string.
+// Returns null when valid, or a stable error key (resolved via
+// t(`upiErrors.${key}`) at render).
 const validateUpiId = (raw) => {
   const id = (raw || "").trim();
-  if (!id) return "UPI ID is required.";
-  if (id.length > 50) return "UPI ID is too long.";
+  if (!id) return "required";
+  if (id.length > 50) return "tooLong";
   const at = id.indexOf("@");
-  if (at < 0 || id.indexOf("@", at + 1) !== -1) return "Must contain exactly one @ symbol.";
+  if (at < 0 || id.indexOf("@", at + 1) !== -1) return "singleAt";
   const [user, handle] = id.split("@");
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{1,49}$/.test(user)) {
-    return "The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.";
+    return "invalidUser";
   }
   if (!/^[a-zA-Z][a-zA-Z0-9.]{1,29}$/.test(handle)) {
-    return "The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl.";
+    return "invalidHandle";
   }
   return null;
 };
 
 const PaymentMethods = ({ onBack }) => {
+  const t = useTranslations("PaymentMethods");
   const supabase = createClient();
   const { user } = useAuth();
   const [methods, setMethods] = useState([]);
@@ -228,12 +233,12 @@ const PaymentMethods = ({ onBack }) => {
   // surface "Verified" / "Verify failed" + how many waiting payouts were
   // released by adding this method.
   const addMethod = async (payload) => {
-    if (!user?.id) return { ok: false, error: "Not signed in" };
+    if (!user?.id) return { ok: false, error: t("notSignedIn") };
     const { data, error } = await supabase.functions.invoke("register-payout-method", {
       body: payload,
     });
     if (error || data?.error) {
-      const msg = error?.message || data?.error || "Failed to save";
+      const msg = error?.message || data?.error || t("failedToSave");
       console.error("register-payout-method failed:", msg);
       return { ok: false, error: msg };
     }
@@ -259,8 +264,8 @@ const PaymentMethods = ({ onBack }) => {
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
           <div>
-            <h1 className="text-lg lg:text-2xl font-black tracking-tight">Payments</h1>
-            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Manage payment methods you use to receive earnings</p>
+            <h1 className="text-lg lg:text-2xl font-black tracking-tight">{t("title")}</h1>
+            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">{t("subtitle")}</p>
           </div>
         </div>
       </div>
@@ -276,10 +281,10 @@ const PaymentMethods = ({ onBack }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-amber-900">
-                ₹{pendingTotalInr.toLocaleString("en-IN")} is waiting for you
+                {t("pendingWaiting", { amount: pendingTotalInr.toLocaleString("en-IN") })}
               </p>
               <p className="text-[11px] font-bold text-amber-700 mt-0.5">
-                Add a UPI ID or bank account to receive your campaign earnings.
+                {t("pendingHint")}
               </p>
             </div>
             <Plus size={16} className="text-amber-700 shrink-0" />
@@ -290,13 +295,13 @@ const PaymentMethods = ({ onBack }) => {
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div className="flex items-center gap-2">
               <Wallet size={18} className="text-orange-500" />
-              <h2 className="font-black text-gray-900 text-base">Payment Methods</h2>
+              <h2 className="font-black text-gray-900 text-base">{t("methodsHeading")}</h2>
             </div>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-1.5 text-[10px] font-black text-purple-600 border border-purple-100 px-3 py-1.5 rounded-full hover:bg-purple-50 transition-colors cursor-pointer"
             >
-              <Plus size={12} /> Add New
+              <Plus size={12} /> {t("addNew")}
             </button>
           </div>
 
@@ -308,8 +313,8 @@ const PaymentMethods = ({ onBack }) => {
             ) : methods.length === 0 ? (
               <div className="text-center py-8">
                 <CreditCard size={32} className="text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-bold text-gray-400">No payment methods added</p>
-                <p className="text-xs text-gray-300 mt-1">Add a UPI ID or bank account to receive payments</p>
+                <p className="text-sm font-bold text-gray-400">{t("noMethods")}</p>
+                <p className="text-xs text-gray-300 mt-1">{t("noMethodsHint")}</p>
               </div>
             ) : (
               methods.map((m) => {
@@ -332,16 +337,16 @@ const PaymentMethods = ({ onBack }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-black text-gray-800">
-                          {m.type === "upi" ? "UPI" : "Bank Account"}
+                          {m.type === "upi" ? t("methods.upi") : t("methods.bankAccount")}
                         </p>
                         {m.is_primary && (
                           <span className="text-[8px] font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full uppercase">
-                            Primary
+                            {t("primary")}
                           </span>
                         )}
                         <ValidationChip status={m.validation_status} reason={m.validation_failure_reason} />
                       </div>
-                      <p className="text-xs font-bold text-gray-400 mt-0.5 truncate">{labelForMethod(m)}</p>
+                      <p className="text-xs font-bold text-gray-400 mt-0.5 truncate">{labelForMethod(m, t)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {!m.is_primary && (
@@ -350,7 +355,7 @@ const PaymentMethods = ({ onBack }) => {
                           disabled={isBusy}
                           className="text-[9px] font-black text-purple-500 border border-purple-100 px-2.5 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer disabled:opacity-50"
                         >
-                          {isBusy ? "…" : "Set Primary"}
+                          {isBusy ? "…" : t("setPrimary")}
                         </button>
                       )}
                       <button
@@ -395,12 +400,13 @@ const PaymentMethods = ({ onBack }) => {
 //   processed            → "Paid · UTR …"
 //   failed / reversed    → "Failed — re-add method or contact support"
 const CreditHistorySection = ({ loading, earnings }) => {
+  const t = useTranslations("PaymentMethods");
   return (
     <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-5">
         <div className="flex items-center gap-2 mb-4">
           <CreditCard size={18} className="text-pink-500" />
-          <h2 className="font-black text-gray-900 text-base">Credit History</h2>
+          <h2 className="font-black text-gray-900 text-base">{t("creditHistory")}</h2>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-10">
@@ -409,8 +415,8 @@ const CreditHistorySection = ({ loading, earnings }) => {
         ) : earnings.length === 0 ? (
           <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
             <IndianRupee size={28} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-gray-400">No payouts yet</p>
-            <p className="text-[11px] text-gray-300 mt-1">Once your campaign earnings are released they'll show up here.</p>
+            <p className="text-sm font-bold text-gray-400">{t("noPayouts")}</p>
+            <p className="text-[11px] text-gray-300 mt-1">{t("noPayoutsHint")}</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-50">
@@ -425,29 +431,30 @@ const CreditHistorySection = ({ loading, earnings }) => {
 };
 
 const EARNING_STATUS = {
-  pending_creator_info: { label: "Add payout details to receive", chip: "bg-amber-50 text-amber-700", Icon: AlertTriangle },
-  scheduled:            { label: "Scheduled",                     chip: "bg-indigo-50 text-indigo-700", Icon: Clock },
-  processing:           { label: "Processing",                    chip: "bg-blue-50 text-blue-700",     Icon: Loader2 },
-  processed:            { label: "Paid",                          chip: "bg-emerald-50 text-emerald-700", Icon: Check },
-  failed:               { label: "Failed",                        chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
-  reversed:             { label: "Reversed",                      chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
+  pending_creator_info: { labelKey: "pending_creator_info", chip: "bg-amber-50 text-amber-700", Icon: AlertTriangle },
+  scheduled:            { labelKey: "scheduled",            chip: "bg-indigo-50 text-indigo-700", Icon: Clock },
+  processing:           { labelKey: "processing",           chip: "bg-blue-50 text-blue-700",     Icon: Loader2 },
+  processed:            { labelKey: "processed",            chip: "bg-emerald-50 text-emerald-700", Icon: Check },
+  failed:               { labelKey: "failed",               chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
+  reversed:             { labelKey: "reversed",             chip: "bg-red-50 text-red-700",       Icon: AlertTriangle },
 };
 
 const EarningRow = ({ earning }) => {
+  const t = useTranslations("PaymentMethods");
   const status = EARNING_STATUS[earning.payout_status] || EARNING_STATUS.scheduled;
   const Icon = status.Icon;
   const brand = earning.campaigns?.brand_profiles || {};
-  const brandName = brand.brand_name || brand.gstin_trade_name || "Brand";
-  const campaignTitle = earning.campaigns?.title || "Campaign";
+  const brandName = brand.brand_name || brand.gstin_trade_name || t("brandFallback");
+  const campaignTitle = earning.campaigns?.title || t("campaignFallback");
   const amountInr = Math.round((earning.escrow_amount || 0) / 100);
 
   // Date to show: processed → processed_at; everything else → release_at.
   const subtitleDate =
     earning.payout_status === "processed" && earning.payout_processed_at
-      ? `Paid on ${new Date(earning.payout_processed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+      ? t("paidOn", { date: new Date(earning.payout_processed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) })
       : earning.payout_release_at
       ? earning.payout_status === "scheduled"
-        ? `Arriving by ${new Date(earning.payout_release_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+        ? t("arrivingBy", { date: new Date(earning.payout_release_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) })
         : new Date(earning.payout_release_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
       : "";
 
@@ -468,13 +475,13 @@ const EarningRow = ({ earning }) => {
           <p className="text-sm font-black text-gray-800 truncate">{campaignTitle}</p>
           <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${status.chip}`}>
             <Icon size={9} className={earning.payout_status === "processing" ? "animate-spin" : ""} />
-            {status.label}
+            {t(`earningStatus.${status.labelKey}`)}
           </span>
         </div>
         <p className="text-[11px] text-gray-400 font-bold mt-0.5 truncate">
           {brandName}
           {subtitleDate ? ` · ${subtitleDate}` : ""}
-          {earning.payout_utr ? ` · UTR ${earning.payout_utr}` : ""}
+          {earning.payout_utr ? ` · ${t("utr", { utr: earning.payout_utr })}` : ""}
           {earning.payout_method ? ` · ${earning.payout_method.toUpperCase()}` : ""}
         </p>
       </div>
@@ -490,18 +497,19 @@ const EarningRow = ({ earning }) => {
 // status, and a Download / View button that opens the gateway's hosted
 // PDF (Stripe) or hosted invoice page (Razorpay) in a new tab.
 const SubscriptionHistorySection = ({ loading, invoices, onRefresh }) => {
+  const t = useTranslations("PaymentMethods");
   return (
     <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div className="flex items-center gap-2">
           <Receipt size={18} className="text-indigo-500" />
-          <h2 className="font-black text-gray-900 text-base">Subscription History</h2>
+          <h2 className="font-black text-gray-900 text-base">{t("subscriptionHistory")}</h2>
         </div>
         <button
           onClick={onRefresh}
           className="text-[10px] font-black text-indigo-600 border border-indigo-100 px-3 py-1.5 rounded-full hover:bg-indigo-50 transition-colors cursor-pointer"
         >
-          Refresh
+          {t("refresh")}
         </button>
       </div>
 
@@ -513,9 +521,9 @@ const SubscriptionHistorySection = ({ loading, invoices, onRefresh }) => {
         ) : invoices.length === 0 ? (
           <div className="text-center py-10 border border-dashed border-gray-200 rounded-xl">
             <Receipt size={28} className="text-gray-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-gray-400">No subscription invoices yet</p>
+            <p className="text-sm font-bold text-gray-400">{t("noInvoices")}</p>
             <p className="text-[11px] text-gray-300 mt-1">
-              Invoices for plan upgrades and renewals will show up here once you've made a payment.
+              {t("noInvoicesHint")}
             </p>
           </div>
         ) : (
@@ -545,11 +553,12 @@ const STATUS_STYLES = {
 };
 
 const InvoiceRow = ({ inv }) => {
+  const t = useTranslations("PaymentMethods");
   const { plan: derivedPlan, cycle: derivedCycle } = planFromAmount(inv.amount, inv.currency);
   const plan = inv.plan || derivedPlan;
   const cycle = inv.cycle || derivedCycle;
-  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "Subscription";
-  const cycleLabel = cycle === "annual" || cycle === "yearly" ? "Annual" : cycle === "monthly" ? "Monthly" : "";
+  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : t("subscriptionFallback");
+  const cycleLabel = cycle === "annual" || cycle === "yearly" ? t("annual") : cycle === "monthly" ? t("monthly") : "";
   const downloadUrl = inv.pdf_url || inv.hosted_url;
   const isPdf = !!inv.pdf_url;
   const statusKey = String(inv.status || "").toLowerCase();
@@ -561,7 +570,7 @@ const InvoiceRow = ({ inv }) => {
   // past-due. If the sub is active we surface its next renewal date.
   const subActive = inv.subscription_status === "active";
   const renewalLabel = subActive && inv.next_charge_at
-    ? `Renews ${formatDate(inv.next_charge_at)}`
+    ? t("renews", { date: formatDate(inv.next_charge_at) })
     : null;
 
   return (
@@ -591,7 +600,7 @@ const InvoiceRow = ({ inv }) => {
               subActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
             }`}
           >
-            {subActive ? "Active" : "Cancelled"}
+            {subActive ? t("active") : t("cancelled")}
           </span>
           {/* Invoice-level status only adds info when it isn't simply
               "paid" — paid is the expected case for active subs. */}
@@ -621,10 +630,10 @@ const InvoiceRow = ({ inv }) => {
           rel="noopener noreferrer"
           download={isPdf ? `${inv.number || inv.id}.pdf` : undefined}
           className="flex items-center gap-1.5 text-[10px] font-black text-indigo-600 border border-indigo-100 hover:bg-indigo-50 px-3 py-1.5 rounded-full transition-colors cursor-pointer shrink-0"
-          title={isPdf ? "Download PDF" : "Open invoice"}
+          title={isPdf ? t("downloadPdf") : t("openInvoice")}
         >
           {isPdf ? <Download size={11} /> : <ExternalLink size={11} />}
-          {isPdf ? "PDF" : "Invoice"}
+          {isPdf ? "PDF" : t("invoice")}
         </a>
       ) : (
         <span className="text-[10px] font-bold text-gray-300 shrink-0">—</span>
@@ -634,6 +643,7 @@ const InvoiceRow = ({ inv }) => {
 };
 
 const AddPaymentModal = ({ onClose, onAdd }) => {
+  const t = useTranslations("PaymentMethods");
   const [type, setType] = useState("upi");
   const [upiId, setUpiId] = useState("");
   const [bankName, setBankName] = useState("");
@@ -670,7 +680,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
           };
     const res = await onAdd(payload);
     if (!res?.ok) {
-      setError(res?.error || "Failed to save. Please try again.");
+      setError(res?.error || t("failedToSaveRetry"));
       setSaving(false);
     }
     // On success the parent closes the modal — no further state to set.
@@ -681,7 +691,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-md lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <h2 className="text-base font-black text-gray-900">Add Payment Method</h2>
+          <h2 className="text-base font-black text-gray-900">{t("addPaymentMethod")}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors cursor-pointer">
             <X size={16} />
           </button>
@@ -690,8 +700,8 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: "upi", label: "UPI", icon: Smartphone },
-              { key: "bank", label: "Bank Account", icon: Building2 },
+              { key: "upi", label: t("methods.upi"), icon: Smartphone },
+              { key: "bank", label: t("methods.bankAccount"), icon: Building2 },
             ].map((opt) => {
               const Icon = opt.icon;
               return (
@@ -712,7 +722,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
           {type === "upi" ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">UPI ID</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("upiIdLabel")}</label>
                 <input
                   type="text"
                   inputMode="email"
@@ -721,7 +731,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
                   spellCheck={false}
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
-                  placeholder="yourname@upi"
+                  placeholder={t("upiPlaceholder")}
                   className={`w-full p-4 bg-gray-50 border focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all ${
                     upiId.trim() && upiError
                       ? "border-rose-200 focus:border-rose-300"
@@ -732,28 +742,28 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
                     something, otherwise an empty field shows "required"
                     on first open which is noisy. */}
                 {upiId.trim() && upiError && (
-                  <p className="text-[11px] font-bold text-rose-500">{upiError}</p>
+                  <p className="text-[11px] font-bold text-rose-500">{t(`upiErrors.${upiError}`)}</p>
                 )}
               </div>
-              <p className="text-[10px] font-bold text-gray-400">Enter your UPI ID linked to Google Pay, PhonePe, Paytm, etc.</p>
+              <p className="text-[10px] font-bold text-gray-400">{t("upiHint")}</p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Account Holder Name</label>
-                <input type="text" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder="Full name as per bank" className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("accountHolderName")}</label>
+                <input type="text" value={holderName} onChange={(e) => setHolderName(e.target.value)} placeholder={t("accountHolderPlaceholder")} className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Bank Name</label>
-                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g. HDFC Bank" className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("bankName")}</label>
+                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={t("bankNamePlaceholder")} className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Account Number</label>
-                <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 20))} placeholder="Enter account number" inputMode="numeric" className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("accountNumber")}</label>
+                <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, "").slice(0, 20))} placeholder={t("accountNumberPlaceholder")} inputMode="numeric" className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">IFSC Code</label>
-                <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase().slice(0, 11))} placeholder="e.g. HDFC0001234" className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("ifscCode")}</label>
+                <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase().slice(0, 11))} placeholder={t("ifscPlaceholder")} className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all" />
               </div>
             </div>
           )}
@@ -763,7 +773,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
 
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-white sticky bottom-0">
           <button onClick={onClose} disabled={saving} className="flex-1 h-12 rounded-xl border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50">
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -772,7 +782,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? "Verifying with bank…" : "Add Method"}
+            {saving ? t("verifyingWithBank") : t("addMethod")}
           </button>
         </div>
       </div>

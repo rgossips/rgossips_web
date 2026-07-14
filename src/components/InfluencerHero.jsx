@@ -1,7 +1,9 @@
 "use client";
+import { useTranslations } from "next-intl";
 import green from "../../public/bg/green.png";
 
 export default function Hero({ user }) {
+  const t = useTranslations("InfluencerHero");
   return (
     <section
       style={{
@@ -36,7 +38,9 @@ export default function Hero({ user }) {
           </svg>
 
           <p className="text-white text-base sm:text-xl mt-3 opacity-90">
-            {(user?.primaryCategories?.[0] || "") + " Influencer"}
+            {t("categoryInfluencer", {
+              category: user?.primaryCategories?.[0] || "",
+            })}
           </p>
         </div>
 
@@ -46,21 +50,21 @@ export default function Hero({ user }) {
         {/* RIGHT SIDE – STATS */}
         <div className="grid grid-cols-3 lg:grid-cols-2 justify-center text-white lg:gap-0">
           <div className="p-6 rounded-2xl flex flex-col items-center">
-            <p className="text-lg text-center">Total Collaborations</p>
+            <p className="text-lg text-center">{t("stats.totalCollaborations")}</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
               {user?.totalCollabs || 0}
             </p>
           </div>
 
           <div className="p-6 rounded-2xl flex flex-col items-center">
-            <p className="text-lg text-center">Active Collaborations</p>
+            <p className="text-lg text-center">{t("stats.activeCollaborations")}</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
               {user?.activeCollabs || 0}
             </p>
           </div>
 
           <div className="p-6 rounded-2xl flex flex-col items-center">
-            <p className="text-lg text-center">Total Clients</p>
+            <p className="text-lg text-center">{t("stats.totalClients")}</p>
             <p className="text-5xl sm:text-6xl lg:text-7xl font-bold mt-2">
               {user?.totalClients || 0}
             </p>

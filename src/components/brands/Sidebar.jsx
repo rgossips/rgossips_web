@@ -5,30 +5,32 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import BrandHelpAndSupport from "@/components/brands/BrandHelpAndSupport";
 
 export default function Sidebar() {
+  const t = useTranslations("BrandsSidebar");
   const router = useRouter();
   const pathname = usePathname();
   const [helpOpen, setHelpOpen] = useState(false);
 
   const mainMenu = [
-    { name: "Explore", icon: LayoutGrid, url: "/brands" },
-    { name: "Find Creators", icon: Search, url: "/brands/search" },
+    { name: t("menu.explore"), icon: LayoutGrid, url: "/brands" },
+    { name: t("menu.findCreators"), icon: Search, url: "/brands/search" },
     {
-      name: "Campaigns",
+      name: t("menu.campaigns"),
       icon: Megaphone,
-      badge: "LIVE",
+      badge: t("badge.live"),
       url: "/brands/campaigns",
     },
-    { name: "Profile", icon: User, url: "/brands/profile" },
+    { name: t("menu.profile"), icon: User, url: "/brands/profile" },
   ];
 
   // Settings was removed — every preference today lives inside the profile
   // page, and there's no separate destination worth keeping a top-level
   // entry for. Help & Support opens a slide-out drawer.
   const accountMenu = [
-    { name: "Help & Support", icon: HelpCircle, onClick: () => setHelpOpen(true) },
+    { name: t("account.helpSupport"), icon: HelpCircle, onClick: () => setHelpOpen(true) },
   ];
 
   return (
@@ -67,7 +69,7 @@ export default function Sidebar() {
 
         {/* Account Section */}
         <div className="mt-6">
-          <p className="px-5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Account</p>
+          <p className="px-5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">{t("accountLabel")}</p>
           <nav className="px-3 space-y-1">
             {accountMenu.map((item, i) => {
               const Icon = item.icon;
@@ -95,7 +97,7 @@ export default function Sidebar() {
           className="flex cursor-pointer items-center justify-center gap-2 w-full bg-[#5B3DF5] text-white text-sm py-2.5 rounded-xl hover:brightness-110 transition font-medium"
         >
           <Plus size={16} />
-          Post Requirement
+          {t("postRequirement")}
         </button>
       </div>
     </aside>

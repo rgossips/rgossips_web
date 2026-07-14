@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TabsContent } from "@/components/ui/tabs";
@@ -73,7 +74,7 @@ const topLocations = ["Mumbai", "Delhi", "Bangalore", "Dubai", "London"];
 const posts = [
   {
     id: 1,
-    title: "Reel - Hotel Stay Vlog",
+    titleKey: "hotelStayVlog",
     likes: 5400,
     comments: 220,
     saves: 480,
@@ -81,7 +82,7 @@ const posts = [
   },
   {
     id: 2,
-    title: "Post - Beachfront Promo",
+    titleKey: "beachfrontPromo",
     likes: 3200,
     comments: 115,
     saves: 190,
@@ -89,7 +90,7 @@ const posts = [
   },
   {
     id: 3,
-    title: "Story - Room Tour",
+    titleKey: "roomTour",
     likes: 1500,
     comments: 45,
     saves: 70,
@@ -100,6 +101,7 @@ const posts = [
 // -----------------------------------------
 
 export default function InstagramAnalytics() {
+  const t = useTranslations("InstagramAnalytics");
   return (
     <TabsContent value="instagram">
       <div className="space-y-8">
@@ -108,18 +110,22 @@ export default function InstagramAnalytics() {
           {[
             {
               icon: <FaUsers />,
-              label: "Followers",
+              label: t("stats.followers"),
               value: overview.followers,
             },
-            { icon: <FaEye />, label: "Reach (30d)", value: overview.reach },
+            {
+              icon: <FaEye />,
+              label: t("stats.reach"),
+              value: overview.reach,
+            },
             {
               icon: <FaChartLine />,
-              label: "Engagement Rate",
+              label: t("stats.engagementRate"),
               value: overview.engagementRate,
             },
             {
               icon: <FaHeart />,
-              label: "Profile Visits",
+              label: t("stats.profileVisits"),
               value: overview.profileVisits,
             },
           ].map((stat, i) => (
@@ -139,9 +145,9 @@ export default function InstagramAnalytics() {
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              Engagement Trend (Last 30 Days)
+              {t("trend.title")}
               <span className="text-sm text-green-600 font-medium">
-                +12% growth
+                {t("trend.growth")}
               </span>
             </CardTitle>
           </CardHeader>
@@ -152,7 +158,7 @@ export default function InstagramAnalytics() {
                   labels: ["1", "5", "10", "15", "20", "25", "30"],
                   datasets: [
                     {
-                      label: "Engagement",
+                      label: t("chart.engagement"),
                       data: performanceData,
                       borderColor: "#2563eb",
                       backgroundColor: "rgba(37,99,235,0.2)",
@@ -186,17 +192,26 @@ export default function InstagramAnalytics() {
           {/* Gender */}
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Gender Breakdown</CardTitle>
+              <CardTitle>{t("gender.title")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Doughnut data={genderData} />
+              <Doughnut
+                data={{
+                  ...genderData,
+                  labels: [
+                    t("gender.male"),
+                    t("gender.female"),
+                    t("gender.other"),
+                  ],
+                }}
+              />
             </CardContent>
           </Card>
 
           {/* Age Groups */}
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Age Groups</CardTitle>
+              <CardTitle>{t("ageGroups.title")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Doughnut data={ageGroupData} />
@@ -206,7 +221,7 @@ export default function InstagramAnalytics() {
           {/* Top Locations */}
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Top Audience Locations</CardTitle>
+              <CardTitle>{t("locations.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {topLocations.map((loc, i) => (
@@ -230,7 +245,7 @@ export default function InstagramAnalytics() {
         {/* --------- POSTS PERFORMANCE ---------- */}
         <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>Recent Post Performance</CardTitle>
+            <CardTitle>{t("posts.title")}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {posts.map((post) => (
@@ -238,21 +253,25 @@ export default function InstagramAnalytics() {
                 key={post.id}
                 className="border rounded-lg p-4 hover:shadow hover:bg-gray-50 transition-all"
               >
-                <h3 className="font-semibold mb-2">{post.title}</h3>
+                <h3 className="font-semibold mb-2">
+                  {t(`posts.items.${post.titleKey}`)}
+                </h3>
                 <div className="flex flex-col gap-1 text-sm">
                   <span className="flex items-center gap-2">
-                    <FaThumbsUp className="text-blue-500" /> Likes: {post.likes}
+                    <FaThumbsUp className="text-blue-500" />{" "}
+                    {t("post.likes", { value: post.likes })}
                   </span>
                   <span className="flex items-center gap-2">
-                    <FaHeart className="text-red-500" /> Comments:{" "}
-                    {post.comments}
+                    <FaHeart className="text-red-500" />{" "}
+                    {t("post.comments", { value: post.comments })}
                   </span>
                   <span className="flex items-center gap-2">
-                    <FaSave className="text-green-600" /> Saves: {post.saves}
+                    <FaSave className="text-green-600" />{" "}
+                    {t("post.saves", { value: post.saves })}
                   </span>
                   <span className="flex items-center gap-2">
-                    <FaEye className="text-purple-500" /> Views:{" "}
-                    {post.views.toLocaleString()}
+                    <FaEye className="text-purple-500" />{" "}
+                    {t("post.views", { value: post.views.toLocaleString() })}
                   </span>
                 </div>
               </div>

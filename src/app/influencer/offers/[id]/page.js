@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import {
   detectInstagramLinkType,
@@ -50,6 +51,7 @@ import AlertPopup from "@/components/AlertPopup";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
+  const t = useTranslations("InfluencerOffersId");
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refetchFlag, setRefetchFlag] = useState(0);
@@ -83,28 +85,28 @@ function useCampaign(id, userId) {
 
           // Build follower-range label from real numbers when present
           const fmtFollowers = (n) => {
-            if (!n) return "Any";
+            if (!n) return t("anyValue");
             if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M`;
             if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
             return String(n);
           };
           const followerLabel = found.targetFollowerMin || found.targetFollowerMax
             ? `${fmtFollowers(found.targetFollowerMin)} – ${fmtFollowers(found.targetFollowerMax)}`
-            : "Any";
+            : t("anyValue");
 
           const requirements = [
-            { icon: "users", label: `Followers: ${followerLabel}`, sub: "Audience size" },
-            { icon: "trending", label: `Tier: ${(found.targetInfluencerTier || "all").replace(/^./, (c) => c.toUpperCase())}`, sub: "Creator tier" },
-            { icon: "star", label: `Location: ${found.location}`, sub: "Target region" },
+            { icon: "users", label: t("requirements.followers", { value: followerLabel }), sub: t("requirements.audienceSize") },
+            { icon: "trending", label: t("requirements.tier", { value: (found.targetInfluencerTier || "all").replace(/^./, (c) => c.toUpperCase()) }), sub: t("requirements.creatorTier") },
+            { icon: "star", label: t("requirements.location", { value: found.location }), sub: t("requirements.targetRegion") },
           ];
           if (found.minEngagementRate > 0) {
-            requirements.push({ icon: "trending", label: `Min Engagement: ${found.minEngagementRate}%`, sub: "Activity threshold" });
+            requirements.push({ icon: "trending", label: t("requirements.minEngagement", { value: found.minEngagementRate }), sub: t("requirements.activityThreshold") });
           }
           if (Array.isArray(found.targetGender) && found.targetGender.length > 0) {
-            requirements.push({ icon: "users", label: `Gender: ${found.targetGender.join(", ")}`, sub: "Preferred" });
+            requirements.push({ icon: "users", label: t("requirements.gender", { value: found.targetGender.join(", ") }), sub: t("requirements.preferred") });
           }
           if (Array.isArray(found.targetLanguages) && found.targetLanguages.length > 0) {
-            requirements.push({ icon: "star", label: `Language: ${found.targetLanguages.join(", ")}`, sub: "Content language" });
+            requirements.push({ icon: "star", label: t("requirements.language", { value: found.targetLanguages.join(", ") }), sub: t("requirements.contentLanguage") });
           }
 
           setCampaign({
@@ -113,10 +115,10 @@ function useCampaign(id, userId) {
               found.bannerImage ||
               "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80",
             slots: found.maxInfluencers || 0,
-            about: found.description || "No description available for this campaign.",
+            about: found.description || t("noDescription"),
             requirements,
-            payments: [{ type: "base", label: "Base Payment", val: found.budget, sub: "Per influencer" }],
-            brandStats: { campaigns: brandCampaigns.length, success: `${activeBrandCampaigns} active`, response: "24h" },
+            payments: [{ type: "base", label: t("basePayment"), val: found.budget, sub: t("perInfluencer") }],
+            brandStats: { campaigns: brandCampaigns.length, success: t("brandStats.activeCount", { count: activeBrandCampaigns }), response: "24h" },
             deliverableIcons: found.deliverables
               ? found.deliverables.split(" + ").map((d) => {
                   const parts = d.split(":");
@@ -392,17 +394,20 @@ function PlatformIcon({ platform, size = 20 }) {
 /* ─── Audit field sections ─── */
 
 function ProductInfoSection({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   const isService = campaign.offeringType === "service" || (!campaign.offeringType && campaign.serviceLocation);
   const shipText = {
-    yes: `Will be shipped${campaign.shippingTimelineDays ? ` in ~${campaign.shippingTimelineDays} day${campaign.shippingTimelineDays !== 1 ? "s" : ""}` : ""}`,
-    no: "No shipping",
-    pickup: "Pickup required",
+    yes: campaign.shippingTimelineDays
+      ? t("product.willBeShippedInDays", { days: campaign.shippingTimelineDays })
+      : t("product.willBeShipped"),
+    no: t("product.noShipping"),
+    pickup: t("product.pickupRequired"),
   }[campaign.shippingRequired] || "";
 
   return (
     <div className="space-y-3">
       <h3 className="text-base font-bold text-slate-800">
-        {isService ? "Service / Experience" : "Product"}
+        {isService ? t("product.serviceExperience") : t("product.product")}
       </h3>
       <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-4 space-y-2">
         {campaign.productName && (
@@ -421,7 +426,7 @@ function ProductInfoSection({ campaign }) {
           )}
           {campaign.productValue > 0 && (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-              ₹{Number(campaign.productValue).toLocaleString("en-IN")} approx. value
+              {t("product.approxValue", { value: Number(campaign.productValue).toLocaleString("en-IN") })}
             </span>
           )}
         </div>
@@ -431,6 +436,7 @@ function ProductInfoSection({ campaign }) {
 }
 
 function CopyableField({ label, value }) {
+  const t = useTranslations("InfluencerOffersId");
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
     try {
@@ -462,7 +468,7 @@ function CopyableField({ label, value }) {
         <button
           type="button"
           onClick={onCopy}
-          aria-label={`Copy ${label}`}
+          aria-label={t("copyable.copyAria", { label })}
           className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md transition-colors cursor-pointer ${
             copied
               ? "text-emerald-700 bg-emerald-50"
@@ -470,7 +476,7 @@ function CopyableField({ label, value }) {
           }`}
         >
           {copied ? <Check size={11} /> : <Copy size={11} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? t("copyable.copied") : t("copyable.copy")}
         </button>
       </div>
       <p className="text-xs font-semibold text-slate-700 break-words">{value}</p>
@@ -479,19 +485,20 @@ function CopyableField({ label, value }) {
 }
 
 function GuidelinesSection({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <div className="space-y-3">
-      <h3 className="text-base font-bold text-slate-800">Content guidelines</h3>
+      <h3 className="text-base font-bold text-slate-800">{t("guidelines.title")}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {campaign.contentDos && (
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-            <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider mb-1.5">✓ Must include</p>
+            <p className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider mb-1.5">{t("guidelines.mustInclude")}</p>
             <p className="text-xs text-emerald-900 leading-relaxed whitespace-pre-wrap">{campaign.contentDos}</p>
           </div>
         )}
         {campaign.contentDonts && (
           <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-            <p className="text-[10px] font-extrabold text-red-700 uppercase tracking-wider mb-1.5">✗ Must avoid</p>
+            <p className="text-[10px] font-extrabold text-red-700 uppercase tracking-wider mb-1.5">{t("guidelines.mustAvoid")}</p>
             <p className="text-xs text-red-900 leading-relaxed whitespace-pre-wrap">{campaign.contentDonts}</p>
           </div>
         )}
@@ -499,10 +506,10 @@ function GuidelinesSection({ campaign }) {
       {(campaign.requiredHashtags || campaign.brandHandlesToTag) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {campaign.requiredHashtags && (
-            <CopyableField label="Hashtags" value={campaign.requiredHashtags} />
+            <CopyableField label={t("guidelines.hashtags")} value={campaign.requiredHashtags} />
           )}
           {campaign.brandHandlesToTag && (
-            <CopyableField label="Tag" value={campaign.brandHandlesToTag} />
+            <CopyableField label={t("guidelines.tag")} value={campaign.brandHandlesToTag} />
           )}
         </div>
       )}
@@ -511,38 +518,39 @@ function GuidelinesSection({ campaign }) {
 }
 
 function TermsSection({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   const usageLabels = {
-    creator_only: "Influencer's page only",
-    brand_repost: "Brand can repost",
-    paid_ads: "Brand can use in paid ads",
-    full_rights: "Full rights transfer",
+    creator_only: t("terms.usage.creatorOnly"),
+    brand_repost: t("terms.usage.brandRepost"),
+    paid_ads: t("terms.usage.paidAds"),
+    full_rights: t("terms.usage.fullRights"),
   };
   const keepupLabels = {
-    "24h": "24 hours (stories)",
-    "7d": "7 days",
-    "30d": "30 days",
-    permanent: "Permanent",
+    "24h": t("terms.keepup.24h"),
+    "7d": t("terms.keepup.7d"),
+    "30d": t("terms.keepup.30d"),
+    permanent: t("terms.keepup.permanent"),
   };
   const paymentLabels = {
-    advance: "Advance",
-    on_approval: "On content approval",
-    "7_days": "Within 7 days of posting",
-    "30_days": "Within 30 days",
+    advance: t("terms.payment.advance"),
+    on_approval: t("terms.payment.onApproval"),
+    "7_days": t("terms.payment.7days"),
+    "30_days": t("terms.payment.30days"),
   };
 
   const rows = [];
-  if (campaign.usageRights) rows.push(["Usage rights", usageLabels[campaign.usageRights] || campaign.usageRights]);
-  if (campaign.keepupDuration) rows.push(["Keep content live", keepupLabels[campaign.keepupDuration] || campaign.keepupDuration]);
-  if (campaign.exclusivityDays && campaign.exclusivityDays !== "0") rows.push(["Exclusivity", `No competing brands for ${campaign.exclusivityDays} days`]);
-  if (campaign.paymentTimeline) rows.push(["Payment", paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline]);
+  if (campaign.usageRights) rows.push(["usageRights", t("terms.rowLabel.usageRights"), usageLabels[campaign.usageRights] || campaign.usageRights]);
+  if (campaign.keepupDuration) rows.push(["keepContentLive", t("terms.rowLabel.keepContentLive"), keepupLabels[campaign.keepupDuration] || campaign.keepupDuration]);
+  if (campaign.exclusivityDays && campaign.exclusivityDays !== "0") rows.push(["exclusivity", t("terms.rowLabel.exclusivity"), t("terms.exclusivityValue", { days: campaign.exclusivityDays })]);
+  if (campaign.paymentTimeline) rows.push(["payment", t("terms.rowLabel.payment"), paymentLabels[campaign.paymentTimeline] || campaign.paymentTimeline]);
 
   if (rows.length === 0) return null;
   return (
     <div className="space-y-3">
-      <h3 className="text-base font-bold text-slate-800">Terms &amp; rights</h3>
+      <h3 className="text-base font-bold text-slate-800">{t("terms.title")}</h3>
       <div className="bg-white border border-slate-100 shadow-sm rounded-2xl divide-y divide-slate-50">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex items-center justify-between p-3.5">
+        {rows.map(([rowKey, k, v]) => (
+          <div key={rowKey} className="flex items-center justify-between p-3.5">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{k}</span>
             <span className="text-xs font-semibold text-slate-700 text-right ml-3">{v}</span>
           </div>
@@ -553,6 +561,7 @@ function TermsSection({ campaign }) {
 }
 
 function Gallery({ images }) {
+  const t = useTranslations("InfluencerOffersId");
   const [index, setIndex] = useState(-1);
   const open = (i) => setIndex(i);
   const close = () => setIndex(-1);
@@ -576,7 +585,7 @@ function Gallery({ images }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-base font-bold text-slate-800">Gallery</h3>
+      <h3 className="text-base font-bold text-slate-800">{t("gallery.title")}</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {images.map((src, i) => (
           <button
@@ -587,7 +596,7 @@ function Gallery({ images }) {
           >
             <img
               src={src}
-              alt={`Gallery ${i + 1}`}
+              alt={t("gallery.imageAlt", { index: i + 1 })}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           </button>
@@ -603,7 +612,7 @@ function Gallery({ images }) {
             type="button"
             onClick={close}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-            aria-label="Close"
+            aria-label={t("gallery.close")}
           >
             <X size={24} />
           </button>
@@ -617,7 +626,7 @@ function Gallery({ images }) {
                   prev();
                 }}
                 className="absolute left-4 md:left-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-                aria-label="Previous"
+                aria-label={t("gallery.previous")}
               >
                 <ChevronLeft size={28} />
               </button>
@@ -628,7 +637,7 @@ function Gallery({ images }) {
                   next();
                 }}
                 className="absolute right-4 md:right-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-                aria-label="Next"
+                aria-label={t("gallery.next")}
               >
                 <ChevronRight size={28} />
               </button>
@@ -637,7 +646,7 @@ function Gallery({ images }) {
 
           <img
             src={images[index]}
-            alt={`Gallery ${index + 1}`}
+            alt={t("gallery.imageAlt", { index: index + 1 })}
             className="max-w-[90vw] max-h-[85vh] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
@@ -657,6 +666,7 @@ function Gallery({ images }) {
    MAIN PAGE
    ═══════════════════════════════════════════════════ */
 export default function CampaignDetailsPage() {
+  const t = useTranslations("InfluencerOffersId");
   const { id } = useParams();
   const router = useRouter();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
@@ -712,7 +722,7 @@ export default function CampaignDetailsPage() {
       <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={28} className="animate-spin text-purple-500" />
-          <p className="text-sm font-bold text-slate-400">Loading campaign...</p>
+          <p className="text-sm font-bold text-slate-400">{t("loadingCampaign")}</p>
         </div>
       </div>
     );
@@ -722,9 +732,9 @@ export default function CampaignDetailsPage() {
     return (
       <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
         <div className="text-center space-y-3">
-          <p className="text-lg font-bold text-slate-600">Campaign not found</p>
+          <p className="text-lg font-bold text-slate-600">{t("campaignNotFound")}</p>
           <button onClick={() => router.back()} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
-            Go back
+            {t("goBack")}
           </button>
         </div>
       </div>
@@ -763,14 +773,14 @@ export default function CampaignDetailsPage() {
           refresh button keeps the page honest. */}
       <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8 flex items-center justify-between mb-4 lg:mb-6">
         <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-          <ChevronLeft size={16} /> Back to Campaigns
+          <ChevronLeft size={16} /> {t("backToCampaigns")}
         </button>
         <button
           onClick={() => refetch?.()}
-          title="Refresh status"
+          title={t("refreshStatus")}
           className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
         >
-          <RefreshCw size={14} /> Refresh
+          <RefreshCw size={14} /> {t("refresh")}
         </button>
       </div>
 
@@ -787,7 +797,7 @@ export default function CampaignDetailsPage() {
               {isCompleted && (
                 <div className="absolute top-4 right-4">
                   <span className="bg-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-1.5">
-                    <CheckCircle size={12} /> Completed
+                    <CheckCircle size={12} /> {t("completed")}
                   </span>
                 </div>
               )}
@@ -825,7 +835,7 @@ export default function CampaignDetailsPage() {
                       <Star size={20} className="fill-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black text-slate-900">Your rating submitted</p>
+                      <p className="text-sm font-black text-slate-900">{t("rating.submitted")}</p>
                       <p className="text-[11px] text-slate-600 mt-0.5">
                         {campaign.brandName} <span className="font-bold">{myRating.target_rating}/5</span>
                       </p>
@@ -848,19 +858,19 @@ export default function CampaignDetailsPage() {
                     <div className="mt-3 pt-3 border-t border-amber-200/70 grid grid-cols-3 gap-3 text-[11px] text-slate-600">
                       {myRating.brief_clarity != null && (
                         <div>
-                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Brief clarity</p>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">{t("rating.briefClarity")}</p>
                           <p className="font-bold text-slate-800">{myRating.brief_clarity}/5</p>
                         </div>
                       )}
                       {myRating.fairness != null && (
                         <div>
-                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Fairness</p>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">{t("rating.fairness")}</p>
                           <p className="font-bold text-slate-800">{myRating.fairness}/5</p>
                         </div>
                       )}
                       {myRating.feedback_quality != null && (
                         <div>
-                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">Feedback</p>
+                          <p className="text-[9px] font-black text-amber-700 uppercase tracking-wider">{t("rating.feedback")}</p>
                           <p className="font-bold text-slate-800">{myRating.feedback_quality}/5</p>
                         </div>
                       )}
@@ -876,9 +886,9 @@ export default function CampaignDetailsPage() {
                     <Star size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-black text-slate-900">Rate this campaign</p>
+                    <p className="text-sm font-black text-slate-900">{t("rating.rateThisCampaign")}</p>
                     <p className="text-[11px] text-slate-500">
-                      Share your experience working with {campaign.brandName}
+                      {t("rating.shareExperience", { brand: campaign.brandName })}
                     </p>
                   </div>
                   <ChevronRight size={18} className="text-amber-500 shrink-0" />
@@ -914,7 +924,7 @@ export default function CampaignDetailsPage() {
             onClick={() => setIsApplyOpen(true)}
             className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-[#9810FA] to-[#E60076] flex items-center justify-center gap-2"
           >
-            Apply for Campaign <ChevronRight size={16} />
+            {t("applyForCampaign")} <ChevronRight size={16} />
           </button>
         </div>
       )}
@@ -936,31 +946,31 @@ export default function CampaignDetailsPage() {
           brandId={campaign.brandId}
           influencerId={user?.id}
           raterRole="influencer"
-          title="Rate this campaign"
-          subtitle={`How was working with ${campaign.brandName}?`}
+          title={t("rating.rateThisCampaign")}
+          subtitle={t("rating.modalSubtitle", { brand: campaign.brandName })}
           sections={[
             {
               key: "target_rating",
-              label: `How would you rate ${campaign.brandName}?`,
+              label: t("rating.howWouldYouRate", { brand: campaign.brandName }),
             },
             {
               key: "brief_clarity",
-              label: "Brief clarity",
-              helper: "Was the brief clear and detailed?",
+              label: t("rating.briefClarity"),
+              helper: t("rating.briefClarityHelper"),
             },
             {
               key: "fairness",
-              label: "Negotiation fairness",
-              helper: "Were revisions, rejections and rate negotiations reasonable?",
+              label: t("rating.negotiationFairness"),
+              helper: t("rating.fairnessHelper"),
             },
             {
               key: "feedback_quality",
-              label: "Feedback quality",
-              helper: "Was the brand's feedback specific and actionable?",
+              label: t("rating.feedbackQuality"),
+              helper: t("rating.feedbackQualityHelper"),
             },
           ]}
-          primaryCta="Submit Rating"
-          secondaryCta="Skip for now"
+          primaryCta={t("rating.submitRating")}
+          secondaryCta={t("rating.skipForNow")}
           onSaved={(r) => setMyRating(r)}
           onSkip={dismissRating}
         />
@@ -973,6 +983,7 @@ export default function CampaignDetailsPage() {
    ACTIVE — Left Content
    ═══════════════════════════════════════════════════ */
 function ActiveContent({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <div className="space-y-6">
       {/* Budget / Deadline / Slots pills */}
@@ -981,7 +992,7 @@ function ActiveContent({ campaign }) {
           <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xs font-bold">₹</div>
           <div>
             <p className="text-xs font-black text-slate-800">{campaign.budget}</p>
-            <p className="text-[9px] text-slate-400">Budget</p>
+            <p className="text-[9px] text-slate-400">{t("active.budget")}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-2xl">
@@ -995,7 +1006,7 @@ function ActiveContent({ campaign }) {
                 {/* "Expired"/"Today" are status words; only counts get " left". */}
                 {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today"
                   ? campaign.daysLeft
-                  : `${campaign.daysLeft} left`}
+                  : t("active.daysLeft", { value: campaign.daysLeft })}
               </p>
             )}
           </div>
@@ -1006,8 +1017,8 @@ function ActiveContent({ campaign }) {
               <Users size={14} />
             </div>
             <div>
-              <p className="text-xs font-black text-slate-800">{campaign.slots} slots</p>
-              <p className="text-[9px] text-slate-400">Available</p>
+              <p className="text-xs font-black text-slate-800">{t("active.slots", { count: campaign.slots })}</p>
+              <p className="text-[9px] text-slate-400">{t("active.available")}</p>
             </div>
           </div>
         )}
@@ -1016,7 +1027,7 @@ function ActiveContent({ campaign }) {
       {/* Content Deliverables */}
       {campaign.deliverableIcons && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <h3 className="text-base font-bold text-slate-800 mb-4">Content Deliverables</h3>
+          <h3 className="text-base font-bold text-slate-800 mb-4">{t("active.contentDeliverables")}</h3>
           <div className="grid grid-cols-3 gap-3">
             {campaign.deliverableIcons.map((d, i) => (
               <div key={i} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl">
@@ -1033,7 +1044,7 @@ function ActiveContent({ campaign }) {
 
       {/* About Campaign */}
       <div className="space-y-3">
-        <h3 className="text-base font-bold text-slate-800">About Campaign</h3>
+        <h3 className="text-base font-bold text-slate-800">{t("active.aboutCampaign")}</h3>
         <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{campaign.about}</p>
       </div>
 
@@ -1045,11 +1056,11 @@ function ActiveContent({ campaign }) {
       {/* Compensation / what the influencer gets */}
       {campaign.barterCompensation && (
         <div className="space-y-3">
-          <h3 className="text-base font-bold text-slate-800">What you get</h3>
+          <h3 className="text-base font-bold text-slate-800">{t("active.whatYouGet")}</h3>
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
             <p className="text-sm text-emerald-900 whitespace-pre-wrap leading-relaxed">{campaign.barterCompensation}</p>
             {campaign.productValue > 0 && (
-              <p className="text-[11px] font-bold text-emerald-700 mt-2">Approx. value ₹{Number(campaign.productValue).toLocaleString("en-IN")}</p>
+              <p className="text-[11px] font-bold text-emerald-700 mt-2">{t("active.approxValue", { value: Number(campaign.productValue).toLocaleString("en-IN") })}</p>
             )}
           </div>
         </div>
@@ -1073,7 +1084,7 @@ function ActiveContent({ campaign }) {
       {/* Requirements */}
       {campaign.requirements && (
         <div className="space-y-3">
-          <h3 className="text-base font-bold text-slate-800">Requirements</h3>
+          <h3 className="text-base font-bold text-slate-800">{t("active.requirements")}</h3>
           <div className="space-y-2.5">
             {campaign.requirements.map((req, i) => (
               <div key={i} className="flex items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm">
@@ -1094,9 +1105,9 @@ function ActiveContent({ campaign }) {
       {campaign.payments && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-800">Payment & Benefits</h3>
+            <h3 className="text-base font-bold text-slate-800">{t("active.paymentBenefits")}</h3>
             <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 uppercase">
-              <ShieldCheck size={12} /> Verified
+              <ShieldCheck size={12} /> {t("active.verified")}
             </span>
           </div>
           <div className="space-y-2.5">
@@ -1126,8 +1137,8 @@ function ActiveContent({ campaign }) {
           <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-2xl p-4 flex items-center gap-3">
             <Gift size={20} className="text-white shrink-0" />
             <div>
-              <p className="text-sm font-bold text-white">Exclusive Event/Rights</p>
-              <p className="text-[10px] text-emerald-100">Brand gets content + licensing for 6 months</p>
+              <p className="text-sm font-bold text-white">{t("active.exclusiveRights")}</p>
+              <p className="text-[10px] text-emerald-100">{t("active.licensingNote")}</p>
             </div>
           </div>
         </div>
@@ -1140,6 +1151,7 @@ function ActiveContent({ campaign }) {
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
 function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <>
       {/* Apply button or Status tracker */}
@@ -1149,9 +1161,9 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
             onClick={onApply}
             className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
           >
-            Apply for Campaign <ChevronRight size={16} />
+            {t("applyForCampaign")} <ChevronRight size={16} />
           </button>
-          <p className="hidden lg:block text-center text-[10px] text-slate-400">Or apply via an agent or partnership</p>
+          <p className="hidden lg:block text-center text-[10px] text-slate-400">{t("sidebar.applyViaAgent")}</p>
         </>
       ) : appliedStatus ? (
         <div className="hidden lg:block">
@@ -1161,7 +1173,7 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
 
       {/* About Brand */}
       <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-        <h4 className="text-sm font-bold text-slate-800">About Brand</h4>
+        <h4 className="text-sm font-bold text-slate-800">{t("sidebar.aboutBrand")}</h4>
         <div className="flex items-center gap-3">
           {campaign.brandLogo ? (
             <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center p-1.5 border border-slate-100">
@@ -1174,15 +1186,15 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
             <p className="text-sm font-bold text-slate-800">
               {campaign.brandName} <CheckCircle2 size={12} className="inline text-blue-500 fill-blue-50" />
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">{campaign.tags?.join(", ") || "Brand"}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{campaign.tags?.join(", ") || t("sidebar.brand")}</p>
           </div>
         </div>
         {campaign.brandStats && (
           <div className="grid grid-cols-3 gap-2">
             {[
-              { val: campaign.brandStats.campaigns, label: "Campaigns" },
-              { val: campaign.brandStats.success, label: "Success" },
-              { val: campaign.brandStats.response, label: "Response" },
+              { val: campaign.brandStats.campaigns, label: t("sidebar.campaigns") },
+              { val: campaign.brandStats.success, label: t("sidebar.success") },
+              { val: campaign.brandStats.response, label: t("sidebar.response") },
             ].map((s, i) => (
               <div key={i} className="text-center p-2 bg-slate-50 rounded-xl">
                 <p className="text-xs font-black text-slate-800">{s.val}</p>
@@ -1200,6 +1212,7 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
    APPLIED — Left Content
    ═══════════════════════════════════════════════════ */
 function AppliedContent({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <div className="space-y-6">
       {/* Application Status Card */}
@@ -1209,12 +1222,12 @@ function AppliedContent({ campaign }) {
             <Clock size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-800">Application Submitted</h3>
-            <p className="text-[11px] text-slate-400">Your application is being reviewed by the brand</p>
+            <h3 className="text-sm font-bold text-slate-800">{t("applied.submitted")}</h3>
+            <p className="text-[11px] text-slate-400">{t("applied.beingReviewed")}</p>
           </div>
         </div>
-        <p className="text-xs font-bold text-blue-600 mb-2">Pending Review</p>
-        <p className="text-[11px] text-slate-500 leading-relaxed">The brand will review your profile and media kit. You&apos;ll be notified once they respond.</p>
+        <p className="text-xs font-bold text-blue-600 mb-2">{t("applied.pendingReview")}</p>
+        <p className="text-[11px] text-slate-500 leading-relaxed">{t("applied.reviewNote")}</p>
       </div>
 
       {/* Budget & Deadline */}
@@ -1234,7 +1247,7 @@ function AppliedContent({ campaign }) {
       {/* Application Timeline */}
       {campaign.timeline && (
         <div className="space-y-4">
-          <h3 className="text-base font-bold text-slate-800">Application Timeline</h3>
+          <h3 className="text-base font-bold text-slate-800">{t("applied.timeline")}</h3>
           <div className="relative space-y-6 pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
             {campaign.timeline.map((step, i) => (
               <div key={i} className="relative flex items-start gap-4">
@@ -1258,6 +1271,7 @@ function AppliedContent({ campaign }) {
    APPLIED — Right Sidebar
    ═══════════════════════════════════════════════════ */
 function AppliedSidebar({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <>
       {/* Application Status */}
@@ -1267,18 +1281,18 @@ function AppliedSidebar({ campaign }) {
             <Clock size={18} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-800">Application Submitted</p>
-            <p className="text-[10px] text-blue-600 font-bold">Pending Review</p>
+            <p className="text-sm font-bold text-slate-800">{t("applied.submitted")}</p>
+            <p className="text-[10px] text-blue-600 font-bold">{t("applied.pendingReview")}</p>
           </div>
         </div>
 
         {/* Status Timeline */}
         <div className="relative space-y-4 pl-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-blue-100">
           {[
-            { label: "Applied", done: true },
-            { label: "Under Review", done: false },
-            { label: "Shortlisted", done: false },
-            { label: "Approved", done: false },
+            { label: t("applied.steps.applied"), done: true },
+            { label: t("applied.steps.underReview"), done: false },
+            { label: t("applied.steps.shortlisted"), done: false },
+            { label: t("applied.steps.approved"), done: false },
           ].map((step, i) => (
             <div key={i} className="relative flex items-center gap-3">
               <div className={`absolute -left-6 w-5 h-5 rounded-full flex items-center justify-center z-10 ${step.done ? "bg-blue-500 text-white" : "bg-white border-2 border-blue-200"}`}>
@@ -1292,15 +1306,15 @@ function AppliedSidebar({ campaign }) {
 
       {/* Campaign Info */}
       <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
-        <h4 className="text-sm font-bold text-slate-800">Campaign Details</h4>
+        <h4 className="text-sm font-bold text-slate-800">{t("applied.campaignDetails")}</h4>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-slate-50 rounded-xl p-3 text-center">
             <p className="text-sm font-black text-slate-800">{campaign.budget}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Budget</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{t("active.budget")}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-3 text-center">
             <p className="text-sm font-black text-slate-800">{campaign.deadline}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">Deadline</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{t("applied.deadline")}</p>
           </div>
         </div>
       </div>
@@ -1308,7 +1322,7 @@ function AppliedSidebar({ campaign }) {
       {/* Placeholder for old otherNotes */}
       {campaign.otherNotes && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
-          <h4 className="text-sm font-bold text-slate-800">Other Notes</h4>
+          <h4 className="text-sm font-bold text-slate-800">{t("applied.otherNotes")}</h4>
           <ul className="space-y-2">
             {campaign.otherNotes.map((note, i) => (
               <li key={i} className="text-[11px] text-slate-500 flex gap-2 leading-relaxed">
@@ -1324,8 +1338,8 @@ function AppliedSidebar({ campaign }) {
       {campaign.matchScore && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Match Score</p>
-            <p className="text-sm font-bold text-slate-800">Your Profile Fit</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{t("applied.matchScore")}</p>
+            <p className="text-sm font-bold text-slate-800">{t("applied.profileFit")}</p>
           </div>
           <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <span className="text-lg font-black text-emerald-600">{campaign.matchScore}</span>
@@ -1340,6 +1354,7 @@ function AppliedSidebar({ campaign }) {
    COMPLETED — Left Content
    ═══════════════════════════════════════════════════ */
 function CompletedContent({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <div className="space-y-6">
       {/* Payment Status */}
@@ -1349,12 +1364,12 @@ function CompletedContent({ campaign }) {
             <CheckCircle size={18} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Status</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t("completedContent.paymentStatus")}</p>
             <p className="text-sm font-black text-emerald-600">{campaign.paymentStatus}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Earnings</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t("completedContent.earnings")}</p>
           <p className="text-xl font-black text-slate-900">{campaign.paymentAmount}</p>
         </div>
       </div>
@@ -1366,35 +1381,35 @@ function CompletedContent({ campaign }) {
             <div className="w-7 h-7 bg-purple-500 rounded-lg flex items-center justify-center text-white">
               <BarChart3 size={14} />
             </div>
-            <h3 className="font-bold text-slate-900">Performance Highlights</h3>
+            <h3 className="font-bold text-slate-900">{t("completedContent.performanceHighlights")}</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="p-3 bg-orange-50 rounded-xl">
               <div className="flex items-center gap-1 mb-1">
                 <Eye size={12} className="text-orange-500" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Total Views</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("completedContent.totalViews")}</p>
               </div>
               <p className="text-lg font-black text-slate-900">{campaign.performance.totalViews}</p>
             </div>
             <div className="p-3 bg-emerald-50 rounded-xl">
               <div className="flex items-center gap-1 mb-1">
                 <Heart size={12} className="text-emerald-500" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Engagement</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("completedContent.engagement")}</p>
               </div>
               <p className="text-lg font-black text-slate-900">{campaign.performance.engagement}</p>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl">
               <div className="flex items-center gap-1 mb-1">
                 <Users size={12} className="text-blue-500" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Reach</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("completedContent.reach")}</p>
               </div>
               <p className="text-lg font-black text-slate-900">{campaign.performance.reach}</p>
             </div>
             <div className="p-3 bg-amber-50 rounded-xl">
               <div className="flex items-center gap-1 mb-1">
                 <Bookmark size={12} className="text-amber-500" />
-                <p className="text-[9px] font-bold text-slate-400 uppercase">Saves</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">{t("completedContent.saves")}</p>
               </div>
               <p className="text-lg font-black text-slate-900">{campaign.performance.saves}</p>
             </div>
@@ -1404,15 +1419,15 @@ function CompletedContent({ campaign }) {
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-50">
             <div className="text-center">
               <p className="text-sm font-black text-slate-800">{campaign.performance.likes}</p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase">Likes</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase">{t("completedContent.likes")}</p>
             </div>
             <div className="text-center">
               <p className="text-sm font-black text-slate-800">{campaign.performance.comments}</p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase">Comments</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase">{t("completedContent.comments")}</p>
             </div>
             <div className="text-center">
               <p className="text-sm font-black text-slate-800">{campaign.performance.shares}</p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase">Shares</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase">{t("completedContent.shares")}</p>
             </div>
           </div>
         </div>
@@ -1421,7 +1436,7 @@ function CompletedContent({ campaign }) {
       {/* Content Delivered */}
       {campaign.contentDelivered && (
         <div className="space-y-3">
-          <h3 className="text-base font-bold text-slate-800">Content Delivered</h3>
+          <h3 className="text-base font-bold text-slate-800">{t("completedContent.contentDelivered")}</h3>
           <div className="space-y-2.5">
             {campaign.contentDelivered.map((item, i) => (
               <div key={i} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow">
@@ -1435,7 +1450,7 @@ function CompletedContent({ campaign }) {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-bold text-slate-800">{item.views}</p>
-                  <p className="text-[9px] text-slate-400">views</p>
+                  <p className="text-[9px] text-slate-400">{t("completedContent.views")}</p>
                 </div>
               </div>
             ))}
@@ -1450,13 +1465,14 @@ function CompletedContent({ campaign }) {
    COMPLETED — Right Sidebar
    ═══════════════════════════════════════════════════ */
 function CompletedSidebar({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   return (
     <>
       {/* Brand Feedback */}
       {campaign.brandFeedback && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
           <div className="flex justify-between items-center">
-            <h4 className="text-sm font-bold text-slate-800">Brand Feedback</h4>
+            <h4 className="text-sm font-bold text-slate-800">{t("completedSidebar.brandFeedback")}</h4>
             <div className="flex gap-0.5">
               {[...Array(campaign.brandFeedback.rating)].map((_, i) => (
                 <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
@@ -1467,7 +1483,7 @@ function CompletedSidebar({ campaign }) {
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xs font-bold">{campaign.initials}</div>
             <div>
               <p className="text-xs font-bold text-slate-800">{campaign.brandName}</p>
-              <p className="text-[10px] text-slate-400">Brand Partner</p>
+              <p className="text-[10px] text-slate-400">{t("completedSidebar.brandPartner")}</p>
             </div>
           </div>
           <p className="text-xs text-slate-500 italic leading-relaxed">{campaign.brandFeedback.text}</p>
@@ -1479,26 +1495,26 @@ function CompletedSidebar({ campaign }) {
         <div className="w-14 h-14 bg-amber-400 rounded-full flex items-center justify-center text-white mx-auto mb-3 shadow-lg">
           <Star size={28} />
         </div>
-        <h4 className="text-base font-black text-slate-900 mb-1">Congratulations! 🎉</h4>
-        <p className="text-[11px] text-slate-400 mb-4">You&apos;ve successfully completed this campaign with outstanding results.</p>
+        <h4 className="text-base font-black text-slate-900 mb-1">{t("completedSidebar.congratulations")}</h4>
+        <p className="text-[11px] text-slate-400 mb-4">{t("completedSidebar.congratsNote")}</p>
         <button className="w-full h-11 bg-slate-900 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all cursor-pointer">
-          <Share2 size={16} /> Share Results
+          <Share2 size={16} /> {t("completedSidebar.shareResults")}
         </button>
       </div>
 
       {/* Campaign Summary */}
       {campaign.campaignSummary && (
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
-          <h4 className="text-sm font-bold text-slate-800">Campaign Summary</h4>
+          <h4 className="text-sm font-bold text-slate-800">{t("completedSidebar.campaignSummary")}</h4>
           <div className="space-y-2">
             {[
-              { label: "Duration", val: campaign.campaignSummary.duration },
+              { label: t("completedSidebar.duration"), val: campaign.campaignSummary.duration },
               {
-                label: "Content Pieces",
+                label: t("completedSidebar.contentPieces"),
                 val: campaign.campaignSummary.contentPieces,
               },
               {
-                label: "Avg Engagement",
+                label: t("completedSidebar.avgEngagement"),
                 val: campaign.campaignSummary.avgEngagement,
               },
             ].map((row, i) => (
@@ -1518,6 +1534,7 @@ function CompletedSidebar({ campaign }) {
    SIMILAR CAMPAIGNS — Shared
    ═══════════════════════════════════════════════════ */
 function SimilarCampaigns({ campaign }) {
+  const t = useTranslations("InfluencerOffersId");
   const [similar, setSimilar] = useState([]);
   const router = useRouter();
 
@@ -1557,8 +1574,8 @@ function SimilarCampaigns({ campaign }) {
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-bold text-slate-800">Similar Campaigns</h4>
-        <button onClick={handleSeeAll} className="text-[10px] font-bold text-pink-500 cursor-pointer hover:underline">View All</button>
+        <h4 className="text-sm font-bold text-slate-800">{t("similar.title")}</h4>
+        <button onClick={handleSeeAll} className="text-[10px] font-bold text-pink-500 cursor-pointer hover:underline">{t("similar.viewAll")}</button>
       </div>
       <div className="space-y-3">
         {similar.map((c) => (
@@ -1607,6 +1624,7 @@ const SPECIAL_STATUSES = {
 // locks the rate in and tells the brand to fund escrow; withdraw ends
 // the application. No counter-offer round exists by design.
 function OfferResponseCard({ campaign, refetch }) {
+  const t = useTranslations("InfluencerOffersId");
   const { user } = useAuth();
   const supabase = createClient();
   const [busy, setBusy] = useState(null); // "accept" | "withdraw" | null
@@ -1626,7 +1644,7 @@ function OfferResponseCard({ campaign, refetch }) {
         },
       });
       if (error || data?.error) {
-        setPopup(error?.message || data?.error || "Could not update the application.");
+        setPopup(error?.message || data?.error || t("offer.updateError"));
         return;
       }
       refetch?.();
@@ -1641,18 +1659,17 @@ function OfferResponseCard({ campaign, refetch }) {
         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-black text-sm shrink-0">₹</div>
         <div>
           <p className="text-sm font-black text-purple-800">
-            Offer: ₹{offer.toLocaleString("en-IN")}
+            {t("offer.offerAmount", { amount: offer.toLocaleString("en-IN") })}
           </p>
           <p className="text-[11px] text-purple-600">
             {Number(campaign?.proposedRate || 0) > 0 && offer !== Number(campaign.proposedRate)
-              ? `You proposed ₹${Number(campaign.proposedRate).toLocaleString("en-IN")} — the brand countered with this amount.`
-              : "The brand approved your application at this rate."}
+              ? t("offer.counteredNote", { amount: Number(campaign.proposedRate).toLocaleString("en-IN") })
+              : t("offer.approvedNote")}
           </p>
         </div>
       </div>
       <p className="text-[11px] text-purple-700 leading-relaxed">
-        Accept to lock it in — the brand then funds escrow and you can start
-        working. Or withdraw if this doesn&apos;t work for you. No counter-offers.
+        {t("offer.lockItInNote")}
       </p>
       {!confirmWithdraw ? (
         <div className="flex gap-2">
@@ -1663,20 +1680,20 @@ function OfferResponseCard({ campaign, refetch }) {
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
             {busy === "accept" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
-            Accept ₹{offer.toLocaleString("en-IN")}
+            {t("offer.acceptAmount", { amount: offer.toLocaleString("en-IN") })}
           </button>
           <button
             onClick={() => setConfirmWithdraw(true)}
             disabled={!!busy}
             className="h-11 px-4 rounded-xl border border-purple-200 bg-white text-purple-700 text-sm font-bold cursor-pointer disabled:opacity-60"
           >
-            Withdraw
+            {t("offer.withdraw")}
           </button>
         </div>
       ) : (
         <div className="p-3 bg-white rounded-xl border border-red-200 space-y-2">
           <p className="text-[11px] font-bold text-red-600">
-            Withdraw from this campaign? This ends your application — you can&apos;t undo it.
+            {t("offer.withdrawConfirm")}
           </p>
           <div className="flex gap-2">
             <button
@@ -1685,14 +1702,14 @@ function OfferResponseCard({ campaign, refetch }) {
               className="flex-1 h-9 rounded-lg bg-red-600 text-white text-xs font-black inline-flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
             >
               {busy === "withdraw" ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
-              Yes, Withdraw
+              {t("offer.yesWithdraw")}
             </button>
             <button
               onClick={() => setConfirmWithdraw(false)}
               disabled={!!busy}
               className="h-9 px-3 rounded-lg border border-gray-200 bg-white text-gray-600 text-xs font-bold cursor-pointer"
             >
-              Keep Offer
+              {t("offer.keepOffer")}
             </button>
           </div>
         </div>
@@ -1703,6 +1720,7 @@ function OfferResponseCard({ campaign, refetch }) {
 }
 
 function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
+  const t = useTranslations("InfluencerOffersId");
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const isSpecial = SPECIAL_STATUSES[status];
   const isRevision = status === "revision_needed";
@@ -1711,6 +1729,9 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
   const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
   const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
+  const currentStepLabel = isSpecial
+    ? t(`specialStatus.${status}`)
+    : t(`statusSteps.${(STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0]).key}`);
   const canUpload = status === "approved" || status === "revision_needed" || status === "accepted";
   const hasOffer = status === "offer_sent";
   const waitingEscrow = status === "offer_accepted";
@@ -1727,12 +1748,12 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
         <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold ${
           isRejected ? "bg-red-500 text-white" : isRevision ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
         }`}>
-          {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStep.label}
+          {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStepLabel}
         </div>
         )}
         {waitingEscrow && (
           <p className="text-[11px] text-center text-slate-500 font-semibold">
-            Offer accepted — waiting for the brand to fund escrow.
+            {t("statusBar.offerAcceptedWaiting")}
           </p>
         )}
         {canUpload && (
@@ -1741,7 +1762,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
             className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : status === "accepted" ? "Submit Live Links" : "Upload Submission"}
+            <Upload size={16} /> {isRevision ? t("statusBar.resubmitDeliverables") : status === "accepted" ? t("statusBar.submitLiveLinks") : t("statusBar.uploadSubmission")}
           </button>
         )}
         {showSubmitModal && (
@@ -1757,7 +1778,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
 
   return (
     <div className="bg-[#F8F9FD] rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
-      <h4 className="text-base font-black text-slate-800">Application Status</h4>
+      <h4 className="text-base font-black text-slate-800">{t("statusBar.applicationStatus")}</h4>
 
       {/* B15 — offer response card sits above the step tracker so the
           Accept CTA is impossible to miss. */}
@@ -1765,7 +1786,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
       {waitingEscrow && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
           <p className="text-[12px] font-bold text-emerald-700">
-            ✓ You accepted ₹{Number(campaign?.brandOfferedRate || 0).toLocaleString("en-IN")} — waiting for the brand to fund escrow.
+            {t("statusBar.acceptedWaiting", { amount: Number(campaign?.brandOfferedRate || 0).toLocaleString("en-IN") })}
           </p>
         </div>
       )}
@@ -1802,7 +1823,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
               <p className={`text-sm font-bold ${
                 isDone ? "text-emerald-600" : isCurrent ? "text-slate-900" : "text-slate-400"
               }`}>
-                {step.label}
+                {t(`statusSteps.${step.key}`)}
               </p>
             </div>
           );
@@ -1824,12 +1845,12 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-sm font-bold shrink-0">⟳</div>
-              <p className="text-sm font-bold text-amber-700">Revision Requested</p>
+              <p className="text-sm font-bold text-amber-700">{t("statusBar.revisionRequested")}</p>
             </div>
             {note && <p className="text-xs text-amber-700 leading-relaxed pl-9">{note}</p>}
             {revisionLinks.length > 0 && (
               <div className="pl-9 space-y-1.5">
-                <p className="text-[10px] font-bold text-amber-600 uppercase">Deliverables to revise:</p>
+                <p className="text-[10px] font-bold text-amber-600 uppercase">{t("statusBar.deliverablesToRevise")}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {revisionLinks.map((link, i) => (
                     <span key={i} className="px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full">{link}</span>
@@ -1854,7 +1875,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center text-red-600 text-sm font-bold shrink-0">✕</div>
-              <p className="text-sm font-bold text-red-700">Application Rejected</p>
+              <p className="text-sm font-bold text-red-700">{t("statusBar.applicationRejected")}</p>
             </div>
             {reason && <p className="text-xs text-red-600 leading-relaxed pl-9">{reason}</p>}
           </div>
@@ -1868,7 +1889,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
-          <Upload size={16} /> {isRevision ? "Resubmit Deliverables" : status === "accepted" ? "Submit Live Links" : "Upload Submission"}
+          <Upload size={16} /> {isRevision ? t("statusBar.resubmitDeliverables") : status === "accepted" ? t("statusBar.submitLiveLinks") : t("statusBar.uploadSubmission")}
         </button>
       )}
 
@@ -1876,7 +1897,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
       {campaign?.submissionLinks?.length > 0 && (
         <div className="space-y-3 pt-1">
           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-            <CheckCircle size={12} className="text-emerald-500" /> Your Submissions
+            <CheckCircle size={12} className="text-emerald-500" /> {t("statusBar.yourSubmissions")}
           </h4>
           <div className="space-y-2">
             {campaign.submissionLinks.map((link, i) => (
@@ -1913,6 +1934,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
 }
 
 function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
+  const t = useTranslations("InfluencerOffersId");
   const isRevision = campaign?.applicationStatus === "revision_needed";
 
   // Parse revision info
@@ -2039,7 +2061,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const handleSubmit = async () => {
     if (!allFilled || submitting) return;
     if (hasDuplicates) {
-      setError("You've pasted the same link more than once. Each deliverable needs a unique URL.");
+      setError(t("modal.duplicateError"));
       return;
     }
     setSubmitting(true);
@@ -2064,14 +2086,14 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
       if (data?.error) { setError(data.error); return; }
       if (data?.success) onSuccess();
     } catch (err) {
-      setError(err.message || "Failed to submit");
+      setError(err.message || t("modal.failedToSubmit"));
     } finally {
       setSubmitting(false);
     }
   };
 
   const isLiveSubmit = isLiveLinksFlow;
-  const heading = isLiveSubmit ? "Submit Live Links" : "Upload Submissions";
+  const heading = isLiveSubmit ? t("modal.submitLiveLinksHeading") : t("modal.uploadSubmissions");
 
   return (
     <>
@@ -2084,10 +2106,10 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white">
           <div className="flex-1 min-w-0 pr-3">
             <h2 className="text-base font-bold text-slate-900 truncate">{heading}</h2>
-            <p className="text-[11px] text-slate-400 truncate">{campaign?.title} &middot; {deliverables.length} deliverables</p>
+            <p className="text-[11px] text-slate-400 truncate">{t("modal.titleDeliverables", { title: campaign?.title, count: deliverables.length })}</p>
             {isLiveSubmit && (
               <p className="text-[10px] text-emerald-600 font-semibold mt-1 leading-tight">
-                Post your content on Instagram, then paste the live post links below.
+                {t("modal.postThenPaste")}
               </p>
             )}
           </div>
@@ -2102,17 +2124,17 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
 
           {isRevision && revisionNote && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Revision Note</p>
+              <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">{t("modal.revisionNote")}</p>
               <p className="text-xs text-amber-700">{revisionNote}</p>
             </div>
           )}
 
           <p className="text-xs text-slate-500">
             {isRevision
-              ? "Update the highlighted deliverables below and resubmit."
+              ? t("modal.instructionsRevision")
               : isLiveLinksFlow
-                ? "Paste the live Instagram post link for each deliverable. All links are required before submitting."
-                : "Paste any link to your draft media (Drive, Dropbox, WeTransfer, watermarked file, etc). Each deliverable needs its own unique URL."}
+                ? t("modal.instructionsLive")
+                : t("modal.instructionsDraft")}
           </p>
 
           {deliverables.map((d) => {
@@ -2125,7 +2147,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             const isDraftInstagramLink =
               !isLiveLinksFlow && hasUrl && !!normaliseInstagramUrl(links[d.key]);
             const placeholder = !isLiveLinksFlow
-              ? "https://… (any media link)"
+              ? t("modal.placeholderAnyMedia")
               : expected === "story"
                 ? "https://www.instagram.com/stories/..."
                 : expected === "post"
@@ -2138,11 +2160,11 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                   <span className={isRevision && d.needsRevision ? "text-amber-700" : "text-slate-500"}>{d.label}</span>
                   {expected && (
                     <span className="text-[9px] font-bold text-slate-400 normal-case">
-                      Expecting a {labelForLinkType(expected)} URL
+                      {t("modal.expectingUrl", { type: labelForLinkType(expected) })}
                     </span>
                   )}
-                  {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">REVISE</span>}
-                  {isRevision && !d.needsRevision && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black">OK</span>}
+                  {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">{t("modal.revise")}</span>}
+                  {isRevision && !d.needsRevision && <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black">{t("modal.ok")}</span>}
                 </label>
                 <input
                   type="url"
@@ -2164,9 +2186,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                   <div className="flex items-start gap-1.5 text-[10.5px] font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1.5 rounded-lg leading-relaxed">
                     <span className="shrink-0 font-black">ℹ</span>
                     <span>
-                      Instagram links aren&apos;t needed for drafts — share the draft file
-                      (Google Drive, WeTransfer, an mp4, etc.). You&apos;ll add the live
-                      Instagram link after the brand approves.
+                      {t("modal.draftInstagramNote")}
                     </span>
                   </div>
                 )}
@@ -2174,22 +2194,22 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                   <div className="flex items-center gap-2 text-[10px] font-bold flex-wrap">
                     {detected && detected !== "unknown" && !mismatch && (
                       <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        Detected: {labelForLinkType(detected)}
+                        {t("modal.detected", { type: labelForLinkType(detected) })}
                       </span>
                     )}
                     {mismatch && (
                       <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                        ⚠ {labelForLinkType(detected)} URL but {labelForLinkType(expected)} required
+                        {t("modal.mismatch", { detected: labelForLinkType(detected), expected: labelForLinkType(expected) })}
                       </span>
                     )}
                     {detected === "unknown" && (
                       <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                        Doesn't look like an Instagram URL
+                        {t("modal.notInstagramUrl")}
                       </span>
                     )}
                     {duplicate && (
                       <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                        ⚠ Duplicate of another deliverable
+                        {t("modal.duplicateBadge")}
                       </span>
                     )}
                   </div>
@@ -2199,7 +2219,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           })}
 
           {deliverables.length === 0 && (
-            <div className="text-center py-8 text-sm text-slate-400">No deliverables specified for this campaign.</div>
+            <div className="text-center py-8 text-sm text-slate-400">{t("modal.noDeliverables")}</div>
           )}
         </div>
 
@@ -2208,7 +2228,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           className="shrink-0 flex gap-3 px-5 py-4 border-t border-slate-100 bg-white"
           style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
         >
-          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+          <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">{t("modal.cancel")}</button>
           <button
             onClick={handleSubmit}
             disabled={!allFilled || submitting}
@@ -2217,14 +2237,14 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           >
             {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
             {submitting
-              ? "Submitting..."
+              ? t("modal.submitting")
               : isLiveSubmit && isRevision
-                ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Live Link${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
+                ? t("modal.resubmitLiveLinks", { count: deliverables.filter((d) => d.needsRevision).length })
                 : isLiveSubmit
-                  ? `Submit ${deliverables.length} Live Link${deliverables.length !== 1 ? "s" : ""}`
+                  ? t("modal.submitLiveLinks", { count: deliverables.length })
                   : isRevision
-                    ? `Resubmit ${deliverables.filter((d) => d.needsRevision).length} Deliverable${deliverables.filter((d) => d.needsRevision).length !== 1 ? "s" : ""}`
-                    : `Submit ${deliverables.length} Deliverable${deliverables.length !== 1 ? "s" : ""}`}
+                    ? t("modal.resubmitDeliverables", { count: deliverables.filter((d) => d.needsRevision).length })
+                    : t("modal.submitDeliverables", { count: deliverables.length })}
           </button>
         </div>
       </div>

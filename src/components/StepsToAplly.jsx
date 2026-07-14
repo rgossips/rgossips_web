@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function StepsToApply() {
+  const t = useTranslations("StepsToAplly");
   const [open, setOpen] = useState(true);
 
   const steps = [
-    { label: "Step 1", description: "Apply for campaign" },
-    { label: "Step 2", description: "Get Approval From Brand" },
-    { label: "Step 3", description: "Submit Content for approval" },
-    { label: "Step 4", description: "Submit live link" },
+    { label: t("steps.step1.label"), description: t("steps.step1.description") },
+    { label: t("steps.step2.label"), description: t("steps.step2.description") },
+    { label: t("steps.step3.label"), description: t("steps.step3.description") },
+    { label: t("steps.step4.label"), description: t("steps.step4.description") },
   ];
 
   return (
@@ -20,7 +22,7 @@ export default function StepsToApply() {
         className="flex justify-between items-center px-4 py-3 cursor-pointer"
         onClick={() => setOpen(!open)}
       >
-        <h2 className="font-medium text-gray-700">Steps to apply</h2>
+        <h2 className="font-medium text-gray-700">{t("heading")}</h2>
         {open ? (
           <ChevronUp size={20} className="text-gray-500" />
         ) : (

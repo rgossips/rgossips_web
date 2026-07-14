@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   Home,
   Compass,
@@ -27,11 +28,11 @@ import { createClient } from "@/utils/supabase/client";
 import { parseUtc, navigateOrRefresh } from "@/lib/utils";
 
 const DESKTOP_NAV_ITEMS = [
-  { label: "Home", icon: <Home size={20} />, href: "/influencer" },
-  { label: "Brands", icon: <Compass size={20} />, href: "/influencer/brands" },
-  { label: "Campaigns", icon: <Briefcase size={20} />, href: "/influencer/campaigns" },
-  { label: "Services", icon: <Sparkles size={20} />, href: "/influencer/services" },
-  { label: "Profile", icon: <User size={20} />, href: "/influencer/profile" },
+  { key: "home", icon: <Home size={20} />, href: "/influencer" },
+  { key: "brands", icon: <Compass size={20} />, href: "/influencer/brands" },
+  { key: "campaigns", icon: <Briefcase size={20} />, href: "/influencer/campaigns" },
+  { key: "services", icon: <Sparkles size={20} />, href: "/influencer/services" },
+  { key: "profile", icon: <User size={20} />, href: "/influencer/profile" },
 ];
 
 const NOTIF_ICON = {
@@ -105,6 +106,7 @@ const prefKeyForType = (type) => {
 };
 
 export const DesktopNavbar = () => {
+  const t = useTranslations("DeskTopNavbar");
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
@@ -188,18 +190,18 @@ export const DesktopNavbar = () => {
     if (!date) return "";
     const diff = Date.now() - date.getTime();
     const min = Math.floor(diff / 60000);
-    if (min < 1) return "now";
-    if (min < 60) return `${min}m`;
+    if (min < 1) return t("time.now");
+    if (min < 60) return t("time.minutes", { n: min });
     const hr = Math.floor(diff / 3600000);
-    if (hr < 24) return `${hr}h`;
+    if (hr < 24) return t("time.hours", { n: hr });
     const day = Math.floor(diff / 86400000);
-    return `${day}d`;
+    return t("time.days", { n: day });
   };
 
   return (
     <nav className="hidden lg:grid grid-cols-3 fixed top-0 left-0 right-0 h-20 bg-white border-b border-slate-100 z-50 px-12 items-center shadow-sm">
       <div>
-        <Link href="/" aria-label="Go to homepage" className="inline-block">
+        <Link href="/" aria-label={t("goToHomepage")} className="inline-block">
           <Image src={logo} alt="logo" height={200} width={200} className="cursor-pointer" />
         </Link>
       </div>
@@ -210,13 +212,13 @@ export const DesktopNavbar = () => {
               ? pathname === "/influencer"
               : pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <Link key={item.label} href={item.href} className="flex flex-col items-center justify-center relative group px-6 py-2">
+            <Link key={item.key} href={item.href} className="flex flex-col items-center justify-center relative group px-6 py-2">
               {isActive && <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-gradient-to-r from-[#8E2DE2] to-[#F6339A]" />}
               {React.cloneElement(item.icon, {
                 strokeWidth: isActive ? 2.5 : 2,
                 className: `transition-all duration-300 ${isActive ? "text-[#F6339A] scale-110" : "text-[#64748B] group-active:scale-90"}`,
               })}
-              <span className={`text-sm mt-1 font-semibold transition-colors duration-300 ${isActive ? "text-[#F6339A]" : "text-[#94A3B8]"}`}>{item.label}</span>
+              <span className={`text-sm mt-1 font-semibold transition-colors duration-300 ${isActive ? "text-[#F6339A]" : "text-[#94A3B8]"}`}>{t(`nav.${item.key}`)}</span>
             </Link>
           );
         })}
@@ -241,10 +243,10 @@ export const DesktopNavbar = () => {
             {showPopover && (
               <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[60] overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
-                  <h3 className="text-sm font-black text-slate-800">Notifications</h3>
+                  <h3 className="text-sm font-black text-slate-800">{t("notifications")}</h3>
                   {unreadCount > 0 && (
                     <button onClick={handleMarkAllRead} className="text-[10px] font-bold text-[#E60076] cursor-pointer hover:underline">
-                      Mark all read
+                      {t("markAllRead")}
                     </button>
                   )}
                 </div>
@@ -253,7 +255,7 @@ export const DesktopNavbar = () => {
                   {visibleNotifications.length === 0 ? (
                     <div className="text-center py-10">
                       <Bell size={28} className="text-slate-200 mx-auto mb-2" />
-                      <p className="text-xs text-slate-400 font-bold">No notifications</p>
+                      <p className="text-xs text-slate-400 font-bold">{t("noNotifications")}</p>
                     </div>
                   ) : (
                     visibleNotifications.slice(0, 8).map((n, i) => (
@@ -285,7 +287,7 @@ export const DesktopNavbar = () => {
                     onClick={() => { setShowPopover(false); router.push("/influencer/notifications"); }}
                     className="w-full py-2.5 text-xs font-bold text-[#E60076] hover:bg-pink-50 rounded-xl transition-colors cursor-pointer"
                   >
-                    Show All Notifications
+                    {t("showAllNotifications")}
                   </button>
                 </div>
               </div>
@@ -295,14 +297,14 @@ export const DesktopNavbar = () => {
           <button
             onClick={() => setSupportOpen(true)}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-slate-600 hover:text-pink-500 border border-slate-100 transition-colors"
-            title="Support"
+            title={t("support")}
           >
             <HeadphonesIcon size={22} />
           </button>
           <button
             onClick={() => setLogoutOpen(true)}
             className="p-3.5 cursor-pointer lg:p-3.5 bg-white rounded-2xl shadow-sm text-red-500 hover:bg-red-50 border border-slate-100 transition-colors"
-            title="Log Out"
+            title={t("logOut")}
           >
             <LogOut size={22} />
           </button>

@@ -361,6 +361,88 @@ Full QA + security + abuse audit. Key results and standing rules:
   but auth is token-in-header (not cookie), so CSRF/credential-theft via
   CORS isn't the exposure; tightening is defense-in-depth only.
 
+## i18n (2026-07)
+
+Foundation shipped across all three apps; English is the source of truth,
+conversion is incremental (foundation + one reference surface each so far).
+
+- **Web + Admin** use **next-intl v4** in the **"without i18n routing"** mode —
+  the active locale lives in a `NEXT_LOCALE` cookie, NOT a URL prefix, so no
+  page had to move under `app/[locale]`. Wiring:
+  - `src/i18n/config.{js,ts}` — CLIENT-SAFE constants (`locales`,
+    `defaultLocale`, `localeNames`). Never import `next/headers` here.
+  - `src/i18n/request.{js,ts}` — `getRequestConfig` reads the cookie, loads
+    `messages/<locale>.json`.
+  - `next.config.*` — wrapped with `createNextIntlPlugin("./src/i18n/request.*")`.
+  - Root layout is `async`: `getLocale()` + `getMessages()` → wrap the tree in
+    `<NextIntlClientProvider>`, set `<html lang={locale}>`.
+  - Message catalog: `messages/en.json` (repo root of each app), namespaced
+    (`Footer`, `Common`, `Sidebar`, …).
+  - Components: `useTranslations("Namespace")` → `t("key")`, `t("k", {var})`,
+    `t(\`dyn.${x}\`)`. Web `LanguageSwitcher` (`src/components/LanguageSwitcher.jsx`)
+    writes the cookie + `router.refresh()`; **self-hides while `locales.length < 2`**.
+  - Surfaces converted (web): `Footer.jsx`; **the ENTIRE auth/login surface** —
+    `app/(auth)/login/page.js` + every `components/login/*` component
+    (`RoleSelection`, `SignInPhone`, `VerifyOTP`, `SignUpForm`,
+    `BrandSignUpForm`, `InstagramConnect`, `CategorySelection`, `Preferences`,
+    `Notifications`, `SuccessScreen`, `OnboardingCarousel`) — all under the
+    `Auth` namespace (sub-namespaces per component: `Auth.roleSelection`,
+    `Auth.phone`, `Auth.verifyOtp`, `Auth.signUpForm`, `Auth.brandSignUpForm`,
+    `Auth.instagram`, `Auth.onboarding`, …). Patterns established:
+    ICU interpolation (`t("...", { otherRole })`), rich text
+    (`t.rich("...", { strong, b, link })` for bold spans / anchors),
+    role labels via `Auth.roles.*` + a `roleIndef()` helper, and data-array
+    → key-array (map a stable `key`/`titleKey` in code, resolve
+    `t(\`slides.${key}.title\`)` at render). `components/login/ProfileDetails.jsx`
+    is dead code (no importers) — skipped. Admin: `sidebar.tsx` group headings.
+  - **WEB: DONE.** The influencer home cards were converted manually, then a
+    multi-agent workflow (opted in via "ultracode") converted the remaining
+    **115 web components/pages**. Each agent edited its component and wrote a
+    per-file namespace part to `messages/i18n-parts/<Ns>.json`; a deterministic
+    Node merge folded all parts into `messages/en.json` (now **126 namespaces /
+    ~2,906 keys**), the parts dir was deleted, `next build` is green, and every
+    literal `t()` key was statically verified to resolve. One agent-introduced
+    quirk to know about: in `app/influencer/services/page.js` the tag-map uses a
+    param named `t` that shadows the translation `t` — harmless (no `t()` call
+    inside that scope) but don't "fix" it blindly.
+  - **MOBILE + ADMIN: IN PROGRESS, PAUSED (2026-07).** Two workflows (mobile =
+    i18next over ~108 `.tsx`; admin = next-intl over ~69 `.tsx`) were launched
+    then **stopped mid-run** by the user ("continue later"). State on disk:
+    SOME files in `rsgossips_app` + `rgossips-admin` are already edited to use
+    `t(...)`, and their namespace parts are written but **NOT merged** — mobile
+    parts in `rsgossips_app/src/i18n/parts/`, admin parts in
+    `rgossips-admin/messages/i18n-parts/`. Until merged, converted mobile/admin
+    components render raw keys / missing-key fallbacks. Neither app has been
+    re-built. Nothing committed.
+    **To finish (new session — same-session workflow resume/cache is gone):**
+    1. Re-discover the still-unconverted files per app (those NOT importing
+       `react-i18next` / `next-intl`) and re-run the same workflow pattern over
+       just those (mobile agents: i18next conventions — `useTranslation`,
+       `t('<Ns>.key')`, `{{var}}` interpolation, `key_one`/`key_other` plurals,
+       no `t.rich`; admin agents: same next-intl recipe as web).
+    2. Merge each app's `parts/` dir into its `en.json` (mobile
+       `src/i18n/en.json`, admin `messages/en.json`) with a deep-merge, then
+       delete the `parts/` dir.
+    3. Verify: admin `npx next build`; mobile `npx tsc --noEmit`. Fix any
+       agent-introduced compile errors (build/tsc names the file).
+  - Tradeoff: reading the cookie in `getRequestConfig` makes pages render
+    dynamically (all routes `ƒ`). Fine here (auth-heavy app); revisit only if a
+    public page needs static caching.
+- **Mobile** uses **i18next + react-i18next**. `src/i18n/index.ts` inits
+  synchronously (English), then restores the persisted choice from AsyncStorage
+  (`rg.lang`); `setLanguage(code)` persists + `changeLanguage`. Imported for
+  side effect at the top of `App.tsx`. `src/i18n/en.json` is the catalog.
+  Components: `const { t } = useTranslation(); t("verifyingOverlay.title")`.
+  Reference surface: `VerifyingOverlay.tsx`.
+
+**Add a language**: web/admin — add the code to `src/i18n/config.*` +
+`localeNames`, drop `messages/<code>.json`; the switcher appears automatically.
+Mobile — add `src/i18n/<code>.json`, register in `resources` + `SUPPORTED_LOCALES`.
+
+**To continue conversion**: pick a surface, move its literals into the app's
+`en.json` under a namespace, replace with `t(...)`. Keep brand names ("RGossips")
+and data (hrefs, enum values) untranslated.
+
 ## Migrations register
 
 | # | Name | Notes |

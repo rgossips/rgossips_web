@@ -2,11 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
 
 // Bento-grid layout on a warm cream background with a sunset gradient
 // running through the hero / engagement tile / bars. Read-only.
 export default function TemplateBentoSunset({ profile }) {
+  const t = useTranslations("MediaKitTemplatesTemplateBentoSunset");
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -45,16 +47,16 @@ export default function TemplateBentoSunset({ profile }) {
 
           {/* About + Expertise */}
           <div className={`${tile} col-span-12 sm:col-span-5`}>
-            <div className={lbl} style={{ color: muted }}>About Me</div>
+            <div className={lbl} style={{ color: muted }}>{t("about.label")}</div>
             <div style={disp} className="font-bold text-[24px] leading-tight" >
               <span style={{ color: "#ff5d73" }}>"{(p.bio || "").split("\n")[0].slice(0, 70)}"</span>
-              <span className="block mt-1" style={{ color: faint }}>capturing moments, one frame at a time.</span>
+              <span className="block mt-1" style={{ color: faint }}>{t("about.tagline")}</span>
             </div>
           </div>
           <div className={`${tile} col-span-12 sm:col-span-7`}>
-            <div className={lbl} style={{ color: muted }}>Expertise</div>
+            <div className={lbl} style={{ color: muted }}>{t("expertise.label")}</div>
             <div className="flex flex-wrap gap-2">
-              {(p.categories.length ? p.categories : ["Content Creation"]).map((c, i) => {
+              {(p.categories.length ? p.categories : [t("expertise.fallback")]).map((c, i) => {
                 const colors = [
                   { bg: "#fdeee4", fg: "#c2632f" },
                   { bg: "#fde4ec", fg: "#E94560" },
@@ -69,22 +71,22 @@ export default function TemplateBentoSunset({ profile }) {
 
           {/* Engagement big tile */}
           <div className="col-span-12 sm:col-span-4 rounded-[26px] p-6 text-white flex flex-col justify-center" style={{ background: sunset }}>
-            <div className={lbl} style={{ color: "rgba(255,255,255,.85)" }}>Engagement Rate</div>
+            <div className={lbl} style={{ color: "rgba(255,255,255,.85)" }}>{t("engagement.label")}</div>
             <div style={disp} className="font-extrabold text-[56px] leading-[.95] my-1">{p.engagementRate || 0}%</div>
-            <div className="text-[13px] opacity-90">vs 1.9% category avg</div>
+            <div className="text-[13px] opacity-90">{t("engagement.categoryAvg")}</div>
           </div>
           {/* 3 stats */}
           <div className={`${tile} col-span-12 sm:col-span-8 flex items-center`}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
-              <PStat lbl="Reached" v={formatCount(p.totalReach || p.totalImpressions)} sub="last 30 days" disp={disp} muted={muted} />
-              <PStat lbl="Non-Follower" v={`${p.nonFollowerReachPct}%`} sub="organic discovery" disp={disp} muted={muted} />
-              <PStat lbl="Interactions" v={formatCount(p.avgLikes + p.avgComments)} sub="avg per post" disp={disp} muted={muted} />
+              <PStat lbl={t("stats.reached.label")} v={formatCount(p.totalReach || p.totalImpressions)} sub={t("stats.reached.sub")} disp={disp} muted={muted} />
+              <PStat lbl={t("stats.nonFollower.label")} v={`${p.nonFollowerReachPct}%`} sub={t("stats.nonFollower.sub")} disp={disp} muted={muted} />
+              <PStat lbl={t("stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.interactions.sub")} disp={disp} muted={muted} />
             </div>
           </div>
 
           {/* Social */}
           <div className={`${tile} col-span-12 sm:col-span-6`}>
-            <div className={lbl} style={{ color: muted }}>Social Media</div>
+            <div className={lbl} style={{ color: muted }}>{t("socialMedia.label")}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {socials.map((s) => (
                 <div key={s.key} className="flex items-center gap-3 bg-[#faf4ef] rounded-2xl p-3">
@@ -102,7 +104,7 @@ export default function TemplateBentoSunset({ profile }) {
           {/* Services */}
           {p.services.length > 0 && (
             <div className={`${tile} col-span-12 sm:col-span-6`}>
-              <div className={lbl} style={{ color: muted }}>Services &amp; Rates</div>
+              <div className={lbl} style={{ color: muted }}>{t("services.label")}</div>
               <div className="flex flex-col gap-2">
                 {p.services.map((sv) => {
                   const rate = p.serviceRates[sv];
@@ -110,7 +112,7 @@ export default function TemplateBentoSunset({ profile }) {
                     <div key={sv} className="flex justify-between items-center bg-[#faf4ef] rounded-2xl px-4 py-3.5">
                       <span className="font-semibold text-[15px]">{toServiceLabel(sv)}</span>
                       <span className="font-bold text-[17px]" style={{ ...disp, color: rate ? "#ff5d73" : "#ffb84d" }}>
-                        {rate ? `₹${Number(rate).toLocaleString("en-IN")}` : "On request"}
+                        {rate ? `₹${Number(rate).toLocaleString("en-IN")}` : t("services.onRequest")}
                       </span>
                     </div>
                   );
@@ -121,28 +123,28 @@ export default function TemplateBentoSunset({ profile }) {
 
           {/* Audience bars + donut */}
           <div className={`${tile} col-span-12 sm:col-span-4`}>
-            <div className={lbl} style={{ color: muted }}>Top Cities</div>
+            <div className={lbl} style={{ color: muted }}>{t("audience.topCities")}</div>
             {demo.topCities.map((c) => <Bar key={c.name} label={c.name} pct={c.pct} grad={sunset} faint="#f0e3da" muted={muted} />)}
           </div>
           <div className={`${tile} col-span-12 sm:col-span-4`}>
-            <div className={lbl} style={{ color: muted }}>Age Brackets</div>
+            <div className={lbl} style={{ color: muted }}>{t("audience.ageBrackets")}</div>
             {demo.ageRanges.map((a) => <Bar key={a.range} label={a.range} pct={a.pct} grad={sunset} faint="#f0e3da" muted={muted} />)}
           </div>
           <div className={`${tile} col-span-12 sm:col-span-4`}>
-            <div className={lbl} style={{ color: muted }}>Gender Split</div>
+            <div className={lbl} style={{ color: muted }}>{t("audience.genderSplit")}</div>
             <BentoDonut g={demo.gender} />
           </div>
 
           {/* Top content */}
           {p.topReels.length > 0 && (
             <div className={`${tile} col-span-12`}>
-              <div className={lbl} style={{ color: muted }}>Top Content</div>
+              <div className={lbl} style={{ color: muted }}>{t("topContent.label")}</div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {p.topReels.map((reel, i) => {
                   const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
                   return (
                     <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative aspect-square block rounded-[18px] overflow-hidden">
-                      {thumb ? <img src={thumb} alt={reel.caption || "Reel"} className="w-full h-full object-cover" />
+                      {thumb ? <img src={thumb} alt={reel.caption || t("topContent.reelAlt")} className="w-full h-full object-cover" />
                         : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#ff9a56,#c850c0)" }} />}
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(43,29,24,.85),transparent 55%)" }} />
                       {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-6 text-[12px] font-semibold text-white leading-tight">{reel.caption.slice(0, 50)}</div>}
@@ -159,11 +161,11 @@ export default function TemplateBentoSunset({ profile }) {
 
           {/* CTA */}
           <div className="col-span-12 rounded-[26px] p-8 text-center text-white" style={{ background: "#2b1d18" }}>
-            <h3 style={disp} className="font-extrabold text-2xl mb-1.5">Open for Collaborations</h3>
-            <p className="text-white/80 text-sm">Interested in working together? Reach out via Instagram or through RGossips.</p>
+            <h3 style={disp} className="font-extrabold text-2xl mb-1.5">{t("cta.heading")}</h3>
+            <p className="text-white/80 text-sm">{t("cta.body")}</p>
           </div>
         </div>
-        <div className="text-center mt-5 text-xs" style={{ color: faint }}>Generated on <b style={{ color: "#ff5d73" }}>RGossips</b></div>
+        <div className="text-center mt-5 text-xs" style={{ color: faint }}>{t.rich("footer.generatedOn", { b: (c) => <b style={{ color: "#ff5d73" }}>{c}</b> })}</div>
       </div>
     </div>
   );
@@ -192,10 +194,11 @@ function Bar({ label, pct, grad, faint, muted }) {
 }
 
 function BentoDonut({ g }) {
+  const t = useTranslations("MediaKitTemplatesTemplateBentoSunset");
   const segs = [
-    [g.female || 0, "#c850c0", "Female"],
-    [g.male || 0, "#ff5d73", "Male"],
-    [g.other || 0, "#ffb84d", "Other"],
+    [g.female || 0, "#c850c0", t("gender.female")],
+    [g.male || 0, "#ff5d73", t("gender.male")],
+    [g.other || 0, "#ffb84d", t("gender.other")],
   ];
   const C = 2 * Math.PI * 45;
   let off = 0;

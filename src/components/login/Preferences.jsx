@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Video,
@@ -10,15 +11,17 @@ import {
   Clapperboard,
 } from "lucide-react";
 
+// `label` is a message key resolved via t(`services.${id}`) at render.
 const services = [
-  { id: "reels", label: "Reels", icon: <Video size={24} /> },
-  { id: "stories", label: "Stories", icon: <Smartphone size={24} /> },
-  { id: "shorts", label: "YouTube Shorts", icon: <Youtube size={24} /> },
-  { id: "posts", label: "Static Posts", icon: <ImageIcon size={24} /> },
-  { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={24} /> },
+  { id: "reels", icon: <Video size={24} /> },
+  { id: "stories", icon: <Smartphone size={24} /> },
+  { id: "shorts", icon: <Youtube size={24} /> },
+  { id: "posts", icon: <ImageIcon size={24} /> },
+  { id: "ugc", icon: <Clapperboard size={24} /> },
 ];
 
 const Preferences = ({ onNext, onSkip }) => {
+  const t = useTranslations("Auth.preferences");
   const [selectedServices, setSelectedServices] = useState([]);
 
   const toggleService = (id) => {
@@ -30,12 +33,8 @@ const Preferences = ({ onNext, onSkip }) => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900 text-center">
-          Collaboration Preferences
-        </h2>
-        <p className="text-slate-500 text-sm text-center">
-          Tell brands what you offer
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 text-center">{t("title")}</h2>
+        <p className="text-slate-500 text-sm text-center">{t("subtitle")}</p>
       </div>
 
       {/* Service Selection Grid */}
@@ -44,6 +43,7 @@ const Preferences = ({ onNext, onSkip }) => {
           <ServiceCard
             key={service.id}
             service={service}
+            label={t(`services.${service.id}`)}
             isSelected={selectedServices.includes(service.id)}
             onClick={() => toggleService(service.id)}
           />
@@ -54,6 +54,7 @@ const Preferences = ({ onNext, onSkip }) => {
           <ServiceCard
             key={service.id}
             service={service}
+            label={t(`services.${service.id}`)}
             isSelected={selectedServices.includes(service.id)}
             onClick={() => toggleService(service.id)}
           />
@@ -71,14 +72,14 @@ const Preferences = ({ onNext, onSkip }) => {
           disabled={selectedServices.length === 0}
           className="w-full btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100"
         >
-          Continue
+          {t("continue")}
         </Button>
         {onSkip && (
           <button
             onClick={onSkip}
             className="w-full py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
-            Skip for now
+            {t("skip")}
           </button>
         )}
       </div>
@@ -86,7 +87,7 @@ const Preferences = ({ onNext, onSkip }) => {
   );
 };
 
-const ServiceCard = ({ service, isSelected, onClick }) => (
+const ServiceCard = ({ service, label, isSelected, onClick }) => (
   <button
     onClick={onClick}
     className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 aspect-square ${
@@ -101,7 +102,7 @@ const ServiceCard = ({ service, isSelected, onClick }) => (
       {service.icon}
     </div>
     <span className="text-[10px] font-bold text-center leading-tight">
-      {service.label}
+      {label}
     </span>
   </button>
 );

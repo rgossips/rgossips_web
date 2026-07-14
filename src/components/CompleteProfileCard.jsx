@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Check, X, Video, Smartphone, Youtube, Image as ImageIcon, Clapperboard, IndianRupee, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -37,14 +38,15 @@ export function useProfileCompletion(profile) {
 }
 
 const SERVICE_OPTIONS = [
-  { id: "reels", label: "Reels", icon: <Video size={20} /> },
-  { id: "stories", label: "Stories", icon: <Smartphone size={20} /> },
-  { id: "shorts", label: "YouTube Shorts", icon: <Youtube size={20} /> },
-  { id: "posts", label: "Static Posts", icon: <ImageIcon size={20} /> },
-  { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={20} /> },
+  { id: "reels", icon: <Video size={20} /> },
+  { id: "stories", icon: <Smartphone size={20} /> },
+  { id: "shorts", icon: <Youtube size={20} /> },
+  { id: "posts", icon: <ImageIcon size={20} /> },
+  { id: "ugc", icon: <Clapperboard size={20} /> },
 ];
 
 export function CompleteProfileCard() {
+  const t = useTranslations("CompleteProfileCard");
   const { profile, user, refreshProfile, refreshInstagram, setInstagramTokenMissing } = useAuth();
   const router = useRouter();
   const supabase = createClient();
@@ -62,7 +64,7 @@ export function CompleteProfileCard() {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== "instagram-oauth") return;
       if (event.data.error) {
-        setIgError(event.data.error || "Instagram connection was denied");
+        setIgError(event.data.error || t("errors.connectionDenied"));
         setConnectingIg(false);
         return;
       }
@@ -121,7 +123,7 @@ export function CompleteProfileCard() {
       await refreshInstagram?.(user.id);
       await refreshProfile?.();
     } catch (err) {
-      setIgError(err?.message || "Failed to connect Instagram");
+      setIgError(err?.message || t("errors.connectFailed"));
     } finally {
       setConnectingIg(false);
     }
@@ -156,50 +158,50 @@ export function CompleteProfileCard() {
   const steps = [
     {
       id: 1,
-      title: "Create your account",
-      subtitle: "You're all set",
+      title: t("steps.createAccount.title"),
+      subtitle: t("steps.createAccount.subtitle"),
       completed: true,
     },
     {
       id: 2,
-      title: "Connect Instagram",
+      title: t("steps.connectInstagram.title"),
       subtitle: hasInstagram
         ? `@${profile.instagram_handle}`
         : igError
           ? igError
           : connectingIg
-            ? "Opening Instagram…"
-            : "Brands discover you instantly",
-      action: hasInstagram ? null : connectingIg ? "…" : "Connect",
+            ? t("steps.connectInstagram.subtitleOpening")
+            : t("steps.connectInstagram.subtitleDefault"),
+      action: hasInstagram ? null : connectingIg ? "…" : t("steps.connectInstagram.action"),
       completed: hasInstagram,
       active: !hasInstagram,
       onClick: handleConnectInstagram,
     },
     {
       id: 3,
-      title: "Generate AI Media Kit",
-      subtitle: hasMediaKit ? "Published" : "Look pro in 60 seconds",
-      action: hasMediaKit ? null : "Create",
+      title: t("steps.mediaKit.title"),
+      subtitle: hasMediaKit ? t("steps.mediaKit.subtitlePublished") : t("steps.mediaKit.subtitleDefault"),
+      action: hasMediaKit ? null : t("steps.mediaKit.action"),
       completed: hasMediaKit,
       active: hasInstagram && !hasMediaKit,
       href: "/influencer/media-kit",
     },
     {
       id: 4,
-      title: "Set your rate card",
-      subtitle: hasRates ? "Rates configured" : "Know your worth",
-      action: hasRates ? null : "Set Rates",
+      title: t("steps.rateCard.title"),
+      subtitle: hasRates ? t("steps.rateCard.subtitleConfigured") : t("steps.rateCard.subtitleDefault"),
+      action: hasRates ? null : t("steps.rateCard.action"),
       completed: hasRates,
       active: hasMediaKit && !hasRates,
       onClick: () => setShowRatesModal(true),
     },
     {
       id: 5,
-      title: "Apply to first campaign",
+      title: t("steps.firstCampaign.title"),
       // Auto-complete once the rate card is set — the user has done everything
       // needed for brands to find them, so we treat the funnel as 100%.
-      subtitle: hasRates ? "You're discoverable to brands!" : "Land your first deal",
-      action: hasRates ? null : "Browse",
+      subtitle: hasRates ? t("steps.firstCampaign.subtitleDone") : t("steps.firstCampaign.subtitleDefault"),
+      action: hasRates ? null : t("steps.firstCampaign.action"),
       completed: hasRates,
       active: false,
       href: "/influencer/campaigns",
@@ -262,11 +264,11 @@ export function CompleteProfileCard() {
 
             <div>
               <h3 className="text-[17px] font-black text-slate-900 leading-tight">
-                Get Your First Brand Deal
+                {t("title")}
               </h3>
               <p className="text-xs font-bold text-slate-400 mt-0.5">
-                {completedCount}/5 steps —{" "}
-                {completedCount === 5 ? "All done!" : "Keep going!"}
+                {t("stepsProgress", { completed: completedCount })}{" "}
+                {completedCount === 5 ? t("allDone") : t("keepGoing")}
               </p>
             </div>
           </div>
@@ -380,6 +382,7 @@ export function CompleteProfileCard() {
 }
 
 function SetRatesModal({ services, rates, onSave, onClose }) {
+  const t = useTranslations("CompleteProfileCard");
   const [localServices, setLocalServices] = useState([...services]);
   const [localRates, setLocalRates] = useState({ ...rates });
 
@@ -402,14 +405,14 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
       <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4">
         <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] flex flex-col">
           <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <h3 className="text-lg font-black text-gray-900">Services & Rates</h3>
+            <h3 className="text-lg font-black text-gray-900">{t("modal.title")}</h3>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
               <X size={20} className="text-gray-400" />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select services you offer</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("modal.selectServices")}</p>
             <div className="grid grid-cols-3 gap-2">
               {SERVICE_OPTIONS.map((svc) => {
                 const isSelected = localServices.includes(svc.id);
@@ -422,7 +425,7 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
                     }`}
                   >
                     <div className={`mb-1.5 ${isSelected ? "text-purple-500" : "text-gray-300"}`}>{svc.icon}</div>
-                    <span className="text-[9px] font-black text-center leading-tight">{svc.label}</span>
+                    <span className="text-[9px] font-black text-center leading-tight">{t(`services.${svc.id}`)}</span>
                   </button>
                 );
               })}
@@ -430,7 +433,7 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
 
             {localServices.length > 0 && (
               <>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">Set your rates</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">{t("modal.setRates")}</p>
                 <div className="space-y-3">
                   {localServices.map((svcId) => {
                     const svc = SERVICE_OPTIONS.find((s) => s.id === svcId);
@@ -438,7 +441,7 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
                     return (
                       <div key={svcId} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <div className="text-purple-500 shrink-0">{svc.icon}</div>
-                        <span className="text-xs font-bold text-gray-700 flex-1">{svc.label}</span>
+                        <span className="text-xs font-bold text-gray-700 flex-1">{t(`services.${svc.id}`)}</span>
                         <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 px-2 py-1.5">
                           <IndianRupee size={12} className="text-gray-400" />
                           <input
@@ -459,14 +462,14 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
 
           <div className="p-5 border-t border-gray-100 flex gap-3">
             <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all cursor-pointer">
-              Cancel
+              {t("modal.cancel")}
             </button>
             <button
               onClick={() => onSave(localServices, localRates)}
               className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg cursor-pointer"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
             >
-              Save
+              {t("modal.save")}
             </button>
           </div>
         </div>

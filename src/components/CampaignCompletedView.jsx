@@ -1,4 +1,5 @@
 import React from "react";
+import { getTranslations } from "next-intl/server";
 import {
   CheckCircle,
   Eye,
@@ -12,7 +13,8 @@ import {
   Heart,
 } from "lucide-react";
 
-export const CampaignCompletedView = () => {
+export const CampaignCompletedView = async () => {
+  const t = await getTranslations("CampaignCompletedView");
   const deliveredContent = [
     {
       type: "REEL",
@@ -42,14 +44,14 @@ export const CampaignCompletedView = () => {
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Payment Status
+              {t("paymentStatus")}
             </p>
-            <p className="text-sm font-black text-[#00BA88]">Paid</p>
+            <p className="text-sm font-black text-[#00BA88]">{t("paid")}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Amount
+            {t("amount")}
           </p>
           <p className="text-xl font-black text-slate-900">₹22,500</p>
         </div>
@@ -61,30 +63,30 @@ export const CampaignCompletedView = () => {
           <div className="w-8 h-8 bg-[#8B5CF6] rounded-xl flex items-center justify-center text-white">
             <BarChart3 size={16} />
           </div>
-          <h3 className="font-black text-slate-900">Performance Highlights</h3>
+          <h3 className="font-black text-slate-900">{t("performanceHighlights")}</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <HighlightCard
-            label="Total Views"
+            label={t("stats.totalViews")}
             value="287.5K"
             icon={<Eye size={14} />}
             color="bg-orange-50 text-orange-500"
           />
           <HighlightCard
-            label="Engagement"
+            label={t("stats.engagement")}
             value="5.8%"
             icon={<Heart size={14} />}
             color="bg-emerald-50 text-emerald-500"
           />
           <HighlightCard
-            label="Reach"
+            label={t("stats.reach")}
             value="320K"
             icon={<Users size={14} />}
             color="bg-blue-50 text-blue-500"
           />
           <HighlightCard
-            label="Saves"
+            label={t("stats.saves")}
             value="12.4K"
             icon={<Bookmark size={14} />}
             color="bg-amber-50 text-amber-500"
@@ -95,7 +97,7 @@ export const CampaignCompletedView = () => {
       {/* 3. Content Delivered Section */}
       <div>
         <h3 className="text-lg font-bold text-slate-800 mb-4 px-2">
-          Content Delivered
+          {t("contentDelivered")}
         </h3>
         <div className="space-y-3">
           {deliveredContent.map((item, idx) => (
@@ -140,7 +142,7 @@ export const CampaignCompletedView = () => {
       {/* Brand Feedback */}
       <div className="bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-black text-slate-900">Brand Feedback</h3>
+          <h3 className="font-black text-slate-900">{t("brandFeedback")}</h3>
           <div className="flex gap-0.5 text-amber-400">
             {[...Array(5)].map((_, i) => (
               <Star key={i} size={14} fill="currentColor" />
@@ -154,13 +156,12 @@ export const CampaignCompletedView = () => {
           <div>
             <p className="text-xs font-black text-slate-900">GreenEarth Co.</p>
             <p className="text-[10px] font-bold text-slate-400">
-              Brand Partner
+              {t("brandPartner")}
             </p>
           </div>
         </div>
         <p className="mt-4 text-xs font-medium text-slate-500 italic leading-relaxed">
-          "Outstanding collaboration! Professional content delivery and
-          exceptional engagement rates. Highly recommend!"
+          {t("feedbackQuote")}
         </p>
       </div>
 
@@ -170,13 +171,13 @@ export const CampaignCompletedView = () => {
           <Star size={32} />
         </div>
         <h4 className="text-lg font-black text-slate-900 mb-2">
-          Congratulations! 🎉
+          {t("congratulations")}
         </h4>
         <p className="text-xs font-bold text-slate-400 mb-6">
-          You've successfully completed this campaign with outstanding results.
+          {t("completedMessage")}
         </p>
         <button className="w-full h-12 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
-          <Share2 size={18} /> Share Results
+          <Share2 size={18} /> {t("shareResults")}
         </button>
       </div>
     </div>

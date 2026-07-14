@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { parseUtc, navigateOrRefresh } from "@/lib/utils";
@@ -75,6 +76,7 @@ export default function BrandNotificationsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const t = useTranslations("BrandsNotifications");
   const supabase = createClient();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,10 +117,10 @@ export default function BrandNotificationsPage() {
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    if (diffDay < 7) return `${diffDay}d ago`;
+    if (diffMin < 1) return t("time.justNow");
+    if (diffMin < 60) return t("time.minutesAgo", { count: diffMin });
+    if (diffHr < 24) return t("time.hoursAgo", { count: diffHr });
+    if (diffDay < 7) return t("time.daysAgo", { count: diffDay });
     return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   };
 
@@ -133,13 +135,13 @@ export default function BrandNotificationsPage() {
         >
           <ChevronLeft className="w-5 h-5 text-[#5851DB]" />
         </button>
-        <h1 className="text-lg font-black text-slate-800">Notifications</h1>
+        <h1 className="text-lg font-black text-slate-800">{t("title")}</h1>
         {unreadCount > 0 ? (
           <button
             onClick={handleMarkAllRead}
             className="text-[10px] font-bold text-[#5851DB] cursor-pointer hover:underline"
           >
-            Mark all read
+            {t("markAllRead")}
           </button>
         ) : (
           <div className="w-16" />
@@ -150,14 +152,14 @@ export default function BrandNotificationsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 size={24} className="animate-spin text-[#5851DB]" />
-            <p className="text-sm font-bold text-slate-400">Loading notifications...</p>
+            <p className="text-sm font-bold text-slate-400">{t("loading")}</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-20">
             <Bell size={40} className="text-slate-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-400">No notifications yet</p>
+            <p className="text-sm font-bold text-slate-400">{t("empty.title")}</p>
             <p className="text-xs text-slate-300 mt-1">
-              You&apos;ll be notified about applications and campaign activity
+              {t("empty.subtitle")}
             </p>
           </div>
         ) : (

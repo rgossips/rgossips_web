@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 // Compact, self-contained replacement for window.alert(). A plain fixed
 // overlay (NOT a Radix portal) at a very high z-index, so it renders above
 // everything — including other modals it may be triggered from inside
@@ -14,13 +16,14 @@
 // `popup` may be a string (message) or { title, message, tone: "error" |
 // "success" | "info" }. null/undefined hides it.
 export default function AlertPopup({ popup, onClose }) {
+  const t = useTranslations("AlertPopup");
   if (!popup) return null;
   const isObj = typeof popup === "object";
   const message = isObj ? popup.message : popup;
   const tone = (isObj && popup.tone) || "error";
   const title =
     (isObj && popup.title) ||
-    (tone === "success" ? "Done" : tone === "info" ? "Heads up" : "Something went wrong");
+    (tone === "success" ? t("title.success") : tone === "info" ? t("title.info") : t("title.error"));
 
   const accent =
     tone === "success"
@@ -72,7 +75,7 @@ export default function AlertPopup({ popup, onClose }) {
             className="w-full mt-4 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Got it
+            {t("gotIt")}
           </button>
         </div>
       </div>

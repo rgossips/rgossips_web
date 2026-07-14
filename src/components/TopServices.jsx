@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { Star, Video, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { fetchServices, formatINR, iconForName } from "@/lib/services";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const TopServices = () => {
+  const t = useTranslations("TopServices");
   const router = useRouter();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,12 +61,12 @@ const TopServices = () => {
     <section className="w-full py-6 lg:py-10 px-4 lg:px-10 bg-white">
       <div className="flex justify-between items-center mb-6 lg:mb-8">
         <div>
-          <h2 className="text-xl font-black text-[#0F172A] uppercase tracking-tight">Top Services</h2>
-          <p className="text-sm text-slate-400">Professional marketing services to grow your brand</p>
+          <h2 className="text-xl font-black text-[#0F172A] uppercase tracking-tight">{t("title")}</h2>
+          <p className="text-sm text-slate-400">{t("subtitle")}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
           <button onClick={() => router.push("/influencer/services")} className="text-sm font-bold text-[#F6339A] hover:underline flex items-center gap-1 cursor-pointer">
-            View All Services <span className="text-lg">›</span>
+            {t("viewAll")} <span className="text-lg">›</span>
           </button>
         </div>
       </div>
@@ -87,7 +89,7 @@ const TopServices = () => {
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-8" : "bg-slate-200 w-2"}`}
-                aria-label={`Go to service ${i + 1}`}
+                aria-label={t("goToService", { number: i + 1 })}
               />
             ))}
           </div>
@@ -112,6 +114,7 @@ export default TopServices;
 
 // ── Featured left-side card ─────────────────────────────────────────────
 function FeaturedCard({ service, onClick }) {
+  const t = useTranslations("TopServices");
   const Icon = iconForName(service.icon_name);
   const hasImage = !!service.featured_image_url;
   return (
@@ -123,7 +126,7 @@ function FeaturedCard({ service, onClick }) {
         )}
         <div className="absolute top-4 left-4 flex gap-2 z-10">
           <span className="bg-white/90 backdrop-blur-sm text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1">
-            <span className="text-pink-500">⚡</span> TOP RATED
+            <span className="text-pink-500">⚡</span> {t("topRated")}
           </span>
           <span className="bg-slate-900/70 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1 rounded-full">{service.tag}</span>
         </div>
@@ -136,7 +139,7 @@ function FeaturedCard({ service, onClick }) {
 
         <div className="pt-3 border-t border-slate-100 flex items-end justify-between">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Starting at</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("startingAt")}</p>
             <p className="text-2xl font-black text-slate-900 leading-tight">
               {formatINR(service.price_starting)}
               {service.price_suffix && <span className="text-xs font-bold text-slate-400">{service.price_suffix}</span>}
@@ -145,7 +148,7 @@ function FeaturedCard({ service, onClick }) {
               <Star size={12} className="fill-amber-400 text-amber-400" />
               <span className="text-[11px] font-black text-slate-700">
                 {Number(service.rating_avg || 0).toFixed(1)}
-                <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
+                <span className="text-slate-400 font-bold">{t("reviewsCount", { count: service.reviews_count || 0 })}</span>
               </span>
             </div>
           </div>
@@ -156,7 +159,7 @@ function FeaturedCard({ service, onClick }) {
             }}
             className="cursor-pointer btn-purple text-xs font-black px-5 py-2.5 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 transition-all"
           >
-            Get Quote
+            {t("getQuote")}
           </button>
         </div>
       </div>
@@ -166,6 +169,7 @@ function FeaturedCard({ service, onClick }) {
 
 // ── Right-side list row (matches the services list card style) ──────────
 function ServiceRow({ service, onClick }) {
+  const t = useTranslations("TopServices");
   const Icon = iconForName(service.icon_name);
   return (
     <div onClick={onClick} className="bg-white border border-slate-100 rounded-2xl p-4 hover:shadow-md hover:border-slate-200 transition-all flex items-center gap-4 cursor-pointer">
@@ -183,13 +187,13 @@ function ServiceRow({ service, onClick }) {
             <Star size={10} className="fill-amber-400 text-amber-400" />
             <span className="text-[10px] font-black text-slate-700">
               {Number(service.rating_avg || 0).toFixed(1)}
-              <span className="text-slate-400 font-bold"> ({service.reviews_count || 0})</span>
+              <span className="text-slate-400 font-bold">{t("reviewsCountShort", { count: service.reviews_count || 0 })}</span>
             </span>
           </div>
         </div>
       </div>
       <div className="hidden sm:block text-right shrink-0">
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Starting at</p>
+        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t("startingAt")}</p>
         <p className="text-base font-black text-slate-900 leading-tight">
           {formatINR(service.price_starting)}
           {service.price_suffix && <span className="text-[10px] font-bold text-slate-400">{service.price_suffix}</span>}
@@ -201,7 +205,7 @@ function ServiceRow({ service, onClick }) {
           }}
           className="mt-1 btn-purple text-[10px] font-black px-3 py-1.5 rounded-xl cursor-pointer"
         >
-          Get Quote
+          {t("getQuote")}
         </button>
       </div>
     </div>
@@ -210,6 +214,7 @@ function ServiceRow({ service, onClick }) {
 
 // ── Mobile carousel card — fills the slide (one-at-a-time view) ─────────
 function CarouselCard({ service, onClick }) {
+  const t = useTranslations("TopServices");
   const Icon = iconForName(service.icon_name);
   const hasImage = !!service.featured_image_url;
   return (
@@ -229,12 +234,12 @@ function CarouselCard({ service, onClick }) {
           <Star size={13} className="fill-amber-400 text-amber-400" />
           <span className="text-[11px] font-black text-slate-700">
             {Number(service.rating_avg || 0).toFixed(1)}
-            <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
+            <span className="text-slate-400 font-bold">{t("reviewsCount", { count: service.reviews_count || 0 })}</span>
           </span>
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Starting at</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("startingAt")}</p>
             <p className="text-lg font-black text-slate-900">
               {formatINR(service.price_starting)}
               {service.price_suffix && <span className="text-[10px] font-bold text-slate-400">{service.price_suffix}</span>}
@@ -247,7 +252,7 @@ function CarouselCard({ service, onClick }) {
             }}
             className="btn-purple text-xs font-black px-5 py-2.5 rounded-xl cursor-pointer"
           >
-            Get Quote
+            {t("getQuote")}
           </button>
         </div>
       </div>

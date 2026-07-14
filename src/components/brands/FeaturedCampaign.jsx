@@ -1,11 +1,13 @@
 import { Banknote, Calendar, Clock, Plus } from "lucide-react";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 
-export const FeaturedCampaign = () => {
+export const FeaturedCampaign = async () => {
+  const t = await getTranslations("BrandsFeaturedCampaign");
   return (
     <div className="bg-white rounded-4xl p-6 shadow-2xl shadow-purple-100/50 relative border border-purple-50">
       <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#EBE9FE] text-[#5851DB] rounded-full text-[10px] font-bold uppercase mb-4">
-        <Plus size={12} /> Featured Match
+        <Plus size={12} /> {t("featuredMatch")}
       </div>
 
       <div className="flex items-center gap-3 mb-4">
@@ -21,16 +23,16 @@ export const FeaturedCampaign = () => {
             Sanjivani Tapase <span className="text-blue-500">✓</span>
           </h3>
           <p className="text-[10px] text-gray-400">
-            Influencer Marketing Associate @ Thn
+            {t("jobTitle")}
           </p>
         </div>
       </div>
 
       <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">
-        Looking For
+        {t("lookingFor")}
       </p>
       <h4 className="font-bold text-gray-900 mb-4 text-sm">
-        Photographers & Videographers
+        {t("role")}
       </h4>
 
       <div className="bg-[#F8F9FE] rounded-2xl p-4 grid grid-cols-2 gap-y-4">
@@ -39,9 +41,9 @@ export const FeaturedCampaign = () => {
             <Calendar size={14} />
           </div>
           <div>
-            <p className="text-[8px] text-gray-400 uppercase font-bold">Date</p>
+            <p className="text-[8px] text-gray-400 uppercase font-bold">{t("stats.dateLabel")}</p>
             <p className="text-[10px] font-bold text-gray-900">
-              20th March, Friday
+              {t("stats.dateValue")}
             </p>
           </div>
         </div>
@@ -50,8 +52,8 @@ export const FeaturedCampaign = () => {
             <Clock size={14} />
           </div>
           <div>
-            <p className="text-[8px] text-gray-400 uppercase font-bold">Time</p>
-            <p className="text-[10px] font-bold text-gray-900">5 PM</p>
+            <p className="text-[8px] text-gray-400 uppercase font-bold">{t("stats.timeLabel")}</p>
+            <p className="text-[10px] font-bold text-gray-900">{t("stats.timeValue")}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 col-span-2">
@@ -60,10 +62,10 @@ export const FeaturedCampaign = () => {
           </div>
           <div>
             <p className="text-[8px] text-gray-400 uppercase font-bold">
-              Budget
+              {t("stats.budgetLabel")}
             </p>
             <p className="text-[10px] font-bold text-blue-600">
-              INR Under 4,000
+              {t("stats.budgetValue")}
             </p>
           </div>
         </div>

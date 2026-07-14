@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 // signups sees the same clean home as before. Tap → /influencer/refer.
 export default function ReferBalanceCard() {
   const router = useRouter();
+  const t = useTranslations("ReferBalanceCard");
   const { user } = useAuth();
   const supabase = createClient();
   const [avail, setAvail] = useState(0);
@@ -51,14 +53,14 @@ export default function ReferBalanceCard() {
         <Sparkles size={18} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Reward Credits</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("rewardCredits")}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
           <p className="text-lg font-black text-slate-900">
-            {avail} <span className="text-xs text-slate-400 font-bold">available</span>
+            {avail} <span className="text-xs text-slate-400 font-bold">{t("available")}</span>
           </p>
           {locked > 0 && (
             <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-              +{locked} locked
+              {t("locked", { count: locked })}
             </span>
           )}
         </div>

@@ -1,16 +1,21 @@
+import { getTranslations } from "next-intl/server";
 import ConsentPolicyPage from "@/components/ConsentPolicyPage";
 import { consentHtml } from "@/lib/consent-brand";
 
-export const metadata = {
-  title: "Brand Consent Policy · RGossips",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("HomeConsentBrand");
+  return {
+    title: t("metaTitle"),
+  };
+}
 
 // Public route — see /consent/influencer for the rationale.
-export default function BrandConsentPolicyRoute() {
+export default async function BrandConsentPolicyRoute() {
+  const t = await getTranslations("HomeConsentBrand");
   return (
     <ConsentPolicyPage
-      title="Brand Consent Policy"
-      subtitle="Recent Gossips — Brand Portal · operated by RUDE LABS Private Limited"
+      title={t("title")}
+      subtitle={t("subtitle")}
       html={consentHtml}
     />
   );

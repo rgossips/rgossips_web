@@ -37,13 +37,14 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { useTranslations } from "next-intl";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 // Status pill colors for the live-link tiles.
 const SUBMISSION_STATUS_BADGE = {
-  live_submitted: { label: "Pending", cls: "bg-amber-100 text-amber-800" },
-  completed: { label: "Approved", cls: "bg-emerald-100 text-emerald-800" },
+  live_submitted: { key: "pending", cls: "bg-amber-100 text-amber-800" },
+  completed: { key: "approved", cls: "bg-emerald-100 text-emerald-800" },
 };
 
 // Pull the public shortcode out of an Instagram URL so we can build an
@@ -66,7 +67,7 @@ const igShortcodeFrom = (rawUrl) => {
 // new tab instead of clicking into the embed itself. Falls back to a
 // thumbnail image (set by submit-deliverables for non-IG URLs) and finally
 // to the brand logo / gradient initial if neither is available.
-const submissionCard = (sub, isDesktop) => {
+const submissionCard = (sub, isDesktop, t) => {
   const status = SUBMISSION_STATUS_BADGE[sub.applicationStatus];
   const shortcode = igShortcodeFrom(sub.url);
   const embedSrc = shortcode ? `https://www.instagram.com/p/${shortcode}/embed/captioned/` : null;
@@ -116,7 +117,7 @@ const submissionCard = (sub, isDesktop) => {
         href={sub.url}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Open ${sub.brandName} live post`}
+        aria-label={t("submission.openLivePost", { brandName: sub.brandName })}
         className="absolute inset-0 z-10 cursor-pointer"
       />
 
@@ -128,7 +129,7 @@ const submissionCard = (sub, isDesktop) => {
       {/* Status pill — top-right */}
       {status && (
         <div className={`absolute top-3 right-3 z-20 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wider ${status.cls}`}>
-          {status.label}
+          {t(`submission.status.${status.key}`)}
         </div>
       )}
 
@@ -143,6 +144,7 @@ const submissionCard = (sub, isDesktop) => {
 
 // --- View Details Modal ---
 const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
+  const t = useTranslations("MyInformationDetail");
   if (!reel) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -157,18 +159,18 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
         <div className="p-6 space-y-6">
           <div>
             <h2 className="text-xl font-black text-gray-900">{reel.title}</h2>
-            <p className="text-xs text-gray-500 mt-1">Follow me through a typical day.</p>
+            <p className="text-xs text-gray-500 mt-1">{t("reelDetails.subtitle")}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-blue-50 p-3 rounded-2xl">
               <div className="flex items-center gap-2 text-blue-600 mb-1">
-                <Eye size={14} /> <span className="text-[10px] font-bold">Views</span>
+                <Eye size={14} /> <span className="text-[10px] font-bold">{t("reelDetails.views")}</span>
               </div>
               <p className="text-lg font-black text-gray-900">{reel.views}</p>
             </div>
             <div className="bg-pink-50 p-3 rounded-2xl">
               <div className="flex items-center gap-2 text-pink-600 mb-1">
-                <Activity size={14} /> <span className="text-[10px] font-bold">Engagement</span>
+                <Activity size={14} /> <span className="text-[10px] font-bold">{t("reelDetails.engagement")}</span>
               </div>
               <p className="text-lg font-black text-gray-900">{reel.engagement}</p>
             </div>
@@ -176,25 +178,25 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
           <div className="space-y-3 text-xs font-bold text-gray-600">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="flex items-center gap-2 text-gray-400">
-                <Hash size={14} /> Video Code
+                <Hash size={14} /> {t("reelDetails.videoCode")}
               </span>
               <span>{reel.code}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="flex items-center gap-2 text-gray-400">
-                <Monitor size={14} /> Platform
+                <Monitor size={14} /> {t("reelDetails.platform")}
               </span>
               <span>{reel.platform}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="flex items-center gap-2 text-gray-400">
-                <Calendar size={14} /> Upload Date
+                <Calendar size={14} /> {t("reelDetails.uploadDate")}
               </span>
               <span>{reel.date}</span>
             </div>
           </div>
           <button onClick={onEdit} className="w-full py-4 cursor-pointer bg-gray-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
-            <Edit2 size={16} /> Edit Reel
+            <Edit2 size={16} /> {t("reelDetails.editReel")}
           </button>
         </div>
       </div>
@@ -203,31 +205,35 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
 };
 
 // --- Delete Confirmation Modal ---
-const DeleteConfirmModal = ({ onCancel, onConfirm }) => (
-  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-    <div className="bg-white w-full max-w-xs rounded-[2rem] p-6 text-center animate-in zoom-in duration-200">
-      <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Trash2 size={24} />
-      </div>
-      <h3 className="text-lg font-black text-gray-900 mb-2">Delete Reel?</h3>
-      <p className="text-xs text-gray-500 mb-6">This action cannot be undone.</p>
-      <div className="grid grid-cols-2 gap-3">
-        <button onClick={onCancel} className="py-3 rounded-xl border border-gray-200 font-bold text-gray-600 text-xs">
-          Cancel
-        </button>
-        <button onClick={onConfirm} className="py-3 rounded-xl bg-red-500 font-bold text-white text-xs shadow-lg shadow-red-200">
-          Delete
-        </button>
+const DeleteConfirmModal = ({ onCancel, onConfirm }) => {
+  const t = useTranslations("MyInformationDetail");
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+      <div className="bg-white w-full max-w-xs rounded-[2rem] p-6 text-center animate-in zoom-in duration-200">
+        <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trash2 size={24} />
+        </div>
+        <h3 className="text-lg font-black text-gray-900 mb-2">{t("deleteReel.title")}</h3>
+        <p className="text-xs text-gray-500 mb-6">{t("deleteReel.body")}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={onCancel} className="py-3 rounded-xl border border-gray-200 font-bold text-gray-600 text-xs">
+            {t("common.cancel")}
+          </button>
+          <button onClick={onConfirm} className="py-3 rounded-xl bg-red-500 font-bold text-white text-xs shadow-lg shadow-red-200">
+            {t("common.delete")}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // --- Category Selection Modal ---
 import { CATEGORIES as CATEGORY_OPTIONS } from "@/utils/categories";
 import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
 
 const CategoryModal = ({ selected, onSave, onClose }) => {
+  const t = useTranslations("MyInformationDetail");
   const [localSelected, setLocalSelected] = useState([...selected]);
   const [search, setSearch] = useState("");
 
@@ -242,7 +248,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-black text-gray-900">Select Categories</h3>
+          <h3 className="text-lg font-black text-gray-900">{t("categoryModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <X size={20} className="text-gray-400" />
           </button>
@@ -254,7 +260,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search categories..."
+            placeholder={t("categoryModal.searchPlaceholder")}
             className="w-full p-3 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
           />
         </div>
@@ -280,13 +286,13 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
           </div>
 
           {/* Selected count */}
-          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{localSelected.length} selected</p>}
+          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{t("common.selectedCount", { count: localSelected.length })}</p>}
         </div>
 
         {/* Footer */}
         <div className="p-5 border-t border-gray-100 flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={() => {
@@ -296,7 +302,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
             className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Save Categories
+            {t("categoryModal.save")}
           </button>
         </div>
       </div>
@@ -308,6 +314,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
 // list. Kept as a separate component (rather than a generic
 // MultiSelect) so the Categories flow isn't touched.
 const LocationModal = ({ selected, onSave, onClose }) => {
+  const t = useTranslations("MyInformationDetail");
   const [localSelected, setLocalSelected] = useState([...selected]);
   const [search, setSearch] = useState("");
   const options = ["Remote", ...INDIAN_CITIES_SORTED];
@@ -323,7 +330,7 @@ const LocationModal = ({ selected, onSave, onClose }) => {
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-black text-gray-900">Select Locations</h3>
+          <h3 className="text-lg font-black text-gray-900">{t("locationModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <X size={20} className="text-gray-400" />
           </button>
@@ -334,7 +341,7 @@ const LocationModal = ({ selected, onSave, onClose }) => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search cities..."
+            placeholder={t("locationModal.searchPlaceholder")}
             className="w-full p-3 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
           />
         </div>
@@ -358,12 +365,12 @@ const LocationModal = ({ selected, onSave, onClose }) => {
             })}
           </div>
 
-          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{localSelected.length} selected</p>}
+          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{t("common.selectedCount", { count: localSelected.length })}</p>}
         </div>
 
         <div className="p-5 border-t border-gray-100 flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={() => {
@@ -373,7 +380,7 @@ const LocationModal = ({ selected, onSave, onClose }) => {
             className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Save Locations
+            {t("locationModal.save")}
           </button>
         </div>
       </div>
@@ -383,15 +390,16 @@ const LocationModal = ({ selected, onSave, onClose }) => {
 
 // --- Service Options (same as signup) ---
 const SERVICE_OPTIONS = [
-  { id: "reels", label: "Reels", icon: <Video size={20} /> },
-  { id: "stories", label: "Stories", icon: <Smartphone size={20} /> },
-  { id: "shorts", label: "YouTube Shorts", icon: <Youtube size={20} /> },
-  { id: "posts", label: "Static Posts", icon: <ImageIcon size={20} /> },
-  { id: "ugc", label: "UGC Videos", icon: <Clapperboard size={20} /> },
+  { id: "reels", icon: <Video size={20} /> },
+  { id: "stories", icon: <Smartphone size={20} /> },
+  { id: "shorts", icon: <Youtube size={20} /> },
+  { id: "posts", icon: <ImageIcon size={20} /> },
+  { id: "ugc", icon: <Clapperboard size={20} /> },
 ];
 
 // --- Services & Rates Modal ---
 const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
+  const t = useTranslations("MyInformationDetail");
   const [localServices, setLocalServices] = useState([...services]);
   const [localRates, setLocalRates] = useState({ ...rates });
 
@@ -412,14 +420,14 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="text-lg font-black text-gray-900">Services & Rates</h3>
+          <h3 className="text-lg font-black text-gray-900">{t("servicesModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
             <X size={20} className="text-gray-400" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select services you offer</p>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("servicesModal.selectServices")}</p>
           <div className="grid grid-cols-3 gap-2">
             {SERVICE_OPTIONS.map((svc) => {
               const isSelected = localServices.includes(svc.id);
@@ -432,7 +440,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
                   }`}
                 >
                   <div className={`mb-1.5 ${isSelected ? "text-purple-500" : "text-gray-300"}`}>{svc.icon}</div>
-                  <span className="text-[9px] font-black text-center leading-tight">{svc.label}</span>
+                  <span className="text-[9px] font-black text-center leading-tight">{t(`services.${svc.id}`)}</span>
                 </button>
               );
             })}
@@ -440,7 +448,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
 
           {localServices.length > 0 && (
             <>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">Set your rates</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">{t("servicesModal.setRates")}</p>
               <div className="space-y-3">
                 {localServices.map((svcId) => {
                   const svc = SERVICE_OPTIONS.find((s) => s.id === svcId);
@@ -448,7 +456,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
                   return (
                     <div key={svcId} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
                       <div className="text-purple-500 shrink-0">{svc.icon}</div>
-                      <span className="text-xs font-bold text-gray-700 flex-1">{svc.label}</span>
+                      <span className="text-xs font-bold text-gray-700 flex-1">{t(`services.${svc.id}`)}</span>
                       <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 px-2 py-1.5">
                         <IndianRupee size={12} className="text-gray-400" />
                         <input
@@ -469,7 +477,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
 
         <div className="p-5 border-t border-gray-100 flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={() => {
@@ -479,7 +487,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
             className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Save
+            {t("common.save")}
           </button>
         </div>
       </div>
@@ -507,6 +515,7 @@ const InputGroup = ({ label, value, onChange, placeholder, icon, disabled }) => 
 
 // --- Main Component ---
 const MyInformationDetail = ({ onBack }) => {
+  const t = useTranslations("MyInformationDetail");
   const { profile, user, refreshProfile } = useAuth();
 
   // Compact popup replacing window.alert() for upload / save errors.
@@ -592,10 +601,10 @@ const MyInformationDetail = ({ onBack }) => {
         items.push({
           url: l.url,
           type: l.type || "link",
-          label: l.label || "Live post",
+          label: l.label || t("submission.defaultLabel"),
           campaignId: c.id,
-          campaignTitle: c.title || "Campaign",
-          brandName: c.brandName || "Brand",
+          campaignTitle: c.title || t("submission.defaultCampaign"),
+          brandName: c.brandName || t("submission.defaultBrand"),
           brandLogo: c.brandLogo || "",
           brandInstagram: c.brandInstagram || "",
           applicationStatus: c.applicationStatus,
@@ -637,7 +646,7 @@ const MyInformationDetail = ({ onBack }) => {
     // but loading a huge source into FileReader + canvas can freeze
     // low-memory devices. Server enforces 5MB on the final upload.
     if (file.size > 10 * 1024 * 1024) {
-      setPopup({ title: "Image too large", message: "Please pick an image under 10MB.", tone: "info" });
+      setPopup({ title: t("errors.imageTooLargeTitle"), message: t("errors.imageTooLargeBody"), tone: "info" });
       e.target.value = "";
       return;
     }
@@ -694,7 +703,7 @@ const MyInformationDetail = ({ onBack }) => {
       setImageSrc(null);
     } catch (err) {
       console.error("Failed to upload photo:", err);
-      setPopup("Failed to upload photo. Please try again.");
+      setPopup(t("errors.uploadPhoto"));
     } finally {
       setUploading(false);
     }
@@ -720,7 +729,7 @@ const MyInformationDetail = ({ onBack }) => {
       await refreshProfile?.();
     } catch (err) {
       console.error("Failed to remove photo:", err);
-      setPopup("Failed to remove photo. Please try again.");
+      setPopup(t("errors.removePhoto"));
     } finally {
       setRemovingPhoto(false);
     }
@@ -766,7 +775,7 @@ const MyInformationDetail = ({ onBack }) => {
       }, 1200);
     } catch (err) {
       console.error("Failed to save profile:", err);
-      setPopup("Failed to save. Please try again.");
+      setPopup(t("errors.save"));
     } finally {
       setSaving(false);
     }
@@ -885,7 +894,7 @@ const MyInformationDetail = ({ onBack }) => {
                 <div
                   onClick={handleRemoveCustomPhoto}
                   className={`absolute -top-1 -left-1 bg-red-500 p-1 rounded-full border-2 border-white shadow-md ${removingPhoto ? "cursor-wait opacity-70" : "cursor-pointer"}`}
-                  title="Remove custom photo"
+                  title={t("profileCard.removeCustomPhoto")}
                 >
                   {removingPhoto ? <Loader2 size={8} className="text-white animate-spin" /> : <X size={8} className="text-white" />}
                 </div>
@@ -906,7 +915,7 @@ const MyInformationDetail = ({ onBack }) => {
           )}
         </div>
 
-        <h2 className={`${isMobile ? "text-xl" : "text-lg"} font-black text-center text-gray-900 leading-tight`}>{name || "Your Name"}</h2>
+        <h2 className={`${isMobile ? "text-xl" : "text-lg"} font-black text-center text-gray-900 leading-tight`}>{name || t("profileCard.yourName")}</h2>
 
         {userHandle && <p className="text-xs text-gray-400 font-bold mt-1">@{userHandle}</p>}
 
@@ -918,7 +927,7 @@ const MyInformationDetail = ({ onBack }) => {
               <MapPin size={12} />
               {locationList.length === 1
                 ? locationList[0]
-                : `${locationList[0]} +${locationList.length - 1} more`}
+                : t("profileCard.locationMore", { first: locationList[0], count: locationList.length - 1 })}
             </div>
           )}
           {userHandle && (
@@ -932,17 +941,17 @@ const MyInformationDetail = ({ onBack }) => {
         <div className="w-full mt-5 pt-4 border-t border-gray-100 flex justify-around items-center px-2">
           <div className="flex flex-col items-center">
             <span className="font-black text-gray-900 text-sm">{formatCount(profile?.media_count)}</span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase">{t("profileCard.posts")}</span>
           </div>
           <div className="w-px h-8 bg-gray-100" />
           <div className="flex flex-col items-center">
             <span className="font-black text-gray-900 text-sm">{formatCount(profile?.followers_count)}</span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Followers</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase">{t("profileCard.followers")}</span>
           </div>
           <div className="w-px h-8 bg-gray-100" />
           <div className="flex flex-col items-center">
             <span className="font-black text-gray-900 text-sm">{formatCount(profile?.follows_count)}</span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Following</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase">{t("profileCard.following")}</span>
           </div>
         </div>
 
@@ -952,7 +961,7 @@ const MyInformationDetail = ({ onBack }) => {
           className="w-full mt-4 py-3 rounded-xl text-white text-xs font-black flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
-          <Edit2 size={14} /> Edit Profile
+          <Edit2 size={14} /> {t("profileCard.editProfile")}
         </button>
       </div>
     </section>
@@ -963,14 +972,14 @@ const MyInformationDetail = ({ onBack }) => {
     <div className="space-y-5">
       {/* Basic Information */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-5`}>
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Basic Information</h3>
-        <InputGroup label="Display Name" value={name} onChange={setName} placeholder="Your full name" />
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("editForm.basicInformation")}</h3>
+        <InputGroup label={t("editForm.displayName")} value={name} onChange={setName} placeholder={t("editForm.displayNamePlaceholder")} />
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Bio</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("editForm.bio")}</label>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell us about yourself..."
+            placeholder={t("editForm.bioPlaceholder")}
             className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-2xl text-sm font-bold text-gray-700 min-h-[100px] outline-none transition-all"
           />
         </div>
@@ -978,19 +987,19 @@ const MyInformationDetail = ({ onBack }) => {
 
       {/* Contact Information */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-5`}>
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contact Information</h3>
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("editForm.contactInformation")}</h3>
         {/* Location — multiselect chips + Edit opens a searchable
             modal over the full Indian cities list. Chips render inline
             so the user sees their current selection at a glance. */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Location</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("editForm.location")}</label>
           <button
             type="button"
             onClick={() => setShowLocationModal(true)}
             className="w-full min-h-[52px] p-3 bg-gray-50 border border-gray-100 hover:border-purple-300 hover:bg-white rounded-2xl text-left transition-all"
           >
             {locationList.length === 0 ? (
-              <span className="text-sm font-bold text-gray-400 pl-1">Tap to select cities</span>
+              <span className="text-sm font-bold text-gray-400 pl-1">{t("editForm.tapToSelectCities")}</span>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {locationList.map((c) => (
@@ -1008,23 +1017,23 @@ const MyInformationDetail = ({ onBack }) => {
 
         {/* Gender — feeds the brand-side Gender filter. */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Gender</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("editForm.gender")}</label>
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value)}
             className="w-full p-4 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-2xl text-sm font-bold text-gray-700 outline-none transition-all appearance-none cursor-pointer"
           >
-            <option value="">Prefer not to specify</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="non_binary">Non-binary</option>
-            <option value="prefer_not_to_say">Prefer not to say</option>
+            <option value="">{t("editForm.genderOptions.unspecified")}</option>
+            <option value="male">{t("editForm.genderOptions.male")}</option>
+            <option value="female">{t("editForm.genderOptions.female")}</option>
+            <option value="non_binary">{t("editForm.genderOptions.nonBinary")}</option>
+            <option value="prefer_not_to_say">{t("editForm.genderOptions.preferNotToSay")}</option>
           </select>
         </div>
-        <InputGroup label="Email Address" value={email} onChange={setEmail} placeholder="you@email.com" icon={<Mail size={16} className="text-pink-500" />} />
-        <InputGroup label="Phone Number" value={user?.phone || profile?.phone || ""} onChange={() => {}} placeholder="Not available" icon={<Phone size={16} className="text-pink-500" />} disabled />
+        <InputGroup label={t("editForm.emailAddress")} value={email} onChange={setEmail} placeholder={t("editForm.emailPlaceholder")} icon={<Mail size={16} className="text-pink-500" />} />
+        <InputGroup label={t("editForm.phoneNumber")} value={user?.phone || profile?.phone || ""} onChange={() => {}} placeholder={t("editForm.phonePlaceholder")} icon={<Phone size={16} className="text-pink-500" />} disabled />
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">Address</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("editForm.address")}</label>
           <div className="relative flex items-start">
             <div className="absolute left-4 top-4">
               <Home size={16} className="text-pink-500" />
@@ -1032,7 +1041,7 @@ const MyInformationDetail = ({ onBack }) => {
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Your full address..."
+              placeholder={t("editForm.addressPlaceholder")}
               className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-2xl text-sm font-bold text-gray-700 min-h-[80px] outline-none transition-all resize-none"
             />
           </div>
@@ -1041,9 +1050,9 @@ const MyInformationDetail = ({ onBack }) => {
 
       {/* Social Media */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-5`}>
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Social Media</h3>
-        <InputGroup label="Instagram Handle" value={userHandle ? `@${userHandle}` : ""} onChange={() => {}} placeholder="@username" icon={<Instagram size={16} className="text-pink-500" />} disabled />
-        <p className="text-[9px] font-bold text-gray-400 ml-1">Instagram handle is synced from your connected account</p>
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("editForm.socialMedia")}</h3>
+        <InputGroup label={t("editForm.instagramHandle")} value={userHandle ? `@${userHandle}` : ""} onChange={() => {}} placeholder="@username" icon={<Instagram size={16} className="text-pink-500" />} disabled />
+        <p className="text-[9px] font-bold text-gray-400 ml-1">{t("editForm.instagramSyncedNote")}</p>
         <InputGroup label="TikTok" value={tiktok} onChange={setTiktok} placeholder="https://tiktok.com/@username" icon={<Video size={16} className="text-pink-500" />} />
         <InputGroup label="YouTube" value={youtubeUrl} onChange={setYoutubeUrl} placeholder="https://youtube.com/@channel" icon={<Youtube size={16} className="text-pink-500" />} />
         <InputGroup label="Facebook" value={facebookUrl} onChange={setFacebookUrl} placeholder="https://facebook.com/page" icon={<Globe size={16} className="text-pink-500" />} />
@@ -1052,12 +1061,12 @@ const MyInformationDetail = ({ onBack }) => {
       {/* Categories */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-4`}>
         <div className="flex justify-between items-center">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Categories</h3>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("editForm.categories")}</h3>
           <button
             onClick={() => setShowCategoryModal(true)}
             className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer"
           >
-            <Edit2 size={10} /> Edit
+            <Edit2 size={10} /> {t("common.edit")}
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1068,7 +1077,7 @@ const MyInformationDetail = ({ onBack }) => {
               </span>
             ))
           ) : (
-            <p className="text-xs text-gray-400 font-bold">No categories selected. Tap Edit to add.</p>
+            <p className="text-xs text-gray-400 font-bold">{t("editForm.noCategories")}</p>
           )}
         </div>
       </section>
@@ -1076,12 +1085,12 @@ const MyInformationDetail = ({ onBack }) => {
       {/* Services & Rates */}
       <section className={`bg-white ${isMobile ? "p-6 rounded-[2.5rem]" : "p-6 rounded-2xl"} border border-gray-100 shadow-sm space-y-4`}>
         <div className="flex justify-between items-center">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Services & Rates</h3>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("editForm.servicesAndRates")}</h3>
           <button
             onClick={() => setShowServicesModal(true)}
             className="text-[10px] font-black text-purple-500 flex items-center gap-1 border border-purple-100 px-3 py-1 rounded-full hover:bg-purple-50 transition-colors cursor-pointer"
           >
-            <Edit2 size={10} /> Edit
+            <Edit2 size={10} /> {t("common.edit")}
           </button>
         </div>
         {editServices.length > 0 ? (
@@ -1093,21 +1102,21 @@ const MyInformationDetail = ({ onBack }) => {
               return (
                 <div key={svcId} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
                   <div className="text-purple-500 shrink-0">{svc.icon}</div>
-                  <span className="text-xs font-bold text-gray-700 flex-1">{svc.label}</span>
+                  <span className="text-xs font-bold text-gray-700 flex-1">{t(`services.${svc.id}`)}</span>
                   {rate ? (
                     <span className="text-xs font-black text-green-600 flex items-center gap-0.5">
                       <IndianRupee size={11} />
                       {Number(rate).toLocaleString("en-IN")}
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold text-gray-400">No rate set</span>
+                    <span className="text-[10px] font-bold text-gray-400">{t("editForm.noRateSet")}</span>
                   )}
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-xs text-gray-400 font-bold">No services selected. Tap Edit to add.</p>
+          <p className="text-xs text-gray-400 font-bold">{t("editForm.noServices")}</p>
         )}
       </section>
 
@@ -1119,7 +1128,7 @@ const MyInformationDetail = ({ onBack }) => {
         style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
       >
         {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : <Save size={16} />}
-        {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+        {saving ? t("editForm.saving") : saved ? t("editForm.saved") : t("editForm.saveChanges")}
       </button>
     </div>
   );
@@ -1136,7 +1145,7 @@ const MyInformationDetail = ({ onBack }) => {
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
         <p className="text-[10px] font-bold text-white/80 mb-0.5">{reel.title}</p>
         <div className="flex items-center gap-1 text-[9px] font-black text-white">
-          <Play size={10} fill="currentColor" /> {reel.views} views
+          <Play size={10} fill="currentColor" /> {t("videoCard.views", { views: reel.views })}
         </div>
       </div>
     </div>
@@ -1162,16 +1171,16 @@ const MyInformationDetail = ({ onBack }) => {
               <div className="col-span-4">
                 <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm h-full flex flex-col">
                   <h3 className="font-black text-gray-800 text-base flex items-center gap-2 mb-4">
-                    <Activity size={18} /> Engagement Metrics
+                    <Activity size={18} /> {t("metrics.heading")}
                   </h3>
                   <div className="space-y-3 flex-1 flex flex-col justify-evenly">
                     {[
-                      { label: "Engagement Rate", value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
-                      { label: "Followers", value: formatCount(profile?.followers_count), color: "purple" },
-                      { label: "Avg Likes", value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
-                      { label: "Avg Comments", value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
-                      { label: "Impressions", value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
-                      { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "red" },
+                      { label: t("metrics.engagementRate"), value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
+                      { label: t("metrics.followers"), value: formatCount(profile?.followers_count), color: "purple" },
+                      { label: t("metrics.avgLikes"), value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
+                      { label: t("metrics.avgComments"), value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
+                      { label: t("metrics.impressions"), value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
+                      { label: t("metrics.reach"), value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "red" },
                     ].map((m) => (
                       <div key={m.label} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1190,16 +1199,23 @@ const MyInformationDetail = ({ onBack }) => {
                 <section className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm h-full flex flex-col">
                   <div className="flex items-center gap-2 mb-4">
                     <Activity size={18} className="text-purple-500" />
-                    <h3 className="font-black text-gray-800 text-base">Growth Overview</h3>
+                    <h3 className="font-black text-gray-800 text-base">{t("growth.heading")}</h3>
                   </div>
                   <div className="flex-1 flex items-center">
                     <Line
                       data={{
-                        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                        labels: [
+                          t("growth.months.jan"),
+                          t("growth.months.feb"),
+                          t("growth.months.mar"),
+                          t("growth.months.apr"),
+                          t("growth.months.may"),
+                          t("growth.months.jun"),
+                        ],
                         datasets: [
                           {
                             fill: true,
-                            label: "Followers",
+                            label: t("growth.followers"),
                             data: [
                               Math.round((profile?.followers_count || 5000) * 0.6),
                               Math.round((profile?.followers_count || 5000) * 0.7),
@@ -1225,7 +1241,7 @@ const MyInformationDetail = ({ onBack }) => {
                           },
                           {
                             fill: true,
-                            label: "Engagement",
+                            label: t("growth.engagement"),
                             data: [3.2, 4.1, 3.8, 5.0, 4.6, profile?.engagement_rate || 5.2],
                             borderColor: "#E60076",
                             borderWidth: 2.5,
@@ -1264,11 +1280,11 @@ const MyInformationDetail = ({ onBack }) => {
                   <div className="flex items-center justify-center gap-5 mt-3">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-[#9810FA]" />
-                      <span className="text-[10px] font-bold text-gray-500">Followers</span>
+                      <span className="text-[10px] font-bold text-gray-500">{t("growth.followers")}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-[#E60076]" />
-                      <span className="text-[10px] font-bold text-gray-500">Engagement %</span>
+                      <span className="text-[10px] font-bold text-gray-500">{t("growth.engagementPercent")}</span>
                     </div>
                   </div>
                 </section>
@@ -1283,24 +1299,24 @@ const MyInformationDetail = ({ onBack }) => {
         <div className="ml-12 space-y-5">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
-            <h3 className="font-black text-gray-800 text-lg">My Work</h3>
+            <h3 className="font-black text-gray-800 text-lg">{t("myWork.heading")}</h3>
             <span className="text-xs font-bold text-gray-400 ml-2">
-              {submittedLiveLinks.length} live submission{submittedLiveLinks.length === 1 ? "" : "s"}
+              {t("myWork.liveSubmissions", { count: submittedLiveLinks.length })}
             </span>
           </div>
           {submissionsLoading ? (
             <div className="flex items-center justify-center py-12 text-sm font-semibold text-gray-400 gap-2">
-              <Loader2 size={16} className="animate-spin text-pink-500" /> Loading…
+              <Loader2 size={16} className="animate-spin text-pink-500" /> {t("myWork.loading")}
             </div>
           ) : submittedLiveLinks.length === 0 ? (
             <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-10 text-center">
-              <p className="text-sm font-bold text-gray-500">No live submissions yet.</p>
+              <p className="text-sm font-bold text-gray-500">{t("myWork.emptyTitle")}</p>
               <p className="text-[11px] text-gray-400 mt-1">
-                Once a brand approves your application and you submit the live post link, it'll appear here.
+                {t("myWork.emptyBodyDesktop")}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-4">{submittedLiveLinks.map((s) => submissionCard(s, true))}</div>
+            <div className="grid grid-cols-4 gap-4">{submittedLiveLinks.map((s) => submissionCard(s, true, t))}</div>
           )}
         </div>
       </div>
@@ -1316,16 +1332,16 @@ const MyInformationDetail = ({ onBack }) => {
         {/* Engagement Metrics — Mobile */}
         <section className="bg-white rounded-[2.5rem] border border-gray-100 p-6 shadow-sm space-y-4">
           <h3 className="font-black text-gray-800 text-base flex items-center gap-2">
-            <Activity size={18} /> Engagement Metrics
+            <Activity size={18} /> {t("metrics.heading")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Engagement", value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
-              { label: "Followers", value: formatCount(profile?.followers_count), color: "purple" },
-              { label: "Avg Likes", value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
-              { label: "Avg Comments", value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
-              { label: "Impressions", value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
-              { label: "Reach", value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "cyan" },
+              { label: t("metrics.engagement"), value: profile?.engagement_rate ? `${profile.engagement_rate}%` : "—", color: "blue" },
+              { label: t("metrics.followers"), value: formatCount(profile?.followers_count), color: "purple" },
+              { label: t("metrics.avgLikes"), value: profile?.avg_likes ? formatCount(profile.avg_likes) : "—", color: "pink" },
+              { label: t("metrics.avgComments"), value: profile?.avg_comments ? formatCount(profile.avg_comments) : "—", color: "green" },
+              { label: t("metrics.impressions"), value: profile?.total_impressions ? formatCount(profile.total_impressions) : "—", color: "amber" },
+              { label: t("metrics.reach"), value: profile?.total_reach ? formatCount(profile.total_reach) : "—", color: "cyan" },
             ].map((m) => (
               <div key={m.label} className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
                 <p className="text-[9px] font-black text-gray-400 uppercase">{m.label}</p>
@@ -1339,22 +1355,22 @@ const MyInformationDetail = ({ onBack }) => {
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-6 bg-pink-500 rounded-full" />
-            <h3 className="font-black text-gray-800 text-lg">My Work</h3>
+            <h3 className="font-black text-gray-800 text-lg">{t("myWork.heading")}</h3>
             <span className="text-xs font-bold text-gray-400 ml-1">{submittedLiveLinks.length}</span>
           </div>
           {submissionsLoading ? (
             <div className="flex items-center justify-center py-10 text-xs font-semibold text-gray-400 gap-2">
-              <Loader2 size={14} className="animate-spin text-pink-500" /> Loading…
+              <Loader2 size={14} className="animate-spin text-pink-500" /> {t("myWork.loading")}
             </div>
           ) : submittedLiveLinks.length === 0 ? (
             <div className="bg-white border border-dashed border-gray-200 rounded-2xl p-6 text-center">
-              <p className="text-sm font-bold text-gray-500">No live submissions yet.</p>
+              <p className="text-sm font-bold text-gray-500">{t("myWork.emptyTitle")}</p>
               <p className="text-[11px] text-gray-400 mt-1">
-                Your approved campaign live links will show up here.
+                {t("myWork.emptyBodyMobile")}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">{submittedLiveLinks.map((s) => submissionCard(s, false))}</div>
+            <div className="grid grid-cols-2 gap-3">{submittedLiveLinks.map((s) => submissionCard(s, false, t))}</div>
           )}
         </section>
       </div>
@@ -1366,7 +1382,7 @@ const MyInformationDetail = ({ onBack }) => {
           <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[90vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h2 className="text-base lg:text-lg font-black text-gray-900">Edit Profile</h2>
+              <h2 className="text-base lg:text-lg font-black text-gray-900">{t("profileCard.editProfile")}</h2>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors cursor-pointer"
@@ -1391,23 +1407,23 @@ const MyInformationDetail = ({ onBack }) => {
               }}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
-            <h3 className="text-white text-sm font-bold">Crop Photo</h3>
+            <h3 className="text-white text-sm font-bold">{t("crop.title")}</h3>
             <button
               onClick={handleCropSave}
               disabled={uploading}
               className="text-sm font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)", color: "white" }}
             >
-              {uploading ? "Saving..." : "Save"}
+              {uploading ? t("crop.saving") : t("common.save")}
             </button>
           </div>
           <div className="flex-1 relative">
             <Cropper image={imageSrc} crop={crop} zoom={zoom} aspect={1} cropShape="rect" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
           </div>
           <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
-            <span className="text-white/60 text-xs font-bold shrink-0">Zoom</span>
+            <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1 accent-purple-500" />
           </div>
         </div>

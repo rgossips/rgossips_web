@@ -2,31 +2,34 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const Footer = () => {
+  const t = useTranslations("Footer");
   const currentYear = new Date().getFullYear();
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Only links that point at a real route or external resource. Dead links
-  // were trimmed — add them back as content is written.
+  // were trimmed — add them back as content is written. `name` is a message
+  // key resolved via t(`links.${name}`) at render.
   const navigation = {
     platform: [
-      { name: "For Brands", href: "/brands" },
-      { name: "For Influencers", href: "/influencer" },
+      { name: "forBrands", href: "/brands" },
+      { name: "forInfluencers", href: "/influencer" },
       // Landing-page pricing section (public) — /influencer/pricing is
       // behind auth and dead-ends logged-out visitors.
-      { name: "Pricing", href: "/#pricing" },
+      { name: "pricing", href: "/#pricing" },
     ],
     legal: [
-      { name: "Privacy & Cookie Policy", href: "/consent/privacy" },
-      { name: "Payment & Refund Policy", href: "/consent/refund" },
-      { name: "Influencer Consent Policy", href: "/consent/influencer" },
-      { name: "Brand Consent Policy", href: "/consent/brand" },
+      { name: "privacy", href: "/consent/privacy" },
+      { name: "refund", href: "/consent/refund" },
+      { name: "influencerConsent", href: "/consent/influencer" },
+      { name: "brandConsent", href: "/consent/brand" },
     ],
     social: [
       { Icon: FaInstagram, href: "https://www.instagram.com/rgossips.agency/" },
@@ -50,11 +53,11 @@ const Footer = () => {
         email: email,
         subscribedAt: serverTimestamp(),
       });
-      setMessage("Thank you for subscribing!");
+      setMessage(t("subscribeSuccess"));
       setEmail(""); // Clear input
     } catch (error) {
       console.error("Error adding document: ", error);
-      setMessage("Something went wrong. Please try again.");
+      setMessage(t("subscribeError"));
     } finally {
       setLoading(false);
     }
@@ -67,8 +70,8 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="md:col-span-4 space-y-4">
             <h2 className="text-white text-3xl font-bold tracking-tight">RGossips</h2>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">The all-in-one influencer campaign platform connecting brands with verified creators globally.</p>
-            <p className="text-white text-sm font-medium pt-2">Get influencer marketing tips — weekly in your inbox</p>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">{t("tagline")}</p>
+            <p className="text-white text-sm font-medium pt-2">{t("newsletterPrompt")}</p>
 
             {/* Newsletter Subscription */}
             <div className="flex gap-2 pt-2">
@@ -78,11 +81,11 @@ const Footer = () => {
                 onChange={(e) => {
                   setEmail(e.target.value);
                 }}
-                placeholder="Enter your email"
+                placeholder={t("emailPlaceholder")}
                 className="bg-[#1a142c] border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white w-full max-w-[280px]"
               />
               <button disabled={loading} onClick={handleSubscribe} className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all">
-                Subscribe
+                {t("subscribe")}
               </button>
             </div>
             {message && <div className="text-[#6C4DFF] font-semiboldm">{message}</div>}
@@ -105,16 +108,16 @@ const Footer = () => {
           {/* Links Columns */}
           <div className="md:col-span-8 grid grid-cols-2 gap-8">
             {[
-              { title: "Platform", links: navigation.platform },
-              { title: "Legal", links: navigation.legal },
+              { key: "platform", title: t("sections.platform"), links: navigation.platform },
+              { key: "legal", title: t("sections.legal"), links: navigation.legal },
             ].map((section) => (
-              <div key={section.title}>
+              <div key={section.key}>
                 <h4 className="text-white font-semibold mb-6 text-sm tracking-wide">{section.title}</h4>
                 <ul className="space-y-4">
                   {section.links.map((link) => (
                     <li key={link.name}>
                       <Link href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
-                        {link.name}
+                        {t(`links.${link.name}`)}
                       </Link>
                     </li>
                   ))}
@@ -126,14 +129,14 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-slate-500">
-          <p>© {currentYear} RGossips. All rights reserved.</p>
+          <p>{t("copyright", { year: currentYear })}</p>
 
           <div className="flex items-center gap-6">
-            <span>Trusted by 5,000+ brands</span>
+            <span>{t("stats.brands")}</span>
             <span>•</span>
-            <span>200,000+ Influencers</span>
+            <span>{t("stats.influencers")}</span>
             <span>•</span>
-            <span>ISO 27001 Certified</span>
+            <span>{t("stats.iso")}</span>
           </div>
         </div>
       </div>

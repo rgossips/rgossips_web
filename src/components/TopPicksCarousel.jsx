@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
@@ -19,6 +20,7 @@ const PLACEHOLDER_IMAGES = [
 ];
 
 export default function RecommendedCampaigns() {
+  const t = useTranslations("TopPicksCarousel");
   const { profile, user } = useAuth();
   const [allCampaigns, setAllCampaigns] = useState([]);
   const [api, setApi] = useState(null);
@@ -88,15 +90,15 @@ export default function RecommendedCampaigns() {
     return visible.slice(0, 6).map(({ c, score }, i) => ({
       id: c.id,
       imageUrl: c.bannerImage || PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
-      category: c.tags?.[0] || "General",
-      badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? "Ending Soon" : "Active",
+      category: c.tags?.[0] || t("categoryGeneral"),
+      badge: c.daysLeft && parseInt(c.daysLeft) <= 7 ? t("badge.endingSoon") : t("badge.active"),
       match: score,
       brand: c.brandName,
       title: c.title,
-      location: c.location || "Pan India",
-      desc: c.description?.slice(0, 80) || "Apply to collaborate with this brand.",
+      location: c.location || t("locationDefault"),
+      desc: c.description?.slice(0, 80) || t("descDefault"),
       pay: c.budget,
-      req: c.deliverables || "Not specified",
+      req: c.deliverables || t("reqDefault"),
     }));
   }, [allCampaigns, userCategories, profile]);
 
@@ -109,16 +111,16 @@ export default function RecommendedCampaigns() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Campaigns for you</h2>
+          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{t("title")}</h2>
           <p className="text-sm text-slate-400 font-medium">
             {userCategories.length > 0
-              ? `Matched to your niche — ${userCategories.slice(0, 3).join(", ")}${userCategories.length > 3 ? ` +${userCategories.length - 3}` : ""}`
-              : "Opportunities matched to your creator profile"}
+              ? t("subtitleMatched", { niche: `${userCategories.slice(0, 3).join(", ")}${userCategories.length > 3 ? ` +${userCategories.length - 3}` : ""}` })
+              : t("subtitleDefault")}
           </p>
         </div>
 
         <button onClick={() => router.push(viewAllHref)} className="text-[#D61F69] cursor-pointer text-sm font-bold hover:underline">
-          View all ›
+          {t("viewAll")}
         </button>
       </div>
 
@@ -140,7 +142,7 @@ export default function RecommendedCampaigns() {
                 key={i}
                 onClick={() => api?.scrollTo(i)}
                 className={`h-1.5 rounded-full transition-all duration-500 ${current === i ? "bg-gradient-to-r from-[#8E2DE2] to-[#F6339A] w-8" : "bg-slate-200 w-2"}`}
-                aria-label={`Go to campaign ${i + 1}`}
+                aria-label={t("goToCampaign", { number: i + 1 })}
               />
             ))}
           </div>
@@ -158,6 +160,7 @@ export default function RecommendedCampaigns() {
 }
 
 function CampaignCard({ item, onApply }) {
+  const t = useTranslations("TopPicksCarousel");
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -185,7 +188,7 @@ function CampaignCard({ item, onApply }) {
                   item.match >= 75 ? "bg-[#22C55E]" : item.match >= 50 ? "bg-amber-500" : "bg-slate-500"
                 }`}
               >
-                {item.match}% match
+                {t("percentMatch", { match: item.match })}
               </span>
             </div>
           )}
@@ -213,13 +216,13 @@ function CampaignCard({ item, onApply }) {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-              <DollarSign size={10} className="text-green-500" /> Pay
+              <DollarSign size={10} className="text-green-500" /> {t("pay")}
             </p>
             <p className="text-xs font-black text-slate-800">{item.pay}</p>
           </div>
           <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-              <Users size={10} className="text-blue-500" /> Req
+              <Users size={10} className="text-blue-500" /> {t("req")}
             </p>
             <p className="text-xs font-black text-slate-800">{item.req}</p>
           </div>
@@ -232,7 +235,7 @@ function CampaignCard({ item, onApply }) {
             className="flex-1 cursor-pointer text-white text-xs font-black py-4 rounded-2xl shadow-lg shadow-pink-100 hover:shadow-pink-200 hover:scale-[1.02] transition-all"
             style={{ background: "linear-gradient(to right, #8E2DE2, #F6339A)" }}
           >
-            Apply Now
+            {t("applyNow")}
           </button>
         </div>
       </div>

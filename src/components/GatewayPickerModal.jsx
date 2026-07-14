@@ -2,12 +2,14 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // Reusable payment gateway picker. Used by the pricing page (subscription
 // upgrades) and the service-orders page (advance + final payments).
 // Caller supplies a title/subtitle pair and an onPick(gateway) callback;
 // gateway is one of "razorpay" | "stripe".
 export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }) {
+  const t = useTranslations("GatewayPickerModal");
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
@@ -20,7 +22,7 @@ export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }
           </div>
           <button
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t("closeLabel")}
             type="button"
             className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-600"
           >
@@ -33,19 +35,19 @@ export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }
             onClick={() => onPick("razorpay")}
             logo={<RazorpayLogo />}
             title="Razorpay"
-            tagline="UPI · Cards · Netbanking · Wallets"
+            tagline={t("razorpay.tagline")}
             accent="border-[#0c2451]/15 hover:border-[#0c2451]/40 hover:bg-[#0c2451]/5"
           />
           <GatewayOption
             onClick={() => onPick("stripe")}
             logo={<StripeLogo />}
             title="Stripe"
-            tagline="International cards · Apple Pay · Google Pay"
+            tagline={t("stripe.tagline")}
             accent="border-[#635BFF]/15 hover:border-[#635BFF]/40 hover:bg-[#635BFF]/5"
           />
 
           <p className="text-[10px] text-slate-400 text-center pt-2 leading-relaxed">
-            You'll go to a secure checkout and return here when you're done.
+            {t("secureCheckoutNote")}
           </p>
         </div>
       </div>

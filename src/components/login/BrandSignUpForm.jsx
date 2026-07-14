@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { createClient } from "@/utils/supabase/client";
 import { classifyGstPan } from "@/lib/brandProfile";
 
 const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loading = false, error = "", initialPhone = "", otpPreVerified = false, instagramProfile = null, invitation = null }) => {
+  const t = useTranslations("Auth.brandSignUpForm");
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
@@ -68,7 +70,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       // Check phone uniqueness first
       const { data: uniqueCheck } = await supabase.functions.invoke("check-uniqueness", { body: { phone: formData.phone } });
       if (uniqueCheck?.conflicts?.includes("phone")) {
-        setLocalError("This phone number is already registered. Please sign in instead.");
+        setLocalError(t("errors.phoneRegistered"));
         setOtpLoading(false);
         return;
       }
@@ -76,7 +78,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       setOtpSent(true);
       setTimer(60);
     } catch (err) {
-      setLocalError(err.message || "Failed to send OTP");
+      setLocalError(err.message || t("errors.sendOtpFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -90,7 +92,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err) {
-      setLocalError(err.message || "Invalid OTP");
+      setLocalError(err.message || t("errors.invalidOtp"));
     } finally {
       setVerifyLoading(false);
     }
@@ -104,7 +106,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       setTimer(60);
       setOtp("");
     } catch (err) {
-      setLocalError(err.message || "Failed to resend OTP");
+      setLocalError(err.message || t("errors.resendFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -112,7 +114,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError("Please enter your full name");
+      setLocalError(t("errors.nameRequired"));
       return;
     }
     if (formData.gstin) {
@@ -120,20 +122,20 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
       if (!valid) {
         setGstinError(
           kind === "pan"
-            ? "PAN should be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)."
+            ? t("errors.panFormat")
             : kind === "gst"
-              ? "GST should be 15 chars (e.g. 22AAAAA0000A1Z5)."
-              : "Enter a valid GST (15 chars) or PAN (10 chars).",
+              ? t("errors.gstFormat")
+              : t("errors.gstPanGeneric"),
         );
         return;
       }
     }
     if (!otpVerified) {
-      setLocalError("Please verify your phone number");
+      setLocalError(t("errors.verifyPhone"));
       return;
     }
     if (!consentAgreed) {
-      setLocalError("Please accept the Brand Consent Policy to continue");
+      setLocalError(t("errors.acceptConsent"));
       return;
     }
     onSubmit({ ...formData, gstin: formData.gstin || "" });
@@ -144,8 +146,8 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-1">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">{invitation ? "Complete Your Profile" : "Register Brand"}</h2>
-        <p className="text-sm text-slate-500">{invitation ? "Your brand has been pre-registered. Verify your details to get started." : "Verify your business to start collaborating"}</p>
+        <h2 className="text-2xl font-bold text-slate-900">{invitation ? t("titleComplete") : t("titleRegister")}</h2>
+        <p className="text-sm text-slate-500">{invitation ? t("subtitleComplete") : t("subtitleRegister")}</p>
       </div>
 
       {/* Admin Invitation Banner */}
@@ -160,7 +162,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900">{invitation.brand_name}</p>
-            <p className="text-[11px] text-purple-600 font-medium">Pre-registered by RecentGossips</p>
+            <p className="text-[11px] text-purple-600 font-medium">{t("preRegistered")}</p>
           </div>
           <BadgeCheck size={20} className="text-purple-500 shrink-0" />
         </div>
@@ -181,7 +183,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-900 truncate">@{instagramProfile.username}</p>
-              <p className="text-[10px] text-slate-400">Instagram connected</p>
+              <p className="text-[10px] text-slate-400">{t("instagramConnected")}</p>
             </div>
             <CheckCircle2 size={18} className="text-green-500 shrink-0" />
           </div>
@@ -189,22 +191,22 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
 
         {/* Contact Name */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">Contact Person Name</Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">{t("contactName")}</Label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
-            <Input placeholder="Your full name" name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
+            <Input placeholder={t("fullNamePlaceholder")} name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
           </div>
         </div>
 
         {/* GST / PAN — optional */}
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">
-            GST / PAN <span className="text-slate-300 font-normal">(optional)</span>
+            {t("gstPan")} <span className="text-slate-300 font-normal">{t("optional")}</span>
           </Label>
           <div className="relative">
             <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
             <Input
-              placeholder="GST (15) or PAN (10) — e.g. ABCDE1234F"
+              placeholder={t("gstPanPlaceholder")}
               name="gstin"
               value={formData.gstin}
               onChange={handleChange}
@@ -212,12 +214,12 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
               className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9] uppercase tracking-wider font-mono"
             />
           </div>
-          {gstinError ? <p className="text-xs text-red-500 ml-1">{gstinError}</p> : <p className="text-[11px] text-slate-400 ml-1">Helps boost your trust score; you can add it later in Profile.</p>}
+          {gstinError ? <p className="text-xs text-red-500 ml-1">{gstinError}</p> : <p className="text-[11px] text-slate-400 ml-1">{t("gstPanHint")}</p>}
         </div>
 
         {/* Phone + OTP */}
         <div className="space-y-1.5">
-          <Label className="text-xs font-semibold text-slate-500 ml-1">Mobile Number</Label>
+          <Label className="text-xs font-semibold text-slate-500 ml-1">{t("mobileNumber")}</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1 border-r pr-2 border-slate-200">
@@ -225,7 +227,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
               </div>
               <Input
                 type="tel"
-                placeholder="Enter phone number"
+                placeholder={t("phonePlaceholder")}
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
@@ -235,7 +237,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
             </div>
             {!otpVerified && !otpSent && (
               <Button onClick={handleSendOtp} disabled={formData.phone.length < 10 || otpLoading} className="h-12 px-4 rounded-xl btn-purple text-sm font-semibold cursor-pointer whitespace-nowrap">
-                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : "Send OTP"}
+                {otpLoading ? <Loader2 size={16} className="animate-spin" /> : t("sendOtp")}
               </Button>
             )}
             {otpVerified && (
@@ -249,7 +251,7 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
           {otpSent && !otpVerified && (
             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <p className="text-[11px] text-center text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                Your OTP just slid into WhatsApp — say hi to <span className="font-bold">Rgossips Media</span>!
+                {t.rich("whatsappHint", { strong: (c) => <span className="font-bold">{c}</span> })}
               </p>
               <div className="flex justify-center">
                 <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
@@ -263,16 +265,19 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
               <div className="flex flex-col items-center gap-2">
                 <Button onClick={handleVerifyOtp} disabled={otp.length < 6 || verifyLoading} className="h-9 px-8 rounded-lg btn-purple text-sm font-semibold cursor-pointer">
                   {verifyLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
-                  Verify
+                  {t("verify")}
                 </Button>
                 <div className="text-center">
                   {timer > 0 ? (
                     <p className="text-xs text-slate-400">
-                      Resend in <span className="text-[#6347F9] font-bold">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>
+                      {t.rich("resendIn", {
+                        time: `${Math.floor(timer / 60)}:${String(timer % 60).padStart(2, "0")}`,
+                        b: (c) => <span className="text-[#6347F9] font-bold">{c}</span>,
+                      })}
                     </p>
                   ) : (
                     <button className="text-xs cursor-pointer text-[#6347F9] font-bold hover:underline" onClick={handleResend}>
-                      Resend OTP
+                      {t("resend")}
                     </button>
                   )}
                 </div>
@@ -291,16 +296,18 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
           className="mt-0.5 w-4 h-4 accent-[#6347F9] cursor-pointer"
         />
         <span className="text-[12px] text-slate-600 leading-snug">
-          I have read and agree to the{" "}
-          <a
-            href="/consent/brand"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#6347F9] font-bold hover:underline"
-          >
-            Brand Consent Policy
-          </a>
-          , Terms of Service, Privacy Policy and Community Guidelines of Recent Gossips.
+          {t.rich("consent", {
+            link: (c) => (
+              <a
+                href="/consent/brand"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#6347F9] font-bold hover:underline"
+              >
+                {c}
+              </a>
+            ),
+          })}
         </span>
       </label>
 
@@ -314,10 +321,10 @@ const BrandSignUpForm = ({ onSubmit, onSendOtp, onResendOtp, onVerifyOtp, loadin
           {loading ? (
             <>
               <Loader2 size={18} className="animate-spin mr-2" />
-              Creating account...
+              {t("creating")}
             </>
           ) : (
-            "Create Brand Account"
+            t("submit")
           )}
         </Button>
       </div>

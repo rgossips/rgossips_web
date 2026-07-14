@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
@@ -10,6 +11,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 const RESEND_COOLDOWN_SECONDS = 60;
 
 const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", setOtp = () => {}, phoneNumber = "+91 98765 43210", resendSuccess = false }) => {
+  const t = useTranslations("Auth.verifyOtp");
   const [timer, setTimer] = useState(RESEND_COOLDOWN_SECONDS);
 
   useEffect(() => {
@@ -32,9 +34,9 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">Verify OTP</h2>
+        <h2 className="text-2xl font-bold text-slate-900">{t("title")}</h2>
         <p className="text-slate-500 text-sm">
-          Enter the 6-digit code sent to <br />
+          {t("sentTo")} <br />
           <span className="font-semibold text-slate-900">{phoneNumber}</span>
         </p>
       </div>
@@ -46,9 +48,9 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-emerald-900">Your OTP just slid into WhatsApp</p>
+          <p className="text-[13px] font-bold text-emerald-900">{t("whatsappTitle")}</p>
           <p className="text-[11px] text-emerald-700 mt-0.5">
-            Look for the friendly ping from <span className="font-bold">Rgossips Media</span>.
+            {t.rich("whatsappBody", { strong: (c) => <span className="font-bold">{c}</span> })}
           </p>
         </div>
       </div>
@@ -65,17 +67,20 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
 
       <div className="space-y-4">
         <Button onClick={handleSubmit} disabled={loading || otp.length < 6} className="w-full cursor-pointer btn-purple h-[54px] rounded-2xl text-base font-semibold shadow-lg shadow-purple-100">
-          {loading ? "Verifying..." : "Verify & Continue"}
+          {loading ? t("verifying") : t("verifyContinue")}
         </Button>
 
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>}
 
-        {resendSuccess && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600 text-center">OTP sent successfully!</div>}
+        {resendSuccess && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600 text-center">{t("resendSuccess")}</div>}
 
         <div className="text-center">
           {timer > 0 ? (
             <p className="text-sm text-slate-400 font-medium">
-              Resend code in <span className="text-[#6347F9] font-bold">{Math.floor(timer / 60)}:{String(timer % 60).padStart(2, "0")}</span>
+              {t.rich("resendIn", {
+                time: `${Math.floor(timer / 60)}:${String(timer % 60).padStart(2, "0")}`,
+                b: (c) => <span className="text-[#6347F9] font-bold">{c}</span>,
+              })}
             </p>
           ) : (
             <button
@@ -86,7 +91,7 @@ const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", se
                 if (onResend) onResend();
               }}
             >
-              Resend OTP
+              {t("resend")}
             </button>
           )}
         </div>

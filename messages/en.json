@@ -1,0 +1,4702 @@
+{
+  "Common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Try again",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "Footer": {
+    "tagline": "The all-in-one influencer campaign platform connecting brands with verified creators globally.",
+    "newsletterPrompt": "Get influencer marketing tips — weekly in your inbox",
+    "emailPlaceholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "subscribeSuccess": "Thank you for subscribing!",
+    "subscribeError": "Something went wrong. Please try again.",
+    "sections": {
+      "platform": "Platform",
+      "legal": "Legal"
+    },
+    "links": {
+      "forBrands": "For Brands",
+      "forInfluencers": "For Influencers",
+      "pricing": "Pricing",
+      "privacy": "Privacy & Cookie Policy",
+      "refund": "Payment & Refund Policy",
+      "influencerConsent": "Influencer Consent Policy",
+      "brandConsent": "Brand Consent Policy"
+    },
+    "copyright": "© {year} RGossips. All rights reserved.",
+    "stats": {
+      "brands": "Trusted by 5,000+ brands",
+      "influencers": "200,000+ Influencers",
+      "iso": "ISO 27001 Certified"
+    }
+  },
+  "LanguageSwitcher": {
+    "label": "Language"
+  },
+  "InfluencerHome": {
+    "loading": "Loading…",
+    "nav": {
+      "brands": "Brands",
+      "topServices": "Top Services",
+      "topCreators": "Top Creators",
+      "campaigns": "Campaigns For You"
+    }
+  },
+  "AiToolsGrid": {
+    "comingSoon": "Coming Soon",
+    "title": "AI Creator Tools",
+    "usage": "<b>0/50 used</b> • all free",
+    "tools": {
+      "captions": "Captions",
+      "hashtags": "Hashtags",
+      "scripts": "Scripts",
+      "rateCard": "Rate Card",
+      "hookIdeas": "Hook Ideas",
+      "briefHelper": "Brief Helper"
+    },
+    "tryFree": "Try free →",
+    "generate": "Generate"
+  },
+  "MediaKitCard": {
+    "title": "AI Media Kit",
+    "subtitle": "Real-time analytics",
+    "preview": "Preview",
+    "creatorFallback": "Creator",
+    "stats": {
+      "followers": "FOLLOWERS",
+      "posts": "POSTS",
+      "following": "FOLLOWING"
+    },
+    "view": "View Media Kit",
+    "generate": "Generate Media Kit"
+  },
+  "ReferBalanceCard": {
+    "rewardCredits": "Reward Credits",
+    "available": "available",
+    "locked": "+{count} locked"
+  },
+  "InstagramReconnectBanner": {
+    "denied": "Instagram connection was denied",
+    "failed": "Failed to reconnect Instagram",
+    "title": "Instagram Reconnection Required",
+    "body": "Reconnect your Instagram to keep your followers, engagement rate, and analytics up to date.",
+    "reconnect": "Reconnect"
+  },
+  "ProStatusCard": {
+    "userFallback": "User",
+    "greeting": "Hi, {name}",
+    "creatorFallback": "Creator",
+    "planLabel": "PLAN:",
+    "planFree": "Free",
+    "planStarterTrial": "Starter Trial",
+    "brandsLoading": "…",
+    "brandsCount": "{count, plural, =0 {0 brands} one {# brand} other {# brands}}",
+    "lookingNiche": "are looking for creators in your niche",
+    "activeNow": "have active campaigns right now",
+    "activePlan": "Active Plan",
+    "cycleAnnual": "Annual",
+    "cycleMonthly": "Monthly",
+    "renewsLine": "{cycle} · renews in",
+    "days": "days",
+    "trialExpired": "Trial Expired",
+    "freeTrial": "Free Trial",
+    "daysLeft": "days left",
+    "upgrade": "Upgrade"
+  },
+  "UserDoc": {
+    "userFallback": "User",
+    "greeting": "Hi, {name}",
+    "greetingFallback": "there",
+    "proMember": "Pro Member",
+    "totalEarnings": "Total Earnings:",
+    "searchPlaceholder": "Search campaigns, brands...",
+    "support": "Support",
+    "settings": "Settings",
+    "help": "Help & Support",
+    "logout": "Log Out",
+    "nav": {
+      "home": "Home",
+      "brands": "Brands",
+      "campaigns": "Campaigns",
+      "chats": "Chats",
+      "notifications": "Notifications",
+      "profile": "Profile"
+    }
+  },
+  "Auth": {
+    "home": "Home",
+    "backToHome": "Back to home",
+    "close": "Close",
+    "loadingDefault": "Loading…",
+    "checkingInvitation": "Checking your invitation…",
+    "roles": {
+      "brand": "Brand",
+      "influencer": "Influencer",
+      "brandIndefinite": "a Brand",
+      "influencerIndefinite": "an Influencer"
+    },
+    "loading": {
+      "checkingNumber": "Checking your number…",
+      "sendingOtp": "Sending OTP…",
+      "reactivating": "Reactivating your account…",
+      "verifying": "Verifying…",
+      "settingUpSession": "Setting up your session…",
+      "creatingAccount": "Creating your account…",
+      "redirectingDashboard": "Redirecting to dashboard…",
+      "savingPreferences": "Saving your preferences…",
+      "redirecting": "Redirecting…"
+    },
+    "errors": {
+      "notRegistered": "You don't exist with us. Kindly sign up first.",
+      "registeredAsOther": "This number is registered as {otherRole}. Please switch role and try again.",
+      "roleMismatchVerify": "This number is registered as {otherRole}, not {requestedRole}. Please go back and pick the correct role.",
+      "sendOtpFailed": "Failed to send OTP",
+      "resendOtpFailed": "Failed to resend OTP",
+      "verifyOtpFailed": "Failed to verify OTP",
+      "instagramNoUsername": "Instagram didn't return your username. Please reconnect Instagram before continuing.",
+      "invitationHandleMismatch": "This invitation is for @{expected}. You connected @{got}. Please reconnect with the right Instagram account.",
+      "accountIncomplete": "Account creation did not complete. Please try again.",
+      "createAccountFailed": "Failed to create account.",
+      "finishSignupFailed": "Failed to complete signup"
+    },
+    "invitation": {
+      "invalidTitle": "Invitation link not recognised",
+      "invalidMessage": "We couldn't find an invitation for @{handle}. Double-check the link or sign up normally.",
+      "claimedTitle": "Invitation already used",
+      "claimedMessage": "This invitation for @{handle} has already been claimed. Sign in with the phone number you registered with.",
+      "errorTitle": "Couldn't verify your invitation",
+      "errorMessageFallback": "Please try the link again or contact support.",
+      "roleMismatchTitle": "You're invited as {role}",
+      "roleMismatchMessage": "@{handle} is pre-registered as {inviteRole}, not {userRole}. Switch to {inviteRoleLabel} sign-up to continue with the invitation, or sign up with a different Instagram.",
+      "useLinkTitle": "Use your invitation link",
+      "useLinkMessage": "We've already pre-registered @{handle}. Continue with your invitation to finish signing up, or sign up with a different Instagram."
+    },
+    "interrupt": {
+      "troublePrefix": "Trouble? Reach out to",
+      "signInInstead": "Sign in instead",
+      "continueAsRole": "Continue as {role} →",
+      "signUpDifferentInstagram": "Sign up with a different Instagram",
+      "continueWithInvitation": "Continue with my invitation →"
+    },
+    "reactivate": {
+      "label": "account",
+      "labelBrand": "brand account",
+      "title": "Your {label} is deactivated",
+      "body": "We verified the OTP sent to <strong>{phone}</strong>, but this {label} is currently deactivated. Reactivate to sign back in?",
+      "confirm": "Reactivate & sign in",
+      "reactivating": "Reactivating…",
+      "cancel": "Cancel",
+      "footnote": "Reactivating restores your profile, settings and history exactly as they were when you deactivated."
+    },
+    "roleSelection": {
+      "title": "Choose your Role",
+      "subtitle": "Select how you want to use the platform",
+      "influencerTitle": "Influencer / Creator",
+      "influencerDesc": "I want to collaborate with brands",
+      "brandTitle": "Brand / Business",
+      "brandDesc": "I want to hire creators for campaigns",
+      "noAccount": "Don't have an account?",
+      "haveAccount": "Already have an account?",
+      "signUp": "Sign Up",
+      "signIn": "Sign In"
+    },
+    "phone": {
+      "titleSignup": "Create Account",
+      "titleSignin": "Sign In",
+      "subtitleSignup": "Enter your mobile number to create an account",
+      "subtitleSignin": "Enter your mobile number to continue",
+      "userExists": "User already exists.",
+      "signIn": "Sign In",
+      "placeholder": "Enter phone number",
+      "sending": "Sending OTP…",
+      "createAccount": "Create Account",
+      "sendOtp": "Send OTP"
+    },
+    "verifyOtp": {
+      "title": "Verify OTP",
+      "sentTo": "Enter the 6-digit code sent to",
+      "whatsappTitle": "Your OTP just slid into WhatsApp",
+      "whatsappBody": "Look for the friendly ping from <strong>Rgossips Media</strong>.",
+      "verifying": "Verifying…",
+      "verifyContinue": "Verify & Continue",
+      "resendSuccess": "OTP sent successfully!",
+      "resendIn": "Resend code in <b>{time}</b>",
+      "resend": "Resend OTP"
+    },
+    "categories": {
+      "title": "What Do You Create?",
+      "subtitle": "Select categories to get better campaign matches",
+      "continue": "Continue",
+      "skip": "Skip for now"
+    },
+    "preferences": {
+      "title": "Collaboration Preferences",
+      "subtitle": "Tell brands what you offer",
+      "continue": "Continue",
+      "skip": "Skip for now",
+      "services": {
+        "reels": "Reels",
+        "stories": "Stories",
+        "shorts": "YouTube Shorts",
+        "posts": "Static Posts",
+        "ugc": "UGC Videos"
+      }
+    },
+    "notifications": {
+      "title": "Never Miss a Collab",
+      "subtitle": "Get instant updates on new campaigns, messages & payments",
+      "enable": "Enable Notifications",
+      "notNow": "Not Now"
+    },
+    "success": {
+      "title": "You're All Set!",
+      "subtitle": "Your profile is ready. Now let's verify your phone number to start closing deals.",
+      "creating": "Creating Account…",
+      "start": "Start Using Platform"
+    },
+    "signUpForm": {
+      "title": "Create Account",
+      "subtitle": "Fill in your details to get started",
+      "instagramConnected": "Instagram connected",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Your full name",
+      "mobileNumber": "Mobile Number",
+      "phonePlaceholder": "Enter phone number",
+      "sendOtp": "Send OTP",
+      "whatsappHint": "Your OTP just slid into WhatsApp — say hi to <strong>Rgossips Media</strong>!",
+      "verify": "Verify",
+      "resendIn": "Resend in <b>{time}</b>",
+      "resend": "Resend OTP",
+      "referralCode": "Referral Code",
+      "optional": "(optional)",
+      "referralPlaceholder": "Enter referral code",
+      "referralAdded": "Referral code added 🎉",
+      "consent": "I have read and agree to the <link>Influencer Consent Policy</link>, Terms of Service, Privacy Policy and Community Guidelines of Recent Gossips.",
+      "creating": "Creating account…",
+      "errors": {
+        "phoneRegistered": "This phone number is already registered. Please sign in instead.",
+        "sendOtpFailed": "Failed to send OTP",
+        "invalidOtp": "Invalid OTP",
+        "resendFailed": "Failed to resend OTP",
+        "nameRequired": "Please enter your full name",
+        "verifyPhone": "Please verify your phone number",
+        "acceptConsent": "Please accept the Influencer Consent Policy to continue"
+      }
+    },
+    "onboarding": {
+      "slides": {
+        "chat": {
+          "title": "Chat, Negotiate, Close Deals",
+          "description": "Directly connect with brands, negotiate deliverables, and finalize collaborations in minutes."
+        },
+        "discover": {
+          "title": "Find Campaigns That Fit You",
+          "description": "Explore brand deals tailored to your niche, audience, and engagement style."
+        },
+        "paid": {
+          "title": "Get Paid Securely & On Time",
+          "description": "Track invoices, receive payments, and manage your earnings with transparency."
+        },
+        "ready": {
+          "title": "Ready to Start?",
+          "description": "Join thousands of creators managing their business efficiently."
+        }
+      },
+      "next": "Next",
+      "skip": "Skip",
+      "signIn": "Sign In",
+      "signUp": "Sign Up"
+    },
+    "instagram": {
+      "titleSignin": "Sign In with Instagram",
+      "titleConnect": "Connect Instagram",
+      "subtitleSignin": "Connect your Instagram to sign in to your account",
+      "subtitleConnect": "Link your Instagram to unlock brand collaborations & build your media kit",
+      "connecting": "Connecting to Instagram…",
+      "connectButton": "Connect with Instagram",
+      "requirements": "Requirements:",
+      "perm1": "• Your profile info — username, name, bio, profile picture",
+      "perm2": "• Audience stats — followers, following, post count",
+      "perm3": "• Reels & media insights — reach, impressions, engagement",
+      "permNote": "This info will be shown to brands on your media kit to help them evaluate collaborations. We never post, comment, or message on your behalf.",
+      "followers": "{count} followers",
+      "following": "{count} following",
+      "posts": "{count} posts",
+      "disconnect": "Disconnect",
+      "signingIn": "Signing in…",
+      "verifying": "Verifying…",
+      "signIn": "Sign In",
+      "continue": "Continue",
+      "required": "Instagram connection is required to proceed",
+      "req1": "• Your Instagram must be a <b>Professional account</b> (Business or Creator)",
+      "req2": "• Make sure you're logged into the <b>correct Instagram account</b> in your browser",
+      "req3": "• If you see \"profile doesn't exist\", log out of Instagram in your browser and log in with your Professional account",
+      "otherAccount": "another account",
+      "errors": {
+        "connectFailed": "Failed to connect Instagram",
+        "verifyFailed": "Failed to verify Instagram",
+        "registeredAsRoleSignin": "This Instagram is registered as {source}. Please sign in as {source} instead.",
+        "registeredAsRoleSignup": "This Instagram is already registered as {source}. Please sign in instead."
+      }
+    },
+    "brandSignUpForm": {
+      "titleComplete": "Complete Your Profile",
+      "titleRegister": "Register Brand",
+      "subtitleComplete": "Your brand has been pre-registered. Verify your details to get started.",
+      "subtitleRegister": "Verify your business to start collaborating",
+      "preRegistered": "Pre-registered by RecentGossips",
+      "instagramConnected": "Instagram connected",
+      "contactName": "Contact Person Name",
+      "fullNamePlaceholder": "Your full name",
+      "gstPan": "GST / PAN",
+      "optional": "(optional)",
+      "gstPanPlaceholder": "GST (15) or PAN (10) — e.g. ABCDE1234F",
+      "gstPanHint": "Helps boost your trust score; you can add it later in Profile.",
+      "mobileNumber": "Mobile Number",
+      "phonePlaceholder": "Enter phone number",
+      "sendOtp": "Send OTP",
+      "whatsappHint": "Your OTP just slid into WhatsApp — say hi to <strong>Rgossips Media</strong>!",
+      "verify": "Verify",
+      "resendIn": "Resend in <b>{time}</b>",
+      "resend": "Resend OTP",
+      "consent": "I have read and agree to the <link>Brand Consent Policy</link>, Terms of Service, Privacy Policy and Community Guidelines of Recent Gossips.",
+      "creating": "Creating account…",
+      "submit": "Create Brand Account",
+      "errors": {
+        "phoneRegistered": "This phone number is already registered. Please sign in instead.",
+        "sendOtpFailed": "Failed to send OTP",
+        "invalidOtp": "Invalid OTP",
+        "resendFailed": "Failed to resend OTP",
+        "nameRequired": "Please enter your full name",
+        "verifyPhone": "Please verify your phone number",
+        "acceptConsent": "Please accept the Brand Consent Policy to continue",
+        "panFormat": "PAN should be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).",
+        "gstFormat": "GST should be 15 chars (e.g. 22AAAAA0000A1Z5).",
+        "gstPanGeneric": "Enter a valid GST (15 chars) or PAN (10 chars)."
+      }
+    }
+  },
+  "AddReelFlow": {
+    "title": "Add New Reel",
+    "stepOf": "Step {step} of 3",
+    "steps": {
+      "upload": "Upload",
+      "details": "Details",
+      "preview": "Preview"
+    },
+    "chooseUploadMethod": "Choose Upload Method",
+    "videoUrl": "Video URL",
+    "uploadFile": "Upload File",
+    "clickToUpload": "Click to upload or drag and drop",
+    "videoFormats": "MP4, MOV up to 100MB",
+    "browseFiles": "Browse Files",
+    "thumbnail": "Thumbnail",
+    "optional": "(Optional)",
+    "uploadCustomThumbnail": "Upload custom thumbnail",
+    "thumbnailFormats": "JPG or PNG, recommended 1080x1920",
+    "basicInformation": "Basic Information",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g., Summer Skincare Routine",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe your reel and what makes it special...",
+    "descriptionHint": "Help brands understand your content better",
+    "categoryAndPlatform": "Category & Platform",
+    "category": "Category",
+    "categories": {
+      "beautySkincare": "Beauty & Skincare",
+      "fashionLifestyle": "Fashion & Lifestyle",
+      "foodBeverage": "Food & Beverage",
+      "healthFitnessWellness": "Health, Fitness & Wellness",
+      "travelHospitality": "Travel & Hospitality",
+      "technologyGadgets": "Technology & Gadgets",
+      "gamingEntertainment": "Gaming & Entertainment",
+      "educationCareer": "Education & Career"
+    },
+    "platform": "Platform",
+    "performanceMetrics": "Performance Metrics",
+    "views": "Views",
+    "viewsPlaceholder": "e.g. 12.5K",
+    "engagementRate": "Engagement Rate",
+    "engagementPlaceholder": "e.g. 8.5%",
+    "metricsHint": "Add metrics to help brands understand your reach",
+    "reviewYourReel": "Review Your Reel",
+    "checkDetails": "Check details before publishing",
+    "readyToPublish": "Ready to Publish?",
+    "readyToPublishDesc": "Your reel will be added to your portfolio and become visible to brands looking for collaborations.",
+    "back": "← Back",
+    "continueTo": "Continue to {dest} →",
+    "publishReel": "Publish Reel",
+    "publishedTitle": "Reel published",
+    "publishedMessage": "Your reel was published successfully."
+  },
+  "AlertPopup": {
+    "title": {
+      "success": "Done",
+      "info": "Heads up",
+      "error": "Something went wrong"
+    },
+    "gotIt": "Got it"
+  },
+  "AnalyticsPage": {
+    "title": "Campaign Analytics",
+    "subtitle": "Your performance across all campaigns on RGossips",
+    "campaignCount": "{count, plural, one {# campaign} other {# campaigns}}",
+    "loading": "Loading your campaign data…",
+    "kpi": {
+      "totalEarnings": "Total earnings",
+      "thisMonthGain": "+{amount} this month",
+      "noEarningsThisMonth": "no earnings this month",
+      "totalReach": "Total reach",
+      "acrossCampaigns": "across {count, plural, one {# campaign} other {# campaigns}}",
+      "avgEngagement": "Avg engagement",
+      "onYourInstagram": "on your Instagram",
+      "brandRating": "Brand rating",
+      "noReviewsYet": "no reviews yet"
+    },
+    "earnings": {
+      "overTime": "Earnings over time",
+      "last6Months": "last 6 months on RGossips",
+      "noCompleted": "No completed campaigns yet",
+      "byCategory": "Earnings by category",
+      "whereYouEarnMost": "where you earn most",
+      "categoryEmpty": "Complete a campaign to see your category split."
+    },
+    "demographics": {
+      "title": "Audience demographics",
+      "sub": "from your Instagram account",
+      "empty": "Refresh your Instagram in Profile to see audience insights.",
+      "gender": "Gender",
+      "female": "Female",
+      "male": "Male",
+      "other": "Other",
+      "age": "Age",
+      "notEnoughData": "Not enough data",
+      "topCities": "Top cities",
+      "countries": "Countries"
+    },
+    "discovery": {
+      "title": "Discovery & growth",
+      "sub": "across your campaigns",
+      "followers": "Followers",
+      "onInstagram": "on Instagram",
+      "accountsEngaged": "Accounts engaged",
+      "last28Days": "last 28 days",
+      "acceptRate": "Application accept rate",
+      "ofCount": "{approved} of {my}"
+    },
+    "brands": {
+      "title": "Brands you've worked with",
+      "empty": "no collaborations yet",
+      "sub": "{brands, plural, one {# brand} other {# brands}} · {repeat, plural, one {# repeat collaboration} other {# repeat collaborations}}",
+      "emptyState": "Get approved on your first campaign to see brands here."
+    },
+    "recent": {
+      "title": "Recent campaigns",
+      "empty": "no campaigns yet",
+      "sub": "your latest {count, plural, one {# campaign} other {# campaigns}}",
+      "emptyState": "Apply to a campaign to see it here.",
+      "colCampaign": "Campaign",
+      "colBrand": "Brand",
+      "colStatus": "Status",
+      "colReach": "Reach",
+      "colEngagement": "Engagement",
+      "colEarnings": "Earnings"
+    }
+  },
+  "AppComponent": {
+    "heading": "Manage Everything <br></br> From Your Pocket.",
+    "features": {
+      "realtimeNotifications": "Real-time campaign notifications",
+      "messaging": "In-app creator messaging",
+      "approval": "One-tap content approval",
+      "analytics": "Live analytics",
+      "paymentTracking": "Payment tracking"
+    },
+    "appStore": {
+      "label": "Download on the"
+    },
+    "googlePlay": {
+      "label": "Get it on"
+    },
+    "ratings": {
+      "ios": "4.8★ IOS",
+      "android": "4.7★ Android"
+    },
+    "notification": "New campaign match!"
+  },
+  "ApplyCampaignForm": {
+    "errors": {
+      "alreadyApplied": "You have already applied to this campaign.",
+      "planLimitDefault": "You've reached your plan's monthly application limit.",
+      "submitFailed": "Failed to submit application"
+    },
+    "success": {
+      "title": "Application Submitted!",
+      "body": "Your application is now under review. You'll be notified when the brand responds."
+    },
+    "header": {
+      "title": "Apply for Campaign",
+      "campaignFallback": "Campaign",
+      "brandFallback": "Brand"
+    },
+    "planLimit": {
+      "hint": "Upgrade your plan to apply to more campaigns this month.",
+      "cta": "Upgrade plan →"
+    },
+    "profile": {
+      "heading": "Your Profile",
+      "autoFilled": "Auto-filled",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone",
+      "instagram": "Instagram",
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "notSet": "Not set",
+      "notConnected": "Not connected"
+    },
+    "mediaKit": {
+      "heading": "Media Kit",
+      "view": "View Media Kit",
+      "published": "Published",
+      "notPublished": "Media kit not published yet",
+      "generate": "Generate Media Kit"
+    },
+    "rate": {
+      "heading": "Your Proposed Rate",
+      "placeholder": "Enter your rate for this campaign",
+      "budget": "Campaign budget: {budget}"
+    },
+    "why": {
+      "heading": "Why should we choose you?",
+      "placeholder": "Tell the brand why you're the perfect fit for this campaign..."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "submit": "Submit Application",
+      "submitting": "Submitting..."
+    },
+    "briefing": {
+      "heading": "Before you apply",
+      "committing": "What you're committing to",
+      "campaignType": "Campaign type",
+      "pay": "Pay",
+      "worth": "Worth",
+      "youGet": "You get",
+      "hashtags": "Hashtags",
+      "tag": "Tag"
+    },
+    "chips": {
+      "applyBy": "Apply by {date}",
+      "deliverBy": "Deliver by {date}",
+      "productShipped": "Product shipped",
+      "productShippedDays": "Product shipped ({days}d)",
+      "pickupRequired": "Pickup required"
+    },
+    "terms": {
+      "usage": "Usage: {value}",
+      "payment": "Payment: {value}",
+      "exclusivity": "No competing brands for {days}d"
+    },
+    "usageRights": {
+      "creator_only": "Influencer's page only",
+      "brand_repost": "Brand can repost",
+      "paid_ads": "Brand can use in paid ads",
+      "full_rights": "Full rights transfer"
+    },
+    "paymentTimeline": {
+      "advance": "Advance",
+      "on_approval": "On content approval",
+      "7_days": "Within 7 days of posting",
+      "30_days": "Within 30 days"
+    }
+  },
+  "ApplyCampaignNotLoggedIn": {
+    "header": {
+      "title": "Creator Application",
+      "step": "Step {step} of {total}"
+    },
+    "steps": {
+      "basicInfo": "Basic Information",
+      "contentDetails": "Content Details",
+      "socialMetrics": "Social Metrics",
+      "shipping": "Shipping & Agreement"
+    },
+    "fields": {
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone (WhatsApp)",
+      "ageGroup": "Age Group",
+      "gender": "Gender",
+      "primaryNiche": "Primary Niche",
+      "secondaryNiches": "Secondary Niches",
+      "contentStyles": "Content Styles (Select multiple)",
+      "faceVideos": "Do you do face videos?",
+      "instaLink": "Instagram Profile Link",
+      "instaUsername": "Instagram Username",
+      "followerTier": "Follower Tier",
+      "followersExact": "Followers (Exact)",
+      "primaryLanguage": "Primary Language",
+      "typeLanguage": "Type your language",
+      "state": "State",
+      "city": "City",
+      "pincode": "Pincode",
+      "residentialAddress": "Full Residential Address"
+    },
+    "placeholders": {
+      "instaUsername": "@username",
+      "followersExact": "e.g. 10200",
+      "residentialAddress": "House No, Street, Landmark..."
+    },
+    "select": {
+      "placeholder": "Select Option"
+    },
+    "agreement": "<b>Important:</b> I understand the agency role is to connect creators with brands. Commercials and payments are handled directly by the brand/agency. I agree to the terms.",
+    "success": {
+      "title": "Application Submitted!",
+      "subtitle": "We have received your details for the master database."
+    },
+    "buttons": {
+      "back": "Back",
+      "submitting": "Submitting...",
+      "submit": "Submit Application",
+      "finish": "Finish",
+      "next": "Next Step"
+    },
+    "errors": {
+      "submitFailed": "Submission failed. Please try again."
+    }
+  },
+  "AuthRegister": {
+    "subtitle": "Create your account to start collaborating",
+    "tabs": {
+      "brand": "Brand",
+      "influencer": "Influencer"
+    },
+    "fullName": "Full Name",
+    "namePlaceholder": "John Doe",
+    "mobileNumber": "Mobile Number",
+    "instagramHandle": "Instagram Handle",
+    "instagramPlaceholder": "@username",
+    "verified": "Verified",
+    "verify": "Verify",
+    "checked": "Checked",
+    "validate": "Validate",
+    "followers": "{count} followers",
+    "processing": "Processing...",
+    "createAccount": "Create Account",
+    "haveAccount": "Already have an account?",
+    "login": "Login",
+    "otp": {
+      "title": "Verify Phone Number",
+      "subtitle": "Enter the 6-digit code sent to your phone",
+      "verifying": "Verifying...",
+      "confirm": "Confirm Code"
+    },
+    "success": {
+      "title": "Registration Complete!",
+      "message": "Your profile has been created successfully. Let's finish your bio.",
+      "continue": "Continue to Onboarding"
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "invalidPhone": "Enter a valid phone number",
+      "instagramRequired": "Instagram handle is required",
+      "sendOtpFailed": "Failed to send OTP. Please check the number.",
+      "invalidOtp": "Invalid OTP code.",
+      "verifyPhoneFirst": "Please verify phone first.",
+      "validateInstagramFirst": "Please validate Instagram first.",
+      "databaseError": "Database error. Try again."
+    }
+  },
+  "BackButton": {
+    "back": "Back"
+  },
+  "BookingForm": {
+    "title": "Apply for This Campaign",
+    "campaignPrefix": "Campaign:",
+    "submit": "Submit Application",
+    "submitFailed": "Failed to submit. Please try again.",
+    "termsAgreement": "I agree to the <terms>terms</terms> and will post content within 7 days.",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "instagram": "Instagram URL",
+      "niche": "Niche",
+      "contentType": "Type",
+      "why": "Your Plan"
+    },
+    "placeholders": {
+      "name": "John Doe",
+      "email": "example@gmail.com",
+      "instagram": "https://instagram.com/...",
+      "select": "Select",
+      "why": "Tell us your content ideas..."
+    },
+    "niches": {
+      "travel": "Travel",
+      "lifestyle": "Lifestyle",
+      "food": "Food",
+      "fashion": "Fashion"
+    },
+    "contentTypes": {
+      "reels": "Reels",
+      "posts": "Posts",
+      "vlog": "Vlog"
+    },
+    "success": {
+      "title": "Applied Successfully!",
+      "description": "The brand has been notified. You can track your status in your dashboard.",
+      "close": "Close"
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "invalidEmail": "Enter a valid email",
+      "invalidInstagram": "Enter a valid Instagram URL",
+      "selectNiche": "Please select a niche",
+      "selectContentType": "Please select content type",
+      "whyTooShort": "Please tell us a bit more about your plan",
+      "acceptTerms": "You must accept the terms to continue"
+    }
+  },
+  "BrandsBrandAccountActionsModal": {
+    "title": {
+      "delete": "Delete Account",
+      "deactivate": "Deactivate Account"
+    },
+    "subtitle": {
+      "delete": "30-day grace period — admin can restore on request",
+      "deactivate": "Reversible — sign back in any time"
+    },
+    "close": "Close",
+    "deleteInfo": {
+      "heading": "This is a soft delete with a 30-day grace window.",
+      "point1": "• Your brand and all related data is hidden immediately.",
+      "point2": "• Sign-in is blocked while the account is pending deletion.",
+      "point3": "• Email <email>grievance@rgossips.com</email> within 30 days if you want it restored.",
+      "point4": "• After 30 days, the account, campaigns, applications and contact details are permanently removed."
+    },
+    "deactivateInfo": {
+      "heading": "Deactivating is reversible.",
+      "point1": "• Your brand stops appearing to creators.",
+      "point2": "• Active campaigns are paused.",
+      "point3": "• Signing in again with the same number reactivates everything automatically."
+    },
+    "reasonHeading": {
+      "delete": "Tell us why you're leaving",
+      "deactivate": "Tell us why you're taking a break"
+    },
+    "reasonSubtext": "This helps us improve RGossips.",
+    "reasonsDeactivate": {
+      "break": "Taking a break from campaigns",
+      "otherPlatform": "Found another platform",
+      "privacy": "Privacy concerns",
+      "notFindingCreators": "Not finding the right creators",
+      "tooManyNotifications": "Too many notifications",
+      "security": "Account security issues",
+      "other": "Other"
+    },
+    "reasonsDelete": {
+      "closingBusiness": "Closing the business",
+      "movingPlatform": "Moving to a different platform",
+      "privacy": "Privacy concerns",
+      "createdByMistake": "Created the account by mistake",
+      "duplicate": "Duplicate account",
+      "other": "Other"
+    },
+    "confirmCheckbox": {
+      "delete": "I understand my account will be hidden now and permanently removed after 30 days unless I contact admin.",
+      "deactivate": "I understand my account will be deactivated and creators will no longer see my brand."
+    },
+    "typeToConfirm": "Type <hl>DELETE</hl> to confirm",
+    "actions": {
+      "cancel": "Cancel",
+      "working": "Working…",
+      "deleteAccount": "Delete Account",
+      "deactivate": "Deactivate"
+    },
+    "errors": {
+      "failedToSubmit": "Failed to submit"
+    }
+  },
+  "BrandsBrandHelpAndSupport": {
+    "header": {
+      "title": "Help & Support",
+      "subtitle": "FAQs and contact options"
+    },
+    "close": "Close",
+    "search": {
+      "placeholder": "Search the FAQs…"
+    },
+    "contactUs": "Contact Us",
+    "labels": {
+      "email": "Email"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions"
+    },
+    "noMatches": "No matches for \"{query}\"",
+    "noMatchesHint": "Try a different keyword or message us on WhatsApp.",
+    "faqs": {
+      "gettingStarted": {
+        "title": "Getting Started",
+        "items": {
+          "postFirstCampaign": {
+            "q": "How do I post my first campaign?",
+            "a": "Click the purple Post Requirement button in the sidebar (or any Create Campaign CTA) to launch the campaign builder. Set your brief, budget, deliverables and deadline — campaigns go live in under 10 minutes."
+          },
+          "findInfluencers": {
+            "q": "How do I find the right influencers?",
+            "a": "Use Find Creators in the sidebar. You can filter by category, follower count, location, engagement and gender, then sort by relevance, followers or recent activity."
+          },
+          "matching": {
+            "q": "How does the matching work?",
+            "a": "We surface creators whose audience demographics, niche and recent performance line up with your brief. Featured creators on the home page are hand-picked by our team."
+          }
+        }
+      },
+      "payments": {
+        "title": "Payments & Pricing",
+        "items": {
+          "freeForBrands": {
+            "q": "Is it free for brands?",
+            "a": "Yes — brands pay zero subscription. You only pay the creator's negotiated rate plus any platform fee on completion of the campaign."
+          },
+          "paymentsHandled": {
+            "q": "How are payments handled?",
+            "a": "Payments are held in escrow when you approve a creator's deliverables, then released to them within 7–10 business days. No money leaves your account until you confirm the work."
+          },
+          "gstDetails": {
+            "q": "How do I add or change my GST details?",
+            "a": "Brand profiles capture GSTIN automatically during signup. To update it, contact us via the WhatsApp channel below and we'll help you re-verify."
+          }
+        }
+      },
+      "campaigns": {
+        "title": "Campaign Management",
+        "items": {
+          "reviewApplications": {
+            "q": "How do I review applications?",
+            "a": "Open the campaign from Campaigns → it lists every applicant with their media kit and rate. Approve or decline directly from there."
+          },
+          "revisions": {
+            "q": "Can I request revisions on deliverables?",
+            "a": "Yes. When a creator submits, you can approve or request a revision with a note. They'll be notified and resubmit."
+          },
+          "creatorDark": {
+            "q": "What if a creator goes dark?",
+            "a": "Use the contact button on their application card to ping them, or message us via WhatsApp and we'll chase them on your behalf."
+          }
+        }
+      },
+      "account": {
+        "title": "Account & Privacy",
+        "items": {
+          "whoSeesProfile": {
+            "q": "Who can see my brand profile?",
+            "a": "Influencers see the brand name, logo, categories and active campaigns. Internal contacts, GSTIN and payment details are private."
+          },
+          "teamMembers": {
+            "q": "Can I have multiple team members?",
+            "a": "Multi-seat brand accounts are on our roadmap. For now, one phone number = one brand account. Ping us if you need a workaround."
+          }
+        }
+      }
+    }
+  },
+  "BrandsBrandHero": {
+    "welcomeBack": "Welcome back",
+    "inviteEarn": "Invite & Earn ₹2500",
+    "heading": "Connect with the <br></br>right creators, <accent>fast.</accent>",
+    "agenciesCount": "2800+ Agencies",
+    "browseCreators": "Browse Creators",
+    "postRequirements": "Post Requirements",
+    "trustedByAgencies": "Trusted by 2800+ Agencies",
+    "trustScoreLabel": "Your Trust Score",
+    "trustInfoAria": "How is the trust score calculated?",
+    "trustInfoTitle": "How is this calculated?",
+    "coldStartNote": "Capped at {cap} · 3 campaigns to lift"
+  },
+  "BrandsBrandNavbar": {
+    "aria": {
+      "goHome": "Go to home page"
+    },
+    "searchPlaceholder": "Search creators by name, username or category…",
+    "notifications": {
+      "title": "Notifications",
+      "markAllRead": "Mark all read",
+      "empty": "No notifications",
+      "showAll": "Show All Notifications"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "viewProfile": "View profile",
+      "logout": "Log Out"
+    },
+    "defaultBrandName": "Brand",
+    "time": {
+      "now": "now",
+      "minutes": "{min}m",
+      "hours": "{hr}h",
+      "days": "{day}d"
+    }
+  },
+  "BrandsCampaignId": {
+    "common": {
+      "creator": "Creator",
+      "cancel": "Cancel",
+      "close": "Close",
+      "deliverableN": "Deliverable {n}"
+    },
+    "campaignFallback": "Campaign",
+    "copyOfTitle": "Copy of {title}",
+    "errors": {
+      "loadFailed": "Failed to load campaign",
+      "notFound": "Campaign not found",
+      "updateStatusFailed": "Failed to update status",
+      "deleteHasApplications": "A creator applied to this campaign just now, so it can't be deleted.",
+      "deleteFailed": "Failed to delete campaign",
+      "updateFailed": "Failed to update",
+      "noAcceptedOffer": "No accepted offer amount on this application.",
+      "escrowCreateFailed": "Could not create escrow.",
+      "razorpayLoadFailed": "Razorpay Checkout failed to load. Check your network and try again.",
+      "paymentFailed": "Payment failed. Please try again.",
+      "somethingWrong": "Something went wrong.",
+      "releaseFailed": "Could not release payment."
+    },
+    "loading": {
+      "updatingStatus": "Updating status to {status}…",
+      "deletingCampaign": "Deleting campaign…",
+      "updatingApplication": "Updating application…",
+      "preparingEscrow": "Preparing escrow…",
+      "confirmingPayment": "Confirming payment…",
+      "releasingPayment": "Releasing payment…"
+    },
+    "actions": {
+      "goBack": "Go back",
+      "edit": "Edit",
+      "delete": "Delete",
+      "approveWithPrice": "Approve with Price",
+      "reject": "Reject",
+      "accept": "Accept",
+      "revision": "Revision",
+      "payToEscrow": "Pay ₹{amount} to Escrow",
+      "approveRelease": "Approve & Release Payment"
+    },
+    "tooltips": {
+      "editLocked": "Editing locked — see options",
+      "edit": "Edit campaign",
+      "delete": "Delete campaign",
+      "refresh": "Refresh"
+    },
+    "statusBadge": {
+      "deadlinePassed": "DEADLINE PASSED"
+    },
+    "match": {
+      "perfect": "{count, plural, one {# influencer match perfectly to your needs.} other {# influencers match perfectly to your needs.}}",
+      "notified": "They've been notified. Tap to open Find Creators with these filters prefilled.",
+      "noneTitle": "No influencers currently match this brief.",
+      "noneSubtitle": "Try broadening categories, the follower band, or target cities. Tap to open Find Creators with the current filters."
+    },
+    "stats": {
+      "budgetPerInfluencer": "Budget / Influencer",
+      "totalBudget": "Total Budget",
+      "slots": "Slots",
+      "deadline": "Deadline"
+    },
+    "sections": {
+      "contentDeliverables": "Content Deliverables [per Creator]",
+      "influencerRequirements": "Influencer Requirements",
+      "schedule": "Schedule",
+      "gallery": "Gallery"
+    },
+    "deliverables": {
+      "reels": "Reels",
+      "posts": "Posts",
+      "stories": "Stories",
+      "videos": "Videos"
+    },
+    "requirements": {
+      "followers": "Followers",
+      "tier": "Tier",
+      "tierAll": "All",
+      "minEngagement": "Min. Engagement",
+      "location": "Location",
+      "panIndia": "Pan India"
+    },
+    "schedule": {
+      "start": "Start",
+      "applicationDeadline": "Application Deadline",
+      "campaignEnd": "Campaign End"
+    },
+    "applications": {
+      "heading": "Applications",
+      "empty": "No applications yet.",
+      "emptyHint": "Creators will appear here once they apply."
+    },
+    "appStatus": {
+      "applied": "Applied",
+      "offerSent": "Offer Sent",
+      "offerAcceptedPay": "Offer Accepted — Pay",
+      "withdrawn": "Withdrawn",
+      "approved": "Approved",
+      "submitted": "Submitted",
+      "revisionNeeded": "Revision Needed",
+      "accepted": "Accepted",
+      "live": "Live",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "statusActions": {
+      "activate": "Activate",
+      "pause": "Pause",
+      "complete": "Complete",
+      "resume": "Resume",
+      "completedNote": "This campaign is completed."
+    },
+    "gallery": {
+      "previous": "Previous",
+      "next": "Next",
+      "imageAlt": "Gallery {n}"
+    },
+    "row": {
+      "followers": "followers",
+      "held": "held"
+    },
+    "panel": {
+      "yourRating": "Your rating",
+      "creatorDetails": "Creator Details",
+      "mediaKit": "Media Kit",
+      "bio": "Bio",
+      "categories": "Categories",
+      "rejectionReason": "Rejection Reason",
+      "submissions": "Submissions"
+    },
+    "facts": {
+      "fullName": "Full Name",
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "posts": "Posts",
+      "location": "Location",
+      "email": "Email",
+      "proposedRate": "Proposed Rate",
+      "yourOffer": "Your Offer",
+      "agreedRate": "Agreed Rate"
+    },
+    "actionMsgs": {
+      "offerSent": "Offer of ₹{amount} sent — waiting for the creator to accept.",
+      "withdrew": "The creator withdrew from this campaign.",
+      "waitingSubmission": "Waiting for submission…",
+      "waitingResubmit": "Waiting for creator to re-submit…",
+      "draftsAccepted": "Drafts accepted — waiting for the creator to post live.",
+      "paymentReleased": "Campaign completed. Payment released to the creator."
+    },
+    "offerForm": {
+      "label": "Your Offer (₹)",
+      "hint": "The creator can accept or withdraw — no counter-offers. You'll pay into escrow only after they accept.",
+      "send": "Send Offer"
+    },
+    "rejectForm": {
+      "label": "Reason (optional)",
+      "placeholder": "Briefly explain why...",
+      "confirm": "Confirm Reject"
+    },
+    "revisionForm": {
+      "title": "Select deliverables needing revision",
+      "placeholder": "What needs to change?",
+      "send": "Send for Revision"
+    },
+    "rating": {
+      "title": "Rate this collaboration",
+      "subtitle": "Share your experience working with {name} before approving payment.",
+      "sectionLabel": "How would you rate {name}?",
+      "primaryCta": "Submit & Release Payment",
+      "secondaryCta": "Skip & Approve"
+    },
+    "razorpay": {
+      "escrowDescription": "Escrow for {name}"
+    },
+    "popups": {
+      "enterAmount": {
+        "title": "Enter an amount",
+        "message": "Please enter an offer amount first."
+      },
+      "sessionExpired": {
+        "title": "Session expired",
+        "message": "Please sign in again and retry."
+      },
+      "nothingSelected": {
+        "title": "Nothing selected",
+        "message": "Select at least one deliverable that needs revision."
+      }
+    },
+    "journey": {
+      "pending": "Applied",
+      "offer_sent": "Offer sent",
+      "offer_accepted": "Offer accepted by creator",
+      "withdrawn": "Creator withdrew",
+      "approved": "Escrow funded — work started",
+      "submitted": "Drafts submitted",
+      "revision_needed": "Revision requested",
+      "accepted": "Drafts accepted",
+      "live_submitted": "Posted live",
+      "payment": "Payment released",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "journeyModal": {
+      "subtitle": "Application journey & review",
+      "journey": "Journey",
+      "loadingHistory": "Loading history…",
+      "noHistory": "No history recorded yet.",
+      "proposed": "Proposed ₹{amount}",
+      "by": "by {role}"
+    },
+    "notEditable": {
+      "title": "This campaign can't be edited",
+      "body": "{count, plural, one {# creator has already applied to this campaign, so the brief is locked to protect them.} other {# creators have already applied to this campaign, so the brief is locked to protect them.}} You can pause it to stop new applications, or duplicate it — the create form opens prefilled with this campaign's details for you to tweak before saving.",
+      "alreadyPaused": "Already Paused",
+      "pauseCampaign": "Pause Campaign",
+      "duplicate": "Duplicate as New"
+    },
+    "deleteModal": {
+      "title": "Delete this campaign?",
+      "body": "<b>{title}</b> will be permanently removed. No creators have applied yet, so this is safe — but there's no undo.",
+      "deleting": "Deleting…",
+      "confirm": "Delete Campaign"
+    }
+  },
+  "BrandsCampaigns": {
+    "title": "Campaigns",
+    "subtitle": "Manage your campaign requests",
+    "newCampaign": "New Campaign",
+    "searchPlaceholder": "Search campaigns...",
+    "createCampaign": "Create Campaign",
+    "create": "Create",
+    "tabs": {
+      "all": "All",
+      "active": "Live",
+      "draft": "Drafts",
+      "paused": "Paused",
+      "completed": "Completed"
+    },
+    "empty": {
+      "noMatch": "No campaigns match",
+      "noCampaigns": "No campaigns yet",
+      "noMatchHint": "Try a different search or filter.",
+      "noCampaignsHint": "Create your first campaign to start connecting with creators."
+    }
+  },
+  "BrandsChats": {
+    "title": "Messages",
+    "runningProjects": "{count} Running Projects",
+    "searchPlaceholder": "Search or start a new chat",
+    "tabs": {
+      "All": "All",
+      "Unread": "Unread",
+      "Pinned": "Pinned",
+      "Campaigns": "Campaigns"
+    },
+    "regarding": "Regarding:",
+    "typePlaceholder": "Type a message...",
+    "emptyState": "Select a conversation to start chatting",
+    "contacts": {
+      "faisal": {
+        "campaign": "Food Campaign",
+        "lastMsg": "Hey, I can do this in 2 days"
+      },
+      "sarah": {
+        "campaign": "Skincare Launch",
+        "lastMsg": "Let me check the brief again."
+      },
+      "arjun": {
+        "campaign": "Tech Review",
+        "lastMsg": "I'll send the draft by tonight"
+      },
+      "priya": {
+        "campaign": "Fashion Week",
+        "lastMsg": "Can we reschedule the shoot?"
+      },
+      "ravi": {
+        "campaign": "Fitness Brand",
+        "lastMsg": "The content is ready for review"
+      },
+      "meera": {
+        "campaign": "Travel Vlog",
+        "lastMsg": "Uploaded the final cut!"
+      }
+    },
+    "messages": {
+      "msg1": "Oh, hello! All perfectly, I will check it and get back to you soon",
+      "msg2": "Oh, hello! All perfectly, I will check it and get back to you soon",
+      "msg3": "Oh, hello! All perfectly, I will check it and get back to you soon",
+      "msg5": "Oh, hello! All perfectly, I will check it and get back to you soon"
+    }
+  },
+  "BrandsCreateCampaignDialog": {
+    "title": {
+      "edit": "Edit Campaign",
+      "create": "New Campaign"
+    },
+    "subhead": {
+      "edit": "Saved changes go live immediately unless the campaign is paused",
+      "create": "Will be saved as a draft unless you publish"
+    },
+    "descriptionTemplate": "What is this campaign about?\n\nWhat do you want the influencer to highlight?\n\nAny specific messaging or hashtags?",
+    "usageRights": {
+      "creator_only": "Influencer's page only",
+      "brand_repost": "Brand can repost",
+      "paid_ads": "Brand can use in paid ads",
+      "full_rights": "Full rights transfer"
+    },
+    "paymentTimelines": {
+      "advance": "Advance",
+      "on_approval": "On content approval",
+      "7_days": "Within 7 days of posting",
+      "30_days": "Within 30 days"
+    },
+    "keepupDurations": {
+      "24h": "24 hours (stories)",
+      "7d": "7 days",
+      "30d": "30 days",
+      "permanent": "Permanent"
+    },
+    "exclusivityPeriods": {
+      "0": "No exclusivity",
+      "7": "7 days",
+      "15": "15 days",
+      "30": "30 days",
+      "60": "60 days",
+      "90": "90 days"
+    },
+    "errors": {
+      "titleRequired": "Title is required",
+      "bannerRequired": "Add a campaign banner before publishing — it's the cover image creators see.",
+      "platformRequired": "Select at least 1 platform",
+      "deliverableRequired": "Add at least 1 deliverable (reels, posts, stories, videos or blogs)",
+      "categoryRequired": "Select at least 1 category",
+      "startDateRequired": "Start date is required",
+      "deadlineRequired": "Application deadline is required",
+      "endDateRequired": "Campaign end date is required",
+      "deadlineBeforeEnd": "Deadline must be on or before the campaign end date",
+      "fixHighlighted": "Please fix the highlighted fields below.",
+      "signedIn": "You must be signed in",
+      "sessionNotReady": "Your session isn't ready yet. Wait a moment and try again — or sign in again if this persists.",
+      "saveChangesFailed": "Failed to save changes",
+      "createFailed": "Failed to create campaign",
+      "bannerTooLarge": "Banner image too large — please pick a file under 15MB.",
+      "gallerySkipped": "{count, plural, one {# image} other {# images}} skipped — each file must be under 15MB."
+    },
+    "busy": {
+      "saving": "Saving changes...",
+      "publishing": "Publishing campaign...",
+      "savingDraft": "Saving draft...",
+      "uploadingBanner": "Uploading banner...",
+      "uploadingGallery": "Uploading gallery image {index} of {total}..."
+    },
+    "sections": {
+      "basicInfo": "Basic info",
+      "productService": "Product / service",
+      "bannerImage": "Banner image",
+      "gallery": "Gallery",
+      "platforms": "Platforms",
+      "deliverables": "Content deliverables [per Creator]",
+      "categories": "Categories",
+      "influencerRequirements": "Influencer requirements",
+      "locations": "Locations",
+      "audiencePreferences": "Audience preferences",
+      "contentGuidelines": "Content guidelines",
+      "termsRights": "Terms & rights",
+      "schedule": "Schedule"
+    },
+    "fields": {
+      "title": "Title",
+      "description": "Description",
+      "descriptionHint": "Helps creators understand what you need",
+      "campaignType": "Campaign Type",
+      "slots": "Slots",
+      "slotsHint": "Number of creators",
+      "budgetTotal": "Budget (Total)",
+      "budgetPerInfluencer": "Budget / Influencer",
+      "budgetPerInfluencerHint": "Auto-calculated",
+      "productValue": "Product value (approx.)",
+      "productValueHint": "Helps creators evaluate the offer",
+      "whatPromoting": "What are you promoting?",
+      "willShip": "Will product be shipped?",
+      "shippingTimeline": "Shipping timeline (days)",
+      "serviceLocation": "Service location",
+      "serviceLocationHint": "Where the influencer experiences the service",
+      "compensationDetails": "What does the influencer get? (compensation details)",
+      "influencerTier": "Influencer Tier",
+      "influencerTierHint": "Auto-fills follower range",
+      "minEngagement": "Min. Engagement Rate (%)",
+      "minFollowers": "Min. Followers",
+      "maxFollowers": "Max. Followers",
+      "preferredGender": "Preferred gender",
+      "preferredLanguages": "Preferred languages",
+      "mustInclude": "Must include (Do's)",
+      "mustIncludeHint": "What every creator must show or mention",
+      "mustAvoid": "Must avoid (Don'ts)",
+      "mustAvoidHint": "Eliminates 80% of revisions",
+      "requiredHashtags": "Required hashtags",
+      "brandHandles": "Brand handle(s) to tag",
+      "usageRightsLabel": "Content usage rights",
+      "keepupLabel": "Content keep-up duration",
+      "exclusivityLabel": "Exclusivity (no competing brands)",
+      "paymentTimelineLabel": "Payment timeline",
+      "startDate": "Start Date",
+      "applicationDeadline": "Application Deadline",
+      "campaignEndDate": "Campaign End Date"
+    },
+    "campaignTypeOptions": {
+      "barter": "Barter",
+      "paid": "Paid",
+      "hybrid": "Hybrid"
+    },
+    "offeringOptions": {
+      "product": "📦 Product",
+      "service": "🛎️ Service / Experience"
+    },
+    "shippingOptions": {
+      "no": "No",
+      "yes": "Yes",
+      "pickup": "Pickup required"
+    },
+    "tierOptions": {
+      "all": "All Tiers",
+      "nano": "Nano (1K-10K)",
+      "micro": "Micro (10K-100K)",
+      "macro": "Macro (100K-1M)",
+      "mega": "Mega (1M+)"
+    },
+    "deliverableLabels": {
+      "num_reels": "Reels",
+      "num_posts": "Posts",
+      "num_stories": "Stories",
+      "num_videos": "Videos",
+      "num_blogs": "Blogs"
+    },
+    "placeholders": {
+      "title": "e.g. Summer Fashion 2026",
+      "productNameProduct": "e.g. \"Moisturizing cream — 50ml tube\"",
+      "productNameService": "e.g. \"Weekend stay at our Mussoorie resort\"",
+      "compensationProduct": "e.g. \"Full skincare kit worth ₹3,500\"",
+      "compensationService": "e.g. \"Free 2-night stay + meals + spa session\"",
+      "serviceLocation": "e.g. \"Mussoorie, India\" or \"Online / virtual\"",
+      "contentDos": "e.g. \"Show product packaging, mention discount code SAVE20\"",
+      "contentDonts": "e.g. \"Don't show competitor products, no copyrighted music\"",
+      "requiredHashtags": "#RGossips #Ad #Paidpartnership",
+      "brandHandles": "@yourbrand"
+    },
+    "banner": {
+      "replace": "Replace",
+      "clickToUpload": "Click to upload",
+      "fileHint": "PNG, JPG, WebP up to 10MB",
+      "previewAlt": "Banner preview",
+      "alt": "Banner"
+    },
+    "galleryUi": {
+      "addImages": "Add gallery images",
+      "imageAlt": "Gallery {index}",
+      "count": "{count, plural, one {# image} other {# images}}"
+    },
+    "platformsSelected": "{count} selected",
+    "deliverablesCount": "{count, plural, one {# piece} other {# pieces}}",
+    "categoriesSelected": "{count} of {total} selected",
+    "allIndia": "All India",
+    "allIndiaNote": "Open to all creators across India.",
+    "scheduleNote": "Application deadline is the last day to apply. Campaign end date is when all content must be delivered.",
+    "footer": {
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saveDraft": "Save Draft",
+      "publish": "Publish"
+    }
+  },
+  "BrandsCreatorCTASection": {
+    "heading": "Home of creator collaborations.",
+    "subheading": "One place. Every Creator Need 🎯",
+    "talkToUs": "Talk to us",
+    "followUs": "Follow us",
+    "copyright": "© 2026 recentgossips. All rights reserved.",
+    "whatsappUs": "WhatsApp Us",
+    "followUsButton": "Follow Us"
+  },
+  "BrandsFeaturedCampaign": {
+    "featuredMatch": "Featured Match",
+    "jobTitle": "Influencer Marketing Associate @ Thn",
+    "lookingFor": "Looking For",
+    "role": "Photographers & Videographers",
+    "stats": {
+      "dateLabel": "Date",
+      "dateValue": "20th March, Friday",
+      "timeLabel": "Time",
+      "timeValue": "5 PM",
+      "budgetLabel": "Budget",
+      "budgetValue": "INR Under 4,000"
+    }
+  },
+  "BrandsFilterDrawer": {
+    "filterButton": "Filter",
+    "title": "All Filters",
+    "subtitle": "Refine your search",
+    "clearFilters": "Clear Filters",
+    "applyFilters": "Apply Filters",
+    "applyFiltersCount": "Apply Filters ({count})",
+    "filterBy": "Filter by {field}",
+    "optionsCount": "{count} Options",
+    "optionsFiltered": "{shown} / {total} Options",
+    "searchPlaceholder": "Search {field}..."
+  },
+  "BrandsInfluencerCard": {
+    "unknown": "Unknown",
+    "openInstagram": "Open Instagram",
+    "openMediaKit": "Open Media Kit"
+  },
+  "BrandsNotifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loading": "Loading notifications...",
+    "empty": {
+      "title": "No notifications yet",
+      "subtitle": "You'll be notified about applications and campaign activity"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    }
+  },
+  "BrandsProfile": {
+    "fallbackBrandName": "Brand",
+    "title": "My Profile",
+    "changeLogo": "Change logo",
+    "categoriesBadge": "{count, plural, one {# category} other {# categories}}",
+    "revertLogo": "Revert logo to default",
+    "revertConfirm": "Revert to your Instagram profile picture? Your custom upload will be replaced.",
+    "addCategories": "Add categories",
+    "edit": "Edit",
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "loading": {
+      "uploadingLogo": "Uploading logo…",
+      "revertingLogo": "Reverting logo…",
+      "savingCategories": "Saving categories…",
+      "savingBrandInfo": "Saving brand information…",
+      "savingContact": "Saving contact details…"
+    },
+    "errors": {
+      "uploadLogo": "Failed to upload logo",
+      "revert": "Failed to revert",
+      "updateCategories": "Failed to update categories: {message}",
+      "save": "Failed to save: {message}"
+    },
+    "completion": {
+      "title": "Profile completion",
+      "addPrefix": "Add",
+      "completeSuffix": "to complete your profile.",
+      "complete": "Your brand profile is fully complete."
+    },
+    "trust": {
+      "title": "Trust score",
+      "infoAria": "How is the trust score calculated?",
+      "infoTitle": "How is this calculated?",
+      "coldStart": "Capped at {cap} · {threshold} campaigns to lift",
+      "blend": "A weighted blend of five pillars — influencer reviews, campaign execution, verification, communication, and platform engagement. Tap the <icon></icon> to see the breakdown."
+    },
+    "trustComponent": {
+      "weight": "{percent}% · {weight} weight"
+    },
+    "sections": {
+      "brandInfo": "Brand Information",
+      "categories": "Categories",
+      "contact": "Contact Details",
+      "social": "Social",
+      "taxLegal": "Tax & Legal Documents",
+      "account": "Account"
+    },
+    "brandInfo": {
+      "legalName": "Legal Name",
+      "tradeName": "Trade Name",
+      "businessType": "Business Type",
+      "registeredAddress": "Registered Address"
+    },
+    "contact": {
+      "addManager": "Add brand manager name",
+      "brandManager": "Brand Manager",
+      "addMobile": "Add business mobile",
+      "businessMobile": "Business Mobile",
+      "addEmail": "Add email address",
+      "email": "Email"
+    },
+    "gst": {
+      "registration": "GST Registration",
+      "goodsServices": "Goods & Services Tax",
+      "gstinNumber": "GSTIN Number",
+      "businessType": "Business Type",
+      "state": "State",
+      "regDate": "Reg. Date",
+      "pincode": "Pincode"
+    },
+    "account": {
+      "logout": "Log Out",
+      "deactivate": "Deactivate Account",
+      "deactivateDesc": "Temporarily hide your brand. Sign back in to restore.",
+      "delete": "Delete Account",
+      "deleteDesc": "Soft delete with a 30-day grace period — admin can restore on request."
+    },
+    "crop": {
+      "title": "Crop Logo",
+      "saving": "Saving...",
+      "zoom": "Zoom"
+    },
+    "categoriesModal": {
+      "title": "Edit Categories",
+      "selectedCount": "{count} selected"
+    },
+    "brandInfoModal": {
+      "title": "Edit Brand Information",
+      "subtitle": "Visible to brands and creators on your profile",
+      "brandName": "Brand Name",
+      "brandNamePlaceholder": "e.g. Recent Gossips",
+      "brandNameHint": "Used everywhere your brand is displayed.",
+      "legalName": "Legal Name",
+      "legalNamePlaceholder": "As per GSTIN",
+      "tradeName": "Trade Name",
+      "tradeNamePlaceholder": "Common name customers know you by",
+      "businessType": "Business Type",
+      "businessTypePlaceholder": "e.g. Private Limited Company",
+      "registeredAddress": "Registered Address",
+      "registeredAddressPlaceholder": "Street, area",
+      "state": "State",
+      "statePlaceholder": "State",
+      "pincode": "Pincode",
+      "pincodePlaceholder": "6-digit pincode",
+      "gstinNote": "These fields were auto-filled from GSTIN <b>{gstin}</b>. Edits override the auto-fill but the original GSTIN is still on file."
+    },
+    "contactModal": {
+      "title": "Edit Contact Details",
+      "subtitle": "Used for campaign messaging and payouts",
+      "brandManager": "Brand Manager",
+      "brandManagerPlaceholder": "Person we'd reach out to",
+      "businessMobile": "Business Mobile",
+      "loginNotEditable": "Login number · not editable",
+      "phoneHelp": "Contact support to change the phone number on your account.",
+      "email": "Email",
+      "emailPlaceholder": "hello@yourbrand.com",
+      "emailHint": "We'll send campaign updates and invoices here.",
+      "invalidEmail": "That doesn't look like a valid email address."
+    }
+  },
+  "BrandsSearch": {
+    "sortBy": "Sort by",
+    "clearSort": "Clear sort",
+    "searchPlaceholder": "Enter Creator by \"Username\"",
+    "emptyTitle": "No influencers found",
+    "emptySubtitle": "Try adjusting your filters or search terms",
+    "resultCount": "Showing {shown} of {total, plural, one {# creator} other {# creators}}",
+    "loading": "Loading...",
+    "loadMore": "Load more ({count} left)"
+  },
+  "BrandsSidebar": {
+    "menu": {
+      "explore": "Explore",
+      "findCreators": "Find Creators",
+      "campaigns": "Campaigns",
+      "profile": "Profile"
+    },
+    "badge": {
+      "live": "LIVE"
+    },
+    "account": {
+      "helpSupport": "Help & Support"
+    },
+    "accountLabel": "Account",
+    "postRequirement": "Post Requirement"
+  },
+  "BrandsTopCreatorCarousel": {
+    "title": "Top Creators",
+    "subtitle": "High impact, low cost",
+    "followersLine": "{location} • {followers} followers"
+  },
+  "BrandsTrustScoreInfoModal": {
+    "close": "Close",
+    "title": "How Your Trust Score Works",
+    "intro": "Your Trust Score is a single number from 300 to 900 that helps influencers see, at a glance, how reliable and rewarding it is to work with your brand.",
+    "scale": {
+      "heading": "The 300–900 Scale",
+      "low": "300 · Building Trust",
+      "mid": "Established",
+      "high": "900 · Elite",
+      "description": "The higher your score, the more visibility and trust your campaigns earn on RGossips. It is built from five factors, each contributing a fixed share:"
+    },
+    "pillars": {
+      "heading": "What goes into it",
+      "items": {
+        "influencerReviews": {
+          "label": "Influencer Reviews",
+          "desc": "Ratings from influencers you've collaborated with — on brief clarity, fair negotiation, quality of feedback, and overall experience."
+        },
+        "campaignExecution": {
+          "label": "Campaign Execution Quality",
+          "desc": "How smoothly you take campaigns from approval to completion — finishing what you start, with minimal back-and-forth."
+        },
+        "verification": {
+          "label": "Verification & Identity",
+          "desc": "How complete your verified business details are (PAN, GSTIN, bank, and more). Fully verified brands rank higher."
+        },
+        "communication": {
+          "label": "Communication Quality",
+          "desc": "How promptly you respond at each step — approving applications, negotiating, and giving draft feedback — and how clear that feedback is."
+        },
+        "platformEngagement": {
+          "label": "Platform Engagement",
+          "desc": "Staying active on RGossips — keeping your profile complete (category, about, logo) and running campaigns."
+        }
+      }
+    },
+    "highlights": {
+      "heading": "Good to know",
+      "items": {
+        "fairToEveryone": {
+          "title": "Fair to everyone.",
+          "desc": "Payment behaviour is never scored — all payments are secured upfront through escrow, so it's identical for every brand."
+        },
+        "newBrands": {
+          "title": "New brands start fairly.",
+          "desc": "Until you complete 3 campaigns, your score is capped at 720 — so it reflects a real, proven track record."
+        },
+        "alwaysCurrent": {
+          "title": "Always current.",
+          "desc": "Your score is recalculated regularly as new reviews, campaigns, and activity come in — improvements show up quickly."
+        }
+      }
+    },
+    "footer": "Your Trust Score is informational and updates automatically. RGossips · operated by Rude Labs Pvt. Ltd."
+  },
+  "BrandsTrustSection": {
+    "searchPlaceholder": "Looking for 10 nano creators, 15L...",
+    "yourTrustScore": "Your Trust Score",
+    "infoAriaLabel": "How is the trust score calculated?",
+    "infoTitle": "How is this calculated?",
+    "scoreOutOf": "/{max}",
+    "coldStartCap": "Capped at {cap} · 3 campaigns to lift"
+  },
+  "CampaignAnalytics": {
+    "title": "Campaign Analytics",
+    "subtitle": "Detailed analytics and performance metrics for all campaigns",
+    "stats": {
+      "totalCampaigns": "Total Campaigns",
+      "active": "Active",
+      "totalViews": "Total Views",
+      "totalEarnings": "Total Earnings",
+      "trendThisMonth": "+3 this month",
+      "trendInProgress": "In progress"
+    },
+    "sections": {
+      "campaignPerformance": "Campaign Performance",
+      "platformDistribution": "Platform Distribution",
+      "performanceByCategory": "Performance by Category",
+      "recentCampaigns": "Recent Campaigns"
+    },
+    "table": {
+      "campaign": "Campaign",
+      "date": "Date",
+      "status": "Status",
+      "views": "Views",
+      "engagement": "Engagement",
+      "revenue": "Revenue"
+    },
+    "categories": {
+      "fashion": "Fashion",
+      "beauty": "Beauty",
+      "tech": "Tech",
+      "lifestyle": "Lifestyle",
+      "campaigns": "{count, plural, one {# campaign} other {# campaigns}}"
+    },
+    "status": {
+      "completed": "Completed",
+      "active": "Active"
+    },
+    "metrics": {
+      "views": "Views",
+      "engagement": "Engagement",
+      "revenue": "Revenue"
+    }
+  },
+  "CampaignCompletedView": {
+    "paymentStatus": "Payment Status",
+    "paid": "Paid",
+    "amount": "Amount",
+    "performanceHighlights": "Performance Highlights",
+    "stats": {
+      "totalViews": "Total Views",
+      "engagement": "Engagement",
+      "reach": "Reach",
+      "saves": "Saves"
+    },
+    "contentDelivered": "Content Delivered",
+    "brandFeedback": "Brand Feedback",
+    "brandPartner": "Brand Partner",
+    "feedbackQuote": "\"Outstanding collaboration! Professional content delivery and exceptional engagement rates. Highly recommend!\"",
+    "congratulations": "Congratulations! 🎉",
+    "completedMessage": "You've successfully completed this campaign with outstanding results.",
+    "shareResults": "Share Results"
+  },
+  "CampaignFilters": {
+    "title": "Filters",
+    "reset": "Reset",
+    "category": "Category",
+    "budgetRange": "Budget Range",
+    "min": "Min",
+    "minValue": "₹10K",
+    "max": "Max",
+    "maxValue": "₹50K",
+    "platforms": "Platforms",
+    "options": "Options",
+    "endingSoon": "Ending Soon",
+    "endingSoonDesc": "Show campaigns ending within 7 days",
+    "verifiedBrandsOnly": "Verified Brands Only",
+    "verifiedBrandsOnlyDesc": "Show only verified brand campaigns",
+    "status": "Status",
+    "applyFilters": "Apply Filters"
+  },
+  "CampaignOverview": {
+    "aboutCampaign": {
+      "title": "About Campaign",
+      "description": "Join us in launching our exclusive Summer Collection! We're looking for fashion-forward influencers who can showcase our latest designs with authentic storytelling and creative content."
+    },
+    "requirements": {
+      "title": "Requirements",
+      "minFollowers": {
+        "label": "Minimum 50k Followers",
+        "sub": "Instagram or YouTube"
+      },
+      "engagement": {
+        "label": "Engagement Rate 3%+",
+        "sub": "Average likes and comments"
+      },
+      "niche": {
+        "label": "Fashion/Lifestyle Niche",
+        "sub": "Content aligned with brand values"
+      },
+      "activeProfile": {
+        "label": "Active Profile",
+        "sub": "Regular posting schedule"
+      }
+    },
+    "payment": {
+      "title": "Payment & Benefits",
+      "verified": "Verified",
+      "basePayment": {
+        "label": "Base Payment"
+      },
+      "performanceBonus": {
+        "label": "Performance Bonus",
+        "sub": "Per 100k+ views"
+      },
+      "productWorth": {
+        "label": "Product Worth ₹5,000",
+        "val": "Free Gift",
+        "sub": "Exclusive items from collection"
+      }
+    },
+    "aboutBrand": {
+      "stats": {
+        "campaigns": "Campaigns",
+        "success": "Success",
+        "response": "Response"
+      }
+    }
+  },
+  "CampaignTimeline": {
+    "title": "Campaign Timeline",
+    "steps": {
+      "applicationReview": {
+        "label": "Application Review",
+        "time": "2-3 days"
+      },
+      "contentCreation": {
+        "label": "Content Creation",
+        "time": "5-7 days"
+      },
+      "brandReview": {
+        "label": "Brand Review",
+        "time": "1-2 days"
+      },
+      "publishContent": {
+        "label": "Publish Content",
+        "time": "1 day"
+      },
+      "paymentRelease": {
+        "label": "Payment Release",
+        "time": "7 days"
+      }
+    },
+    "totalDuration": "Total Duration: 16-20 days",
+    "durationNote": "Timeline includes all phases from application to final payment release."
+  },
+  "CategorySpecificFields": {
+    "hotels": {
+      "title": "Stay Details",
+      "numberOfNights": "Number of Nights",
+      "numberOfDays": "Number of Days",
+      "checkIn": "Check-In",
+      "checkOut": "Check-Out",
+      "guestCapacity": "Guest Capacity",
+      "amenitiesAndServices": "Amenities & Services"
+    },
+    "food": {
+      "title": "Menu Items",
+      "cuisineFallback": "Cuisine",
+      "allergens": "⚠️ Allergens: {allergens}",
+      "serves": "Serves: {persons}",
+      "noItems": "No menu items available"
+    },
+    "tech": {
+      "title": "Product Details",
+      "deviceFallback": "Device",
+      "specsLabel": "Specs:",
+      "marketPrice": "Market Price: {price}",
+      "noItems": "No products available"
+    },
+    "fashion": {
+      "title": "Product Collection",
+      "productFallback": "Product",
+      "availableSizesLabel": "Available Sizes:",
+      "price": "Price: {price}",
+      "noItems": "No products available"
+    }
+  },
+  "CompleteProfileCard": {
+    "title": "Get Your First Brand Deal",
+    "stepsProgress": "{completed}/5 steps —",
+    "allDone": "All done!",
+    "keepGoing": "Keep going!",
+    "services": {
+      "reels": "Reels",
+      "stories": "Stories",
+      "shorts": "YouTube Shorts",
+      "posts": "Static Posts",
+      "ugc": "UGC Videos"
+    },
+    "steps": {
+      "createAccount": {
+        "title": "Create your account",
+        "subtitle": "You're all set"
+      },
+      "connectInstagram": {
+        "title": "Connect Instagram",
+        "subtitleOpening": "Opening Instagram…",
+        "subtitleDefault": "Brands discover you instantly",
+        "action": "Connect"
+      },
+      "mediaKit": {
+        "title": "Generate AI Media Kit",
+        "subtitlePublished": "Published",
+        "subtitleDefault": "Look pro in 60 seconds",
+        "action": "Create"
+      },
+      "rateCard": {
+        "title": "Set your rate card",
+        "subtitleConfigured": "Rates configured",
+        "subtitleDefault": "Know your worth",
+        "action": "Set Rates"
+      },
+      "firstCampaign": {
+        "title": "Apply to first campaign",
+        "subtitleDone": "You're discoverable to brands!",
+        "subtitleDefault": "Land your first deal",
+        "action": "Browse"
+      }
+    },
+    "errors": {
+      "connectionDenied": "Instagram connection was denied",
+      "connectFailed": "Failed to connect Instagram"
+    },
+    "modal": {
+      "title": "Services & Rates",
+      "selectServices": "Select services you offer",
+      "setRates": "Set your rates",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "CreatorCard": {
+    "followers": "followers",
+    "viewOnInstagram": "View on Instagram"
+  },
+  "CreatorWorkspace": {
+    "header": {
+      "title": "Creator Workspace",
+      "subtitle": "Tools and tasks to grow your career",
+      "seeAll": "See all"
+    },
+    "onboarding": {
+      "title": "Onboarding"
+    },
+    "steps": {
+      "createAccount": "Create account",
+      "connectInstagram": "Connect Instagram",
+      "aiMediaKit": "AI Media Kit",
+      "setRateCard": "Set rate card",
+      "firstCampaign": "First campaign"
+    },
+    "creatorTools": {
+      "title": "Creator Tools",
+      "aiPowered": "AI Powered"
+    },
+    "tools": {
+      "captions": "Captions",
+      "hashtags": "Hashtags",
+      "scripts": "Scripts",
+      "rateCard": "Rate Card",
+      "hookIdeas": "Hook Ideas",
+      "briefHelper": "Brief Helper"
+    },
+    "discover": {
+      "title": "Discover",
+      "description": "Find brands and campaigns that match your niche and audience.",
+      "brands": "Brands",
+      "campaigns": "Campaigns",
+      "browseMatches": "Browse Matches"
+    }
+  },
+  "DashboardView": {
+    "header": {
+      "title": "Profile",
+      "subtitle": "Manage your creator account"
+    },
+    "profile": {
+      "creator": "Creator",
+      "removeCustomPhoto": "Remove custom photo",
+      "defaultName": "User"
+    },
+    "stats": {
+      "posts": "Posts",
+      "followers": "Followers",
+      "following": "Following",
+      "totalEarnings": "Total Earnings",
+      "activeCampaigns": "Active Campaigns",
+      "completed": "Completed",
+      "expectedEarnings": "Expected Earnings"
+    },
+    "mediaKit": {
+      "title": "Media Kit",
+      "subtitle": "View or share your published kit"
+    },
+    "support": {
+      "title": "Help & Support",
+      "subtitleDesktop": "FAQs and contact",
+      "subtitleMobile": "FAQs and contact us",
+      "heading": "Support"
+    },
+    "logout": {
+      "button": "Log Out"
+    },
+    "hub": {
+      "title": "Creator Hub",
+      "myProfile": {
+        "title": "My Profile",
+        "sub": "View, edit and manage your profile"
+      },
+      "profileComplete": "Profile Complete",
+      "analytics": {
+        "title": "Campaign Analytics",
+        "sub": "Track performance and campaign insights",
+        "last7Days": "Last 7 Days"
+      },
+      "serviceRequests": {
+        "title": "Service Requests",
+        "sub": "Your quote requests, orders & deliveries",
+        "activeOrders": "Active orders",
+        "viewAll": "View all"
+      }
+    },
+    "settings": {
+      "heading": "Settings",
+      "notifications": {
+        "title": "Notifications",
+        "sub": "Manage alerts and updates"
+      },
+      "privacy": {
+        "title": "Privacy & Security",
+        "sub": "Control your data and access"
+      },
+      "payment": {
+        "title": "Payment Methods",
+        "sub": "Manage payout accounts"
+      },
+      "refer": {
+        "title": "Refer & Earn",
+        "sub": "Share your link, earn Reward Credits"
+      }
+    },
+    "footerTagline": "Recentgossips • Made for creators",
+    "crop": {
+      "cancel": "Cancel",
+      "title": "Crop Photo",
+      "saving": "Saving...",
+      "save": "Save",
+      "zoom": "Zoom"
+    },
+    "logoutModal": {
+      "title": "Log out?",
+      "message": "Are you sure you want to log out?",
+      "cancel": "Cancel",
+      "loggingOut": "Logging out...",
+      "confirm": "Log out"
+    },
+    "errors": {
+      "uploadPhoto": "Failed to upload photo. Please try again."
+    },
+    "plan": {
+      "free": "Free",
+      "starterTrial": "Starter Trial",
+      "activeSubscription": "Active subscription",
+      "trialExpired": "Trial expired",
+      "daysLeft": "{days} days left",
+      "activeBadge": "Active",
+      "expired": "Expired",
+      "trialProgress": "Trial Progress",
+      "daysCount": "{days}/{total} days",
+      "managePlan": "Manage Plan",
+      "upgradeNow": "Upgrade Now"
+    },
+    "rewardCredits": {
+      "title": "Reward Credits",
+      "available": "available",
+      "locked": "+{count} locked"
+    },
+    "completion": {
+      "done": "Profile complete!",
+      "title": "Profile completion",
+      "discoverable": "You're discoverable to brands.",
+      "stepsDone": "{completed}/{total} steps done — keep going!",
+      "accountCreated": "Account created",
+      "instagramConnected": "Instagram connected",
+      "mediaKitPublished": "Media kit published",
+      "rateCardSet": "Rate card set"
+    }
+  },
+  "DealOfTheDay": {
+    "title": "Deal Of The Day",
+    "validTill": "Valid till 25th Jan 2026",
+    "viewDeal": "View Deal"
+  },
+  "DeskTopNavbar": {
+    "goToHomepage": "Go to homepage",
+    "nav": {
+      "home": "Home",
+      "brands": "Brands",
+      "campaigns": "Campaigns",
+      "services": "Services",
+      "profile": "Profile"
+    },
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications",
+    "showAllNotifications": "Show All Notifications",
+    "support": "Support",
+    "logOut": "Log Out",
+    "time": {
+      "now": "now",
+      "minutes": "{n}m",
+      "hours": "{n}h",
+      "days": "{n}d"
+    }
+  },
+  "EditProfilePage": {
+    "editProfile": "Edit Profile",
+    "save": "Save",
+    "profilePicture": "Profile Picture",
+    "changeProfilePhoto": "Change Profile Photo",
+    "photoHint": "JPG, PNG or GIF. Max 5MB",
+    "photoHintMobile": "JPG, PNG or GIF. Max size 5MB",
+    "uploadNewPhoto": "Upload New Photo",
+    "basicInformation": "Basic Information",
+    "bioHint": "Separate each line for better formatting",
+    "contactInformation": "Contact Information",
+    "socialMedia": "Social Media",
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes",
+    "fields": {
+      "displayName": {
+        "label": "Display Name",
+        "placeholder": "Ali | Men's Grooming,"
+      },
+      "subtitle": {
+        "label": "Subtitle",
+        "placeholder": "Skincare & Lifestyle"
+      },
+      "bio": {
+        "label": "Bio",
+        "placeholder": "Tell us about yourself..."
+      },
+      "location": {
+        "label": "Location",
+        "placeholder": "Dehradun"
+      },
+      "email": {
+        "label": "Email Address",
+        "placeholder": "ali@lifestyle.com"
+      },
+      "phone": {
+        "label": "Phone Number",
+        "placeholder": "+91 98765 43210"
+      },
+      "instagram": {
+        "label": "Instagram Handle",
+        "placeholder": "@alifestyleedition"
+      }
+    }
+  },
+  "FAQ": {
+    "badge": "FAQ",
+    "heading": "Frequently Asked <grad>Questions</grad>",
+    "subheading": "Everything you need to know about Recent Gossip",
+    "faqs": {
+      "howItWorks": {
+        "question": "How does Recent Gossip work?",
+        "answer": "Recent Gossip connects brands with top-tier influencers through an automated discovery and campaign management system. We use data-driven insights to ensure the perfect match for your target audience."
+      },
+      "influencerTypes": {
+        "question": "What types of influencers are on the platform?",
+        "answer": "Our network includes nano, micro, macro and celebrity influencers across various niches including Beauty, Finance and Travel primarily on Instagram, TikTok, Snapchat and YouTube."
+      },
+      "cost": {
+        "question": "How much does it cost?",
+        "answer": "Registration is free for both brands and influencers. We offer various tiered partnership models and take a small service fee only when a successful collaboration is completed."
+      },
+      "authenticity": {
+        "question": "How do you verify influencer authenticity?",
+        "answer": "We use advanced AI audit tools to check for fake followers, engagement consistency, and audience demographics to ensure you only work with authentic creators."
+      },
+      "trackPerformance": {
+        "question": "Can I track campaign performance?",
+        "answer": "Yes, our dashboard provides real-time analytics including reach, impressions, click-through rates, and conversion tracking for every influencer in your campaign."
+      },
+      "platforms": {
+        "question": "What platforms do you support?",
+        "answer": "Currently, we provide deep integration with Instagram, TikTok, YouTube, and X (formerly Twitter)."
+      },
+      "payments": {
+        "question": "How are payments handled?",
+        "answer": "Payments are held in a secure escrow system and are only released to the influencer once the brand approves the content delivery as per the agreement."
+      },
+      "contract": {
+        "question": "Is there a contract required?",
+        "answer": "Every collaboration on our platform is protected by a standardized digital agreement that outlines deliverables, timelines, and usage rights."
+      }
+    },
+    "support": {
+      "title": "Still have questions?",
+      "subtitle": "Our team usually replies within a few hours.",
+      "emailButton": "Email Support"
+    },
+    "contact": {
+      "emailLabel": "Email",
+      "whatsappLabel": "WhatsApp",
+      "whatsappValue": "Join the channel",
+      "instagramLabel": "Instagram"
+    }
+  },
+  "FeaturedSection": {
+    "eyebrow": "Featured Products",
+    "heading": "Find Your Special Look With Us",
+    "description": "Adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud. Wiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim.",
+    "imageAlt": "Featured Product"
+  },
+  "FilterModal": {
+    "category": "Category",
+    "selectedCount": "{count} selected",
+    "all": "All",
+    "budgetRange": "Budget Range",
+    "minLabel": "Min ($)",
+    "maxLabel": "Max ($)",
+    "platform": "Platform",
+    "brand": "Brand",
+    "clear": "Clear",
+    "verifiedOnly": "Verified Only",
+    "verifiedOnlyHint": "4.7+ rating brands",
+    "filters": "Filters",
+    "clearAll": "Clear All",
+    "moreCount": "+{count} more",
+    "allFilters": "All Filters",
+    "apply": "Apply",
+    "applyFilters": "Apply Filters"
+  },
+  "GalleryCarousel": {
+    "title": "Gallery",
+    "empty": "No gallery images available",
+    "imageAlt": "Gallery image {number}"
+  },
+  "GatewayPickerModal": {
+    "closeLabel": "Close",
+    "razorpay": {
+      "tagline": "UPI · Cards · Netbanking · Wallets"
+    },
+    "stripe": {
+      "tagline": "International cards · Apple Pay · Google Pay"
+    },
+    "secureCheckoutNote": "You'll go to a secure checkout and return here when you're done."
+  },
+  "HelpAndSupport": {
+    "title": "Help & Support",
+    "searchPlaceholder": "Search the FAQs…",
+    "contactUs": "Contact Us",
+    "liveChat": {
+      "title": "Live Chat",
+      "subtitle": "Chat with our team — usually replies instantly"
+    },
+    "emailSupport": {
+      "title": "Email Support"
+    },
+    "faqHeading": "Frequently Asked Questions",
+    "noMatches": "No matches for \"{query}\"",
+    "noMatchesHint": "Try a different keyword or start a live chat.",
+    "stillStuck": {
+      "title": "Still stuck?",
+      "subtitle": "Open a chat with our support team — for anything an FAQ doesn't cover."
+    },
+    "openLiveChat": "Open Live Chat",
+    "faq": {
+      "gettingStarted": {
+        "title": "Getting Started",
+        "completeProfile": {
+          "q": "How do I complete my profile?",
+          "a": "Open Profile → My Information and fill in your name, categories, location and bio. The progress bar on the profile page tells you what's left."
+        },
+        "howCampaignsWork": {
+          "q": "How do campaigns work?",
+          "a": "Browse open campaigns from the Campaigns tab, apply with a short pitch, and once a brand approves you, post the deliverables and link them inside the campaign detail page."
+        },
+        "dealRequirements": {
+          "q": "What's the requirement to receive deals?",
+          "a": "A connected Instagram (Business / Creator account), a published media kit, and a rate card. The profile completion checklist shows you exactly what's pending."
+        }
+      },
+      "profileInstagram": {
+        "title": "Profile & Instagram",
+        "refreshStats": {
+          "q": "How do I refresh my Instagram stats?",
+          "a": "Profile → tap the Instagram card → Refresh. Stats sync at most once per hour to stay within Instagram's API limits."
+        },
+        "reconnect": {
+          "q": "Instagram says reconnect — why?",
+          "a": "Instagram access tokens expire every 60 days. Opening Profile while signed in usually auto-renews the token; if it's already expired, you'll see a Reconnect button."
+        },
+        "reelsMissing": {
+          "q": "My reels aren't showing up",
+          "a": "Reels only sync from Business / Creator accounts. Switch in the Instagram app under Settings → Account type, then come back and tap Refresh on your Profile."
+        }
+      },
+      "payments": {
+        "title": "Payments",
+        "whenPaid": {
+          "q": "When do I get paid?",
+          "a": "Once the brand approves your live links, payment moves to Payment Released. Funds typically reflect within 7–10 business days."
+        },
+        "addPayoutMethod": {
+          "q": "How do I add a UPI ID or bank account?",
+          "a": "Profile → Payment Methods → Add New. The first method you add becomes your primary payout destination."
+        },
+        "paymentMissing": {
+          "q": "Payment hasn't arrived",
+          "a": "If the campaign is on Payment Released for more than 14 business days, tap Request a callback in support — we'll chase the brand."
+        }
+      },
+      "servicesOrders": {
+        "title": "Services & Orders",
+        "customQuote": {
+          "q": "How does Get Custom Quote work?",
+          "a": "Pick a service, submit the brief, and the seller replies with a quote. Once you accept and pay the advance via Stripe, work begins."
+        },
+        "trackOrders": {
+          "q": "Where do I track my orders?",
+          "a": "Profile → Service Requests, or jump straight to /influencer/services/orders. Each order has its own page with status and payment breakdown."
+        },
+        "requestRevision": {
+          "q": "Can I request a revision?",
+          "a": "Yes. While the draft is in review, open the order and tap Request Revision. You'll be asked to describe what to change."
+        }
+      },
+      "accountPrivacy": {
+        "title": "Account & Privacy",
+        "takeBreak": {
+          "q": "How do I take a break without losing my data?",
+          "a": "Profile → Privacy & Security → Deactivate Account. Your data is preserved; signing in with the same phone reactivates everything."
+        },
+        "removeDevice": {
+          "q": "How do I remove a device that's logged in?",
+          "a": "Profile → Privacy & Security → Trusted Devices. Tap Remove on any device that isn't yours."
+        },
+        "notificationPrefs": {
+          "q": "Where are notification preferences?",
+          "a": "Profile → Notifications. Toggles persist immediately and the disabled categories stop appearing in your bell and on the notifications page."
+        }
+      }
+    }
+  },
+  "Hero2": {
+    "badge": {
+      "rocketLabel": "rocket",
+      "text": "Now live: AI-powered Influencer Matching — <free>Try it free</free>"
+    },
+    "heading": "Where Global Brands <br></br>Meet The Right Creators.",
+    "subtext": "RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.",
+    "buttons": {
+      "startFree": "Start for Free — No credit card needed",
+      "joinInfluencer": "I'm an Influencer — Join the Community"
+    },
+    "trust": {
+      "trustedBy": "Trusted by 5,000+ brands & 200,000+ influencers across 30+ countries",
+      "rating": "4.8/5 from 2,400+ reviews",
+      "ranking": "#1 Rated Influencer Platform in India"
+    }
+  },
+  "HeroImg": {
+    "viewProfile": "View Profile",
+    "logout": "Logout"
+  },
+  "HomeConsentBrand": {
+    "metaTitle": "Brand Consent Policy · RGossips",
+    "title": "Brand Consent Policy",
+    "subtitle": "Recent Gossips — Brand Portal · operated by RUDE LABS Private Limited"
+  },
+  "HomeConsentInfluencer": {
+    "metaTitle": "Influencer Consent Policy · RGossips",
+    "title": "Influencer Consent Policy",
+    "subtitle": "Recent Gossips — Influencer Marketing Portal · operated by RUDE LABS Private Limited"
+  },
+  "HomeConsentPrivacy": {
+    "metaTitle": "Privacy & Cookie Policy · RGossips",
+    "title": "Privacy & Cookie Policy",
+    "subtitle": "Recent Gossips — Influencer Marketing Platform · operated by RUDE LABS Private Limited"
+  },
+  "HomeConsentRefund": {
+    "metaTitle": "Payment & Refund Policy · RGossips",
+    "title": "Payment & Refund Policy",
+    "subtitle": "RGossips — operated by RUDE LABS Private Limited"
+  },
+  "HomeHeader": {
+    "greeting": "Hi, {name}",
+    "defaultName": "Explorer",
+    "location": "India",
+    "searchPlaceholder": "Search Campaigns, Brands..."
+  },
+  "HomeHero": {
+    "badge": "Now live: AI-powered Influencer Matching: Try it free →",
+    "heading": "Where Global Brands Meet <br></br><highlight>The Right Creators.</highlight>",
+    "subheading": "RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.",
+    "greeting": "Hi, {name}",
+    "ctaBrand": "I'm a Brand",
+    "ctaInfluencer": "I'm an Influencer",
+    "stats": {
+      "roiValue": "+245%",
+      "roiLabel": "ROI Increase",
+      "usersValue": "50K+",
+      "usersLabel": "Active Users"
+    }
+  },
+  "HomeOffers": {
+    "hero": {
+      "badge": "🚀 Now live: AI-powered Influencer Matching — Try it free →",
+      "titleLine1": "Where Global Brands Meet",
+      "titleLine2": "The Right Creators.",
+      "description": "RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.",
+      "avatarMore": "+5K",
+      "rating": "4.9/5",
+      "reviews": "from 2,000+ reviews",
+      "roiValue": "+245%",
+      "roiLabel": "ROI Increase",
+      "usersValue": "50K+",
+      "usersLabel": "Active Users"
+    },
+    "hub": {
+      "title": "Collaboration Hub",
+      "showing": "Showing {status} projects and earnings.",
+      "empty": "No {status} campaigns found."
+    },
+    "support": {
+      "heading": "Need help with a campaign?",
+      "description": "Our dedicated support team is available 24/7 to help you manage your brand relations and payments."
+    }
+  },
+  "HowItWorks": {
+    "header": {
+      "title": "How It Works",
+      "subtitle": "Get started in minutes, not days"
+    },
+    "tabs": {
+      "brands": "For Brands",
+      "influencers": "For Influencers"
+    },
+    "brand": {
+      "createProfile": {
+        "title": "Create Brand Profile",
+        "description": "Sign up in minutes and create your brand profile with your campaign goals."
+      },
+      "launchCampaign": {
+        "title": "Launch Campaign",
+        "description": "Set your brief, budget, deliverables, and timeline. Go live instantly."
+      },
+      "getMatched": {
+        "title": "Get Matched & Negotiate",
+        "description": "AI matches you with verified creators. Chat, negotiate, and finalize deals."
+      },
+      "trackApprove": {
+        "title": "Track, Approve & Pay",
+        "description": "Monitor campaign performance in real-time. Approve content and release payments."
+      }
+    },
+    "influencer": {
+      "joinNetwork": {
+        "title": "Join the Network",
+        "description": "Complete your profile and connect your social accounts for verification."
+      },
+      "browseCampaigns": {
+        "title": "Browse Campaigns",
+        "description": "Explore available briefs from top brands that match your niche."
+      },
+      "submitProposals": {
+        "title": "Submit Proposals",
+        "description": "Apply to campaigns with your creative ideas and pricing."
+      },
+      "createEarn": {
+        "title": "Create & Earn",
+        "description": "Post your content, get brand approval, and receive direct payments."
+      }
+    }
+  },
+  "InfluencerBrands": {
+    "title": "Discover Brands",
+    "searchBrandsPlaceholder": "Search brands...",
+    "searchPlaceholder": "Search...",
+    "loading": "Loading brands...",
+    "empty": "No brands match these filters.",
+    "filterTitle": "Filter Brands"
+  },
+  "InfluencerCampaigns": {
+    "title": "Campaigns",
+    "subtitle": "Track and manage collaborations",
+    "refreshStatus": "Refresh status",
+    "searchCampaignsPlaceholder": "Search campaigns...",
+    "searchPlaceholder": "Search...",
+    "statusHeading": "Status",
+    "tabs": {
+      "Active": "Active",
+      "Applied": "Applied",
+      "Completed": "Completed"
+    },
+    "tabsLower": {
+      "Active": "active",
+      "Applied": "applied",
+      "Completed": "completed"
+    },
+    "headerCampaigns": "{tab} Campaigns",
+    "campaignCount": "{count, plural, one {# campaign} other {# campaigns}}",
+    "loading": "Loading campaigns...",
+    "empty": "No {tab} campaigns found.",
+    "filterTitle": "Filter Campaigns"
+  },
+  "InfluencerChats": {
+    "title": "Messages",
+    "searchPlaceholder": "Search messages...",
+    "loading": "Loading chats...",
+    "empty": {
+      "noConversations": "No conversations yet",
+      "brandsHint": "Messages from brands will appear here"
+    },
+    "youPrefix": "You: ",
+    "noMessagesYet": "No messages yet",
+    "online": "Online",
+    "emptyThread": "No messages yet. Start the conversation!",
+    "inputPlaceholder": "Type a message...",
+    "selectPrompt": "Select a conversation to start chatting",
+    "time": {
+      "yesterday": "Yesterday"
+    }
+  },
+  "InfluencerHero": {
+    "categoryInfluencer": "{category} Influencer",
+    "stats": {
+      "totalCollaborations": "Total Collaborations",
+      "activeCollaborations": "Active Collaborations",
+      "totalClients": "Total Clients"
+    }
+  },
+  "InfluencerMediaKit": {
+    "errors": {
+      "saveFailed": "Failed to save — please try again."
+    },
+    "share": {
+      "cardTitle": "Share Your Media Kit",
+      "cardDescription": "Share this link with brands and collaborators to showcase your profile.",
+      "modalTitle": "Share Media Kit",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "message": "Check out my media kit: {url}",
+      "messageShort": "Check out my media kit!",
+      "emailSubject": "{name}'s Media Kit"
+    },
+    "publish": {
+      "title": "Publish to Share",
+      "description": "Review your media kit, edit your bio, then hit <b>Publish</b> to get a shareable link you can send to brands and post on social media.",
+      "publishing": "Publishing...",
+      "cta": "Publish Media Kit"
+    },
+    "tips": {
+      "title": "Tips to stand out",
+      "item1": "Keep your Instagram profile up to date",
+      "item2": "Add your niche categories in profile settings",
+      "item3": "Share your media kit link in your Instagram bio"
+    },
+    "templates": {
+      "title": "Templates",
+      "hint": "Tap a template to preview. Pick the one you want shareable to brands and creators.",
+      "lockedTitle": "Available on the {plan} plan and above",
+      "live": "Live",
+      "upgradeToUse": "Upgrade to {plan} to use {label}",
+      "saving": "Saving...",
+      "useTemplate": "Use {label}",
+      "thisTemplate": "this template",
+      "liveTemplate": "{label} is your live template.",
+      "capReached": "You've used all {count, plural, one {# template change} other {# template changes}}. Upgrade to Elite for unlimited switches.",
+      "remaining": "{remaining} of {count, plural, one {# template change} other {# template changes}} remaining on {plan}.",
+      "unlimited": "Unlimited template switches — go wild.",
+      "upgradeUnlimited": "Upgrade for unlimited switches",
+      "upgradeUnlock": "Upgrade to unlock more templates",
+      "editHint": "Use the floating <editBio>Edit Bio</editBio> / <editReels>Edit Top Reels</editReels> buttons in the bottom-right to update content on any template."
+    }
+  },
+  "InfluencerNotifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loading": "Loading notifications...",
+    "empty": {
+      "title": "No notifications yet",
+      "subtitle": "You'll be notified about campaign updates and more"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago"
+    }
+  },
+  "InfluencerOffersId": {
+    "anyValue": "Any",
+    "noDescription": "No description available for this campaign.",
+    "basePayment": "Base Payment",
+    "perInfluencer": "Per influencer",
+    "loadingCampaign": "Loading campaign...",
+    "campaignNotFound": "Campaign not found",
+    "goBack": "Go back",
+    "backToCampaigns": "Back to Campaigns",
+    "refreshStatus": "Refresh status",
+    "refresh": "Refresh",
+    "completed": "Completed",
+    "applyForCampaign": "Apply for Campaign",
+    "requirements": {
+      "followers": "Followers: {value}",
+      "audienceSize": "Audience size",
+      "tier": "Tier: {value}",
+      "creatorTier": "Creator tier",
+      "location": "Location: {value}",
+      "targetRegion": "Target region",
+      "minEngagement": "Min Engagement: {value}%",
+      "activityThreshold": "Activity threshold",
+      "gender": "Gender: {value}",
+      "preferred": "Preferred",
+      "language": "Language: {value}",
+      "contentLanguage": "Content language"
+    },
+    "brandStats": {
+      "activeCount": "{count} active"
+    },
+    "product": {
+      "willBeShipped": "Will be shipped",
+      "willBeShippedInDays": "Will be shipped in ~{days, plural, one {# day} other {# days}}",
+      "noShipping": "No shipping",
+      "pickupRequired": "Pickup required",
+      "serviceExperience": "Service / Experience",
+      "product": "Product",
+      "approxValue": "₹{value} approx. value"
+    },
+    "copyable": {
+      "copyAria": "Copy {label}",
+      "copied": "Copied",
+      "copy": "Copy"
+    },
+    "guidelines": {
+      "title": "Content guidelines",
+      "mustInclude": "✓ Must include",
+      "mustAvoid": "✗ Must avoid",
+      "hashtags": "Hashtags",
+      "tag": "Tag"
+    },
+    "terms": {
+      "usage": {
+        "creatorOnly": "Influencer's page only",
+        "brandRepost": "Brand can repost",
+        "paidAds": "Brand can use in paid ads",
+        "fullRights": "Full rights transfer"
+      },
+      "keepup": {
+        "24h": "24 hours (stories)",
+        "7d": "7 days",
+        "30d": "30 days",
+        "permanent": "Permanent"
+      },
+      "payment": {
+        "advance": "Advance",
+        "onApproval": "On content approval",
+        "7days": "Within 7 days of posting",
+        "30days": "Within 30 days"
+      },
+      "rowLabel": {
+        "usageRights": "Usage rights",
+        "keepContentLive": "Keep content live",
+        "exclusivity": "Exclusivity",
+        "payment": "Payment"
+      },
+      "exclusivityValue": "No competing brands for {days} days",
+      "title": "Terms & rights"
+    },
+    "gallery": {
+      "title": "Gallery",
+      "imageAlt": "Gallery {index}",
+      "close": "Close",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "rating": {
+      "submitted": "Your rating submitted",
+      "briefClarity": "Brief clarity",
+      "fairness": "Fairness",
+      "feedback": "Feedback",
+      "rateThisCampaign": "Rate this campaign",
+      "shareExperience": "Share your experience working with {brand}",
+      "modalSubtitle": "How was working with {brand}?",
+      "howWouldYouRate": "How would you rate {brand}?",
+      "briefClarityHelper": "Was the brief clear and detailed?",
+      "negotiationFairness": "Negotiation fairness",
+      "fairnessHelper": "Were revisions, rejections and rate negotiations reasonable?",
+      "feedbackQuality": "Feedback quality",
+      "feedbackQualityHelper": "Was the brand's feedback specific and actionable?",
+      "submitRating": "Submit Rating",
+      "skipForNow": "Skip for now"
+    },
+    "active": {
+      "budget": "Budget",
+      "daysLeft": "{value} left",
+      "slots": "{count} slots",
+      "available": "Available",
+      "contentDeliverables": "Content Deliverables",
+      "aboutCampaign": "About Campaign",
+      "whatYouGet": "What you get",
+      "approxValue": "Approx. value ₹{value}",
+      "requirements": "Requirements",
+      "paymentBenefits": "Payment & Benefits",
+      "verified": "Verified",
+      "exclusiveRights": "Exclusive Event/Rights",
+      "licensingNote": "Brand gets content + licensing for 6 months"
+    },
+    "sidebar": {
+      "applyViaAgent": "Or apply via an agent or partnership",
+      "aboutBrand": "About Brand",
+      "brand": "Brand",
+      "campaigns": "Campaigns",
+      "success": "Success",
+      "response": "Response"
+    },
+    "applied": {
+      "submitted": "Application Submitted",
+      "beingReviewed": "Your application is being reviewed by the brand",
+      "pendingReview": "Pending Review",
+      "reviewNote": "The brand will review your profile and media kit. You'll be notified once they respond.",
+      "timeline": "Application Timeline",
+      "steps": {
+        "applied": "Applied",
+        "underReview": "Under Review",
+        "shortlisted": "Shortlisted",
+        "approved": "Approved"
+      },
+      "campaignDetails": "Campaign Details",
+      "deadline": "Deadline",
+      "otherNotes": "Other Notes",
+      "matchScore": "Match Score",
+      "profileFit": "Your Profile Fit"
+    },
+    "completedContent": {
+      "paymentStatus": "Payment Status",
+      "earnings": "Earnings",
+      "performanceHighlights": "Performance Highlights",
+      "totalViews": "Total Views",
+      "engagement": "Engagement",
+      "reach": "Reach",
+      "saves": "Saves",
+      "likes": "Likes",
+      "comments": "Comments",
+      "shares": "Shares",
+      "contentDelivered": "Content Delivered",
+      "views": "views"
+    },
+    "completedSidebar": {
+      "brandFeedback": "Brand Feedback",
+      "brandPartner": "Brand Partner",
+      "congratulations": "Congratulations! 🎉",
+      "congratsNote": "You've successfully completed this campaign with outstanding results.",
+      "shareResults": "Share Results",
+      "campaignSummary": "Campaign Summary",
+      "duration": "Duration",
+      "contentPieces": "Content Pieces",
+      "avgEngagement": "Avg Engagement"
+    },
+    "similar": {
+      "title": "Similar Campaigns",
+      "viewAll": "View All"
+    },
+    "statusSteps": {
+      "pending": "Applied",
+      "offer_sent": "Offer Received",
+      "offer_accepted": "Offer Accepted",
+      "approved": "Escrow Funded",
+      "submitted": "Deliverables Submitted",
+      "accepted": "Work Accepted",
+      "live_submitted": "Live Links Submitted",
+      "payment": "Payment in Progress",
+      "completed": "Completed"
+    },
+    "specialStatus": {
+      "revision_needed": "Revision Requested",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "offer": {
+      "updateError": "Could not update the application.",
+      "offerAmount": "Offer: ₹{amount}",
+      "counteredNote": "You proposed ₹{amount} — the brand countered with this amount.",
+      "approvedNote": "The brand approved your application at this rate.",
+      "lockItInNote": "Accept to lock it in — the brand then funds escrow and you can start working. Or withdraw if this doesn't work for you. No counter-offers.",
+      "acceptAmount": "Accept ₹{amount}",
+      "withdraw": "Withdraw",
+      "withdrawConfirm": "Withdraw from this campaign? This ends your application — you can't undo it.",
+      "yesWithdraw": "Yes, Withdraw",
+      "keepOffer": "Keep Offer"
+    },
+    "statusBar": {
+      "offerAcceptedWaiting": "Offer accepted — waiting for the brand to fund escrow.",
+      "resubmitDeliverables": "Resubmit Deliverables",
+      "submitLiveLinks": "Submit Live Links",
+      "uploadSubmission": "Upload Submission",
+      "applicationStatus": "Application Status",
+      "acceptedWaiting": "✓ You accepted ₹{amount} — waiting for the brand to fund escrow.",
+      "revisionRequested": "Revision Requested",
+      "deliverablesToRevise": "Deliverables to revise:",
+      "applicationRejected": "Application Rejected",
+      "yourSubmissions": "Your Submissions"
+    },
+    "modal": {
+      "duplicateError": "You've pasted the same link more than once. Each deliverable needs a unique URL.",
+      "failedToSubmit": "Failed to submit",
+      "submitLiveLinksHeading": "Submit Live Links",
+      "uploadSubmissions": "Upload Submissions",
+      "titleDeliverables": "{title} · {count, plural, one {# deliverable} other {# deliverables}}",
+      "postThenPaste": "Post your content on Instagram, then paste the live post links below.",
+      "revisionNote": "Revision Note",
+      "instructionsRevision": "Update the highlighted deliverables below and resubmit.",
+      "instructionsLive": "Paste the live Instagram post link for each deliverable. All links are required before submitting.",
+      "instructionsDraft": "Paste any link to your draft media (Drive, Dropbox, WeTransfer, watermarked file, etc). Each deliverable needs its own unique URL.",
+      "placeholderAnyMedia": "https://… (any media link)",
+      "expectingUrl": "Expecting a {type} URL",
+      "revise": "REVISE",
+      "ok": "OK",
+      "draftInstagramNote": "Instagram links aren't needed for drafts — share the draft file (Google Drive, WeTransfer, an mp4, etc.). You'll add the live Instagram link after the brand approves.",
+      "detected": "Detected: {type}",
+      "mismatch": "⚠ {detected} URL but {expected} required",
+      "notInstagramUrl": "Doesn't look like an Instagram URL",
+      "duplicateBadge": "⚠ Duplicate of another deliverable",
+      "noDeliverables": "No deliverables specified for this campaign.",
+      "cancel": "Cancel",
+      "submitting": "Submitting...",
+      "resubmitLiveLinks": "Resubmit {count, plural, one {# Live Link} other {# Live Links}}",
+      "submitLiveLinks": "Submit {count, plural, one {# Live Link} other {# Live Links}}",
+      "resubmitDeliverables": "Resubmit {count, plural, one {# Deliverable} other {# Deliverables}}",
+      "submitDeliverables": "Submit {count, plural, one {# Deliverable} other {# Deliverables}}"
+    }
+  },
+  "InfluencerPricing": {
+    "header": {
+      "title": "Choose your plan",
+      "subtitle": "Upgrade anytime to unlock more features"
+    },
+    "currentPlan": {
+      "freeTrial": "Free Trial",
+      "current": "CURRENT",
+      "proFeaturesUnlocked": "Pro features unlocked",
+      "renewsIn": "Renews in {days, plural, one {# day} other {# days}}",
+      "trialDaysRemaining": "{days} days remaining on your 30-day free trial",
+      "starterUpsell": "Upgrade to unlock more applications, analytics, and visibility",
+      "activeSubscription": "Active {cycle} subscription",
+      "activeSubscriptionRenews": "Active {cycle} subscription · renews on {date}",
+      "trialWarning": "Pick a plan before day 30 to keep your features"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "annual": "Annual <save>(save up to 32%)</save>"
+    },
+    "referral": {
+      "fiftyOff": "50% off your first subscription 🎉",
+      "giftedBy": "Gifted by",
+      "appliedAutomatically": "· applied automatically at checkout"
+    },
+    "rc": {
+      "apply": "Apply my <rc>{amount} RC</rc> at checkout <note>(up to 50% off first invoice)</note>"
+    },
+    "plans": {
+      "starter": {
+        "label": "Starter",
+        "tagline": "Get listed and start applying",
+        "description": "Best for nano creators (1K – 25K)"
+      },
+      "pro": {
+        "label": "Pro",
+        "tagline": "Built to earn seriously",
+        "description": "Best for micro/mid creators (10K – 200K)"
+      },
+      "elite": {
+        "label": "Elite",
+        "tagline": "Pro-grade creator OS",
+        "description": "Best for macro/mega creators (200K+)"
+      },
+      "mostPopular": "Most popular"
+    },
+    "cta": {
+      "currentPlan": "Current plan",
+      "upgradeTo": "Upgrade to {plan}",
+      "choose": "Choose {plan}"
+    },
+    "price": {
+      "perMonthShort": "mo",
+      "perYearShort": "yr",
+      "monthEquiv": "≈ ₹{amount}/mo"
+    },
+    "gatewayPicker": {
+      "payFor": "Pay for <plan>{name}</plan>",
+      "pickMethod": "Pick a payment method to continue",
+      "razorpayTagline": "UPI · Cards · Netbanking · Wallets",
+      "stripeTagline": "International cards · Apple Pay · Google Pay",
+      "redirectNote": "You'll be redirected to a secure checkout page and brought back here when you're done."
+    },
+    "errors": {
+      "checkoutTitle": "Couldn't start checkout",
+      "genericMessage": "Something went wrong. Please try again.",
+      "signInTitle": "Sign in required",
+      "signInMessage": "Please sign in to upgrade your plan.",
+      "razorpayNotConfiguredTitle": "Razorpay plan not configured",
+      "razorpayNotConfigured": "Razorpay isn't configured for the {plan} {cycle} plan yet. Set NEXT_PUBLIC_RAZORPAY_PLAN_{planUpper}_{cycleUpper} in the environment and redeploy.",
+      "razorpayNoSub": "Razorpay didn't return a subscription / key.",
+      "razorpayCheckoutLoad": "Razorpay Checkout failed to load. Check your network.",
+      "stripeNotConfiguredTitle": "Stripe price not configured",
+      "stripeNotConfigured": "Stripe isn't configured for the {plan} {cycle} plan yet. Set NEXT_PUBLIC_STRIPE_PRICE_{planUpper}_{cycleUpper} in the environment and redeploy.",
+      "noCheckoutUrl": "No checkout URL returned",
+      "checkoutFailed": "We couldn't start the checkout. Please try again in a moment.",
+      "paymentFailedTitle": "Payment failed",
+      "paymentFailed": "The payment didn't go through. Please try again, or use a different card / UPI.",
+      "gotIt": "Got it"
+    },
+    "razorpayDescription": "Upgrade to {plan} · {cycle}",
+    "verifying": {
+      "title": "Payment received",
+      "message": "Syncing your new plan…",
+      "hint": "This usually takes a couple of seconds."
+    },
+    "preparing": {
+      "title": "Opening checkout",
+      "message": "Sending you to {gateway}…",
+      "hint": "Don't refresh — we're getting your payment session ready."
+    },
+    "success": {
+      "yourNewPlan": "your new plan",
+      "cycleAnnual": "Annual",
+      "cycleMonthly": "Monthly",
+      "youreOn": "You're on {plan}!",
+      "planLive": "Payment received and your plan is live.",
+      "labels": {
+        "plan": "Plan",
+        "amount": "Amount",
+        "paidVia": "Paid via",
+        "paymentId": "Payment ID",
+        "subscriptionId": "Subscription ID",
+        "checkoutSession": "Checkout session",
+        "date": "Date"
+      },
+      "preparingInvoice": "Preparing invoice…",
+      "openInvoice": "Open Invoice",
+      "done": "Done",
+      "receiptNote": "Receipt + invoice will land in your email. View every past invoice from <b>Profile → Payments → Subscription History</b>."
+    },
+    "common": {
+      "close": "Close"
+    },
+    "comparison": {
+      "eyebrow": "Membership Plans",
+      "title": "Choose the plan that grows with you",
+      "subtitle": "Compare every feature across Starter, Pro and Elite.",
+      "pricingHeader": "Pricing",
+      "compareEveryFeature": "Compare every feature",
+      "mostPopular": "★ MOST POPULAR",
+      "footnote": "All plans are billed monthly. Prices are exclusive of applicable taxes (GST).",
+      "includedAria": "Included",
+      "eliteOnlyAria": "Elite only"
+    }
+  },
+  "InfluencerRecommendedCampaigns": {
+    "title": "Recommended",
+    "searchPlaceholder": "Search campaigns or brands...",
+    "emptyTitle": "No campaigns match your filters",
+    "emptyDesc": "Try clearing some filters or widening the budget range.",
+    "resetFilters": "Reset filters",
+    "common": {
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "reset": "Reset"
+    },
+    "card": {
+      "categoryFallback": "Campaign",
+      "locationFallback": "Pan India",
+      "deliverablesFallback": "Custom deliverables",
+      "followers": "{count}K+ Followers",
+      "openToAll": "Open to all tiers",
+      "daysLeft": "{days}d left",
+      "budgetFallback": "On request",
+      "apply": "Apply"
+    },
+    "sort": {
+      "pill": "Sort",
+      "title": "Sort Influencers",
+      "options": {
+        "recommended": {
+          "label": "Recommended"
+        },
+        "mostEngagement": {
+          "label": "Most Engagement"
+        },
+        "highestFollowers": {
+          "label": "Highest Followers"
+        },
+        "lowestCost": {
+          "label": "Lowest Collaboration Cost",
+          "sub": "Cheapest to work with"
+        },
+        "highestCost": {
+          "label": "Highest Collaboration Cost",
+          "sub": "Biggest deal first"
+        },
+        "newCreators": {
+          "label": "New Creators"
+        },
+        "nearbyCreators": {
+          "label": "Nearby Creators"
+        }
+      }
+    },
+    "filter": {
+      "pill": "Filter",
+      "title": "Filters",
+      "category": "Category",
+      "platform": "Platform",
+      "budgetRange": "Budget Range",
+      "contentType": "Content Type",
+      "applyFilters": "Apply Filters"
+    },
+    "budget": {
+      "pill": "Budget",
+      "title": "Budget Range",
+      "min": "Min",
+      "max": "Max",
+      "go": "Go"
+    },
+    "platform": {
+      "pill": "Platform",
+      "title": "Platform"
+    }
+  },
+  "InfluencerRefer": {
+    "back": "Back",
+    "title": "Refer & Earn",
+    "subtitle": "Share RGossips with other creators. When they subscribe to any plan you both win — they get 50% off their first month, you earn Reward Credits (RC) redeemable on your next renewal.",
+    "gate": {
+      "title": "Subscribe to unlock referrals",
+      "body": "Refer & Earn is available to paid subscribers. Upgrade to any plan and start sharing your referral link right after.",
+      "cta": "See plans"
+    },
+    "wallet": {
+      "availableRc": "Available RC",
+      "redeemable": "₹{amount} redeemable at checkout",
+      "locked": "Locked",
+      "lockedAmount": "+{amount} RC",
+      "lockedNote": "Your welcome bonus unlocks 30 days after signup. Referral rewards are spendable immediately.",
+      "unlockedNote": "Redeem up to 50% of any plan price at checkout."
+    },
+    "share": {
+      "label": "Your referral link",
+      "copied": "Copied",
+      "copy": "Copy",
+      "whatsapp": "Share on WhatsApp",
+      "whatsappMessage": "Try RGossips — your first month is 50% off with my link: {url}"
+    },
+    "stats": {
+      "qualified": "Qualified",
+      "pending": "Pending",
+      "rcEarned": "RC earned"
+    },
+    "tiers": {
+      "title": "Instant rewards",
+      "rcPlus": "+{amount} RC",
+      "note": "RC lands the moment your friend pays. Reversed if they refund within 7 days. Auto-expires 90 days after credit."
+    },
+    "leaderboard": {
+      "title": "Top referrers this month",
+      "yourRank": "You: #{rank}",
+      "unknown": "Unknown",
+      "you": "YOU",
+      "rcEarned": "{amount} RC",
+      "referralCount": "{count, plural, one {# referral} other {# referrals}}",
+      "resetNote": "Resets on the 1st of each month (IST)."
+    },
+    "referrals": {
+      "title": "Your referrals",
+      "empty": "No referrals yet — share your link to get started.",
+      "planSubscription": "{plan} subscription",
+      "newReferral": "New referral",
+      "rcPlus": "+{amount} RC"
+    },
+    "ledger": {
+      "title": "RC wallet history",
+      "empty": "Wallet is empty.",
+      "locked": "Locked",
+      "unlocksOn": "unlocks {date}",
+      "expiresOn": "expires {date}"
+    },
+    "statusPill": {
+      "PENDING": "Pending",
+      "SIGNED_UP": "Signed up",
+      "QUALIFIED": "Qualified",
+      "REWARDED": "Rewarded",
+      "REVERSED": "Reversed",
+      "EXPIRED": "Expired",
+      "MANUAL_REVIEW": "Under review"
+    },
+    "reason": {
+      "REFERRAL_EARN": "Referral reward",
+      "WELCOME_BONUS": "Welcome bonus",
+      "MILESTONE_BONUS": "Milestone bonus",
+      "LEADERBOARD": "Leaderboard prize",
+      "REDEMPTION": "Applied to subscription",
+      "CLAWBACK": "Refund clawback",
+      "EXPIRY": "Auto-expired",
+      "ADMIN_ADJUSTMENT": "Admin adjustment"
+    }
+  },
+  "InfluencerResumeId": {
+    "title": "Media Kit / Resume",
+    "insightsFor": "AI-Powered insights for {name}",
+    "downloadPdf": "Download PDF",
+    "scrollHint": "Scroll inside the viewer to see full details",
+    "creatorSnapshot": "Creator Snapshot",
+    "stats": {
+      "reach": "Reach",
+      "engagement": "Engagement"
+    },
+    "hireCreator": "Hire this Creator",
+    "contactPrompt": "Contact {name} directly for your next campaign.",
+    "sendInquiry": "Send Collaboration Inquiry"
+  },
+  "InfluencerServices": {
+    "back": "Back",
+    "title": "All Services",
+    "subtitleMobile": "Creator services brands are booking now",
+    "subtitleDesktop": "Creator services brands book",
+    "searchPlaceholderMobile": "Search services…",
+    "searchPlaceholder": "Search…",
+    "categories": "Categories",
+    "clear": "Clear",
+    "price": "Price",
+    "resetFilters": "Reset all filters",
+    "servicesHeading": "Services",
+    "serviceCount": "{count, plural, one {# service} other {# services}}",
+    "empty": "No services match your filters.",
+    "startingAt": "Starting at",
+    "getQuote": "Get Quote",
+    "priceBands": {
+      "any": "Any price",
+      "under-3k": "Under ₹3,000",
+      "3k-7k": "₹3,000 – ₹7,000",
+      "7k-15k": "₹7,000 – ₹15,000",
+      "15k-plus": "₹15,000+"
+    }
+  },
+  "InfluencerServicesId": {
+    "notFound": "Service not found",
+    "backToAllServices": "Back to All Services",
+    "backToServices": "Back to Services",
+    "reviewsCount": " ({count, plural, one {# review} other {# reviews}})",
+    "quoteSla": "{hours} hr quote SLA",
+    "bookedThisMonth": "{count} booked this month",
+    "aboutThisService": "About this service",
+    "whatsIncluded": "What's included",
+    "startingAt": "Starting at",
+    "priceRange": "Most {tag} priced between {from} – {to} depending on length, complexity, and revisions.",
+    "finalPriceNote": "Final price is custom-quoted after we review your raw footage and requirements. Quote sent within {hours} hours.",
+    "typicalPackages": "Typical packages",
+    "getCustomQuote": "Get Custom Quote",
+    "quoteTurnaround": "Quote turnaround",
+    "quoteHrs": "{hours} hrs",
+    "deliveryTime": "Delivery time",
+    "paymentSplit": "Payment split",
+    "yourLatestRequest": "Your latest request",
+    "openOrder": "Open order →",
+    "statusPill": {
+      "pendingQuote": "Awaiting quote",
+      "quoted": "Quote ready",
+      "counterOffered": "Counter sent",
+      "accepted": "Quote accepted",
+      "paidAdvance": "Advance paid",
+      "inProgress": "In progress",
+      "draftReady": "Draft ready",
+      "revisionRequested": "Revision sent",
+      "paidFinal": "Final paid",
+      "completed": "Completed",
+      "declined": "Declined",
+      "expired": "Expired"
+    }
+  },
+  "InfluencerServicesIdQuote": {
+    "notFound": {
+      "title": "Service not found",
+      "back": "Back to All Services"
+    },
+    "errors": {
+      "signIn": "Please sign in to request a quote.",
+      "description": "Please describe your project in at least 20 characters.",
+      "assetUrl": "Paste a Google Drive / WeTransfer / Dropbox link so the team can review your assets.",
+      "selectScope": "Please select a {field}.",
+      "submitFailed": "Failed to submit quote request"
+    },
+    "success": {
+      "title": "Quote request submitted!",
+      "body": "We'll review your brief and get back with a custom quote within <b>{hours} hours</b>. You'll receive an update on the phone number tied to your account.",
+      "browseMore": "Browse more services",
+      "backHome": "Back to home"
+    },
+    "backTo": "Back to {tag}",
+    "header": {
+      "step": "Step 1 of 1 · Quote request",
+      "badge": "Quote Request"
+    },
+    "description": {
+      "label": "Project description",
+      "hint": "Be specific to get a faster quote",
+      "placeholder": "Describe what you need… e.g., I want a 30-second reel showcasing my new skincare product launch. Footage was shot in natural light, mostly close-ups of the product and me applying it. Want a soft, dreamy vibe."
+    },
+    "asset": {
+      "label": "Reference link to your raw footage / assets",
+      "title": "Share a link to your assets",
+      "hint": "Paste a Google Drive, WeTransfer, Dropbox or YouTube link — we don't accept direct uploads here."
+    },
+    "delivery": {
+      "label": "Desired delivery date"
+    },
+    "budget": {
+      "label": "Budget range",
+      "hint": "Optional, helps us send the right quote",
+      "placeholder": "Select a range",
+      "typical": "Typical range for similar projects: <b>{range}</b> depending on footage complexity and revision count."
+    },
+    "style": {
+      "label": "Style references / inspiration",
+      "hint": "Optional but recommended",
+      "placeholder": "Paste Instagram reel links or describe a vibe"
+    },
+    "notes": {
+      "label": "Additional notes",
+      "placeholder": "Anything else our team should know? Brand colors, do's and don'ts, etc."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "submitting": "Submitting…",
+      "submit": "Submit Quote Request"
+    },
+    "scope": {
+      "content": "Reel duration",
+      "audio": "Episode length",
+      "design": "Number of designs",
+      "writing": "Content volume",
+      "strategy": "Scope",
+      "ads": "Monthly ad spend",
+      "management": "Posting cadence",
+      "marketing": "Campaign size",
+      "default": "Scope"
+    }
+  },
+  "InfluencerServicesOrders": {
+    "back": "Back",
+    "title": "Service Requests",
+    "subtitle": "Every brief you've sent — quote, in progress or done",
+    "refreshStatus": "Refresh status",
+    "refresh": "Refresh",
+    "searchPlaceholder": "Search by service or order number…",
+    "tabs": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed",
+      "declined": "Closed"
+    },
+    "status": {
+      "pendingQuote": "Awaiting quote",
+      "quoted": "Quote ready",
+      "counterOffered": "Counter sent",
+      "accepted": "Quote accepted",
+      "paidAdvance": "Advance paid",
+      "inProgress": "In progress",
+      "draftReady": "Draft ready",
+      "revisionRequested": "Revision sent",
+      "paidFinal": "Final paid",
+      "completed": "Completed",
+      "declined": "Declined",
+      "expired": "Expired"
+    },
+    "empty": {
+      "noOrders": "You haven't requested any services yet.",
+      "noneInView": "Nothing in this view.",
+      "browseServices": "Browse services →"
+    }
+  },
+  "InfluencerServicesOrdersId": {
+    "banner": {
+      "pending_quote": {
+        "title": "Quote request submitted",
+        "body": "Our team is reviewing your brief — we'll respond with a quote within the SLA."
+      },
+      "quoted": {
+        "title": "Your quote is ready!",
+        "body": "Review the details below and pay 50% to kick off the project."
+      },
+      "counter_offered": {
+        "title": "Counter offer sent",
+        "body": "Awaiting the team's response to your counter offer."
+      },
+      "accepted": {
+        "title": "Quote accepted — pay to start",
+        "body": "Pay your advance to begin production."
+      },
+      "paid_advance": {
+        "title": "Advance received — work starting",
+        "body": "We've received your advance. Production begins now."
+      },
+      "in_progress": {
+        "title": "Work in progress",
+        "body": "Our team is on it. Updates land in this thread."
+      },
+      "draft_ready": {
+        "title": "Your draft is ready for review",
+        "body": "Preview the draft and either approve or request a revision."
+      },
+      "revision_requested": {
+        "title": "Revision in progress",
+        "body": "Your notes are with the team — a new draft is on the way."
+      },
+      "paid_final": {
+        "title": "Final payment received — wrapping up",
+        "body": "Your files are being prepared for delivery."
+      },
+      "completed": {
+        "title": "Order completed! Your files are ready",
+        "body": "Download your files below and leave a quick review."
+      },
+      "declined": {
+        "title": "Request declined",
+        "body": "This request didn't move forward. You can submit a fresh brief any time."
+      },
+      "expired": {
+        "title": "Quote expired",
+        "body": "The validity period passed without action. Submit a fresh request to continue."
+      }
+    },
+    "errors": {
+      "noCheckoutUrl": "No checkout URL returned",
+      "razorpayLoad": "Razorpay Checkout failed to load — check your network.",
+      "paymentFailed": "Payment failed. Please try again.",
+      "startPayment": "Failed to start payment",
+      "submitReview": "Failed to submit review",
+      "requestRevision": "Failed to request revision",
+      "generic": "Failed"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "sending": "Sending…"
+    },
+    "orderNotFound": "Order not found",
+    "backToServices": "Back to Services",
+    "back": "Back",
+    "refreshTitle": "Refresh status",
+    "refresh": "Refresh",
+    "orderLine": "Order #{number} · {title}",
+    "quoteValidFor": "Quote valid for",
+    "validity": {
+      "expired": "Expired",
+      "remaining": "{d}d {h}h"
+    },
+    "cards": {
+      "projectSummary": "Project summary",
+      "whatYouGet": "What you'll get",
+      "projectSpecs": "Project specifications",
+      "noteFromTeam": "Note from our team",
+      "messages": "Messages",
+      "orderTimeline": "Order timeline",
+      "yourCounterOffer": "Your counter offer",
+      "revisionInProgress": "Revision in progress",
+      "orderDetails": "Order details"
+    },
+    "specs": {
+      "deliveryDate": "Delivery date",
+      "turnaround": "Turnaround",
+      "daysValue": "{days} days",
+      "revisions": "Revisions",
+      "rounds": "{count} rounds",
+      "finalFormats": "Final formats",
+      "orderId": "Order ID",
+      "service": "Service",
+      "expectedDelivery": "Expected delivery",
+      "submitted": "Submitted"
+    },
+    "expired": {
+      "heading": "This quote has expired",
+      "body": "Validity passed on {date}. The price is no longer guaranteed — request a fresh quote to continue.",
+      "requestNew": "Request new quote",
+      "browseOther": "Browse other services"
+    },
+    "pricing": {
+      "totalProjectCost": "Total project cost",
+      "subtotal": "Subtotal",
+      "total": "Total",
+      "payNow": "Pay now ({pct}%)",
+      "payOnDelivery": "Pay on delivery ({pct}%)",
+      "acceptAndPay": "Accept & Pay {amount}",
+      "negotiate": "Negotiate",
+      "declineQuote": "Decline this quote",
+      "securePayment": "Secure payment via Stripe"
+    },
+    "counter": {
+      "amountPlaceholder": "Your counter (₹)",
+      "messagePlaceholder": "Why does this price work better for you?",
+      "send": "Send counter"
+    },
+    "decline": {
+      "placeholder": "Optional — short reason",
+      "confirming": "Declining…",
+      "confirm": "Confirm decline"
+    },
+    "counterOffered": {
+      "awaiting": "Awaiting our team's response. We'll notify you on WhatsApp."
+    },
+    "revisionRequested": {
+      "body": "Our team is on your revision. {used} of {allowed} revision rounds used.",
+      "notify": "We'll notify you when the next draft lands."
+    },
+    "gateway": {
+      "payAdvance": "Pay your advance",
+      "payFinal": "Pay the final balance",
+      "subtitle": "Choose a payment method to continue"
+    },
+    "overlay": {
+      "openingCheckout": "Opening secure checkout…"
+    },
+    "razorpay": {
+      "serviceAdvance": "Service advance",
+      "serviceFinal": "Service final"
+    },
+    "draft": {
+      "previewWatermark": "PREVIEW",
+      "openPreviewAria": "Open draft preview",
+      "openPreview": "Open preview ↗",
+      "watermarkNote": "This draft is watermarked. You can review the full quality and approve, or request changes. Watermarks will be removed and final files unlocked once you pay the remaining {amount}.",
+      "noteFromEditor": "Note from editor"
+    },
+    "draftReview": {
+      "twoWays": "Two ways forward",
+      "looksGood": "Looks good as-is?",
+      "totalProject": "Total project",
+      "paidAdvance": "Paid (advance)",
+      "dueNow": "Due now",
+      "payToUnlock": "Pay to unlock final files",
+      "approveAndPay": "Approve & Pay Final {amount}",
+      "needChanges": "✎ Need changes?",
+      "revisionsLeft": "Use one of your {count, plural, one {# revision} other {# revisions}} to request changes. No additional payment required.",
+      "noRevisionsLeft": "You've used all your revision rounds. Reach out via support for additional changes.",
+      "requestRevision": "✎ Request Revision",
+      "notePlaceholder": "Be specific — which parts need to change?",
+      "send": "Send revision",
+      "footer": "Once approved, files become permanently available in your order history."
+    },
+    "download": {
+      "title": "Download your files",
+      "permanentNote": "All files available permanently in your order history",
+      "download": "Download ↓"
+    },
+    "review": {
+      "submitted": "Review submitted",
+      "thanks": "Thanks for the feedback — it helps other creators discover the service.",
+      "quality": "Quality",
+      "communication": "Communication",
+      "onTimeDelivery": "On-time delivery",
+      "valueForMoney": "Value for money",
+      "rateExperience": "Rate your experience",
+      "helpOthers": "Help others discover the best RGossips services",
+      "tapToRate": "Tap to rate ({count, plural, one {# star} other {# stars}} selected)",
+      "sharePlaceholder": "Share your experience… (optional)",
+      "submitting": "Submitting…",
+      "submit": "Submit Review",
+      "starAria": "{count, plural, one {# star} other {# stars}}"
+    }
+  },
+  "InstagramAnalytics": {
+    "stats": {
+      "followers": "Followers",
+      "reach": "Reach (30d)",
+      "engagementRate": "Engagement Rate",
+      "profileVisits": "Profile Visits"
+    },
+    "trend": {
+      "title": "Engagement Trend (Last 30 Days)",
+      "growth": "+12% growth"
+    },
+    "chart": {
+      "engagement": "Engagement"
+    },
+    "gender": {
+      "title": "Gender Breakdown",
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "ageGroups": {
+      "title": "Age Groups"
+    },
+    "locations": {
+      "title": "Top Audience Locations"
+    },
+    "posts": {
+      "title": "Recent Post Performance",
+      "items": {
+        "hotelStayVlog": "Reel - Hotel Stay Vlog",
+        "beachfrontPromo": "Post - Beachfront Promo",
+        "roomTour": "Story - Room Tour"
+      }
+    },
+    "post": {
+      "likes": "Likes: {value}",
+      "comments": "Comments: {value}",
+      "saves": "Saves: {value}",
+      "views": "Views: {value}"
+    }
+  },
+  "InstagramCallback": {
+    "connecting": "Connecting to Instagram..."
+  },
+  "ItenaryAccordian": {
+    "heading": "Itinerary",
+    "day1": {
+      "title": "Day 1 – Arrival in Jim Corbett",
+      "body": "Arrive at Jim Corbett. Check into the resort. Enjoy welcome drinks, explore the property, and relax near the pool or river."
+    },
+    "day2": {
+      "title": "Day 2 – Jungle Safari",
+      "body": "Early morning jeep safari inside Jim Corbett National Park. Spot tigers, elephants, and birds. Afternoon local sightseeing and river walk."
+    },
+    "day3": {
+      "title": "Day 3 – Transfer to Nainital",
+      "body": "After breakfast, drive to Nainital. Visit Hanuman Garhi, Eco Cave Gardens, and enjoy a peaceful evening walk at Mall Road."
+    },
+    "day4": {
+      "title": "Day 4 – Nainital Lake Tour",
+      "body": "Visit Naini Lake, Bhimtal, Sattal, and Naukuchiatal. Enjoy boating, photos, and café visits. Perfect day for exploring lakes."
+    },
+    "day5": {
+      "title": "Day 5 – Transfer to Rishikesh",
+      "body": "Drive to Rishikesh. Visit Ram Jhula, Laxman Jhula, Beatles Ashram. Enjoy café hopping and Ganga ghats."
+    },
+    "day6": {
+      "title": "Day 6 – Adventure Activities",
+      "body": "Enjoy river rafting, bungee jumping, ziplining or cliff jumping depending on your preference. Evening Ganga Aarti at Triveni Ghat."
+    },
+    "day7": {
+      "title": "Day 7 – Departure",
+      "body": "Enjoy breakfast at the hotel. Check out and depart with beautiful memories of Uttarakhand."
+    }
+  },
+  "JourneyCarousel": {
+    "forYou": "For You",
+    "seeAll": "See all",
+    "budget": "Budget",
+    "panIndia": "Pan India",
+    "open": "Open",
+    "daysLeft": "{days} left"
+  },
+  "KitId": {
+    "loading": "Loading media kit...",
+    "goToRgossips": "Go to RGossips",
+    "joinRgossips": "Join RGossips",
+    "errors": {
+      "notFound": "Media kit not found",
+      "loadFailed": "Failed to load media kit",
+      "removedOrInvalid": "This media kit may have been removed or the link is invalid."
+    }
+  },
+  "LogoutConfirmDialog": {
+    "title": "Log out?",
+    "confirm": "Are you sure you want to log out?",
+    "cancel": "Cancel",
+    "loggingOut": "Logging out...",
+    "logOut": "Log out"
+  },
+  "MediaKitTemplatesEditOverlay": {
+    "common": {
+      "close": "Close",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "pills": {
+      "editBio": "Edit Bio",
+      "editTopReels": "Edit Top Reels"
+    },
+    "bio": {
+      "title": "Edit your bio",
+      "subtitle": "Shown across every media-kit template",
+      "charCount": "{count}/500",
+      "placeholder": "Write something about yourself…"
+    },
+    "reels": {
+      "title": "Edit your top reels",
+      "subtitle": "Instagram post or reel links — thumbnails resolve automatically",
+      "invalidLink": "Only Instagram post / reel links are allowed.",
+      "addLink": "+ Add reel link"
+    }
+  },
+  "MediaKitTemplatesTemplateBentoSunset": {
+    "about": {
+      "label": "About Me",
+      "tagline": "capturing moments, one frame at a time."
+    },
+    "expertise": {
+      "label": "Expertise",
+      "fallback": "Content Creation"
+    },
+    "engagement": {
+      "label": "Engagement Rate",
+      "categoryAvg": "vs 1.9% category avg"
+    },
+    "stats": {
+      "reached": {
+        "label": "Reached",
+        "sub": "last 30 days"
+      },
+      "nonFollower": {
+        "label": "Non-Follower",
+        "sub": "organic discovery"
+      },
+      "interactions": {
+        "label": "Interactions",
+        "sub": "avg per post"
+      }
+    },
+    "socialMedia": {
+      "label": "Social Media"
+    },
+    "services": {
+      "label": "Services & Rates",
+      "onRequest": "On request"
+    },
+    "audience": {
+      "topCities": "Top Cities",
+      "ageBrackets": "Age Brackets",
+      "genderSplit": "Gender Split"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "other": "Other"
+    },
+    "topContent": {
+      "label": "Top Content",
+      "reelAlt": "Reel"
+    },
+    "cta": {
+      "heading": "Open for Collaborations",
+      "body": "Interested in working together? Reach out via Instagram or through RGossips."
+    },
+    "footer": {
+      "generatedOn": "Generated on <b>RGossips</b>"
+    }
+  },
+  "MediaKitTemplatesTemplateClassic": {
+    "sections": {
+      "aboutMe": "About Me",
+      "expertise": "Expertise",
+      "servicesRates": "Services & Rates",
+      "whosWatching": "Who's Watching",
+      "openForCollaborations": "Open for Collaborations",
+      "socialMedia": "Social Media",
+      "performance": "Performance",
+      "topContent": "Top Content"
+    },
+    "expertiseFallback": "Content Creation",
+    "onRequest": "On request",
+    "demographics": {
+      "topCities": "Top Cities",
+      "ageGender": "Age + Gender",
+      "topCountries": "Top Countries",
+      "noData": "Demographics data will appear after Instagram data refresh"
+    },
+    "gender": {
+      "female": "Female {pct}%",
+      "male": "Male {pct}%",
+      "other": "Other {pct}%"
+    },
+    "collab": {
+      "question": "Interested in working together?",
+      "reachOut": "Reach out via Instagram or through the RGossips platform"
+    },
+    "social": {
+      "followers": "Followers",
+      "subscribers": "Subscribers"
+    },
+    "performanceHeadline": "The <em>NUMBER</em> That Matters",
+    "stats": {
+      "accountsReached": "Accounts Reached",
+      "last30Days": "Last 30 days",
+      "engagementRate": "Engagement Rate",
+      "categoryAvg": "vs 1.9% category avg",
+      "nonFollowerReach": "Non-Follower Reach",
+      "organicDiscovery": "organic discovery",
+      "interactions": "Interactions",
+      "avgPerPost": "avg per post"
+    },
+    "generatedOn": "Generated on RGossips",
+    "bio": {
+      "default": "Passionate content creator helping brands connect with audiences through authentic storytelling and creative content.",
+      "placeholder": "Write something about yourself...",
+      "charCount": "{count}/500",
+      "editTitle": "Edit bio"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "reels": {
+      "editTitle": "Edit reels",
+      "invalidLink": "Only Instagram post/reel links are allowed",
+      "addLink": "+ Add Reel Link",
+      "addFirst": "+ Add your top content links"
+    }
+  },
+  "MediaKitTemplatesTemplateEditorialNoir": {
+    "masthead": "The Media Kit",
+    "volume": "Vol. 01 — {category}",
+    "creatorProfile": "Creator Profile",
+    "contentCreation": "Content Creation",
+    "expertise": "Expertise",
+    "onTheChannels": "On the Channels",
+    "servicesAndRates": "Services & Rates",
+    "onRequest": "On request",
+    "theNumberThatMatters": "The Number That Matters",
+    "stats": {
+      "accountsReached": "Accounts Reached",
+      "last30Days": "last 30 days",
+      "engagementRate": "Engagement Rate",
+      "categoryAvg": "vs 1.9% category avg",
+      "nonFollowerReach": "Non-Follower Reach",
+      "organicDiscovery": "organic discovery",
+      "interactions": "Interactions",
+      "avgPerPost": "avg per post"
+    },
+    "whosWatching": "Who's Watching",
+    "topCities": "Top Cities",
+    "ageBrackets": "Age Brackets",
+    "genderSplit": "Gender Split",
+    "topCountries": "Top Countries",
+    "topContent": "Top Content",
+    "reelAlt": "Reel",
+    "openForCollaborations": "Open for Collaborations",
+    "collabCta": "Interested in working together? Reach out via Instagram or through the RGossips platform.",
+    "generatedOn": "Generated on RGossips",
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "other": "Other"
+    }
+  },
+  "MediaKitTemplatesTemplateGlassBlue": {
+    "stats": {
+      "followers": "Followers",
+      "accountsReached": "Accounts Reached",
+      "engagement": "Engagement"
+    },
+    "sections": {
+      "performance": "Performance",
+      "audience": "Audience",
+      "channels": "Channels",
+      "rates": "Rates",
+      "work": "Work"
+    },
+    "performance": {
+      "label": "The Number That Matters · Last 30 Days",
+      "engagementRate": "Engagement Rate",
+      "categoryAverage": "vs 1.9% category average",
+      "accountsReached": "Accounts Reached",
+      "accountsReachedSub": "last 30 days",
+      "nonFollowerReach": "Non-Follower Reach",
+      "nonFollowerReachSub": "organic discovery",
+      "interactions": "Interactions",
+      "interactionsSub": "avg per post"
+    },
+    "audience": {
+      "label": "Who's Watching",
+      "topCities": "Top Cities",
+      "ageBrackets": "Age Brackets",
+      "genderSplit": "Gender Split",
+      "topCountries": "Top Countries"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "other": "Other"
+    },
+    "channels": {
+      "label": "Social Media"
+    },
+    "services": {
+      "label": "Services & Rates",
+      "onRequest": "On request"
+    },
+    "content": {
+      "label": "Top Content",
+      "reelAlt": "Reel"
+    },
+    "cta": {
+      "title": "Open for Collaborations",
+      "subtitle": "Interested in working together? Reach out via Instagram or through the RGossips platform.",
+      "button": "Start a Collaboration"
+    },
+    "footer": {
+      "generatedOn": "Generated on <b>RGossips</b>"
+    }
+  },
+  "MediaKitTemplatesTemplateNeoBrutalist": {
+    "about": {
+      "label": "About Me"
+    },
+    "expertise": {
+      "label": "Expertise",
+      "defaultCategory": "Content"
+    },
+    "social": {
+      "label": "Social Media"
+    },
+    "services": {
+      "label": "Services & Rates",
+      "onRequest": "On request"
+    },
+    "performance": {
+      "label": "Performance",
+      "headline": "The <em>Number</em><br></br>That Matters",
+      "stats": {
+        "accountsReached": {
+          "label": "Accounts Reached",
+          "sub": "last 30 days"
+        },
+        "engagementRate": {
+          "label": "Engagement Rate",
+          "sub": "vs 1.9% cat avg"
+        },
+        "nonFollowerReach": {
+          "label": "Non-Follower Reach",
+          "sub": "organic discovery"
+        },
+        "interactions": {
+          "label": "Interactions",
+          "sub": "avg per post"
+        }
+      }
+    },
+    "audience": {
+      "label": "Who's Watching",
+      "topCities": "Top Cities",
+      "ageBrackets": "Age Brackets",
+      "genderSplit": "Gender Split",
+      "topCountries": "Top Countries"
+    },
+    "topContent": {
+      "label": "Top Content",
+      "reelAlt": "Reel"
+    },
+    "cta": {
+      "title": "Open for Collabs!",
+      "body": "Interested in working together? Reach out via Instagram or RGossips."
+    },
+    "footer": {
+      "generatedOn": "Generated on <brand>RGossips</brand>"
+    },
+    "gender": {
+      "female": "Female",
+      "male": "Male",
+      "other": "Other"
+    }
+  },
+  "MyCampaignsTable": {
+    "title": "My Campaigns",
+    "columns": {
+      "brand": "Brand",
+      "status": "Status",
+      "date": "Date",
+      "amount": "Amount"
+    },
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next"
+    }
+  },
+  "MyEarningsAndAnalytics": {
+    "selectYear": "Select Year",
+    "charts": {
+      "monthlyEarnings": "Monthly Earnings",
+      "categoryEarningsPerMonth": "Category Earnings Per Month"
+    },
+    "categories": {
+      "hotel": "Hotel",
+      "product": "Product",
+      "restaurant": "Restaurant",
+      "salon": "Salon"
+    }
+  },
+  "MyInformationDetail": {
+    "common": {
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "save": "Save",
+      "edit": "Edit",
+      "selectedCount": "{count} selected"
+    },
+    "submission": {
+      "openLivePost": "Open {brandName} live post",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved"
+      },
+      "defaultLabel": "Live post",
+      "defaultCampaign": "Campaign",
+      "defaultBrand": "Brand"
+    },
+    "reelDetails": {
+      "subtitle": "Follow me through a typical day.",
+      "views": "Views",
+      "engagement": "Engagement",
+      "videoCode": "Video Code",
+      "platform": "Platform",
+      "uploadDate": "Upload Date",
+      "editReel": "Edit Reel"
+    },
+    "deleteReel": {
+      "title": "Delete Reel?",
+      "body": "This action cannot be undone."
+    },
+    "categoryModal": {
+      "title": "Select Categories",
+      "searchPlaceholder": "Search categories...",
+      "save": "Save Categories"
+    },
+    "locationModal": {
+      "title": "Select Locations",
+      "searchPlaceholder": "Search cities...",
+      "save": "Save Locations"
+    },
+    "servicesModal": {
+      "title": "Services & Rates",
+      "selectServices": "Select services you offer",
+      "setRates": "Set your rates"
+    },
+    "services": {
+      "reels": "Reels",
+      "stories": "Stories",
+      "shorts": "YouTube Shorts",
+      "posts": "Static Posts",
+      "ugc": "UGC Videos"
+    },
+    "errors": {
+      "imageTooLargeTitle": "Image too large",
+      "imageTooLargeBody": "Please pick an image under 10MB.",
+      "uploadPhoto": "Failed to upload photo. Please try again.",
+      "removePhoto": "Failed to remove photo. Please try again.",
+      "save": "Failed to save. Please try again."
+    },
+    "profileCard": {
+      "removeCustomPhoto": "Remove custom photo",
+      "yourName": "Your Name",
+      "locationMore": "{first} +{count} more",
+      "posts": "Posts",
+      "followers": "Followers",
+      "following": "Following",
+      "editProfile": "Edit Profile"
+    },
+    "editForm": {
+      "basicInformation": "Basic Information",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Your full name",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "contactInformation": "Contact Information",
+      "location": "Location",
+      "tapToSelectCities": "Tap to select cities",
+      "gender": "Gender",
+      "genderOptions": {
+        "unspecified": "Prefer not to specify",
+        "male": "Male",
+        "female": "Female",
+        "nonBinary": "Non-binary",
+        "preferNotToSay": "Prefer not to say"
+      },
+      "emailAddress": "Email Address",
+      "emailPlaceholder": "you@email.com",
+      "phoneNumber": "Phone Number",
+      "phonePlaceholder": "Not available",
+      "address": "Address",
+      "addressPlaceholder": "Your full address...",
+      "socialMedia": "Social Media",
+      "instagramHandle": "Instagram Handle",
+      "instagramSyncedNote": "Instagram handle is synced from your connected account",
+      "categories": "Categories",
+      "noCategories": "No categories selected. Tap Edit to add.",
+      "servicesAndRates": "Services & Rates",
+      "noRateSet": "No rate set",
+      "noServices": "No services selected. Tap Edit to add.",
+      "saving": "Saving...",
+      "saved": "Saved!",
+      "saveChanges": "Save Changes"
+    },
+    "videoCard": {
+      "views": "{views} views"
+    },
+    "metrics": {
+      "heading": "Engagement Metrics",
+      "engagementRate": "Engagement Rate",
+      "engagement": "Engagement",
+      "followers": "Followers",
+      "avgLikes": "Avg Likes",
+      "avgComments": "Avg Comments",
+      "impressions": "Impressions",
+      "reach": "Reach"
+    },
+    "growth": {
+      "heading": "Growth Overview",
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "engagementPercent": "Engagement %",
+      "months": {
+        "jan": "Jan",
+        "feb": "Feb",
+        "mar": "Mar",
+        "apr": "Apr",
+        "may": "May",
+        "jun": "Jun"
+      }
+    },
+    "myWork": {
+      "heading": "My Work",
+      "liveSubmissions": "{count, plural, one {# live submission} other {# live submissions}}",
+      "loading": "Loading…",
+      "emptyTitle": "No live submissions yet.",
+      "emptyBodyDesktop": "Once a brand approves your application and you submit the live post link, it'll appear here.",
+      "emptyBodyMobile": "Your approved campaign live links will show up here."
+    },
+    "crop": {
+      "title": "Crop Photo",
+      "saving": "Saving...",
+      "zoom": "Zoom"
+    }
+  },
+  "NotificationSettings": {
+    "title": "Notification Settings",
+    "subtitle": "Manage your notification preferences and communication settings",
+    "restoreDefaults": "Restore defaults",
+    "restoreDefaultsTitle": "Restore default settings",
+    "saved": "Saved ✓",
+    "saving": "Saving…",
+    "saveChanges": "Save Changes",
+    "sections": {
+      "campaign": "Campaign Notifications",
+      "financial": "Financial"
+    },
+    "prefs": {
+      "campaignUpdates": {
+        "title": "Campaign Updates",
+        "description": "New campaigns matching your profile"
+      },
+      "applicationStatus": {
+        "title": "Application Status",
+        "description": "Updates on your applications"
+      },
+      "deadlineReminders": {
+        "title": "Deadline Reminders",
+        "description": "Content submission deadlines"
+      },
+      "paymentAlerts": {
+        "title": "Payment Alerts",
+        "description": "Payment received notifications"
+      }
+    }
+  },
+  "OwnerControls": {
+    "heading": "Creator Controls",
+    "editProfile": "Edit Profile",
+    "generating": "Generating...",
+    "regenerate": "Regenerate AI Resume",
+    "limitNote": "Resume generation limit: <b>1 per month</b>",
+    "popup": {
+      "limitReached": {
+        "title": "Monthly limit reached",
+        "message": "You can only generate 1 resume per month."
+      },
+      "generated": {
+        "title": "Resume generated",
+        "message": "Your AI resume has been generated."
+      }
+    }
+  },
+  "PaymentMethods": {
+    "title": "Payments",
+    "subtitle": "Manage payment methods you use to receive earnings",
+    "pendingWaiting": "₹{amount} is waiting for you",
+    "pendingHint": "Add a UPI ID or bank account to receive your campaign earnings.",
+    "methodsHeading": "Payment Methods",
+    "addNew": "Add New",
+    "noMethods": "No payment methods added",
+    "noMethodsHint": "Add a UPI ID or bank account to receive payments",
+    "primary": "Primary",
+    "setPrimary": "Set Primary",
+    "methods": {
+      "upi": "UPI",
+      "bankAccount": "Bank Account",
+      "bank": "Bank",
+      "paymentMethod": "Payment Method"
+    },
+    "validation": {
+      "verified": "Verified",
+      "failed": "Verify failed",
+      "verifying": "Verifying…",
+      "failedReason": "Could not verify the account holder"
+    },
+    "creditHistory": "Credit History",
+    "noPayouts": "No payouts yet",
+    "noPayoutsHint": "Once your campaign earnings are released they'll show up here.",
+    "earningStatus": {
+      "pending_creator_info": "Add payout details to receive",
+      "scheduled": "Scheduled",
+      "processing": "Processing",
+      "processed": "Paid",
+      "failed": "Failed",
+      "reversed": "Reversed"
+    },
+    "brandFallback": "Brand",
+    "campaignFallback": "Campaign",
+    "paidOn": "Paid on {date}",
+    "arrivingBy": "Arriving by {date}",
+    "utr": "UTR {utr}",
+    "subscriptionHistory": "Subscription History",
+    "refresh": "Refresh",
+    "noInvoices": "No subscription invoices yet",
+    "noInvoicesHint": "Invoices for plan upgrades and renewals will show up here once you've made a payment.",
+    "subscriptionFallback": "Subscription",
+    "annual": "Annual",
+    "monthly": "Monthly",
+    "active": "Active",
+    "cancelled": "Cancelled",
+    "renews": "Renews {date}",
+    "downloadPdf": "Download PDF",
+    "openInvoice": "Open invoice",
+    "invoice": "Invoice",
+    "addPaymentMethod": "Add Payment Method",
+    "upiIdLabel": "UPI ID",
+    "upiPlaceholder": "yourname@upi",
+    "upiHint": "Enter your UPI ID linked to Google Pay, PhonePe, Paytm, etc.",
+    "accountHolderName": "Account Holder Name",
+    "accountHolderPlaceholder": "Full name as per bank",
+    "bankName": "Bank Name",
+    "bankNamePlaceholder": "e.g. HDFC Bank",
+    "accountNumber": "Account Number",
+    "accountNumberPlaceholder": "Enter account number",
+    "ifscCode": "IFSC Code",
+    "ifscPlaceholder": "e.g. HDFC0001234",
+    "cancel": "Cancel",
+    "verifyingWithBank": "Verifying with bank…",
+    "addMethod": "Add Method",
+    "notSignedIn": "Not signed in",
+    "failedToSave": "Failed to save",
+    "failedToSaveRetry": "Failed to save. Please try again.",
+    "upiErrors": {
+      "required": "UPI ID is required.",
+      "tooLong": "UPI ID is too long.",
+      "singleAt": "Must contain exactly one @ symbol.",
+      "invalidUser": "The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.",
+      "invalidHandle": "The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl."
+    }
+  },
+  "PerformanceDashboard": {
+    "planThisMonth": "PLAN THIS MONTH",
+    "return": "Return",
+    "planPerformance": "Excellent performance on your <b>₹699 Pro plan</b> this month.",
+    "growthBadge": "+340% growth vs last month",
+    "trajectory": "Trajectory",
+    "thirtyDays": "30 days",
+    "metrics": {
+      "earnings": "Earnings",
+      "campaigns": "Campaigns",
+      "brands": "Brands",
+      "avgEngagement": "Avg Engagement"
+    },
+    "availableBalance": "Available Balance",
+    "readyForWithdrawal": "Ready for withdrawal",
+    "withdrawFunds": "Withdraw Funds",
+    "earningsOverview": "Earnings Overview",
+    "revenueSubtitle": "Your revenue growth over time",
+    "week": "Week",
+    "month": "Month",
+    "today": "Today",
+    "actionsCount": "{count, plural, one {# ACTION} other {# ACTIONS}}",
+    "actions": {
+      "submitBoatReel": "Submit BoAt Reel",
+      "overdueDay": "overdue · 1 day",
+      "upload": "Upload",
+      "replyMamaearth": "Reply to Mamaearth",
+      "briefClarification": "brief clarification",
+      "reply": "Reply",
+      "sugarCosmetics": "Sugar Cosmetics",
+      "postScheduled": "post scheduled content",
+      "viewBrief": "View Brief"
+    }
+  },
+  "PrivacySettings": {
+    "title": "Privacy & Security",
+    "subtitle": "Control your account privacy and security settings",
+    "privacySettings": "Privacy Settings",
+    "publicProfile": {
+      "title": "Public Profile",
+      "description": "Allow brands to find your profile"
+    },
+    "showEmail": {
+      "title": "Show Email",
+      "description": "Display email on public profile"
+    },
+    "securityControl": "Security Control",
+    "trustedDevices": {
+      "title": "Trusted Devices",
+      "description": "Manage your active login sessions"
+    },
+    "deactivateAccount": {
+      "title": "Deactivate Account",
+      "description": "Temporarily disable your account"
+    },
+    "securityTips": {
+      "heading": "Security Tips",
+      "tip1": "Use a strong, unique password",
+      "tip2": "Review trusted devices regularly",
+      "tip3": "Never share your password"
+    },
+    "saved": "Saved ✓",
+    "saving": "Saving…",
+    "saveChanges": "Save Changes"
+  },
+  "ProfileStepPopup": {
+    "loadingProfile": "Loading Profile...",
+    "title": "Complete your creator profile",
+    "steps": {
+      "fundamental": "Fundamental",
+      "professional": "Professional",
+      "social": "Social",
+      "collaboration": "Collaboration",
+      "additional": "Additional"
+    },
+    "saveError": "Failed to save info. Please try again.",
+    "confirmClose": {
+      "title": "Leave this step?",
+      "message": "Progress for the current step will be lost. Do you still want to exit?",
+      "cancel": "Cancel",
+      "confirm": "Yes, Close"
+    }
+  },
+  "ProtectedRoute": {
+    "loading": "Loading your experience"
+  },
+  "RatingModal": {
+    "starLabel": "{count, plural, one {# star} other {# stars}}",
+    "submit": "Submit Rating",
+    "skip": "Skip",
+    "close": "Close",
+    "working": "Working…",
+    "submitting": "Submitting…",
+    "errors": {
+      "pleaseRate": "Please rate \"{label}\" before submitting",
+      "submitFailed": "Failed to submit rating"
+    }
+  },
+  "ResumeTemplate": {
+    "metrics": {
+      "followers": "Followers",
+      "engagement": "Engagement",
+      "avgReelViews": "Avg Reel Views"
+    },
+    "creatorSummary": "Creator Summary",
+    "contentPerformance": "Content Performance",
+    "averageLikes": "Average Likes: {value}",
+    "averageComments": "Average Comments: {value}",
+    "averageSaves": "Average Saves: {value}",
+    "reelPerformance": "Reel Performance",
+    "bestReelViews": "Best Reel Views: {value}",
+    "watchCompletion": "Watch Completion: {value}%",
+    "contentThemes": "Content Themes",
+    "audienceDemographics": "Audience Demographics",
+    "gender": "Gender: {male}% Male • {female}% Female",
+    "bestBrandFit": "Best Brand Fit",
+    "topPerformingContent": "Top Performing Content",
+    "views": "{views} views",
+    "pastBrandCollaborations": "Past Brand Collaborations",
+    "estimatedCampaignPerformance": "Estimated Campaign Performance",
+    "estimatedReach": "Estimated Reach: {value}",
+    "estimatedEngagement": "Estimated Engagement: {value}"
+  },
+  "SearchOverlay": {
+    "searchPlaceholder": "Search campaigns...",
+    "recentSearches": "Recent Searches",
+    "clearAll": "Clear All"
+  },
+  "StackedDeals": {
+    "loading": "Loading featured campaigns…",
+    "featuredCampaign": "Featured Campaign",
+    "applyNow": "Apply Now",
+    "dealImageAlt": "deal",
+    "goToDeal": "Go to deal {number}",
+    "timer": {
+      "open": "Open",
+      "closed": "Closed",
+      "daysLeft": "{count, plural, one {day left} other {days left}}"
+    }
+  },
+  "StayCarousel": {
+    "defaultTitle": "Plan your stay with us",
+    "loading": "Finding your next stay...",
+    "applyNow": "Apply Now",
+    "brandCollab": "Brand Collab"
+  },
+  "StepFormsStepForm0": {
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "dateOfBirth": "Date of Birth",
+    "gender": "Gender",
+    "selectGender": "Select gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "city": "City",
+    "cityPlaceholder": "City",
+    "state": "State",
+    "statePlaceholder": "State",
+    "country": "Country",
+    "countryPlaceholder": "Country",
+    "saving": "Saving...",
+    "next": "Next"
+  },
+  "StepFormsStepForm1": {
+    "primaryCategoriesLabel": "Primary Content Categories",
+    "secondaryCategoriesLabel": "Secondary Content Categories",
+    "contentLanguagesLabel": "Content Languages",
+    "yearsOfExperienceLabel": "Years of Experience",
+    "selectPlaceholder": "Type or select...",
+    "selectOption": "Select",
+    "saving": "Saving...",
+    "saveAndContinue": "Save & Continue"
+  },
+  "StepFormsStepForm2": {
+    "remove": "Remove",
+    "handle": "Handle",
+    "handlePlaceholder": "@username",
+    "platformUrl": "{platform} URL",
+    "urlPlaceholder": "https://...",
+    "subscriberRange": "Subscriber Range",
+    "select": "Select",
+    "addAnotherPlatform": "Add Another Platform",
+    "selectAPlatform": "Select a platform",
+    "add": "Add",
+    "primaryPlatform": "Primary Platform",
+    "back": "Back",
+    "saving": "Saving...",
+    "saveAndContinue": "Save & Continue"
+  },
+  "StepFormsStepForm3": {
+    "collaborationTypesLabel": "Collaboration Types (multi-select)",
+    "budgetRangeLabel": "Budget Range (optional)",
+    "selectPlaceholder": "Select",
+    "availabilityLabel": "Availability",
+    "portfolioUrlLabel": "Portfolio URL (optional)",
+    "sampleLinksLabel": "Sample Links (up to 3)",
+    "remove": "Remove",
+    "addLink": "Add Link",
+    "back": "Back",
+    "saving": "Saving...",
+    "saveAndContinue": "Save & Continue"
+  },
+  "StepFormsStepForm4": {
+    "bio": {
+      "label": "Bio",
+      "placeholder": "Short bio"
+    },
+    "skills": {
+      "label": "Skills (optional)",
+      "placeholder": "Canon R5, Adobe Premiere…"
+    },
+    "pastCollaborations": {
+      "label": "Past Collaborations",
+      "placeholder": "List brands or notes"
+    },
+    "back": "Back",
+    "saving": "Saving...",
+    "finish": "Finish & Save Profile"
+  },
+  "StepsToAplly": {
+    "heading": "Steps to apply",
+    "steps": {
+      "step1": {
+        "label": "Step 1",
+        "description": "Apply for campaign"
+      },
+      "step2": {
+        "label": "Step 2",
+        "description": "Get Approval From Brand"
+      },
+      "step3": {
+        "label": "Step 3",
+        "description": "Submit Content for approval"
+      },
+      "step4": {
+        "label": "Step 4",
+        "description": "Submit live link"
+      }
+    }
+  },
+  "SupportChat": {
+    "greeting": "Hi {name}! 👋 What can I help you with today?",
+    "greetingFallbackName": "there",
+    "pickClosest": "Pick the closest match:",
+    "back": "← Back",
+    "loadingCampaigns": "Loading campaigns…",
+    "header": {
+      "title": "RGossips Support",
+      "status": "Online · usually replies instantly",
+      "backAria": "Back",
+      "closeAria": "Close"
+    },
+    "actions": {
+      "requestCallback": "Request a callback",
+      "askAnother": "Ask another question",
+      "talkToHuman": "Talk to a human"
+    },
+    "callback": {
+      "intro": "Tell us how to reach you and we'll call back.",
+      "submitted": "Got it ✓ Our team will call back during the time you picked.",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "+91 98765 43210",
+      "phoneHint": "Include country code (e.g. +91 for India)",
+      "bestTime": "Best time to call",
+      "notesLabel": "Anything we should know? (optional)",
+      "notesPlaceholder": "What's the issue?",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "submit": "Request callback",
+      "done": {
+        "title": "Callback requested",
+        "body": "We'll call {phone} {time}."
+      },
+      "errors": {
+        "signIn": "Please sign in first.",
+        "invalidPhone": "Enter a valid phone number with country code.",
+        "submitFailed": "Failed to submit"
+      }
+    },
+    "times": {
+      "todayAfternoon": "Today afternoon",
+      "todayEvening": "Today evening",
+      "tomorrowMorning": "Tomorrow morning",
+      "tomorrowEvening": "Tomorrow evening",
+      "anytime": "Anytime"
+    },
+    "timesLower": {
+      "todayAfternoon": "today afternoon",
+      "todayEvening": "today evening",
+      "tomorrowMorning": "tomorrow morning",
+      "tomorrowEvening": "tomorrow evening",
+      "anytime": "anytime"
+    },
+    "campaigns": {
+      "pullingActive": "Pulling your active campaigns…",
+      "pullingAll": "Pulling your campaigns…",
+      "noneActive": "You don't have any active campaigns right now. Browse open ones from the Campaigns tab.",
+      "activeCount": "{count, plural, one {You have # active campaign. Tap one to open it.} other {You have # active campaigns. Tap one to open it.}}",
+      "noneApplied": "You haven't applied to any campaigns yet, so there's nothing to flag here.",
+      "pickTrouble": "Pick the campaign you're having trouble with:",
+      "whatsWrong": "Got it — what's going on with \"{title}\"?"
+    },
+    "labels": {
+      "campaigns": "Campaigns",
+      "campaign_show_active": "Show my active campaigns",
+      "campaign_issue": "Issue with a campaign",
+      "campaign_apply_how": "How do I apply to a campaign?",
+      "campaign_missing": "I can't find a campaign I applied to",
+      "campaign_submit": "How do I submit deliverables / live links?",
+      "profile": "Profile & Account",
+      "profile_ig": "Update / refresh my Instagram",
+      "profile_photo": "Change profile photo",
+      "profile_bio": "Edit bio, categories or location",
+      "profile_reels": "My reels aren't showing",
+      "services": "Services",
+      "service_browse": "How do I browse services?",
+      "service_quote": "How does Custom Quote work?",
+      "service_order_track": "Track an existing order",
+      "service_payment": "Payment / advance not going through",
+      "service_revision": "Request a revision on a draft",
+      "service_callback": "Talk to a human about a service",
+      "payments": "Payments",
+      "pay_when": "When do I get paid?",
+      "pay_late": "Payment hasn't arrived",
+      "pay_bank": "Add or update bank details",
+      "plans": "Plans & Subscription",
+      "plans_upgrade": "Upgrade my plan",
+      "plans_compare": "What's the difference between plans?",
+      "plans_cancel": "Cancel my subscription",
+      "tech": "Technical Issues",
+      "tech_slow": "App is slow or won't load",
+      "tech_login": "Can't sign in",
+      "tech_ig_token": "Instagram says reconnect",
+      "other": "Something else",
+      "other_callback": "Request a callback",
+      "issue_no_response": "Brand hasn't responded",
+      "issue_payment": "Payment is delayed",
+      "issue_deliverables": "Submit / update deliverables",
+      "issue_rejected": "Why was I rejected / removed?",
+      "issue_callback": "Talk to a human about this"
+    },
+    "responses": {
+      "campaign_apply_how": "Browse open campaigns from the Campaigns tab, open one you like, and tap Apply. Brands review applications within a few days.",
+      "campaign_missing": "Open Campaigns and switch to the Applied tab — that's where every active application lives. The Completed tab only shows wrapped-up campaigns.",
+      "campaign_submit": "Open the campaign detail page; once your application is Approved you'll see a Submit Deliverables button. After the live post goes up, paste the Instagram link there.",
+      "profile_ig": "Open your Profile, tap the Instagram card, and use Refresh to pull the latest stats. If your token has expired you'll see a reconnect button there.",
+      "profile_photo": "Profile → tap your avatar → upload a new image. We'll auto-crop it to a clean circle.",
+      "profile_bio": "Profile → My Information lets you edit name, bio, categories and city. Brands use these to match you to campaigns.",
+      "profile_reels": "Reels sync from your linked Instagram. Profile → Refresh Instagram pulls the latest. If they still don't appear, your IG account may not be a Business/Creator profile.",
+      "service_browse": "Open the Services tab to see everything I offer to brands — reels, photo shoots, story takeovers, ambassadorships, and more. Each card opens a detail page with my rates and turnaround.",
+      "service_quote": "Pick a service, tap Get Custom Quote, fill in what you need and submit. I review and reply with a personalised quote — once you accept, you pay the advance via Stripe and we move into delivery.",
+      "service_order_track": "Profile → Orders shows every service request you've made. Each order page has the live status, payment breakdown, and any draft deliverables ready for review.",
+      "service_payment": "Stripe occasionally declines cards on first attempt — try once more, or use a different card / UPI. If it still fails, request a callback and we'll help you wrap it up.",
+      "service_revision": "Open the order from Profile → Orders. While the draft is in review you'll see a Request Revision button — describe what to change and I'll re-deliver.",
+      "pay_when": "Once the brand approves your live links, the payment moves to Payment Released. Funds typically reflect in your account within 7–10 business days.",
+      "pay_late": "Check the campaign detail page — if it's still on Payment Released after 14 business days, request a callback and we'll chase the brand for you.",
+      "pay_bank": "Profile → Payment Methods. We use these only for releasing your campaign earnings.",
+      "plans_upgrade": "Pick the plan that fits — Pro unlocks 15 applications/month and richer analytics, Elite is unlimited.",
+      "plans_compare": "Open the pricing page for the full feature matrix — applications/month, analytics depth, audience demographics, deal matching priority and support level.",
+      "plans_cancel": "Subscriptions can be cancelled directly from Stripe's billing portal. If you can't access it, request a callback and we'll cancel it for you.",
+      "tech_slow": "Hard-refresh the page (Ctrl/Cmd+Shift+R). If it persists, log out and back in. Still broken? Request a callback with what you were doing when it happened.",
+      "tech_login": "Use the same Instagram account you signed up with. If OTP isn't arriving, double-check the country code — we send to +91 numbers only right now.",
+      "tech_ig_token": "IG tokens expire every 60 days. Profile → Reconnect Instagram refreshes it without losing any data."
+    },
+    "links": {
+      "campaign_apply_how": "Open Campaigns",
+      "campaign_missing": "Go to Campaigns",
+      "campaign_submit": "Go to Campaigns",
+      "profile_ig": "Go to Profile",
+      "profile_photo": "Go to Profile",
+      "profile_bio": "Go to Profile",
+      "profile_reels": "Go to Profile",
+      "service_browse": "Open Services",
+      "service_quote": "Open Services",
+      "service_order_track": "My Orders",
+      "service_revision": "My Orders",
+      "plans_upgrade": "View Plans",
+      "plans_compare": "Compare Plans",
+      "tech_ig_token": "Go to Profile",
+      "openThisCampaign": "Open this campaign",
+      "openCampaigns": "Open Campaigns",
+      "browseCampaigns": "Browse Campaigns"
+    },
+    "issues": {
+      "brandFallback": "the brand",
+      "noResponse": "{status, select, pending {Your application is still Pending with {brand}. If it's been over 5–7 days since you applied, request a callback and we'll nudge them.} other {Your application status is \"{status}\". If you're waiting on something specific, request a callback so we can chase {brand} for you.}}",
+      "payment": "{status, select, completed {{brand} has marked this campaign Completed. Payment usually reflects within 7–10 business days. If 14+ business days have passed, request a callback.} payment {{brand} has released payment. It typically takes 7–10 business days to land. If it's been longer, request a callback.} other {Payments only release after the brand approves your live links. Current status: \"{status}\". Once it moves to Payment, the 7–10 day clock starts.}}",
+      "deliverables": "{status, select, approved {Open the campaign detail page — you'll see a Submit Deliverables button now that {brand} has approved you.} revision_needed {{brand} has asked for a revision. Open the campaign detail page to see exactly which deliverables need re-uploading.} accepted {Now's the time to post the live content and paste the live links inside the campaign detail page.} other {Deliverables can only be submitted from the Approved or Accepted state. Your current status is \"{status}\".}}",
+      "rejected": "{status, select, rejected {{brand} declined your application — usually for fit, timing, or audience match. The campaign goes back to Active so you can apply to a different one. Your monthly application cap isn't impacted.} other {Your application status is \"{status}\", not rejected. Take another look at the campaign detail page to see the latest update from {brand}.}}"
+    }
+  },
+  "TopPicksCarousel": {
+    "title": "Campaigns for you",
+    "subtitleMatched": "Matched to your niche — {niche}",
+    "subtitleDefault": "Opportunities matched to your creator profile",
+    "viewAll": "View all ›",
+    "goToCampaign": "Go to campaign {number}",
+    "percentMatch": "{match}% match",
+    "pay": "Pay",
+    "req": "Req",
+    "applyNow": "Apply Now",
+    "categoryGeneral": "General",
+    "locationDefault": "Pan India",
+    "descDefault": "Apply to collaborate with this brand.",
+    "reqDefault": "Not specified",
+    "badge": {
+      "endingSoon": "Ending Soon",
+      "active": "Active"
+    }
+  },
+  "TopServices": {
+    "title": "Top Services",
+    "subtitle": "Professional marketing services to grow your brand",
+    "viewAll": "View All Services",
+    "goToService": "Go to service {number}",
+    "topRated": "TOP RATED",
+    "startingAt": "Starting at",
+    "getQuote": "Get Quote",
+    "reviewsCount": " ({count, plural, one {# review} other {# reviews}})",
+    "reviewsCountShort": " ({count})"
+  },
+  "TourInfo": {
+    "collabBenefits": "Collab Benefits",
+    "services": "Services",
+    "guestAllowed": "Guest Allowed",
+    "deliverables": "Deliverables",
+    "deliverablesList": {
+      "stories": "Instagram Stories",
+      "posts": "Instagram Posts",
+      "reels": "Instagram Reels"
+    },
+    "eligibility": "Eligibility",
+    "eligibilityList": {
+      "followers": "Followers",
+      "platform": "Platform",
+      "type": "Type",
+      "content": "Content"
+    },
+    "availability": "Availability",
+    "timings": "Timings",
+    "checkIn": "Check-In:",
+    "checkOut": "Check-Out:",
+    "locationNotAvailable": "Location not available",
+    "notAvailable": "N/A",
+    "manual": "Manual"
+  },
+  "TourMap": {
+    "heading": "Tour Map"
+  },
+  "TrustedDevices": {
+    "header": {
+      "title": "Trusted Devices",
+      "subtitle": "Manage devices logged into your account"
+    },
+    "info": {
+      "description": "These are the devices currently logged into your account. Remove any devices you don't recognize."
+    },
+    "activeCount": "{count} Active",
+    "devicesLabel": "Devices",
+    "logoutFromOthers": "Logout from others",
+    "empty": {
+      "title": "No active devices",
+      "subtitle": "Sign in on a device to see it here"
+    },
+    "security": {
+      "title": "Security Tip",
+      "description": "If you see a device you don't recognize, remove it immediately. That device will be signed out within a minute."
+    },
+    "unknownDevice": "Unknown device",
+    "thisDevice": "This device",
+    "removeDevice": "Remove Device",
+    "time": {
+      "activeNow": "Active now",
+      "minutesAgo": "{min}m ago",
+      "hoursAgo": "{hr}h ago",
+      "daysAgo": "{day}d ago"
+    },
+    "modal": {
+      "title": "Logout from other devices?",
+      "description": "You will be logged out from every device except this one. They'll have to sign in again."
+    },
+    "cancel": "Cancel",
+    "logoutOthers": "Logout Others"
+  },
+  "UserHeader": {
+    "roleCreator": "{role} • Creator",
+    "chooseBannerPreset": "Choose a banner preset",
+    "applyBannerTitle": "Apply this banner?",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "errors": {
+      "updateBanner": "Error updating banner. Please try again."
+    }
+  },
+  "UserSettingsForm": {
+    "loading": "Loading Settings...",
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "instagram": "Instagram URL",
+      "twitter": "Twitter URL",
+      "upi": "UPI ID",
+      "bank": "Bank Details"
+    },
+    "professionalInfo": "Professional Info",
+    "primaryCategories": "Primary Categories",
+    "secondaryCategories": "Secondary Categories",
+    "contentLanguages": "Content Languages",
+    "yearsOfExperience": "Years of Experience",
+    "selectCategories": "Select categories...",
+    "selectExperience": "Select Experience",
+    "saving": "Saving Changes...",
+    "saveAll": "Save All Changes",
+    "successText": "Your profile has been updated successfully!",
+    "errorText": "Failed to update details. Please try again later.",
+    "errors": {
+      "nameMin": "Name must be at least 2 characters",
+      "emailInvalid": "Invalid email address",
+      "primaryCategoriesMin": "Select at least 1 primary category",
+      "contentLanguagesMin": "Select at least 1 language"
+    }
+  },
+  "WelcomeRewardModal": {
+    "pill": "Your Reward",
+    "congratulations": "Congratulations! 🎉",
+    "subtitle": "You've been awarded a welcome reward for joining RGossips.",
+    "rcBadge": "RC",
+    "rcAmount": "50 Reward Credits",
+    "rcDescription": "Your welcome bonus — unlocks 1 month after signup, then redeem on your subscription.",
+    "referralTitle": "50% off your first subscription",
+    "giftedBy": "Gifted by",
+    "claim": "Claim Your Reward",
+    "maybeLater": "Maybe later"
+  }
+}

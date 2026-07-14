@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { MapPin, Star } from "lucide-react";
 import {
   Carousel,
@@ -137,6 +138,7 @@ const fallbackTopCreators = [
 ];
 
 export const TopCreatorsCarousel = () => {
+  const t = useTranslations("BrandsTopCreatorCarousel");
   const supabase = createClient();
   const [topCreators, setTopCreators] = useState(fallbackTopCreators);
 
@@ -172,9 +174,9 @@ export const TopCreatorsCarousel = () => {
     <section className="w-full px-4 lg:px-6 bg-white py-8 lg:py-10">
       {/* Header Section */}
       <div className="px-6 mb-6">
-        <h2 className="text-2xl font-black text-[#1C115A]">Top Creators</h2>
+        <h2 className="text-2xl font-black text-[#1C115A]">{t("title")}</h2>
         <p className="text-slate-500 font-medium text-sm">
-          High impact, low cost
+          {t("subtitle")}
         </p>
       </div>
 
@@ -224,7 +226,10 @@ export const TopCreatorsCarousel = () => {
                         <div className="flex items-center gap-1 text-slate-400 text-xs font-bold">
                           <MapPin size={12} />
                           <span>
-                            {creator.location} • {creator.followers} followers
+                            {t("followersLine", {
+                              location: creator.location,
+                              followers: creator.followers,
+                            })}
                           </span>
                         </div>
                       </div>

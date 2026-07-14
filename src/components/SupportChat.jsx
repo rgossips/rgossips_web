@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 
@@ -266,62 +267,29 @@ const findLabel = (id) => {
 // campaign in the "issue with a campaign" flow. The response template gets
 // the campaign object so we can mention the live status / brand / dates.
 
-const ISSUE_OPTIONS = (campaign) => {
-  const status = campaign.applicationStatus;
-  const brand = campaign.brandName || "the brand";
-  const opts = [
-    {
-      id: "issue_no_response",
-      label: "Brand hasn't responded",
-      response:
-        status === "pending"
-          ? `Your application is still Pending with ${brand}. If it's been over 5–7 days since you applied, request a callback and we'll nudge them.`
-          : `Your application status is "${status}". If you're waiting on something specific, request a callback so we can chase ${brand} for you.`,
-    },
-    {
-      id: "issue_payment",
-      label: "Payment is delayed",
-      response:
-        status === "completed"
-          ? `${brand} has marked this campaign Completed. Payment usually reflects within 7–10 business days. If 14+ business days have passed, request a callback.`
-          : status === "payment"
-          ? `${brand} has released payment. It typically takes 7–10 business days to land. If it's been longer, request a callback.`
-          : `Payments only release after the brand approves your live links. Current status: "${status}". Once it moves to Payment, the 7–10 day clock starts.`,
-    },
-    {
-      id: "issue_deliverables",
-      label: "Submit / update deliverables",
-      response:
-        status === "approved"
-          ? `Open the campaign detail page — you'll see a Submit Deliverables button now that ${brand} has approved you.`
-          : status === "revision_needed"
-          ? `${brand} has asked for a revision. Open the campaign detail page to see exactly which deliverables need re-uploading.`
-          : status === "accepted"
-          ? `Now's the time to post the live content and paste the live links inside the campaign detail page.`
-          : `Deliverables can only be submitted from the Approved or Accepted state. Your current status is "${status}".`,
-      link: { href: `/influencer/offers/${campaign.id}`, label: "Open this campaign" },
-    },
-    {
-      id: "issue_rejected",
-      label: "Why was I rejected / removed?",
-      response:
-        status === "rejected"
-          ? `${brand} declined your application — usually for fit, timing, or audience match. The campaign goes back to Active so you can apply to a different one. Your monthly application cap isn't impacted.`
-          : `Your application status is "${status}", not rejected. Take another look at the campaign detail page to see the latest update from ${brand}.`,
-      link: { href: `/influencer/offers/${campaign.id}`, label: "Open this campaign" },
-    },
-    {
-      id: "issue_callback",
-      label: "Talk to a human about this",
-      action: "callback",
-    },
-  ];
-  return opts;
+const ISSUE_OPTIONS = [
+  { id: "issue_no_response" },
+  { id: "issue_payment" },
+  { id: "issue_deliverables" },
+  { id: "issue_rejected" },
+  { id: "issue_callback", action: "callback" },
+];
+
+// Maps issue-option ids to their ICU message key + whether they carry a
+// deep-link to the campaign. Response text is resolved at click time (where
+// the translator is in scope) via t(`issues.${key}`, { status, brand }).
+const ISSUE_TEXT_KEY = {
+  issue_no_response: "noResponse",
+  issue_payment: "payment",
+  issue_deliverables: "deliverables",
+  issue_rejected: "rejected",
 };
+const ISSUE_LINK_IDS = new Set(["issue_deliverables", "issue_rejected"]);
 
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function SupportChat({ open, onClose }) {
+  const t = useTranslations("SupportChat");
   const router = useRouter();
   const { user, profile, role } = useAuth();
   const [path, setPath] = useState([]); // breadcrumb of node ids
@@ -341,7 +309,7 @@ export default function SupportChat({ open, onClose }) {
       setMessages([
         {
           role: "bot",
-          text: greeting(profile),
+          text: greeting(profile, t),
           options: TREE.children,
         },
       ]);
@@ -395,14 +363,14 @@ export default function SupportChat({ open, onClose }) {
     setCallbackOpen(true);
     setMessages((prev) => [
       ...prev,
-      { role: "bot", text: "Tell us how to reach you and we'll call back." },
+      { role: "bot", text: t("callback.intro") },
     ]);
   };
 
   const handleListActive = async () => {
     setMessages((prev) => [
       ...prev,
-      { role: "bot", text: "Pulling your active campaigns…", typing: true },
+      { role: "bot", text: t("campaigns.pullingActive"), typing: true },
     ]);
     const list = await ensureCampaigns();
     const active = list.filter(
@@ -413,14 +381,14 @@ export default function SupportChat({ open, onClose }) {
       if (active.length === 0) {
         next.push({
           role: "bot",
-          text: "You don't have any active campaigns right now. Browse open ones from the Campaigns tab.",
-          link: { href: "/influencer/campaigns", label: "Open Campaigns" },
+          text: t("campaigns.noneActive"),
+          link: { href: "/influencer/campaigns", label: t("links.openCampaigns") },
           followUp: true,
         });
       } else {
         next.push({
           role: "bot",
-          text: `You have ${active.length} active campaign${active.length === 1 ? "" : "s"}. Tap one to open it.`,
+          text: t("campaigns.activeCount", { count: active.length }),
           campaigns: active,
           campaignAction: "open",
         });
@@ -432,7 +400,7 @@ export default function SupportChat({ open, onClose }) {
   const handleListForIssue = async () => {
     setMessages((prev) => [
       ...prev,
-      { role: "bot", text: "Pulling your campaigns…", typing: true },
+      { role: "bot", text: t("campaigns.pullingAll"), typing: true },
     ]);
     const list = await ensureCampaigns();
     setMessages((prev) => {
@@ -440,14 +408,14 @@ export default function SupportChat({ open, onClose }) {
       if (list.length === 0) {
         next.push({
           role: "bot",
-          text: "You haven't applied to any campaigns yet, so there's nothing to flag here.",
-          link: { href: "/influencer/campaigns", label: "Browse Campaigns" },
+          text: t("campaigns.noneApplied"),
+          link: { href: "/influencer/campaigns", label: t("links.browseCampaigns") },
           followUp: true,
         });
       } else {
         next.push({
           role: "bot",
-          text: "Pick the campaign you're having trouble with:",
+          text: t("campaigns.pickTrouble"),
           campaigns: list,
           campaignAction: "issue",
         });
@@ -462,9 +430,9 @@ export default function SupportChat({ open, onClose }) {
       { role: "user", text: campaign.title },
       {
         role: "bot",
-        text: `Got it — what's going on with "${campaign.title}"?`,
+        text: t("campaigns.whatsWrong", { title: campaign.title }),
         campaignContext: campaign,
-        options: ISSUE_OPTIONS(campaign),
+        options: ISSUE_OPTIONS,
       },
     ]);
   };
@@ -473,18 +441,27 @@ export default function SupportChat({ open, onClose }) {
     if (opt.action === "callback") {
       setMessages((prev) => [
         ...prev,
-        { role: "user", text: opt.label },
+        { role: "user", text: t(`labels.${opt.id}`) },
       ]);
       openCallback(`${campaign.brandName || ""} · ${campaign.title}`);
       return;
     }
+    const brand = campaign.brandName || t("issues.brandFallback");
+    const issueKey = ISSUE_TEXT_KEY[opt.id];
+    const text = t(`issues.${issueKey}`, {
+      status: campaign.applicationStatus || "",
+      brand,
+    });
+    const link = ISSUE_LINK_IDS.has(opt.id)
+      ? { href: `/influencer/offers/${campaign.id}`, label: t("links.openThisCampaign") }
+      : undefined;
     setMessages((prev) => [
       ...prev,
-      { role: "user", text: opt.label },
+      { role: "user", text: t(`labels.${opt.id}`) },
       {
         role: "bot",
-        text: opt.response,
-        link: opt.link,
+        text,
+        link,
         followUp: true,
       },
     ]);
@@ -492,22 +469,22 @@ export default function SupportChat({ open, onClose }) {
 
   const handlePick = (node) => {
     if (node.action === "callback") {
-      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      setMessages((prev) => [...prev, { role: "user", text: t(`labels.${node.id}`) }]);
       openCallback();
       return;
     }
     if (node.action === "list_active") {
-      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      setMessages((prev) => [...prev, { role: "user", text: t(`labels.${node.id}`) }]);
       handleListActive();
       return;
     }
     if (node.action === "list_for_issue") {
-      setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+      setMessages((prev) => [...prev, { role: "user", text: t(`labels.${node.id}`) }]);
       handleListForIssue();
       return;
     }
 
-    setMessages((prev) => [...prev, { role: "user", text: node.label }]);
+    setMessages((prev) => [...prev, { role: "user", text: t(`labels.${node.id}`) }]);
 
     if (node.children?.length) {
       setPath((p) => [...p, node.id]);
@@ -515,7 +492,7 @@ export default function SupportChat({ open, onClose }) {
         ...prev,
         {
           role: "bot",
-          text: node.description || "Pick the closest match:",
+          text: t("pickClosest"),
           options: node.children,
         },
       ]);
@@ -524,8 +501,8 @@ export default function SupportChat({ open, onClose }) {
         ...prev,
         {
           role: "bot",
-          text: node.response,
-          link: node.link,
+          text: t(`responses.${node.id}`),
+          link: node.link ? { href: node.link.href, label: t(`links.${node.id}`) } : undefined,
           followUp: true,
         },
       ]);
@@ -539,10 +516,10 @@ export default function SupportChat({ open, onClose }) {
     const parent = findNode(newPath);
     setMessages((prev) => [
       ...prev,
-      { role: "user", text: "← Back" },
+      { role: "user", text: t("back") },
       {
         role: "bot",
-        text: parent.id === "root" ? greeting(profile) : "Pick the closest match:",
+        text: parent.id === "root" ? greeting(profile, t) : t("pickClosest"),
         options: parent.children,
       },
     ]);
@@ -555,7 +532,7 @@ export default function SupportChat({ open, onClose }) {
     setMessages([
       {
         role: "bot",
-        text: greeting(profile),
+        text: greeting(profile, t),
         options: TREE.children,
       },
     ]);
@@ -568,7 +545,7 @@ export default function SupportChat({ open, onClose }) {
       ...prev,
       {
         role: "bot",
-        text: "Got it ✓ Our team will call back during the time you picked.",
+        text: t("callback.submitted"),
       },
     ]);
   };
@@ -592,7 +569,7 @@ export default function SupportChat({ open, onClose }) {
             <button
               onClick={handleBack}
               className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-slate-500"
-              aria-label="Back"
+              aria-label={t("header.backAria")}
             >
               <ChevronLeft size={18} />
             </button>
@@ -601,16 +578,16 @@ export default function SupportChat({ open, onClose }) {
             <HeadphonesIcon size={18} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-slate-900">RGossips Support</p>
+            <p className="text-sm font-black text-slate-900">{t("header.title")}</p>
             <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-              Online · usually replies instantly
+              {t("header.status")}
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-slate-400"
-            aria-label="Close"
+            aria-label={t("header.closeAria")}
           >
             <X size={18} />
           </button>
@@ -639,7 +616,7 @@ export default function SupportChat({ open, onClose }) {
                   onRequestCallback={() => {
                     setMessages((prev) => [
                       ...prev,
-                      { role: "user", text: "Request a callback" },
+                      { role: "user", text: t("actions.requestCallback") },
                     ]);
                     openCallback();
                   }}
@@ -672,7 +649,7 @@ export default function SupportChat({ open, onClose }) {
           {campaignsLoading && (
             <div className="flex items-center gap-2 text-xs text-slate-400 px-2">
               <Loader2 size={12} className="animate-spin" />
-              Loading campaigns…
+              {t("loadingCampaigns")}
             </div>
           )}
         </div>
@@ -684,13 +661,13 @@ export default function SupportChat({ open, onClose }) {
               onClick={() => {
                 setMessages((prev) => [
                   ...prev,
-                  { role: "user", text: "Request a callback" },
+                  { role: "user", text: t("actions.requestCallback") },
                 ]);
                 openCallback();
               }}
               className="w-full h-11 rounded-2xl bg-slate-900 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-[0.98] transition cursor-pointer"
             >
-              <Phone size={14} /> Request a callback
+              <Phone size={14} /> {t("actions.requestCallback")}
             </button>
           </div>
         )}
@@ -710,6 +687,7 @@ function Bubble({
   onPickCampaignForIssue,
   onPickIssueOption,
 }) {
+  const t = useTranslations("SupportChat");
   const isBot = message.role === "bot";
   const campaignAction = message.campaignAction;
   const handleCampaignClick = (c) => {
@@ -816,7 +794,7 @@ function Bubble({
                 whileTap={{ scale: 0.97 }}
                 className="text-left px-3 py-2 rounded-xl border border-slate-200 bg-white text-[12px] font-semibold text-slate-700 hover:border-pink-300 hover:bg-pink-50 transition cursor-pointer"
               >
-                {opt.label}
+                {t(`labels.${opt.id}`)}
               </motion.button>
             ))}
           </motion.div>
@@ -829,13 +807,13 @@ function Bubble({
               onClick={onStartOver}
               className="text-[11px] font-bold text-slate-500 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer"
             >
-              Ask another question
+              {t("actions.askAnother")}
             </button>
             <button
               onClick={onRequestCallback}
               className="text-[11px] font-bold text-pink-600 px-2.5 py-1 rounded-lg bg-pink-50 border border-pink-100 hover:bg-pink-100 cursor-pointer"
             >
-              Talk to a human
+              {t("actions.talkToHuman")}
             </button>
           </div>
         )}
@@ -884,15 +862,18 @@ function StatusPill({ status }) {
   );
 }
 
+// `value` is the stable English string stored in the DB (support_callbacks.
+// preferred_time); `key` selects the translated label shown in the UI.
 const TIME_OPTIONS = [
-  "Today afternoon",
-  "Today evening",
-  "Tomorrow morning",
-  "Tomorrow evening",
-  "Anytime",
+  { value: "Today afternoon", key: "todayAfternoon" },
+  { value: "Today evening", key: "todayEvening" },
+  { value: "Tomorrow morning", key: "tomorrowMorning" },
+  { value: "Tomorrow evening", key: "tomorrowEvening" },
+  { value: "Anytime", key: "anytime" },
 ];
 
 function CallbackForm({ user, role, profile, path, context, onSubmitted, onCancel }) {
+  const t = useTranslations("SupportChat");
   const supabase = createClient();
   // Phones can arrive with or without `+` / country code — keep whatever the
   // caller provides as a default, just strip noise. Indian numbers default to
@@ -924,14 +905,14 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
 
   const handleSubmit = async () => {
     if (!user?.id) {
-      setError("Please sign in first.");
+      setError(t("callback.errors.signIn"));
       return;
     }
     const normalized = normalizePhone(phone);
     const digitsOnly = normalized.replace(/\D/g, "");
     // E.164 numbers are 8–15 digits including country code.
     if (digitsOnly.length < 8 || digitsOnly.length > 15) {
-      setError("Enter a valid phone number with country code.");
+      setError(t("callback.errors.invalidPhone"));
       return;
     }
     setSubmitting(true);
@@ -952,19 +933,21 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
       // collapses back into the chat thread.
       setTimeout(() => onSubmitted?.(), 600);
     } catch (e) {
-      setError(e.message || "Failed to submit");
+      setError(e.message || t("callback.errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (done) {
+    const timeKey = TIME_OPTIONS.find((o) => o.value === time)?.key;
+    const timeLabel = timeKey ? t(`timesLower.${timeKey}`) : time.toLowerCase();
     return (
       <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
         <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
         <div>
-          <p className="text-sm font-black text-emerald-700">Callback requested</p>
-          <p className="text-[11px] text-emerald-600">We'll call {phone} {time.toLowerCase()}.</p>
+          <p className="text-sm font-black text-emerald-700">{t("callback.done.title")}</p>
+          <p className="text-[11px] text-emerald-600">{t("callback.done.body", { phone, time: timeLabel })}</p>
         </div>
       </div>
     );
@@ -979,34 +962,34 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
       )}
       <div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
-          Phone
+          {t("callback.phoneLabel")}
         </p>
         <input
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
-          placeholder="+91 98765 43210"
+          placeholder={t("callback.phonePlaceholder")}
           className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
         />
-        <p className="text-[10px] text-slate-400 mt-1">Include country code (e.g. +91 for India)</p>
+        <p className="text-[10px] text-slate-400 mt-1">{t("callback.phoneHint")}</p>
       </div>
 
       <div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
-          Best time to call
+          {t("callback.bestTime")}
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {TIME_OPTIONS.map((t) => (
+          {TIME_OPTIONS.map((opt) => (
             <button
-              key={t}
-              onClick={() => setTime(t)}
+              key={opt.value}
+              onClick={() => setTime(opt.value)}
               className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer ${
-                time === t
+                time === opt.value
                   ? "bg-pink-500 text-white border-pink-500"
                   : "bg-white text-slate-600 border-slate-200 hover:border-pink-300"
               }`}
             >
-              {t}
+              {t(`times.${opt.key}`)}
             </button>
           ))}
         </div>
@@ -1014,13 +997,13 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
 
       <div>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
-          Anything we should know? (optional)
+          {t("callback.notesLabel")}
         </p>
         <textarea
           rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="What's the issue?"
+          placeholder={t("callback.notesPlaceholder")}
           className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
         />
       </div>
@@ -1033,7 +1016,7 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
           disabled={submitting}
           className="flex-1 h-10 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 cursor-pointer disabled:opacity-50"
         >
-          Cancel
+          {t("callback.cancel")}
         </button>
         <button
           onClick={handleSubmit}
@@ -1041,14 +1024,14 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
           className="flex-1 h-10 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
         >
           {submitting && <Loader2 size={14} className="animate-spin" />}
-          {submitting ? "Sending…" : "Request callback"}
+          {submitting ? t("callback.sending") : t("callback.submit")}
         </button>
       </div>
     </div>
   );
 }
 
-function greeting(profile) {
-  const name = profile?.full_name?.split(" ")[0] || profile?.username || "there";
-  return `Hi ${name}! 👋 What can I help you with today?`;
+function greeting(profile, t) {
+  const name = profile?.full_name?.split(" ")[0] || profile?.username || t("greetingFallbackName");
+  return t("greeting", { name });
 }

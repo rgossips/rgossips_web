@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -55,13 +56,6 @@ import {
 import logo from "@/assets/logo.png";
 import ErrorModal from "@/components/ErrorModal";
 
-// Schema
-const InfluencerSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  phone: z.string().min(10, "Enter a valid phone number"),
-  instagram: z.string().min(2, "Instagram handle is required"),
-});
-
 // Mock API
 async function fetchInstagramDataMock(username) {
   await new Promise((r) => setTimeout(r, 700));
@@ -75,7 +69,15 @@ async function fetchInstagramDataMock(username) {
 }
 
 export default function RegisterPage() {
+  const t = useTranslations("AuthRegister");
   const router = useRouter();
+
+  // Schema
+  const InfluencerSchema = z.object({
+    name: z.string().min(2, t("errors.nameRequired")),
+    phone: z.string().min(10, t("errors.invalidPhone")),
+    instagram: z.string().min(2, t("errors.instagramRequired")),
+  });
 
   // States
   const [loading, setLoading] = useState(false);
@@ -125,7 +127,7 @@ export default function RegisterPage() {
       setConfirmationResult(result);
       setOtpDialogOpen(true);
     } catch (err) {
-      setErrorText("Failed to send OTP. Please check the number.");
+      setErrorText(t("errors.sendOtpFailed"));
       setShowError(true);
     } finally {
       setLoading(false);
@@ -139,7 +141,7 @@ export default function RegisterPage() {
       setPhoneVerified(true);
       setOtpDialogOpen(false);
     } catch (err) {
-      setErrorText("Invalid OTP code.");
+      setErrorText(t("errors.invalidOtp"));
       setShowError(true);
     } finally {
       setLoading(false);
@@ -158,12 +160,12 @@ export default function RegisterPage() {
 
   const onSubmit = async (data) => {
     if (!phoneVerified) {
-      setErrorText("Please verify phone first.");
+      setErrorText(t("errors.verifyPhoneFirst"));
       setShowError(true);
       return;
     }
     if (!instaValidated) {
-      setErrorText("Please validate Instagram first.");
+      setErrorText(t("errors.validateInstagramFirst"));
       setShowError(true);
       return;
     }
@@ -181,7 +183,7 @@ export default function RegisterPage() {
       });
       setSuccessDialog(true);
     } catch (err) {
-      setErrorText("Database error. Try again.");
+      setErrorText(t("errors.databaseError"));
       setShowError(true);
     } finally {
       setLoading(false);
@@ -194,7 +196,7 @@ export default function RegisterPage() {
       <div className="mb-8 flex flex-col items-center text-center">
         <Image src={logo} alt="logo" height={30} width={200} className="mb-4" />
         <p className="text-gray-500 text-lg font-medium">
-          Create your account to start collaborating
+          {t("subtitle")}
         </p>
       </div>
 
@@ -207,7 +209,7 @@ export default function RegisterPage() {
                 className="rounded-2xl opacity-50 cursor-pointer"
               >
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Building2 className="w-4 h-4" /> Brand
+                  <Building2 className="w-4 h-4" /> {t("tabs.brand")}
                 </div>
               </TabsTrigger>
               <TabsTrigger
@@ -215,7 +217,7 @@ export default function RegisterPage() {
                 className="cursor-pointer rounded-2xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
               >
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <User className="w-4 h-4" /> Influencer
+                  <User className="w-4 h-4" /> {t("tabs.influencer")}
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -235,13 +237,13 @@ export default function RegisterPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-600">
-                          Full Name
+                          {t("fullName")}
                         </FormLabel>
                         <FormControl>
                           <div className="relative">
                             <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                             <Input
-                              placeholder="John Doe"
+                              placeholder={t("namePlaceholder")}
                               className="pl-10 h-12 bg-slate-50/50 rounded-xl"
                               {...field}
                             />
@@ -259,7 +261,7 @@ export default function RegisterPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-600">
-                          Mobile Number
+                          {t("mobileNumber")}
                         </FormLabel>
                         <div className="flex gap-2">
                           <FormControl className="flex-1">
@@ -280,11 +282,11 @@ export default function RegisterPage() {
                             onClick={onSendOtp}
                           >
                             {phoneVerified ? (
-                              "Verified"
+                              t("verified")
                             ) : loading ? (
                               <Loader2 className="animate-spin w-4 h-4" />
                             ) : (
-                              "Verify"
+                              t("verify")
                             )}
                           </Button>
                         </div>
@@ -300,14 +302,14 @@ export default function RegisterPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-600">
-                          Instagram Handle
+                          {t("instagramHandle")}
                         </FormLabel>
                         <div className="flex gap-2">
                           <FormControl className="flex-1">
                             <div className="relative">
                               <Instagram className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                               <Input
-                                placeholder="@username"
+                                placeholder={t("instagramPlaceholder")}
                                 className="pl-10 h-12 bg-slate-50/50 rounded-xl"
                                 {...field}
                               />
@@ -321,11 +323,11 @@ export default function RegisterPage() {
                             onClick={handleValidateInstagram}
                           >
                             {instaValidated ? (
-                              "Checked"
+                              t("checked")
                             ) : validatingInsta ? (
                               <Loader2 className="animate-spin w-4 h-4" />
                             ) : (
-                              "Validate"
+                              t("validate")
                             )}
                           </Button>
                         </div>
@@ -341,7 +343,9 @@ export default function RegisterPage() {
                                 @{instaInfo.username}
                               </p>
                               <p className="text-[10px] text-slate-500">
-                                {instaInfo.followers.toLocaleString()} followers
+                                {t("followers", {
+                                  count: instaInfo.followers.toLocaleString(),
+                                })}
                               </p>
                             </div>
                             <CheckCircle2 className="ml-auto w-4 h-4 text-green-500" />
@@ -357,7 +361,7 @@ export default function RegisterPage() {
                     disabled={loading}
                     className="w-full cursor-pointer h-14 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 rounded-2xl text-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-purple-200"
                   >
-                    {loading ? "Processing..." : "Create Account"}{" "}
+                    {loading ? t("processing") : t("createAccount")}{" "}
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </form>
@@ -368,12 +372,12 @@ export default function RegisterPage() {
       </div>
 
       <p className="text-center mt-8 text-slate-500 text-sm">
-        Already have an account?{" "}
+        {t("haveAccount")}{" "}
         <Link
           href="/login"
           className="text-purple-600 font-bold hover:underline cursor-pointer"
         >
-          Login
+          {t("login")}
         </Link>
       </p>
 
@@ -384,9 +388,9 @@ export default function RegisterPage() {
             <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
               <Smartphone className="text-purple-600 w-6 h-6" />
             </div>
-            <DialogTitle>Verify Phone Number</DialogTitle>
+            <DialogTitle>{t("otp.title")}</DialogTitle>
             <p className="text-sm text-slate-500 text-center">
-              Enter the 6-digit code sent to your phone
+              {t("otp.subtitle")}
             </p>
           </DialogHeader>
           <div className="flex justify-center py-4">
@@ -408,7 +412,7 @@ export default function RegisterPage() {
               onClick={verifyOtp}
               disabled={loading}
             >
-              {loading ? "Verifying..." : "Confirm Code"}
+              {loading ? t("otp.verifying") : t("otp.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -427,16 +431,16 @@ export default function RegisterPage() {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <DialogTitle className="text-2xl">
-              Registration Complete!
+              {t("success.title")}
             </DialogTitle>
             <p className="text-slate-500 mt-2">
-              Your profile has been created successfully. Let's finish your bio.
+              {t("success.message")}
             </p>
             <Button
               className="w-full mt-8 h-12 rounded-xl cursor-pointer"
               onClick={() => router.push("/influencer")}
             >
-              Continue to Onboarding
+              {t("success.continue")}
             </Button>
           </div>
         </DialogContent>

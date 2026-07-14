@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { FaCheckCircle, FaInstagram } from "react-icons/fa";
+import { getTranslations } from "next-intl/server";
 
-export default function CreatorCard({
+export default async function CreatorCard({
   name,
   verified,
   image,
@@ -11,6 +12,7 @@ export default function CreatorCard({
   bio,
   link,
 }) {
+  const t = await getTranslations("CreatorCard");
   return (
     <div className="border rounded-xl p-6 w-full sm:w-72 md:w-80 flex flex-col gap-4 shadow-sm bg-white mb-10">
       {/* Name */}
@@ -43,7 +45,7 @@ export default function CreatorCard({
       <div className="flex justify-center text-center w-full text-sm mt-1">
         <div>
           <p className="font-semibold text-base">{followers}</p>
-          <p className="text-gray-500 text-xs">followers</p>
+          <p className="text-gray-500 text-xs">{t("followers")}</p>
         </div>
       </div>
 
@@ -62,7 +64,7 @@ export default function CreatorCard({
           }}
         >
           <FaInstagram className="text-base" />
-          View on Instagram
+          {t("viewOnInstagram")}
         </a>
       )}
     </div>

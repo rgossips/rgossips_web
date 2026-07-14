@@ -3,6 +3,7 @@ import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { useGlobal } from "@/context/GlobalContext";
 import { useAuth } from "@/context/AuthContext";
 import RoleSelection from "@/components/login/RoleSelection";
@@ -49,6 +50,10 @@ const LoginInner = () => {
   const supabase = createClient();
   const { setType } = useGlobal();
   const { user, role, loading: authLoading } = useAuth();
+  const t = useTranslations("Auth");
+  // Role → localized label helpers. `indefinite` = "a Brand" / "an Influencer";
+  // plain = "Brand" / "Influencer".
+  const roleIndef = (r) => (r === "brand" ? t("roles.brandIndefinite") : t("roles.influencerIndefinite"));
 
   // If already signed in, send to the right dashboard — don't show login UI
   useEffect(() => {
@@ -139,8 +144,8 @@ const LoginInner = () => {
         if (!data?.found) {
           setInvitationBlock({
             kind: "invalid",
-            title: "Invitation link not recognised",
-            message: `We couldn't find an invitation for @${handle}. Double-check the link or sign up normally.`,
+            title: t("invitation.invalidTitle"),
+            message: t("invitation.invalidMessage", { handle }),
           });
           setFlow("signup");
           return;
@@ -148,8 +153,8 @@ const LoginInner = () => {
         if (data.status && data.status !== "pending") {
           setInvitationBlock({
             kind: "claimed",
-            title: "Invitation already used",
-            message: `This invitation for @${handle} has already been claimed. Sign in with the phone number you registered with.`,
+            title: t("invitation.claimedTitle"),
+            message: t("invitation.claimedMessage", { handle }),
           });
           setFlow("signin");
           return;
@@ -173,8 +178,8 @@ const LoginInner = () => {
         if (cancelled) return;
         setInvitationBlock({
           kind: "error",
-          title: "Couldn't verify your invitation",
-          message: e?.message || "Please try the link again or contact support.",
+          title: t("invitation.errorTitle"),
+          message: e?.message || t("invitation.errorMessageFallback"),
         });
         setFlow("signup");
       } finally {
@@ -279,7 +284,7 @@ const LoginInner = () => {
       setResendSuccess(true);
       setTimeout(() => setResendSuccess(false), 4000);
     } catch (err) {
-      setError(err.message || "Failed to resend OTP");
+      setError(err.message || t("errors.resendOtpFailed"));
     }
   };
 
@@ -332,7 +337,7 @@ const LoginInner = () => {
 
   const handleSignInSendOtp = async (phoneNumber) => {
     setLoading(true);
-    setLoadingMsg("Checking your number…");
+    setLoadingMsg(t("loading.checkingNumber"));
     setError("");
     try {
       // Pre-check: is this phone already registered? Unknown numbers get
@@ -344,23 +349,22 @@ const LoginInner = () => {
       if (check?.error) throw new Error(check.error);
 
       if (!check?.exists) {
-        setError("You don't exist with us. Kindly sign up first.");
+        setError(t("errors.notRegistered"));
         setLoading(false);
         return;
       }
 
       if (check.match === false) {
-        const otherRole = check.role === "brand" ? "a Brand" : "an Influencer";
-        setError(`This number is registered as ${otherRole}. Please switch role and try again.`);
+        setError(t("errors.registeredAsOther", { otherRole: roleIndef(check.role) }));
         setLoading(false);
         return;
       }
 
-      setLoadingMsg("Sending OTP…");
+      setLoadingMsg(t("loading.sendingOtp"));
       await sendOtp(phoneNumber);
       nextStep(); // → step 3 (verify)
     } catch (err) {
-      setError(err.message || "Failed to send OTP");
+      setError(err.message || t("errors.sendOtpFailed"));
     } finally {
       setLoading(false);
     }
@@ -368,7 +372,7 @@ const LoginInner = () => {
 
   const handleSignInVerifyOtp = async (otpCode, reactivate = false) => {
     setLoading(true);
-    setLoadingMsg(reactivate ? "Reactivating your account…" : "Verifying…");
+    setLoadingMsg(reactivate ? t("loading.reactivating") : t("loading.verifying"));
     setError("");
     try {
       const data = await verifyOtp(phone, otpCode, "signin", reactivate);
@@ -382,14 +386,18 @@ const LoginInner = () => {
       const detectedRole = data?.user?.role;
       const requestedRole = signupData.role;
       if (detectedRole && requestedRole && detectedRole !== requestedRole) {
-        const otherRole = detectedRole === "brand" ? "a Brand" : "an Influencer";
-        setError(`This number is registered as ${otherRole}, not ${requestedRole === "brand" ? "a Brand" : "an Influencer"}. Please go back and pick the correct role.`);
+        setError(
+          t("errors.roleMismatchVerify", {
+            otherRole: roleIndef(detectedRole),
+            requestedRole: roleIndef(requestedRole),
+          })
+        );
         setLoading(false);
         return;
       }
 
       setReactivationPending(null);
-      setLoadingMsg("Setting up your session…");
+      setLoadingMsg(t("loading.settingUpSession"));
       await supabase.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -411,7 +419,7 @@ const LoginInner = () => {
         setError("");
         return;
       }
-      setError(err.message || "Failed to verify OTP");
+      setError(err.message || t("errors.verifyOtpFailed"));
     } finally {
       setLoading(false);
     }
@@ -441,7 +449,7 @@ const LoginInner = () => {
     // but defending in the UI too means the row never lands with an empty
     // username + token-only state that breaks the next sign-in.
     if (!profile?.username) {
-      setError("Instagram didn't return your username. Please reconnect Instagram before continuing.");
+      setError(t("errors.instagramNoUsername"));
       return;
     }
 
@@ -452,7 +460,12 @@ const LoginInner = () => {
     if (invitation?.instagramHandle) {
       const oauthHandle = profile.username.toLowerCase();
       if (oauthHandle !== invitation.instagramHandle) {
-        setError(`This invitation is for @${invitation.instagramHandle}. ` + `You connected @${profile.username}. Please reconnect with the right Instagram account.`);
+        setError(
+          t("errors.invitationHandleMismatch", {
+            expected: invitation.instagramHandle,
+            got: profile.username,
+          })
+        );
         return;
       }
       // Match — accept and continue to phone OTP step.
@@ -481,18 +494,18 @@ const LoginInner = () => {
       if (data?.found && data?.status === "pending") {
         const inviteRole = data.role;
         const userRole = signupData.role;
-        const inviteRoleLabel = inviteRole === "brand" ? "Brand" : "Influencer";
-        const userRoleLabel = userRole === "brand" ? "Brand" : "Influencer";
 
         if (inviteRole && userRole && inviteRole !== userRole) {
           setInstaProfile(null);
           setInvitationBlock({
             kind: "role-mismatch",
-            title: `You're invited as ${inviteRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}`,
-            message:
-              `@${profile.username} is pre-registered as ${inviteRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}, ` +
-              `not ${userRoleLabel === "Influencer" ? "an Influencer" : "a Brand"}. ` +
-              `Switch to ${inviteRoleLabel} sign-up to continue with the invitation, or sign up with a different Instagram.`,
+            title: t("invitation.roleMismatchTitle", { role: roleIndef(inviteRole) }),
+            message: t("invitation.roleMismatchMessage", {
+              handle: profile.username,
+              inviteRole: roleIndef(inviteRole),
+              userRole: roleIndef(userRole),
+              inviteRoleLabel: inviteRole === "brand" ? t("roles.brand") : t("roles.influencer"),
+            }),
             inviteHandle: profile.username,
             inviteRole,
             invitationData: data,
@@ -504,8 +517,8 @@ const LoginInner = () => {
         setInstaProfile(null);
         setInvitationBlock({
           kind: "use-link",
-          title: "Use your invitation link",
-          message: `We've already pre-registered @${profile.username}. Continue with your invitation to finish signing up, or sign up with a different Instagram.`,
+          title: t("invitation.useLinkTitle"),
+          message: t("invitation.useLinkMessage", { handle: profile.username }),
           inviteHandle: profile.username,
           inviteRole,
           invitationData: data,
@@ -549,7 +562,7 @@ const LoginInner = () => {
   const handleSignUpFormSubmit = async (formData) => {
     setSignupData((prev) => ({ ...prev, ...formData }));
     setLoading(true);
-    setLoadingMsg("Creating your account...");
+    setLoadingMsg(t("loading.creatingAccount"));
     setError("");
 
     try {
@@ -618,7 +631,7 @@ const LoginInner = () => {
       // create-profile now returns the freshly-created userId + session.
       const newUserId = createResult?.userId;
       const newSession = createResult?.session;
-      if (!newUserId) throw new Error("Account creation did not complete. Please try again.");
+      if (!newUserId) throw new Error(t("errors.accountIncomplete"));
       setAuthUserId(newUserId);
       // Referral code is now consumed by create-profile → clear the stash so
       // it can't leak into a later signup on this device.
@@ -626,7 +639,7 @@ const LoginInner = () => {
 
       if (newSession?.access_token) {
         setPendingSession(newSession);
-        setLoadingMsg("Setting up your session...");
+        setLoadingMsg(t("loading.settingUpSession"));
         await supabase.auth.setSession({
           access_token: newSession.access_token,
           refresh_token: newSession.refresh_token,
@@ -635,14 +648,14 @@ const LoginInner = () => {
 
       if (signupData.role === "brand") {
         // Brands go straight to dashboard
-        setLoadingMsg("Redirecting to dashboard...");
+        setLoadingMsg(t("loading.redirectingDashboard"));
         router.push("/brands");
         return;
       }
 
       nextStep(); // → step 4 (categories)
     } catch (err) {
-      setError(err.message || "Failed to create account.");
+      setError(err.message || t("errors.createAccountFailed"));
     } finally {
       setLoading(false);
     }
@@ -665,7 +678,7 @@ const LoginInner = () => {
 
   const finishSignup = async (data) => {
     setLoading(true);
-    setLoadingMsg("Saving your preferences...");
+    setLoadingMsg(t("loading.savingPreferences"));
     try {
       if (authUserId) {
         const table = data.role === "brand" ? "brand_profiles" : "influencer_profiles";
@@ -680,16 +693,16 @@ const LoginInner = () => {
       }
 
       if (pendingSession) {
-        setLoadingMsg("Setting up your session...");
+        setLoadingMsg(t("loading.settingUpSession"));
         await supabase.auth.setSession({
           access_token: pendingSession.access_token,
           refresh_token: pendingSession.refresh_token,
         });
       }
-      setLoadingMsg("Redirecting...");
+      setLoadingMsg(t("loading.redirecting"));
       router.push(data.role === "brand" ? "/brands" : "/influencer");
     } catch (err) {
-      setError(err.message || "Failed to complete signup");
+      setError(err.message || t("errors.finishSignupFailed"));
       setLoading(false);
     }
   };
@@ -733,11 +746,11 @@ const LoginInner = () => {
       <Link
         href="/"
         prefetch
-        aria-label="Back to home"
+        aria-label={t("backToHome")}
         className="absolute top-5 left-5 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 hover:bg-white text-slate-700 text-xs font-bold shadow-md backdrop-blur-sm transition-all cursor-pointer"
       >
         <ArrowLeft size={14} />
-        Home
+        {t("home")}
       </Link>
 
       {/* Background */}
@@ -757,14 +770,14 @@ const LoginInner = () => {
                   <div className="w-12 h-12 rounded-full border-4 border-slate-100" />
                   <Loader2 size={48} className="absolute inset-0 animate-spin text-[#E60076]" strokeWidth={2.5} />
                 </div>
-                <p className="text-sm text-slate-600 font-semibold">{loadingMsg || "Loading..."}</p>
+                <p className="text-sm text-slate-600 font-semibold">{loadingMsg || t("loadingDefault")}</p>
               </div>
             )}
 
             {/* Sticky header with close button */}
             <div className="relative flex flex-col items-center px-8 pt-6 pb-2 shrink-0">
               <div className="w-12 h-1 bg-slate-200 rounded-full mb-4 md:hidden" />
-              <button onClick={closeAuth} className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 z-30 cursor-pointer" aria-label="Close">
+              <button onClick={closeAuth} className="absolute right-6 top-6 p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 z-30 cursor-pointer" aria-label={t("close")}>
                 <IoMdClose size={24} />
               </button>
             </div>
@@ -777,7 +790,7 @@ const LoginInner = () => {
               {invitationChecking && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <Loader2 size={28} className="animate-spin text-pink-500" />
-                  <p className="text-sm font-semibold text-slate-500">Checking your invitation…</p>
+                  <p className="text-sm font-semibold text-slate-500">{t("checkingInvitation")}</p>
                 </div>
               )}
               {invitationBlock && !invitationChecking && (
@@ -883,7 +896,8 @@ export default Login;
 //   - "invalid" / "error": link broken or service failed → let them
 //     fall through to a normal sign-up
 function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseInvitation, onSwitchRoleAndContinue }) {
-  const inviteRoleLabel = block.inviteRole === "brand" ? "Brand" : block.inviteRole === "influencer" ? "Influencer" : null;
+  const t = useTranslations("Auth");
+  const inviteRoleLabel = block.inviteRole === "brand" ? t("roles.brand") : block.inviteRole === "influencer" ? t("roles.influencer") : null;
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-5 pt-6">
@@ -899,7 +913,7 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseI
 
       {(block.kind === "use-link" || block.kind === "role-mismatch") && (
         <p className="text-[12px] text-slate-400 text-center leading-snug">
-          Trouble? Reach out to{" "}
+          {t("interrupt.troublePrefix")}{" "}
           <a href="mailto:info@rgossips.com" className="font-bold text-[#E60076]">
             info@rgossips.com
           </a>
@@ -913,7 +927,7 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseI
           className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
           style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
         >
-          Sign in instead
+          {t("interrupt.signInInstead")}
         </button>
       ) : block.kind === "role-mismatch" ? (
         <div className="space-y-3">
@@ -923,11 +937,11 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseI
               className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
             >
-              Continue as {inviteRoleLabel} →
+              {t("interrupt.continueAsRole", { role: inviteRoleLabel })}
             </button>
           )}
           <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
-            Sign up with a different Instagram
+            {t("interrupt.signUpDifferentInstagram")}
           </button>
         </div>
       ) : block.kind === "use-link" ? (
@@ -937,15 +951,15 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseI
             className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Continue with my invitation →
+            {t("interrupt.continueWithInvitation")}
           </button>
           <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
-            Sign up with a different Instagram
+            {t("interrupt.signUpDifferentInstagram")}
           </button>
         </div>
       ) : (
         <button onClick={onContinueSignUp} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-50">
-          Sign up with a different Instagram
+          {t("interrupt.signUpDifferentInstagram")}
         </button>
       )}
     </div>
@@ -956,13 +970,18 @@ function InvitationInterrupt({ block, onContinueSignUp, onSwitchToSignIn, onUseI
 // "deactivated" state. Keeps reactivation behind an explicit confirmation
 // so signing in doesn't silently undo the user's last action.
 function ReactivatePrompt({ role, phone, loading, onConfirm, onCancel }) {
-  const label = role === "brand" ? "brand account" : "account";
+  const t = useTranslations("Auth");
+  const label = role === "brand" ? t("reactivate.labelBrand") : t("reactivate.label");
   return (
     <div className="w-full max-w-sm mx-auto space-y-5">
       <div className="space-y-2">
-        <h2 className="text-2xl font-black text-slate-900">Your {label} is deactivated</h2>
+        <h2 className="text-2xl font-black text-slate-900">{t("reactivate.title", { label })}</h2>
         <p className="text-sm text-slate-500 leading-relaxed">
-          We verified the OTP sent to <span className="font-bold text-slate-700">{phone}</span>, but this {label} is currently deactivated. Reactivate to sign back in?
+          {t.rich("reactivate.body", {
+            phone,
+            label,
+            strong: (chunks) => <span className="font-bold text-slate-700">{chunks}</span>,
+          })}
         </p>
       </div>
 
@@ -972,13 +991,13 @@ function ReactivatePrompt({ role, phone, loading, onConfirm, onCancel }) {
         className="w-full py-3.5 rounded-2xl text-white text-sm font-black shadow-lg shadow-pink-200 cursor-pointer hover:opacity-90 disabled:opacity-60"
         style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
       >
-        {loading ? "Reactivating…" : "Reactivate & sign in"}
+        {loading ? t("reactivate.reactivating") : t("reactivate.confirm")}
       </button>
       <button onClick={onCancel} disabled={loading} className="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 border border-slate-200 cursor-pointer disabled:opacity-50">
-        Cancel
+        {t("reactivate.cancel")}
       </button>
 
-      <p className="text-[11px] text-slate-400 leading-snug text-center">Reactivating restores your profile, settings and history exactly as they were when you deactivated.</p>
+      <p className="text-[11px] text-slate-400 leading-snug text-center">{t("reactivate.footnote")}</p>
     </div>
   );
 }

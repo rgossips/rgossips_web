@@ -1,18 +1,21 @@
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 
-export default function GalleryCollage({ images = [] }) {
+export default async function GalleryCollage({ images = [] }) {
+  const t = await getTranslations("GalleryCarousel");
+
   const galleryImages = images.map((src, idx) => ({
     id: idx,
     src: src,
-    alt: `Gallery image ${idx + 1}`,
+    alt: t("imageAlt", { number: idx + 1 }),
   }));
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Gallery</h2>
+      <h2 className="text-2xl font-semibold mb-4">{t("title")}</h2>
 
       {galleryImages.length === 0 ? (
-        <p className="text-gray-500">No gallery images available</p>
+        <p className="text-gray-500">{t("empty")}</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {galleryImages.map((img) => (

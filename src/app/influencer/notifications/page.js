@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, Bell, CheckCircle, Award, UserPlus, FileText, Loader2 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { parseUtc, navigateOrRefresh } from "@/lib/utils";
@@ -70,6 +71,7 @@ const BG_MAP = {
 };
 
 export default function NotificationsPage() {
+  const t = useTranslations("InfluencerNotifications");
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -139,10 +141,10 @@ export default function NotificationsPage() {
     const diffHr = Math.floor(diffMs / 3600000);
     const diffDay = Math.floor(diffMs / 86400000);
 
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin}m ago`;
-    if (diffHr < 24) return `${diffHr}h ago`;
-    if (diffDay < 7) return `${diffDay}d ago`;
+    if (diffMin < 1) return t("time.justNow");
+    if (diffMin < 60) return t("time.minutesAgo", { count: diffMin });
+    if (diffHr < 24) return t("time.hoursAgo", { count: diffHr });
+    if (diffDay < 7) return t("time.daysAgo", { count: diffDay });
     return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   };
 
@@ -158,10 +160,10 @@ export default function NotificationsPage() {
         >
           <ChevronLeft className="w-5 h-5 text-[#E60076]" />
         </button>
-        <h1 className="text-lg font-black text-slate-800">Notifications</h1>
+        <h1 className="text-lg font-black text-slate-800">{t("title")}</h1>
         {unreadCount > 0 ? (
           <button onClick={handleMarkAllRead} className="text-[10px] font-bold text-[#E60076] cursor-pointer hover:underline">
-            Mark all read
+            {t("markAllRead")}
           </button>
         ) : (
           <div className="w-16" />
@@ -173,13 +175,13 @@ export default function NotificationsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 size={24} className="animate-spin text-purple-500" />
-            <p className="text-sm font-bold text-slate-400">Loading notifications...</p>
+            <p className="text-sm font-bold text-slate-400">{t("loading")}</p>
           </div>
         ) : visibleNotifications.length === 0 ? (
           <div className="text-center py-20">
             <Bell size={40} className="text-slate-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-400">No notifications yet</p>
-            <p className="text-xs text-slate-300 mt-1">You'll be notified about campaign updates and more</p>
+            <p className="text-sm font-bold text-slate-400">{t("empty.title")}</p>
+            <p className="text-xs text-slate-300 mt-1">{t("empty.subtitle")}</p>
           </div>
         ) : (
           visibleNotifications.map((item, index) => (

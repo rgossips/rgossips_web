@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import MultiSelectInput from "../MultiSelectInput";
@@ -9,6 +10,7 @@ const StepForm1 = ({
   saving,
   onSubmitProfessional,
 }) => {
+  const t = useTranslations("StepFormsStepForm1");
   const PRIMARY_OPTIONS = [
     "Fashion",
     "Tech",
@@ -40,12 +42,12 @@ const StepForm1 = ({
       className="space-y-4 overflow-y-auto"
     >
       <div className="flex flex-col gap-2">
-        <Label>Primary Content Categories</Label>
+        <Label>{t("primaryCategoriesLabel")}</Label>
         <MultiSelectInput
           options={PRIMARY_OPTIONS}
           selected={profForm.watch("primaryCategories")}
           onChange={(vals) => profForm.setValue("primaryCategories", vals)}
-          placeholder="Type or select..."
+          placeholder={t("selectPlaceholder")}
         />
         {profForm.formState.errors.primaryCategories && (
           <p className="text-red-500 text-sm">
@@ -55,17 +57,17 @@ const StepForm1 = ({
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
-        <Label>Secondary Content Categories</Label>
+        <Label>{t("secondaryCategoriesLabel")}</Label>
         <MultiSelectInput
           options={PRIMARY_OPTIONS}
           selected={profForm.watch("secondaryCategories")}
           onChange={(vals) => profForm.setValue("secondaryCategories", vals)}
-          placeholder="Type or select..."
+          placeholder={t("selectPlaceholder")}
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label>Content Languages</Label>
+        <Label>{t("contentLanguagesLabel")}</Label>
         <div className="flex gap-2 flex-wrap">
           {LANGUAGES.map((lang) => (
             <button
@@ -93,12 +95,12 @@ const StepForm1 = ({
       </div>
 
       <div className="">
-        <Label>Years of Experience</Label>
+        <Label>{t("yearsOfExperienceLabel")}</Label>
         <select
           {...profForm.register("yearsOfExperience")}
           className="w-full mt-2 p-2 rounded border"
         >
-          <option value="">Select</option>
+          <option value="">{t("selectOption")}</option>
           {YEARS.map((y) => (
             <option key={y}>{y}</option>
           ))}
@@ -118,7 +120,7 @@ const StepForm1 = ({
           onClick={onSubmitProfessional}
           disabled={saving}
         >
-          {saving ? "Saving..." : "Save & Continue"}
+          {saving ? t("saving") : t("saveAndContinue")}
         </Button>
       </div>
     </form>

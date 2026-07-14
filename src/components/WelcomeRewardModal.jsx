@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 // First-time welcome-reward celebration for new influencer signups. On
 // signup, create-profile grants 50 RC (locked 30 days) + the user is
@@ -17,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 const SEEN_KEY = (uid) => `rg_welcome_reward_seen_v1_${uid}`;
 
 export default function WelcomeRewardModal() {
+  const t = useTranslations("WelcomeRewardModal");
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -121,7 +123,7 @@ export default function WelcomeRewardModal() {
               />
               {/* "Your Reward" pill */}
               <div className="relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-                <span className="text-[11px] font-black uppercase tracking-widest text-white">Your Reward</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-white">{t("pill")}</span>
               </div>
 
               {/* Gift box with a bouncy entrance + gentle float */}
@@ -143,10 +145,10 @@ export default function WelcomeRewardModal() {
             {/* Body */}
             <div className="px-6 pt-5 pb-6 text-center">
               <h2 className="text-[22px] font-black text-slate-900 leading-tight">
-                Congratulations! 🎉
+                {t("congratulations")}
               </h2>
               <p className="text-[13px] text-slate-500 font-medium mt-1.5 leading-relaxed">
-                You&apos;ve been awarded a welcome reward for joining RGossips.
+                {t("subtitle")}
               </p>
 
               {/* Reward rows */}
@@ -156,12 +158,12 @@ export default function WelcomeRewardModal() {
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 text-sm font-black"
                     style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
                   >
-                    RC
+                    {t("rcBadge")}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-black text-slate-900">50 Reward Credits</p>
+                    <p className="text-[13px] font-black text-slate-900">{t("rcAmount")}</p>
                     <p className="text-[11px] text-slate-500 font-medium leading-snug">
-                      Your welcome bonus — unlocks 1 month after signup, then redeem on your subscription.
+                      {t("rcDescription")}
                     </p>
                   </div>
                 </div>
@@ -173,9 +175,9 @@ export default function WelcomeRewardModal() {
                       %
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-black text-slate-900">50% off your first subscription</p>
+                      <p className="text-[13px] font-black text-slate-900">{t("referralTitle")}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[11px] text-slate-500 font-medium">Gifted by</span>
+                        <span className="text-[11px] text-slate-500 font-medium">{t("giftedBy")}</span>
                         {referrer.referrer_photo ? (
                           <img
                             src={referrer.referrer_photo}
@@ -202,13 +204,13 @@ export default function WelcomeRewardModal() {
                 className="w-full mt-5 py-3.5 rounded-2xl text-white text-sm font-black cursor-pointer hover:opacity-95 active:scale-[0.99] transition shadow-lg"
                 style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)", boxShadow: "0 12px 28px -10px rgba(230,0,118,0.6)" }}
               >
-                Claim Your Reward
+                {t("claim")}
               </button>
               <button
                 onClick={() => dismiss(false)}
                 className="w-full mt-2 py-2 text-[12px] font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                Maybe later
+                {t("maybeLater")}
               </button>
             </div>
           </motion.div>

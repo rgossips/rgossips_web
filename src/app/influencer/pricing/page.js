@@ -10,28 +10,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
 import { getEffectivePlan, isWithinTrial, trialDaysLeft } from "@/lib/plans";
+import { useTranslations } from "next-intl";
 
+// User-facing label / tagline / description live in the InfluencerPricing
+// catalog, keyed by plan id (starter/pro/elite) and resolved at render.
 const PLAN_META = {
   starter: {
-    label: "Starter",
     icon: <Target className="w-5 h-5" />,
-    tagline: "Get listed and start applying",
-    description: "Best for nano creators (1K – 25K)",
     accent: "text-slate-700 bg-slate-50",
   },
   pro: {
-    label: "Pro",
     icon: <Zap className="w-5 h-5" />,
-    tagline: "Built to earn seriously",
-    description: "Best for micro/mid creators (10K – 200K)",
     accent: "text-[#5851DB] bg-[#EBE9FE]",
     popular: true,
   },
   elite: {
-    label: "Elite",
     icon: <Rocket className="w-5 h-5" />,
-    tagline: "Pro-grade creator OS",
-    description: "Best for macro/mega creators (200K+)",
     accent: "text-emerald-700 bg-emerald-50",
   },
 };
@@ -93,6 +87,7 @@ function loadRazorpayCheckout() {
 }
 
 export default function PricingPage() {
+  const t = useTranslations("InfluencerPricing");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile, user, refreshProfile } = useAuth();
@@ -125,8 +120,8 @@ export default function PricingPage() {
   // both are blocking but a styled modal is consistent with the rest of
   // the app and lets us surface gateway-specific guidance.
   const [errorModal, setErrorModal] = useState(null);
-  const showError = (message, title = "Couldn't start checkout") =>
-    setErrorModal({ title, message: String(message || "Something went wrong. Please try again.") });
+  const showError = (message, title = t("errors.checkoutTitle")) =>
+    setErrorModal({ title, message: String(message || t("errors.genericMessage")) });
 
   const effectivePlan = getEffectivePlan(profile);
   const onTrial = isWithinTrial(profile);
@@ -319,7 +314,7 @@ export default function PricingPage() {
   // modal calls handleUpgrade(planId, gateway) once the user picks one.
   const openGatewayPicker = (planId) => {
     if (!user?.id) {
-      showError("Please sign in to upgrade your plan.", "Sign in required");
+      showError(t("errors.signInMessage"), t("errors.signInTitle"));
       return;
     }
     setGatewayPickerPlan(planId);
@@ -327,7 +322,7 @@ export default function PricingPage() {
 
   const handleUpgrade = async (planId, gateway) => {
     if (!user?.id) {
-      showError("Please sign in to upgrade your plan.", "Sign in required");
+      showError(t("errors.signInMessage"), t("errors.signInTitle"));
       return;
     }
 
@@ -364,8 +359,13 @@ export default function PricingPage() {
         const razorpayPlanId = PLAN_RAZORPAY_IDS[planId]?.[billing];
         if (!razorpayPlanId) {
           showError(
-            `Razorpay isn't configured for the ${planId} ${billing} plan yet. Set NEXT_PUBLIC_RAZORPAY_PLAN_${planId.toUpperCase()}_${billing.toUpperCase()} in the environment and redeploy.`,
-            "Razorpay plan not configured"
+            t("errors.razorpayNotConfigured", {
+              plan: planId,
+              cycle: billing,
+              planUpper: planId.toUpperCase(),
+              cycleUpper: billing.toUpperCase(),
+            }),
+            t("errors.razorpayNotConfiguredTitle")
           );
           return;
         }
@@ -389,7 +389,7 @@ export default function PricingPage() {
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
         if (!data?.subscription_id || !data?.key_id) {
-          throw new Error("Razorpay didn't return a subscription / key.");
+          throw new Error(t("errors.razorpayNoSub"));
         }
 
         // Idempotency: the server found this plan is ALREADY active for the
@@ -411,14 +411,17 @@ export default function PricingPage() {
         // off the subscription_id directly.
         await loadRazorpayCheckout();
         if (typeof window === "undefined" || !window.Razorpay) {
-          throw new Error("Razorpay Checkout failed to load. Check your network.");
+          throw new Error(t("errors.razorpayCheckoutLoad"));
         }
 
         const rzp = new window.Razorpay({
           key: data.key_id,
           subscription_id: data.subscription_id,
           name: "RGossips",
-          description: `Upgrade to ${planId.charAt(0).toUpperCase() + planId.slice(1)} · ${billing}`,
+          description: t("razorpayDescription", {
+            plan: planId.charAt(0).toUpperCase() + planId.slice(1),
+            cycle: billing,
+          }),
           prefill: {
             email,
             contact: phoneForPrefill,
@@ -458,8 +461,8 @@ export default function PricingPage() {
         });
         rzp.on?.("payment.failed", (resp) => {
           showError(
-            resp?.error?.description || "The payment didn't go through. Please try again, or use a different card / UPI.",
-            "Payment failed"
+            resp?.error?.description || t("errors.paymentFailed"),
+            t("errors.paymentFailedTitle")
           );
           setUpgrading(null);
           setPreparingCheckout(null);
@@ -476,8 +479,13 @@ export default function PricingPage() {
       const priceId = PLAN_STRIPE_PRICES[planId]?.[billing];
       if (!priceId) {
         showError(
-          `Stripe isn't configured for the ${planId} ${billing} plan yet. Set NEXT_PUBLIC_STRIPE_PRICE_${planId.toUpperCase()}_${billing.toUpperCase()} in the environment and redeploy.`,
-          "Stripe price not configured"
+          t("errors.stripeNotConfigured", {
+            plan: planId,
+            cycle: billing,
+            planUpper: planId.toUpperCase(),
+            cycleUpper: billing.toUpperCase(),
+          }),
+          t("errors.stripeNotConfiguredTitle")
         );
         return;
       }
@@ -511,9 +519,9 @@ export default function PricingPage() {
         window.location.href = data.url;
         return;
       }
-      throw new Error("No checkout URL returned");
+      throw new Error(t("errors.noCheckoutUrl"));
     } catch (err) {
-      showError(err.message || "We couldn't start the checkout. Please try again in a moment.");
+      showError(err.message || t("errors.checkoutFailed"));
       setPreparingCheckout(null);
     } finally {
       setUpgrading(null);
@@ -529,8 +537,8 @@ export default function PricingPage() {
             <ArrowLeft size={20} className="text-slate-600" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Choose your plan</h1>
-            <p className="text-xs text-slate-500">Upgrade anytime to unlock more features</p>
+            <h1 className="text-lg font-bold text-slate-900">{t("header.title")}</h1>
+            <p className="text-xs text-slate-500">{t("header.subtitle")}</p>
           </div>
         </div>
       </div>
@@ -546,32 +554,33 @@ export default function PricingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? "Free Trial" : effectivePlan}</h2>
-                  <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">CURRENT</Badge>
-                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">Pro features unlocked</Badge>}
+                  <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? t("currentPlan.freeTrial") : effectivePlan}</h2>
+                  <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">{t("currentPlan.current")}</Badge>
+                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">{t("currentPlan.proFeaturesUnlocked")}</Badge>}
                   {showRenewal && (
                     <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px] font-bold">
-                      Renews in {renewal.daysLeft} {renewal.daysLeft === 1 ? "day" : "days"}
+                      {t("currentPlan.renewsIn", { days: renewal.daysLeft })}
                     </Badge>
                   )}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {onTrial
-                    ? `${daysLeft} days remaining on your 30-day free trial`
+                    ? t("currentPlan.trialDaysRemaining", { days: daysLeft })
                     : effectivePlan === "starter"
-                      ? "Upgrade to unlock more applications, analytics, and visibility"
-                      : `Active ${profile?.billing_cycle || "monthly"} subscription${
-                          renewal.date
-                            ? ` · renews on ${renewal.date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-                            : ""
-                        }`}
+                      ? t("currentPlan.starterUpsell")
+                      : renewal.date
+                        ? t("currentPlan.activeSubscriptionRenews", {
+                            cycle: profile?.billing_cycle || "monthly",
+                            date: renewal.date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+                          })
+                        : t("currentPlan.activeSubscription", { cycle: profile?.billing_cycle || "monthly" })}
                 </p>
               </div>
             </div>
             {onTrial && (
               <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl">
                 <Sparkles size={16} className="text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">Pick a plan before day 30 to keep your features</span>
+                <span className="text-sm font-semibold text-amber-700">{t("currentPlan.trialWarning")}</span>
               </div>
             )}
           </div>
@@ -585,13 +594,15 @@ export default function PricingPage() {
               onClick={() => setBilling("monthly")}
               className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${billing === "monthly" ? "bg-[#5851DB] text-white" : "text-slate-500"}`}
             >
-              Monthly
+              {t("billing.monthly")}
             </button>
             <button
               onClick={() => setBilling("annual")}
               className={`px-5 py-2 rounded-xl text-sm font-bold transition cursor-pointer ${billing === "annual" ? "bg-[#5851DB] text-white" : "text-slate-500"}`}
             >
-              Annual <span className="text-[10px] text-emerald-500">(save up to 32%)</span>
+              {t.rich("billing.annual", {
+                save: (c) => <span className="text-[10px] text-emerald-500">{c}</span>,
+              })}
             </button>
           </div>
         </div>
@@ -606,9 +617,9 @@ export default function PricingPage() {
                 %
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black text-slate-900">50% off your first subscription 🎉</p>
+                <p className="text-sm font-black text-slate-900">{t("referral.fiftyOff")}</p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  <span className="text-[11px] text-slate-500 font-medium">Gifted by</span>
+                  <span className="text-[11px] text-slate-500 font-medium">{t("referral.giftedBy")}</span>
                   {referralDiscount.referrer_photo ? (
                     <img
                       src={referralDiscount.referrer_photo}
@@ -623,7 +634,7 @@ export default function PricingPage() {
                   <span className="text-[11px] font-black text-slate-800">
                     {referralDiscount.referrer_name || `@${referralDiscount.referrer_username}`}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-normal">· applied automatically at checkout</span>
+                  <span className="text-[11px] text-slate-400 font-normal">{t("referral.appliedAutomatically")}</span>
                 </div>
               </div>
             </div>
@@ -645,8 +656,11 @@ export default function PricingPage() {
                 className="w-4 h-4 rounded border-slate-300 text-[#5851DB] focus:ring-[#5851DB] cursor-pointer"
               />
               <span className="text-sm font-semibold text-slate-700">
-                Apply my <span className="text-[#5851DB] font-black">{availableRc} RC</span> at checkout
-                <span className="text-[11px] text-slate-400 ml-1 font-normal">(up to 50% off first invoice)</span>
+                {t.rich("rc.apply", {
+                  amount: availableRc,
+                  rc: (c) => <span className="text-[#5851DB] font-black">{c}</span>,
+                  note: (c) => <span className="text-[11px] text-slate-400 ml-1 font-normal">{c}</span>,
+                })}
               </span>
             </label>
           </div>
@@ -666,23 +680,23 @@ export default function PricingPage() {
               <Card key={planId} className={`relative p-6 rounded-3xl border-2 transition-all ${isPopular ? "border-[#5851DB] shadow-xl" : "border-slate-100"}`}>
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Most popular
+                    {t("plans.mostPopular")}
                   </div>
                 )}
 
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold ${meta.accent}`}>
-                  {meta.icon} {meta.label}
+                  {meta.icon} {t(`plans.${planId}.label`)}
                 </div>
 
-                <p className="text-sm text-slate-500 mt-3 leading-snug">{meta.tagline}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{meta.description}</p>
+                <p className="text-sm text-slate-500 mt-3 leading-snug">{t(`plans.${planId}.tagline`)}</p>
+                <p className="text-[11px] text-slate-400 mt-1">{t(`plans.${planId}.description`)}</p>
 
                 <div className="mt-5">
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black text-slate-900">₹{price}</span>
-                    <span className="text-sm text-slate-400 font-medium">/{billing === "annual" ? "yr" : "mo"}</span>
+                    <span className="text-sm text-slate-400 font-medium">/{billing === "annual" ? t("price.perYearShort") : t("price.perMonthShort")}</span>
                   </div>
-                  {billing === "annual" && <p className="text-[11px] text-emerald-600 font-semibold mt-1">≈ ₹{monthEquiv}/mo</p>}
+                  {billing === "annual" && <p className="text-[11px] text-emerald-600 font-semibold mt-1">{t("price.monthEquiv", { amount: monthEquiv })}</p>}
                 </div>
 
                 <button
@@ -698,10 +712,10 @@ export default function PricingPage() {
                 >
                   {upgrading === planId && <Loader2 size={14} className="animate-spin" />}
                   {isCurrent
-                    ? "Current plan"
+                    ? t("cta.currentPlan")
                     : PLAN_ORDER.indexOf(planId) > PLAN_ORDER.indexOf(effectivePlan)
-                    ? `Upgrade to ${meta.label}`
-                    : `Choose ${meta.label}`}
+                    ? t("cta.upgradeTo", { plan: t(`plans.${planId}.label`) })
+                    : t("cta.choose", { plan: t(`plans.${planId}.label`) })}
                 </button>
 
                 <div className="mt-6 space-y-2">
@@ -740,15 +754,11 @@ export default function PricingPage() {
 
       {gatewayPickerPlan && (
         <SharedGatewayPickerModal
-          title={
-            <>
-              Pay for{" "}
-              <span className="text-[#5851DB]">
-                {PLAN_META[gatewayPickerPlan]?.label || gatewayPickerPlan}
-              </span>
-            </>
-          }
-          subtitle="Pick a payment method to continue"
+          title={t.rich("gatewayPicker.payFor", {
+            name: t(`plans.${gatewayPickerPlan}.label`),
+            plan: (c) => <span className="text-[#5851DB]">{c}</span>,
+          })}
+          subtitle={t("gatewayPicker.pickMethod")}
           onCancel={() => setGatewayPickerPlan(null)}
           onPick={(g) => handleUpgrade(gatewayPickerPlan, g)}
         />
@@ -782,6 +792,7 @@ export default function PricingPage() {
 // part of the app rather than a browser interrupt. Single primary CTA;
 // click-outside or × button to dismiss.
 function ErrorModal({ title, message, onClose }) {
+  const t = useTranslations("InfluencerPricing");
   return (
     <div
       className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -812,7 +823,7 @@ function ErrorModal({ title, message, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("common.close")}
             className="p-1.5 -mr-1 -mt-1 hover:bg-slate-100 rounded-lg cursor-pointer"
           >
             <span className="block w-3 h-3 relative">
@@ -828,7 +839,7 @@ function ErrorModal({ title, message, onClose }) {
             className="w-full py-3 rounded-2xl text-white text-sm font-bold cursor-pointer hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            Got it
+            {t("errors.gotIt")}
           </button>
         </div>
       </div>
@@ -841,11 +852,12 @@ function ErrorModal({ title, message, onClose }) {
 // visual but it stops the user from clicking anything else (especially
 // another Upgrade button) while the sync is in flight.
 function VerifyingOverlay() {
+  const t = useTranslations("InfluencerPricing");
   return (
     <FullPageLoader
-      title="Payment received"
-      message="Syncing your new plan…"
-      hint="This usually takes a couple of seconds."
+      title={t("verifying.title")}
+      message={t("verifying.message")}
+      hint={t("verifying.hint")}
     />
   );
 }
@@ -855,11 +867,12 @@ function VerifyingOverlay() {
 // whole page during the edge-function round-trip avoids accidental
 // double-taps on Upgrade and makes the wait feel intentional.
 function PreparingCheckoutOverlay({ gateway }) {
+  const t = useTranslations("InfluencerPricing");
   return (
     <FullPageLoader
-      title="Opening checkout"
-      message={`Sending you to ${gateway}…`}
-      hint="Don't refresh — we're getting your payment session ready."
+      title={t("preparing.title")}
+      message={t("preparing.message", { gateway })}
+      hint={t("preparing.hint")}
     />
   );
 }
@@ -901,6 +914,7 @@ function FullPageLoader({ title, message, hint }) {
 // the date, and a Done button. Close affordance is a clear X in the
 // top-right corner per the requested spec.
 function PaymentSuccessModal({ details, profile, billing, onClose }) {
+  const t = useTranslations("InfluencerPricing");
   // Prefer the plan/cycle the user actually purchased (captured before
   // checkout). The profile's subscription_plan can lag — the webhook that
   // flips it may not have landed, and on a plan switch it can briefly
@@ -908,8 +922,8 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
   // a Pro purchase. Fall back to the profile only if we didn't capture it.
   const plan = (details?.plan || profile?.subscription_plan || "").toLowerCase();
   const cycle = details?.cycle || profile?.billing_cycle || billing || "monthly";
-  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "your new plan";
-  const cycleLabel = cycle === "annual" ? "Annual" : "Monthly";
+  const planLabel = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : t("success.yourNewPlan");
+  const cycleLabel = cycle === "annual" ? t("success.cycleAnnual") : t("success.cycleMonthly");
   const price = PLAN_PRICING[plan]?.[cycle === "annual" ? "annual" : "monthly"];
   const amount = price ? `₹${price.toLocaleString("en-IN")}` : "—";
   const gatewayLabel = details.gateway === "razorpay" ? "Razorpay" : "Stripe";
@@ -936,7 +950,7 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("common.close")}
           className="absolute top-3 right-3 p-2 rounded-full hover:bg-slate-100 cursor-pointer text-slate-400 hover:text-slate-600 z-10"
         >
           <X size={18} strokeWidth={2.5} />
@@ -952,34 +966,34 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
             id="payment-success-title"
             className="text-xl sm:text-2xl font-black text-white leading-tight"
           >
-            You're on {planLabel}!
+            {t("success.youreOn", { plan: planLabel })}
           </h2>
           <p className="text-[12px] font-semibold text-white/85 mt-1">
-            Payment received and your plan is live.
+            {t("success.planLive")}
           </p>
         </div>
 
         {/* Payment + subscription details */}
         <div className="px-6 py-5 space-y-3">
-          <DetailRow label="Plan" value={`${planLabel} · ${cycleLabel}`} />
-          <DetailRow label="Amount" value={amount} />
+          <DetailRow label={t("success.labels.plan")} value={`${planLabel} · ${cycleLabel}`} />
+          <DetailRow label={t("success.labels.amount")} value={amount} />
           <DetailRow
-            label="Paid via"
+            label={t("success.labels.paidVia")}
             value={gatewayLabel}
             valueClassName={
               details.gateway === "razorpay" ? "text-[#0c2451]" : "text-[#635BFF]"
             }
           />
           {details.paymentId && (
-            <DetailRow label="Payment ID" value={details.paymentId} mono />
+            <DetailRow label={t("success.labels.paymentId")} value={details.paymentId} mono />
           )}
           {details.subscriptionId && (
-            <DetailRow label="Subscription ID" value={details.subscriptionId} mono />
+            <DetailRow label={t("success.labels.subscriptionId")} value={details.subscriptionId} mono />
           )}
           {details.sessionId && (
-            <DetailRow label="Checkout session" value={details.sessionId} mono />
+            <DetailRow label={t("success.labels.checkoutSession")} value={details.sessionId} mono />
           )}
-          <DetailRow label="Date" value={dateLabel} />
+          <DetailRow label={t("success.labels.date")} value={dateLabel} />
         </div>
 
         {/* Actions */}
@@ -994,7 +1008,7 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
               aria-busy="true"
             >
-              <Loader2 size={15} className="animate-spin" /> Preparing invoice…
+              <Loader2 size={15} className="animate-spin" /> {t("success.preparingInvoice")}
             </div>
           ) : details.invoiceUrl ? (
             <a
@@ -1004,7 +1018,7 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
               className="w-full py-3 rounded-2xl text-white text-sm font-bold cursor-pointer hover:opacity-90 flex items-center justify-center gap-2"
               style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
             >
-              <ExternalLink size={15} strokeWidth={2.5} /> Open Invoice
+              <ExternalLink size={15} strokeWidth={2.5} /> {t("success.openInvoice")}
             </a>
           ) : null}
           <button
@@ -1021,11 +1035,12 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
                 : { background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }
             }
           >
-            Done
+            {t("success.done")}
           </button>
           <p className="text-[10px] text-slate-400 font-semibold text-center mt-3 leading-relaxed">
-            Receipt + invoice will land in your email. View every past
-            invoice from <strong>Profile → Payments → Subscription History</strong>.
+            {t.rich("success.receiptNote", {
+              b: (c) => <strong>{c}</strong>,
+            })}
           </p>
         </div>
       </div>
@@ -1081,21 +1096,25 @@ function normalizeIndianPhone(raw) {
 // one charges us is what flips subscription_plan, so the user can't end
 // up double-billed.
 function GatewayPickerModal({ planId, planLabel, onCancel, onPick }) {
+  const t = useTranslations("InfluencerPricing");
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between px-5 pt-5 pb-3">
           <div>
             <h3 className="text-base font-black text-slate-900">
-              Pay for <span className="text-[#5851DB]">{planLabel}</span>
+              {t.rich("gatewayPicker.payFor", {
+                name: planLabel,
+                plan: (c) => <span className="text-[#5851DB]">{c}</span>,
+              })}
             </h3>
             <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
-              Pick a payment method to continue
+              {t("gatewayPicker.pickMethod")}
             </p>
           </div>
           <button
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t("common.close")}
             type="button"
             className="p-1.5 -mr-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-600"
           >
@@ -1108,20 +1127,19 @@ function GatewayPickerModal({ planId, planLabel, onCancel, onPick }) {
             onClick={() => onPick("razorpay")}
             logo={<RazorpayLogo />}
             title="Razorpay"
-            tagline="UPI · Cards · Netbanking · Wallets"
+            tagline={t("gatewayPicker.razorpayTagline")}
             accent="border-[#0c2451]/15 hover:border-[#0c2451]/40 hover:bg-[#0c2451]/5"
           />
           <GatewayOption
             onClick={() => onPick("stripe")}
             logo={<StripeLogo />}
             title="Stripe"
-            tagline="International cards · Apple Pay · Google Pay"
+            tagline={t("gatewayPicker.stripeTagline")}
             accent="border-[#635BFF]/15 hover:border-[#635BFF]/40 hover:bg-[#635BFF]/5"
           />
 
           <p className="text-[10px] text-slate-400 text-center pt-2 leading-relaxed">
-            You'll be redirected to a secure checkout page and brought back
-            here when you're done.
+            {t("gatewayPicker.redirectNote")}
           </p>
         </div>
       </div>
@@ -1183,11 +1201,7 @@ function RazorpayLogo() {
 // highlighted as "Most Popular", lavender category bands, purple check
 // circles for "included" and gradient star-circles for "Elite only".
 function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading }) {
-  const tier = (p) => {
-    if (p === PLAN_IDS.STARTER) return "Starter";
-    if (p === PLAN_IDS.PRO) return "Pro";
-    return "Elite";
-  };
+  const t = useTranslations("InfluencerPricing");
 
   return (
     <div className="relative">
@@ -1207,13 +1221,13 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
           <p
             className="text-[12px] font-extrabold tracking-[0.2em] uppercase mb-2.5 bg-gradient-to-r from-[#902ddf] to-[#f2339d] bg-clip-text text-transparent"
           >
-            Membership Plans
+            {t("comparison.eyebrow")}
           </p>
           <h2 className="text-2xl lg:text-[40px] font-extrabold text-[#241d33] tracking-tight leading-tight">
-            Choose the plan that grows with you
+            {t("comparison.title")}
           </h2>
           <p className="text-[15px] text-[#7b7490] mt-2 font-medium">
-            Compare every feature across Starter, Pro and Elite.
+            {t("comparison.subtitle")}
           </p>
         </div>
 
@@ -1237,10 +1251,10 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                 >
                   <th className="sticky left-0 z-10 text-left text-white align-middle px-5 py-6 w-[38%] min-w-[280px] bg-gradient-to-br from-[#902ddf] to-[#f2339d]">
                     <div className="text-[21px] font-extrabold tracking-tight">
-                      Pricing
+                      {t("comparison.pricingHeader")}
                     </div>
                     <div className="text-[12.5px] font-medium opacity-85 mt-0.5">
-                      Compare every feature
+                      {t("comparison.compareEveryFeature")}
                     </div>
                   </th>
                   {PLAN_ORDER.map((p) => {
@@ -1255,14 +1269,14 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                       >
                         <div className="text-[30px] font-extrabold tracking-tight leading-none">
                           ₹{pricing.monthly}
-                          <span className="text-[14px] font-semibold opacity-80"> /mo</span>
+                          <span className="text-[14px] font-semibold opacity-80"> /{t("price.perMonthShort")}</span>
                         </div>
                         <div className="text-[12px] font-bold tracking-[0.12em] uppercase opacity-90 mt-1.5">
-                          {tier(p)}
+                          {t(`plans.${p}.label`)}
                         </div>
                         {isPop && (
                           <span className="inline-block mt-2 text-[9.5px] font-extrabold tracking-[0.1em] whitespace-nowrap bg-white/95 text-[#902ddf] px-2.5 py-0.5 rounded-md">
-                            ★ MOST POPULAR
+                            {t("comparison.mostPopular")}
                           </span>
                         )}
                       </th>
@@ -1286,10 +1300,10 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                     // so the Pro column shows "Choose Pro" (they need
                     // to actually subscribe) and Elite shows "Upgrade".
                     const ctaLabel = isCurrent
-                      ? "Current plan"
+                      ? t("cta.currentPlan")
                       : PLAN_ORDER.indexOf(p) > PLAN_ORDER.indexOf(effectivePlan)
-                      ? `Upgrade to ${PLAN_META[p].label}`
-                      : `Choose ${PLAN_META[p].label}`;
+                      ? t("cta.upgradeTo", { plan: t(`plans.${p}.label`) })
+                      : t("cta.choose", { plan: t(`plans.${p}.label`) });
                     return (
                       <td
                         key={p}
@@ -1372,14 +1386,14 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                                           boxShadow:
                                             "0 6px 14px -4px rgba(242,51,157,.6)",
                                         }}
-                                        aria-label="Elite only"
+                                        aria-label={t("comparison.eliteOnlyAria")}
                                       >
                                         <Check size={14} strokeWidth={3} />
                                       </span>
                                     ) : (
                                       <span
                                         className="inline-grid place-items-center w-[26px] h-[26px] rounded-full bg-[#7c3aed] text-white"
-                                        aria-label="Included"
+                                        aria-label={t("comparison.includedAria")}
                                       >
                                         <Check size={14} strokeWidth={3} />
                                       </span>
@@ -1418,7 +1432,7 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
         </div>
 
         <p className="text-center text-[12.5px] text-[#7b7490] font-medium mt-4">
-          All plans are billed monthly. Prices are exclusive of applicable taxes (GST).
+          {t("comparison.footnote")}
         </p>
       </div>
     </div>

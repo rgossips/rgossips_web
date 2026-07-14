@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES as categories } from "@/utils/categories";
 
 const CategorySelection = ({ onNext, onSkip }) => {
+  const t = useTranslations("Auth.categories");
   const [selected, setSelected] = useState([]);
 
   const toggle = (cat) => {
@@ -16,12 +18,8 @@ const CategorySelection = ({ onNext, onSkip }) => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">
-          What Do You Create?
-        </h2>
-        <p className="text-slate-500 text-sm">
-          Select categories to get better campaign matches
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900">{t("title")}</h2>
+        <p className="text-slate-500 text-sm">{t("subtitle")}</p>
       </div>
 
       {/* Pill Layout */}
@@ -60,14 +58,14 @@ const CategorySelection = ({ onNext, onSkip }) => {
               : "btn-purple text-white shadow-lg shadow-purple-200"
           }`}
         >
-          Continue
+          {t("continue")}
         </Button>
         {onSkip && (
           <button
             onClick={onSkip}
             className="w-full py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
-            Skip for now
+            {t("skip")}
           </button>
         )}
       </div>

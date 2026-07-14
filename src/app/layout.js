@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { GlobalProvider } from "@/context/GlobalContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LoadingProvider } from "@/context/LoadingContext";
@@ -133,9 +135,14 @@ const WEBSITE_SCHEMA = {
   },
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Locale + messages resolved from the NEXT_LOCALE cookie (see src/i18n).
+  // Providing them here lets every Server and Client Component call
+  // useTranslations()/getTranslations() with the same catalog.
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         {/* Structured data — JSON-LD. Renders into <head> at build time
             because it's a Server Component. Google reads this to power
@@ -167,13 +174,15 @@ export default function RootLayout({ children }) {
         </Script>
 
         <NavigationLoader />
-        <LoadingProvider>
-          <GlobalProvider>
-            <AuthProvider>
-              <ProtectedRoute>{children}</ProtectedRoute>
-            </AuthProvider>
-          </GlobalProvider>
-        </LoadingProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LoadingProvider>
+            <GlobalProvider>
+              <AuthProvider>
+                <ProtectedRoute>{children}</ProtectedRoute>
+              </AuthProvider>
+            </GlobalProvider>
+          </LoadingProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

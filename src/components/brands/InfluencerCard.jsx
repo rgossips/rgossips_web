@@ -1,4 +1,5 @@
 import { Instagram, Users, FileText } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -7,7 +8,7 @@ const formatCount = (n) => {
   return String(n);
 };
 
-export const InfluencerCard = ({
+export const InfluencerCard = async ({
   full_name,
   username,
   instagram_handle,
@@ -16,8 +17,9 @@ export const InfluencerCard = ({
   categories,
   media_kit_published,
 }) => {
+  const t = await getTranslations("BrandsInfluencerCard");
   const handle = instagram_handle || username || "";
-  const displayName = full_name || handle || "Unknown";
+  const displayName = full_name || handle || t("unknown");
   const categoryLabel = Array.isArray(categories)
     ? categories.slice(0, 2).join(", ")
     : categories || "";
@@ -76,7 +78,7 @@ export const InfluencerCard = ({
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-full transition-colors cursor-pointer"
-            title="Open Instagram"
+            title={t("openInstagram")}
           >
             <Instagram size={18} strokeWidth={1.75} />
           </a>
@@ -87,7 +89,7 @@ export const InfluencerCard = ({
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 text-[#5851DB] bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
-            title="Open Media Kit"
+            title={t("openMediaKit")}
           >
             <FileText size={18} strokeWidth={1.75} />
           </a>

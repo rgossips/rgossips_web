@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
@@ -17,6 +18,7 @@ const BAND_RING = {
 };
 
 export const TrustSection = () => {
+  const t = useTranslations("BrandsTrustSection");
   const { trust } = useBrandTrustScore();
   const [trustInfoOpen, setTrustInfoOpen] = useState(false);
   const min = trust?.scaleMin ?? 300;
@@ -39,7 +41,7 @@ export const TrustSection = () => {
       {/* Floating Search */}
       <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
         <p className="text-slate-400 text-sm font-medium pl-2">
-          Looking for 10 nano creators, 15L...
+          {t("searchPlaceholder")}
         </p>
         <button className="bg-[#5B3DF5] p-2.5 rounded-2xl text-white cursor-pointer">
           <Plus size={24} />
@@ -51,24 +53,24 @@ export const TrustSection = () => {
         <div>
           <div className="flex items-center gap-1.5 mb-1">
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-              Your Trust Score
+              {t("yourTrustScore")}
             </p>
             <button
               onClick={() => setTrustInfoOpen(true)}
               className="cursor-pointer hover:scale-110 transition-transform inline-flex"
-              aria-label="How is the trust score calculated?"
-              title="How is this calculated?"
+              aria-label={t("infoAriaLabel")}
+              title={t("infoTitle")}
             >
               <InfoBadge size={16} />
             </button>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-black">{score}</span>
-            <span className="text-slate-500 text-xs font-bold">/{max}</span>
+            <span className="text-slate-500 text-xs font-bold">{t("scoreOutOf", { max })}</span>
           </div>
           {trust?.coldStart && (
             <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">
-              Capped at {trust.coldStartCap} · 3 campaigns to lift
+              {t("coldStartCap", { cap: trust.coldStartCap })}
             </p>
           )}
         </div>

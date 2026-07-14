@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Star, TrendingUp, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import ApplyCampaignNotLoggedIn from "@/components/ApplyCampaignNotLoggedIn";
+import { useTranslations } from "next-intl";
 
 export default function CampaignsPage() {
+  const t = useTranslations("HomeOffers");
   const [activeTab, setActiveTab] = useState("Active");
   const [selectedCampaign, setSelectedCampaign] = useState(null);
 
@@ -26,16 +28,16 @@ export default function CampaignsPage() {
           {/* Left Content */}
           <div className="space-y-8">
             <Badge className="bg-blue-50 text-blue-600 border-blue-100 px-4 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 w-fit">
-              <span className="flex items-center gap-1.5">🚀 Now live: AI-powered Influencer Matching — Try it free →</span>
+              <span className="flex items-center gap-1.5">{t("hero.badge")}</span>
             </Badge>
 
             <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
-              Where Global Brands Meet <br />
-              <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">The Right Creators.</span>
+              {t("hero.titleLine1")} <br />
+              <span className="bg-gradient-to-r from-[#155DFC] to-[#9810FA] bg-clip-text text-transparent">{t("hero.titleLine2")}</span>
             </h1>
 
             <p className="text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-medium">
-              RGossips is the all-in-one influencer campaign platform that connects brands with verified creators globally — no agencies, no spreadsheets, no guesswork.
+              {t("hero.description")}
             </p>
 
             {/* <div className="flex flex-wrap gap-4">
@@ -71,7 +73,7 @@ export default function CampaignsPage() {
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className={`w-12 h-12 rounded-full border-4 border-white bg-gradient-to-br ${i % 2 === 0 ? "from-blue-400 to-blue-600" : "from-purple-400 to-purple-600"}`} />
                 ))}
-                <div className="w-12 h-12 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">+5K</div>
+                <div className="w-12 h-12 rounded-full border-4 border-white bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{t("hero.avatarMore")}</div>
               </div>
               <div className="space-y-1">
                 <div className="flex text-yellow-400">
@@ -80,7 +82,7 @@ export default function CampaignsPage() {
                   ))}
                 </div>
                 <p className="text-sm font-bold text-slate-700">
-                  4.9/5 <span className="text-slate-400 font-medium">from 2,000+ reviews</span>
+                  {t("hero.rating")} <span className="text-slate-400 font-medium">{t("hero.reviews")}</span>
                 </p>
               </div>
             </div>
@@ -111,8 +113,8 @@ export default function CampaignsPage() {
                   <TrendingUp size={20} />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900">+245%</p>
-                  <p className="text-xs text-slate-400 font-medium">ROI Increase</p>
+                  <p className="text-xl font-bold text-slate-900">{t("hero.roiValue")}</p>
+                  <p className="text-xs text-slate-400 font-medium">{t("hero.roiLabel")}</p>
                 </div>
               </motion.div>
 
@@ -130,8 +132,8 @@ export default function CampaignsPage() {
                   <Users size={20} />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900">50K+</p>
-                  <p className="text-xs text-slate-400 font-medium">Active Users</p>
+                  <p className="text-xl font-bold text-slate-900">{t("hero.usersValue")}</p>
+                  <p className="text-xs text-slate-400 font-medium">{t("hero.usersLabel")}</p>
                 </div>
               </motion.div>
             </motion.div>
@@ -143,8 +145,8 @@ export default function CampaignsPage() {
         {/* --- COMPACT HEADER & FILTERS --- */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-slate-200 pb-8">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Collaboration Hub</h2>
-            <p className="text-slate-500 font-medium text-sm">Showing {activeTab.toLowerCase()} projects and earnings.</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{t("hub.title")}</h2>
+            <p className="text-slate-500 font-medium text-sm">{t("hub.showing", { status: activeTab.toLowerCase() })}</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -195,7 +197,7 @@ export default function CampaignsPage() {
 
           {filteredCampaigns.length === 0 && (
             <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-              <p className="text-slate-400 font-medium">No {activeTab.toLowerCase()} campaigns found.</p>
+              <p className="text-slate-400 font-medium">{t("hub.empty", { status: activeTab.toLowerCase() })}</p>
             </div>
           )}
         </main>
@@ -208,8 +210,8 @@ export default function CampaignsPage() {
 
             <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
               <div className="text-center lg:text-left space-y-2">
-                <h3 className="text-xl lg:text-2xl font-bold">Need help with a campaign?</h3>
-                <p className="text-slate-400 text-sm max-w-md">Our dedicated support team is available 24/7 to help you manage your brand relations and payments.</p>
+                <h3 className="text-xl lg:text-2xl font-bold">{t("support.heading")}</h3>
+                <p className="text-slate-400 text-sm max-w-md">{t("support.description")}</p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full lg:w-auto">

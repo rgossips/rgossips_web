@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Calendar, MapPin } from "lucide-react";
 import { FaInstagram, FaCameraRetro, FaVideo, FaFileAlt } from "react-icons/fa"; // React icons for deliverables
 import { cn } from "@/lib/utils"; // shadcn/ui utility for classNames
@@ -15,22 +16,23 @@ export default function TourInfo({
   category = "",
   specifics = {},
 }) {
+  const t = useTranslations("TourInfo");
   const [serviceOpen, setServiceOpen] = useState(false);
 
   const deliverablesList = [
     {
       icon: <FaCameraRetro className="text-orange-700" />,
-      label: "Instagram Stories",
+      label: t("deliverablesList.stories"),
       count: deliverables.stories || 0,
     },
     {
       icon: <FaFileAlt className="text-orange-700" />,
-      label: "Instagram Posts",
+      label: t("deliverablesList.posts"),
       count: deliverables.posts || 0,
     },
     {
       icon: <FaVideo className="text-orange-700" />,
-      label: "Instagram Reels",
+      label: t("deliverablesList.reels"),
       count: deliverables.reels || 0,
     },
   ];
@@ -38,26 +40,26 @@ export default function TourInfo({
   const eligibilityList = [
     {
       icon: <FaInstagram />,
-      label: "Followers",
-      value: eligibility.minFollowers || "N/A",
+      label: t("eligibilityList.followers"),
+      value: eligibility.minFollowers || t("notAvailable"),
       color: "bg-blue-100 text-blue-700",
     },
     {
       icon: <FaInstagram />,
-      label: "Platform",
-      value: eligibility.platform || "N/A",
+      label: t("eligibilityList.platform"),
+      value: eligibility.platform || t("notAvailable"),
       color: "bg-purple-100 text-purple-700",
     },
     {
       icon: <FaFileAlt />,
-      label: "Type",
-      value: metadata.tag || "N/A",
+      label: t("eligibilityList.type"),
+      value: metadata.tag || t("notAvailable"),
       color: "bg-green-100 text-green-700",
     },
     {
       icon: <FaFileAlt />,
-      label: "Content",
-      value: eligibility.contentType || "Manual",
+      label: t("eligibilityList.content"),
+      value: eligibility.contentType || t("manual"),
       color: "bg-yellow-100 text-yellow-700",
     },
   ];
@@ -67,7 +69,7 @@ export default function TourInfo({
       ? `${metadata.nights}N/${metadata.days}D`
       : metadata.nights
         ? `${metadata.nights}N`
-        : "N/A";
+        : t("notAvailable");
 
   return (
     <div className="w-full space-y-8">
@@ -86,7 +88,7 @@ export default function TourInfo({
         <div className="w-full rounded-2xl p-6 shadow-sm bg-gradient-to-r from-purple-400 via-purple-200 to-purple-50 select-none">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">
-              Collab Benefits
+              {t("collabBenefits")}
             </h2>
             {(metadata.nights || metadata.days) && (
               <div className="px-3 py-1 text-xs bg-purple-700/50 text-white rounded-full">
@@ -100,7 +102,7 @@ export default function TourInfo({
                 className="flex justify-between items-center cursor-pointer p-3 bg-white rounded-xl"
                 onClick={() => setServiceOpen(!serviceOpen)}
               >
-                <p className="text-sm font-medium text-black">Services</p>
+                <p className="text-sm font-medium text-black">{t("services")}</p>
                 <ChevronDown
                   size={18}
                   className={cn(
@@ -118,7 +120,7 @@ export default function TourInfo({
 
             {specifics.guestCount && (
               <div className="p-3 bg-white rounded-xl border border-gray-200 text-black">
-                <p className="text-sm font-medium">Guest Allowed</p>
+                <p className="text-sm font-medium">{t("guestAllowed")}</p>
                 <p className="font-medium mt-1">{specifics.guestCount}</p>
               </div>
             )}
@@ -129,7 +131,7 @@ export default function TourInfo({
       {/*              DELIVERABLES             */}
       {/* ------------------------------------ */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold mb-4">Deliverables</h2>
+        <h2 className="text-xl font-semibold mb-4">{t("deliverables")}</h2>
         <div className="space-y-3">
           {deliverablesList.map((item) => (
             <div key={item.label} className="flex justify-between items-center">
@@ -148,7 +150,7 @@ export default function TourInfo({
       {/*              ELIGIBILITY              */}
       {/* ------------------------------------ */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Eligibility</h2>
+        <h2 className="text-xl font-semibold">{t("eligibility")}</h2>
         <div className="grid grid-cols-2 gap-4">
           {eligibilityList.map((item) => (
             <Card
@@ -175,7 +177,7 @@ export default function TourInfo({
       {/*              AVAILABILITY             */}
       {/* ------------------------------------ */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Availability</h2>
+        <h2 className="text-xl font-semibold">{t("availability")}</h2>
 
         <div className="space-y-4">
           {/* TIMINGS */}
@@ -185,11 +187,11 @@ export default function TourInfo({
               size={22}
             />
             <div>
-              <p className="font-medium">Timings</p>
+              <p className="font-medium">{t("timings")}</p>
               <p className="text-sm">
-                <span className="font-semibold">Check-In:</span>{" "}
+                <span className="font-semibold">{t("checkIn")}</span>{" "}
                 {metadata.checkInTime || "12:00 PM"} —
-                <span className="font-semibold ml-2">Check-Out:</span>{" "}
+                <span className="font-semibold ml-2">{t("checkOut")}</span>{" "}
                 {metadata.checkOutTime || "11:00 AM"}
               </p>
             </div>
@@ -201,7 +203,7 @@ export default function TourInfo({
               className="bg-green-100 text-green-700 p-1 rounded-full"
               size={22}
             />
-            <p>{metadata.location || "Location not available"}</p>
+            <p>{metadata.location || t("locationNotAvailable")}</p>
           </div>
         </div>
       </div>

@@ -5,27 +5,28 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Copy, MessageCircle, Trophy, Sparkles } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 const STATUS_PILL = {
-  PENDING: { label: "Pending", class: "bg-slate-100 text-slate-500" },
-  SIGNED_UP: { label: "Signed up", class: "bg-blue-50 text-blue-700" },
-  QUALIFIED: { label: "Qualified", class: "bg-amber-50 text-amber-700" },
-  REWARDED: { label: "Rewarded", class: "bg-emerald-50 text-emerald-700" },
-  REVERSED: { label: "Reversed", class: "bg-rose-50 text-rose-600" },
-  EXPIRED: { label: "Expired", class: "bg-slate-100 text-slate-400" },
-  MANUAL_REVIEW: { label: "Under review", class: "bg-orange-50 text-orange-700" },
+  PENDING: "bg-slate-100 text-slate-500",
+  SIGNED_UP: "bg-blue-50 text-blue-700",
+  QUALIFIED: "bg-amber-50 text-amber-700",
+  REWARDED: "bg-emerald-50 text-emerald-700",
+  REVERSED: "bg-rose-50 text-rose-600",
+  EXPIRED: "bg-slate-100 text-slate-400",
+  MANUAL_REVIEW: "bg-orange-50 text-orange-700",
 };
 
-const REASON_LABEL = {
-  REFERRAL_EARN: "Referral reward",
-  WELCOME_BONUS: "Welcome bonus",
-  MILESTONE_BONUS: "Milestone bonus",
-  LEADERBOARD: "Leaderboard prize",
-  REDEMPTION: "Applied to subscription",
-  CLAWBACK: "Refund clawback",
-  EXPIRY: "Auto-expired",
-  ADMIN_ADJUSTMENT: "Admin adjustment",
-};
+const KNOWN_REASONS = new Set([
+  "REFERRAL_EARN",
+  "WELCOME_BONUS",
+  "MILESTONE_BONUS",
+  "LEADERBOARD",
+  "REDEMPTION",
+  "CLAWBACK",
+  "EXPIRY",
+  "ADMIN_ADJUSTMENT",
+]);
 
 const formatDate = (iso) =>
   iso
@@ -37,6 +38,7 @@ const formatDate = (iso) =>
     : "—";
 
 export default function ReferPage() {
+  const t = useTranslations("InfluencerRefer");
   const router = useRouter();
   const { user, profile, loading: authLoading } = useAuth();
   const supabase = createClient();
@@ -149,7 +151,7 @@ export default function ReferPage() {
 
   const shareOnWhatsApp = () => {
     if (!shareUrl) return;
-    const msg = `Try RGossips — your first month is 50% off with my link: ${shareUrl}`;
+    const msg = t("share.whatsappMessage", { url: shareUrl });
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   };
 
@@ -175,14 +177,14 @@ export default function ReferPage() {
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={14} /> {t("back")}
         </button>
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl lg:text-3xl font-black text-slate-900">Refer & Earn</h1>
+          <h1 className="text-2xl lg:text-3xl font-black text-slate-900">{t("title")}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Share RGossips with other creators. When they subscribe to any plan you both win — they get 50% off their first month, you earn Reward Credits (RC) redeemable on your next renewal.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -192,15 +194,15 @@ export default function ReferPage() {
             <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-[#9810FA] to-[#E60076] flex items-center justify-center">
               <Sparkles className="text-white" size={28} />
             </div>
-            <h2 className="text-lg font-black text-slate-900">Subscribe to unlock referrals</h2>
+            <h2 className="text-lg font-black text-slate-900">{t("gate.title")}</h2>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
-              Refer & Earn is available to paid subscribers. Upgrade to any plan and start sharing your referral link right after.
+              {t("gate.body")}
             </p>
             <button
               onClick={() => router.push("/influencer/pricing")}
               className="btn-purple text-white text-sm font-black py-3 px-6 rounded-2xl shadow-md shadow-pink-100 cursor-pointer"
             >
-              See plans
+              {t("gate.cta")}
             </button>
           </div>
         ) : (
@@ -213,31 +215,31 @@ export default function ReferPage() {
                 style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
               >
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest opacity-80">Available RC</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest opacity-80">{t("wallet.availableRc")}</p>
                   <p className="text-4xl font-black mt-1">{availableBalance}</p>
                   <p className="text-xs opacity-80 mt-1">
-                    ₹{availableBalance} redeemable at checkout
+                    {t("wallet.redeemable", { amount: availableBalance })}
                   </p>
                   {lockedBalance > 0 && (
                     <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1">
                       <span className="text-[10px] font-black uppercase tracking-widest opacity-90">
-                        Locked
+                        {t("wallet.locked")}
                       </span>
-                      <span className="text-[11px] font-black">+{lockedBalance} RC</span>
+                      <span className="text-[11px] font-black">{t("wallet.lockedAmount", { amount: lockedBalance })}</span>
                     </div>
                   )}
                 </div>
                 <p className="text-[11px] opacity-70 mt-4">
                   {lockedBalance > 0
-                    ? "Your welcome bonus unlocks 30 days after signup. Referral rewards are spendable immediately."
-                    : "Redeem up to 50% of any plan price at checkout."}
+                    ? t("wallet.lockedNote")
+                    : t("wallet.unlockedNote")}
                 </p>
               </div>
 
               {/* Share card */}
               <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-6 space-y-4">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Your referral link</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{t("share.label")}</p>
                   <div className="mt-2 flex items-center gap-2 bg-slate-50 rounded-2xl p-3 border border-slate-100">
                     <p className="flex-1 text-sm font-mono text-slate-800 truncate">{shareUrl}</p>
                     <button
@@ -245,7 +247,7 @@ export default function ReferPage() {
                       className="shrink-0 text-xs font-black text-pink-500 hover:text-pink-600 flex items-center gap-1 cursor-pointer"
                     >
                       <Copy size={14} />
-                      {copied ? "Copied" : "Copy"}
+                      {copied ? t("share.copied") : t("share.copy")}
                     </button>
                   </div>
                 </div>
@@ -254,12 +256,12 @@ export default function ReferPage() {
                   className="w-full py-3 rounded-2xl bg-[#25D366] text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-100 hover:opacity-90"
                 >
                   <MessageCircle size={16} />
-                  Share on WhatsApp
+                  {t("share.whatsapp")}
                 </button>
                 <div className="grid grid-cols-3 gap-3 pt-2">
-                  <StatTile label="Qualified" value={qualifiedCount} />
-                  <StatTile label="Pending" value={pendingCount} />
-                  <StatTile label="RC earned" value={totalEarned} />
+                  <StatTile label={t("stats.qualified")} value={qualifiedCount} />
+                  <StatTile label={t("stats.pending")} value={pendingCount} />
+                  <StatTile label={t("stats.rcEarned")} value={totalEarned} />
                 </div>
               </div>
             </div>
@@ -268,7 +270,7 @@ export default function ReferPage() {
             <div className="bg-white rounded-3xl border border-slate-100 p-6">
               <div className="flex items-center gap-2 mb-3">
                 <Trophy size={16} className="text-amber-500" />
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Instant rewards</h3>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">{t("tiers.title")}</h3>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <TierTile plan="Starter" price="₹99" rc={50} />
@@ -276,7 +278,7 @@ export default function ReferPage() {
                 <TierTile plan="Elite" price="₹699" rc={300} />
               </div>
               <p className="text-[11px] text-slate-400 mt-3 leading-snug">
-                RC lands the moment your friend pays. Reversed if they refund within 7 days. Auto-expires 90 days after credit.
+                {t("tiers.note")}
               </p>
             </div>
 
@@ -286,11 +288,11 @@ export default function ReferPage() {
               <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                    Top referrers this month
+                    {t("leaderboard.title")}
                   </h3>
                   {myRank && (
                     <span className="text-[11px] font-black bg-slate-50 text-slate-700 px-2 py-1 rounded">
-                      You: #{myRank.rank}
+                      {t("leaderboard.yourRank", { rank: myRank.rank })}
                     </span>
                   )}
                 </div>
@@ -316,8 +318,8 @@ export default function ReferPage() {
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-bold text-slate-900 truncate">
-                            {row.full_name || row.username || "Unknown"}
-                            {isMe && <span className="text-[10px] text-pink-500 font-black ml-1">YOU</span>}
+                            {row.full_name || row.username || t("leaderboard.unknown")}
+                            {isMe && <span className="text-[10px] text-pink-500 font-black ml-1">{t("leaderboard.you")}</span>}
                           </p>
                           <p className="text-[11px] text-slate-400 truncate">
                             {row.instagram_handle ? `@${row.instagram_handle}` : "—"}
@@ -325,10 +327,10 @@ export default function ReferPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-black text-emerald-600">
-                            {row.rc_earned} RC
+                            {t("leaderboard.rcEarned", { amount: row.rc_earned })}
                           </p>
                           <p className="text-[10px] text-slate-400">
-                            {row.rewarded_count} referral{row.rewarded_count === 1 ? "" : "s"}
+                            {t("leaderboard.referralCount", { count: row.rewarded_count })}
                           </p>
                         </div>
                       </div>
@@ -336,38 +338,39 @@ export default function ReferPage() {
                   })}
                 </div>
                 <p className="text-[11px] text-slate-400 leading-snug">
-                  Resets on the 1st of each month (IST).
+                  {t("leaderboard.resetNote")}
                 </p>
               </div>
             )}
 
             {/* Referrals list */}
             <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-3">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Your referrals</h3>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">{t("referrals.title")}</h3>
               {referrals.length === 0 ? (
                 <p className="text-sm text-slate-400 py-6 text-center">
-                  No referrals yet — share your link to get started.
+                  {t("referrals.empty")}
                 </p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {referrals.map((r) => {
-                    const pill = STATUS_PILL[r.status] || { label: r.status, class: "bg-slate-100 text-slate-500" };
+                    const pillClass = STATUS_PILL[r.status] || "bg-slate-100 text-slate-500";
+                    const pillLabel = STATUS_PILL[r.status] ? t(`statusPill.${r.status}`) : r.status;
                     return (
                       <div key={r.id} className="py-3 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-bold text-slate-900">
-                            {r.referee_first_plan ? `${r.referee_first_plan} subscription` : "New referral"}
+                            {r.referee_first_plan ? t("referrals.planSubscription", { plan: r.referee_first_plan }) : t("referrals.newReferral")}
                           </p>
                           <p className="text-[11px] text-slate-400">
                             {formatDate(r.rewarded_at || r.qualified_at || r.created_at)}
                           </p>
                         </div>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded ${pill.class}`}>
-                          {pill.label}
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded ${pillClass}`}>
+                          {pillLabel}
                         </span>
                         {r.status === "REWARDED" && (
                           <span className="text-[13px] font-black text-emerald-600 whitespace-nowrap">
-                            +{r.referrer_reward_rc} RC
+                            {t("referrals.rcPlus", { amount: r.referrer_reward_rc })}
                           </span>
                         )}
                       </div>
@@ -379,9 +382,9 @@ export default function ReferPage() {
 
             {/* Ledger */}
             <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-3">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">RC wallet history</h3>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">{t("ledger.title")}</h3>
               {ledger.length === 0 ? (
-                <p className="text-sm text-slate-400 py-6 text-center">Wallet is empty.</p>
+                <p className="text-sm text-slate-400 py-6 text-center">{t("ledger.empty")}</p>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {ledger.map((row) => {
@@ -391,17 +394,17 @@ export default function ReferPage() {
                       <div key={row.id} className="py-3 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-bold text-slate-900 flex items-center gap-1.5">
-                            {REASON_LABEL[row.reason] || row.reason}
+                            {KNOWN_REASONS.has(row.reason) ? t(`reason.${row.reason}`) : row.reason}
                             {isLocked && (
                               <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                                Locked
+                                {t("ledger.locked")}
                               </span>
                             )}
                           </p>
                           <p className="text-[11px] text-slate-400">
                             {formatDate(row.created_at)}
-                            {isLocked && ` · unlocks ${formatDate(row.unlocks_at)}`}
-                            {row.expires_at && row.delta_rc > 0 && ` · expires ${formatDate(row.expires_at)}`}
+                            {isLocked && ` · ${t("ledger.unlocksOn", { date: formatDate(row.unlocks_at) })}`}
+                            {row.expires_at && row.delta_rc > 0 && ` · ${t("ledger.expiresOn", { date: formatDate(row.expires_at) })}`}
                             {row.note && ` · ${row.note}`}
                           </p>
                         </div>
@@ -436,6 +439,7 @@ function StatTile({ label, value }) {
 }
 
 function TierTile({ plan, price, rc, highlight }) {
+  const t = useTranslations("InfluencerRefer");
   return (
     <div
       className={`rounded-2xl p-4 text-center border ${
@@ -444,7 +448,7 @@ function TierTile({ plan, price, rc, highlight }) {
     >
       <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{plan}</p>
       <p className="text-[13px] font-bold text-slate-700 mt-0.5">{price}</p>
-      <p className={`text-lg font-black mt-1 ${highlight ? "text-[#E60076]" : "text-slate-900"}`}>+{rc} RC</p>
+      <p className={`text-lg font-black mt-1 ${highlight ? "text-[#E60076]" : "text-slate-900"}`}>{t("tiers.rcPlus", { amount: rc })}</p>
     </div>
   );
 }

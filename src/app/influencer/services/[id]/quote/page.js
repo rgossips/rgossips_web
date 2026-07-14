@@ -12,47 +12,48 @@ import {
 } from "lucide-react";
 import { fetchServiceBySlug, formatINR, iconForName } from "@/lib/services";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslations } from "next-intl";
 
 // Scope options (the "Reel duration" field in the screenshot). The label and
 // choices change per service tag so the form fits any offering.
 const SCOPE_FOR_TAG = {
   CONTENT: {
-    label: "Reel duration",
+    labelKey: "content",
     required: true,
     options: ["15-30 seconds", "30-60 seconds", "60-90 seconds", "90s+"],
   },
   AUDIO: {
-    label: "Episode length",
+    labelKey: "audio",
     required: true,
     options: ["Up to 30 min", "30-60 min", "60-90 min", "90 min+"],
   },
   DESIGN: {
-    label: "Number of designs",
+    labelKey: "design",
     required: true,
     options: ["1 design", "5-10 designs", "10-20 designs", "20+ designs"],
   },
   WRITING: {
-    label: "Content volume",
+    labelKey: "writing",
     required: true,
     options: ["1-5 pieces", "5-10 pieces", "10-20 pieces", "20+ pieces"],
   },
   STRATEGY: {
-    label: "Scope",
+    labelKey: "strategy",
     required: true,
     options: ["Audit only", "Audit + 30-day roadmap", "Full quarterly retainer"],
   },
   ADS: {
-    label: "Monthly ad spend",
+    labelKey: "ads",
     required: true,
     options: ["< ₹25K", "₹25K – ₹1L", "₹1L – ₹3L", "₹3L+"],
   },
   MANAGEMENT: {
-    label: "Posting cadence",
+    labelKey: "management",
     required: true,
     options: ["8 posts / month", "16 posts / month", "Daily posting"],
   },
   MARKETING: {
-    label: "Campaign size",
+    labelKey: "marketing",
     required: true,
     options: ["3 nano creators", "10 micro creators", "25+ creators"],
   },
@@ -78,6 +79,7 @@ const defaultDeliveryISO = () => {
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function QuoteRequestPage() {
+  const t = useTranslations("InfluencerServicesIdQuote");
   const router = useRouter();
   const { id } = useParams();
   const { user, role } = useAuth();
@@ -98,9 +100,10 @@ export default function QuoteRequestPage() {
   }, [id]);
 
   const scopeCfg = useMemo(
-    () => SCOPE_FOR_TAG[service?.tag] || { label: "Scope", required: false, options: [] },
+    () => SCOPE_FOR_TAG[service?.tag] || { labelKey: "default", required: false, options: [] },
     [service]
   );
+  const scopeLabel = t(`scope.${scopeCfg.labelKey}`);
 
   const [description, setDescription] = useState("");
   const [assetUrl, setAssetUrl] = useState("");
@@ -130,12 +133,12 @@ export default function QuoteRequestPage() {
   if (!service) {
     return (
       <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-base font-bold text-slate-600">Service not found</p>
+        <p className="text-base font-bold text-slate-600">{t("notFound.title")}</p>
         <button
           onClick={() => router.push("/influencer/services")}
           className="mt-4 text-sm font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          Back to All Services
+          {t("notFound.back")}
         </button>
       </div>
     );
@@ -148,19 +151,19 @@ export default function QuoteRequestPage() {
   const handleSubmit = async () => {
     setError("");
     if (!user?.id) {
-      setError("Please sign in to request a quote.");
+      setError(t("errors.signIn"));
       return;
     }
     if (!description.trim() || description.trim().length < 20) {
-      setError("Please describe your project in at least 20 characters.");
+      setError(t("errors.description"));
       return;
     }
     if (!assetUrl.trim() || !isValidUrl(assetUrl)) {
-      setError("Paste a Google Drive / WeTransfer / Dropbox link so the team can review your assets.");
+      setError(t("errors.assetUrl"));
       return;
     }
     if (scopeCfg.required && !scope) {
-      setError(`Please select a ${scopeCfg.label.toLowerCase()}.`);
+      setError(t("errors.selectScope", { field: scopeLabel.toLowerCase() }));
       return;
     }
     setSubmitting(true);
@@ -191,7 +194,7 @@ export default function QuoteRequestPage() {
       if (data?.error) throw new Error(data.error);
       setDone(true);
     } catch (e) {
-      setError(e.message || "Failed to submit quote request");
+      setError(e.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -205,25 +208,26 @@ export default function QuoteRequestPage() {
             <CheckCircle2 size={28} />
           </div>
           <h2 className="text-xl lg:text-2xl font-black text-slate-900 mt-4">
-            Quote request submitted!
+            {t("success.title")}
           </h2>
           <p className="text-[13px] text-slate-500 mt-2 leading-snug">
-            We'll review your brief and get back with a custom quote within{" "}
-            <span className="font-bold text-slate-700">{service.quote_sla_hours} hours</span>.
-            You'll receive an update on the phone number tied to your account.
+            {t.rich("success.body", {
+              hours: service.quote_sla_hours,
+              b: (c) => <span className="font-bold text-slate-700">{c}</span>,
+            })}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-6">
             <button
               onClick={() => router.push("/influencer/services")}
               className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black cursor-pointer hover:border-pink-200 hover:text-pink-500"
             >
-              Browse more services
+              {t("success.browseMore")}
             </button>
             <button
               onClick={() => router.push("/influencer")}
               className="flex-1 py-3 rounded-2xl btn-purple text-white text-sm font-black cursor-pointer"
             >
-              Back to home
+              {t("success.backHome")}
             </button>
           </div>
         </div>
@@ -238,7 +242,7 @@ export default function QuoteRequestPage() {
           onClick={() => router.back()}
           className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          <ChevronLeft size={14} /> Back to {service.tag.toLowerCase()}
+          <ChevronLeft size={14} /> {t("backTo", { tag: service.tag.toLowerCase() })}
         </button>
 
         {/* Header card */}
@@ -250,10 +254,10 @@ export default function QuoteRequestPage() {
             <h1 className="text-base lg:text-lg font-black text-slate-900 leading-tight truncate">
               {service.title}
             </h1>
-            <p className="text-[11px] text-slate-500 mt-0.5">Step 1 of 1 · Quote request</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">{t("header.step")}</p>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-3 py-1.5 rounded-full whitespace-nowrap">
-            Quote Request
+            {t("header.badge")}
           </span>
         </div>
 
@@ -261,30 +265,30 @@ export default function QuoteRequestPage() {
         <div className="bg-white rounded-2xl border border-slate-100 p-5 lg:p-6 space-y-5">
           {/* Description */}
           <Field
-            label="Project description"
+            label={t("description.label")}
             required
-            hint="Be specific to get a faster quote"
+            hint={t("description.hint")}
           >
             <textarea
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you need… e.g., I want a 30-second reel showcasing my new skincare product launch. Footage was shot in natural light, mostly close-ups of the product and me applying it. Want a soft, dreamy vibe."
+              placeholder={t("description.placeholder")}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
             />
           </Field>
 
           {/* Asset URL (URL-only — no raw file upload) */}
-          <Field label="Reference link to your raw footage / assets" required>
+          <Field label={t("asset.label")} required>
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 lg:p-5 bg-slate-50/40 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-lg bg-pink-50 text-pink-500 flex items-center justify-center shrink-0">
                   <LinkIcon size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-slate-800">Share a link to your assets</p>
+                  <p className="text-[13px] font-bold text-slate-800">{t("asset.title")}</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Paste a Google Drive, WeTransfer, Dropbox or YouTube link — we don't accept direct uploads here.
+                    {t("asset.hint")}
                   </p>
                 </div>
               </div>
@@ -300,7 +304,7 @@ export default function QuoteRequestPage() {
 
           {/* Date + Scope row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Desired delivery date">
+            <Field label={t("delivery.label")}>
               <input
                 type="date"
                 value={deliveryDate}
@@ -311,7 +315,7 @@ export default function QuoteRequestPage() {
             </Field>
 
             {scopeCfg.options.length > 0 && (
-              <Field label={scopeCfg.label} required={scopeCfg.required}>
+              <Field label={scopeLabel} required={scopeCfg.required}>
                 <select
                   value={scope}
                   onChange={(e) => setScope(e.target.value)}
@@ -326,13 +330,13 @@ export default function QuoteRequestPage() {
           </div>
 
           {/* Budget */}
-          <Field label="Budget range" hint="Optional, helps us send the right quote">
+          <Field label={t("budget.label")} hint={t("budget.hint")}>
             <select
               value={budgetRange}
               onChange={(e) => setBudgetRange(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white"
             >
-              <option value="">Select a range</option>
+              <option value="">{t("budget.placeholder")}</option>
               {BUDGET_OPTIONS.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
@@ -341,32 +345,33 @@ export default function QuoteRequestPage() {
               <div className="mt-2 bg-rose-50 border border-rose-100 rounded-xl p-2.5 flex gap-2 items-start text-[11px] text-rose-700">
                 <Info size={12} className="text-rose-500 shrink-0 mt-0.5" />
                 <p>
-                  Typical range for similar projects:{" "}
-                  <span className="font-bold">{formatINR(service.price_starting)} – {formatINR(service.price_to)}</span>
-                  {" "}depending on footage complexity and revision count.
+                  {t.rich("budget.typical", {
+                    range: `${formatINR(service.price_starting)} – ${formatINR(service.price_to)}`,
+                    b: (c) => <span className="font-bold">{c}</span>,
+                  })}
                 </p>
               </div>
             )}
           </Field>
 
           {/* Style refs */}
-          <Field label="Style references / inspiration" hint="Optional but recommended">
+          <Field label={t("style.label")} hint={t("style.hint")}>
             <input
               type="text"
               value={styleRefs}
               onChange={(e) => setStyleRefs(e.target.value)}
-              placeholder="Paste Instagram reel links or describe a vibe"
+              placeholder={t("style.placeholder")}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
             />
           </Field>
 
           {/* Notes */}
-          <Field label="Additional notes">
+          <Field label={t("notes.label")}>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything else our team should know? Brand colors, do's and don'ts, etc."
+              placeholder={t("notes.placeholder")}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"
             />
           </Field>
@@ -384,7 +389,7 @@ export default function QuoteRequestPage() {
               disabled={submitting}
               className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-sm font-black cursor-pointer hover:border-pink-200 hover:text-pink-500 disabled:opacity-50"
             >
-              Cancel
+              {t("actions.cancel")}
             </button>
             <button
               onClick={handleSubmit}
@@ -396,7 +401,7 @@ export default function QuoteRequestPage() {
               ) : (
                 <Send size={15} />
               )}
-              {submitting ? "Submitting…" : "Submit Quote Request"}
+              {submitting ? t("actions.submitting") : t("actions.submit")}
             </button>
           </div>
         </div>

@@ -1,3 +1,9 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Point the plugin at our request config (we keep it in src/i18n, not the
+// default ./i18n, and use .js to match the rest of the app).
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.js");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -18,4 +24,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

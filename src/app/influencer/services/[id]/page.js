@@ -17,8 +17,10 @@ import {
 import { fetchServiceBySlug, formatINR, iconForName } from "@/lib/services";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { useTranslations } from "next-intl";
 
 export default function ServiceDetailPage() {
+  const t = useTranslations("InfluencerServicesId");
   const router = useRouter();
   const { id } = useParams();
   const { user } = useAuth();
@@ -72,12 +74,12 @@ export default function ServiceDetailPage() {
   if (!service) {
     return (
       <div className="min-h-screen bg-[#F8F9FD] flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-base font-bold text-slate-600">Service not found</p>
+        <p className="text-base font-bold text-slate-600">{t("notFound")}</p>
         <button
           onClick={() => router.push("/influencer/services")}
           className="mt-4 text-sm font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          Back to All Services
+          {t("backToAllServices")}
         </button>
       </div>
     );
@@ -94,7 +96,7 @@ export default function ServiceDetailPage() {
           onClick={() => router.push("/influencer/services")}
           className="inline-flex items-center gap-1.5 text-[12px] font-bold text-pink-500 hover:underline cursor-pointer"
         >
-          <ArrowLeft size={14} /> Back to Services
+          <ArrowLeft size={14} /> {t("backToServices")}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
@@ -113,14 +115,14 @@ export default function ServiceDetailPage() {
                   <Star size={13} className="fill-amber-400 text-amber-400" />
                   <span className="text-[12px] font-black text-slate-700">
                     {Number(service.rating_avg || 0).toFixed(1)}
-                    <span className="text-slate-400 font-bold"> ({service.reviews_count || 0} reviews)</span>
+                    <span className="text-slate-400 font-bold">{t("reviewsCount", { count: service.reviews_count || 0 })}</span>
                   </span>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                  <Clock size={11} /> {service.quote_sla_hours} hr quote SLA
+                  <Clock size={11} /> {t("quoteSla", { hours: service.quote_sla_hours })}
                 </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                  <Flame size={11} className="text-orange-500" /> {service.booked_this_month} booked this month
+                  <Flame size={11} className="text-orange-500" /> {t("bookedThisMonth", { count: service.booked_this_month })}
                 </span>
               </div>
             </div>
@@ -146,13 +148,13 @@ export default function ServiceDetailPage() {
 
             {/* About */}
             <section>
-              <h2 className="text-base font-black text-slate-900 mb-2">About this service</h2>
+              <h2 className="text-base font-black text-slate-900 mb-2">{t("aboutThisService")}</h2>
               <p className="text-[13px] text-slate-600 leading-relaxed">{service.about}</p>
             </section>
 
             {/* What's included */}
             <section>
-              <h2 className="text-base font-black text-slate-900 mb-3">What's included</h2>
+              <h2 className="text-base font-black text-slate-900 mb-3">{t("whatsIncluded")}</h2>
               <ul className="space-y-2">
                 {(Array.isArray(service.included) ? service.included : []).map((line) => (
                   <li key={line} className="flex items-start gap-2 text-[13px] text-slate-700">
@@ -172,7 +174,7 @@ export default function ServiceDetailPage() {
           <aside className="space-y-4 bg-white rounded-3xl border border-slate-100 p-5 lg:p-6">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Starting at
+                {t("startingAt")}
               </p>
               <p className="text-3xl font-black text-slate-900 leading-tight">
                 {formatINR(service.price_starting)}
@@ -184,7 +186,11 @@ export default function ServiceDetailPage() {
               </p>
               {service.price_to && (
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Most {service.tag.toLowerCase()} priced between {formatINR(service.price_starting)} – {formatINR(service.price_to)} depending on length, complexity, and revisions.
+                  {t("priceRange", {
+                    tag: service.tag.toLowerCase(),
+                    from: formatINR(service.price_starting),
+                    to: formatINR(service.price_to),
+                  })}
                 </p>
               )}
             </div>
@@ -192,14 +198,14 @@ export default function ServiceDetailPage() {
             <div className="bg-rose-50 border border-rose-100 rounded-2xl p-3 flex gap-2 items-start text-[11px] text-rose-700">
               <Info size={14} className="text-rose-500 shrink-0 mt-0.5" />
               <p>
-                Final price is custom-quoted after we review your raw footage and requirements. Quote sent within {service.quote_sla_hours} hours.
+                {t("finalPriceNote", { hours: service.quote_sla_hours })}
               </p>
             </div>
 
             {Array.isArray(service.packages) && service.packages.length > 0 && (
               <div className="space-y-2 pt-1">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Typical packages
+                  {t("typicalPackages")}
                 </p>
                 {service.packages.map((p) => (
                   <div key={p.name} className="flex items-start justify-between py-2 border-b border-slate-100 last:border-b-0">
@@ -220,14 +226,14 @@ export default function ServiceDetailPage() {
                 onClick={() => router.push(`/influencer/services/${service.slug}/quote`)}
                 className="w-full py-3 rounded-2xl btn-purple text-white text-sm font-black inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-pink-100"
               >
-                <MessageSquare size={15} /> Get Custom Quote
+                <MessageSquare size={15} /> {t("getCustomQuote")}
               </button>
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 text-center">
-              <Stat label="Quote turnaround" value={`${service.quote_sla_hours} hrs`} />
-              <Stat label="Delivery time" value={service.delivery_days} />
-              <Stat label="Payment split" value={service.payment_split} />
+              <Stat label={t("quoteTurnaround")} value={t("quoteHrs", { hours: service.quote_sla_hours })} />
+              <Stat label={t("deliveryTime")} value={service.delivery_days} />
+              <Stat label={t("paymentSplit")} value={service.payment_split} />
             </div>
           </aside>
           </div>
@@ -238,22 +244,26 @@ export default function ServiceDetailPage() {
 }
 
 const STATUS_PILL = {
-  pending_quote: { label: "Awaiting quote", class: "bg-amber-50 text-amber-700" },
-  quoted: { label: "Quote ready", class: "bg-emerald-50 text-emerald-700" },
-  counter_offered: { label: "Counter sent", class: "bg-orange-50 text-orange-700" },
-  accepted: { label: "Quote accepted", class: "bg-emerald-50 text-emerald-700" },
-  paid_advance: { label: "Advance paid", class: "bg-violet-50 text-violet-700" },
-  in_progress: { label: "In progress", class: "bg-violet-50 text-violet-700" },
-  draft_ready: { label: "Draft ready", class: "bg-amber-50 text-amber-700" },
-  revision_requested: { label: "Revision sent", class: "bg-orange-50 text-orange-700" },
-  paid_final: { label: "Final paid", class: "bg-emerald-50 text-emerald-700" },
-  completed: { label: "Completed", class: "bg-blue-50 text-blue-700" },
-  declined: { label: "Declined", class: "bg-gray-100 text-gray-500" },
-  expired: { label: "Expired", class: "bg-gray-100 text-gray-500" },
+  pending_quote: { key: "pendingQuote", class: "bg-amber-50 text-amber-700" },
+  quoted: { key: "quoted", class: "bg-emerald-50 text-emerald-700" },
+  counter_offered: { key: "counterOffered", class: "bg-orange-50 text-orange-700" },
+  accepted: { key: "accepted", class: "bg-emerald-50 text-emerald-700" },
+  paid_advance: { key: "paidAdvance", class: "bg-violet-50 text-violet-700" },
+  in_progress: { key: "inProgress", class: "bg-violet-50 text-violet-700" },
+  draft_ready: { key: "draftReady", class: "bg-amber-50 text-amber-700" },
+  revision_requested: { key: "revisionRequested", class: "bg-orange-50 text-orange-700" },
+  paid_final: { key: "paidFinal", class: "bg-emerald-50 text-emerald-700" },
+  completed: { key: "completed", class: "bg-blue-50 text-blue-700" },
+  declined: { key: "declined", class: "bg-gray-100 text-gray-500" },
+  expired: { key: "expired", class: "bg-gray-100 text-gray-500" },
 };
 
 function LatestOrderCard({ order, onOpen }) {
-  const pill = STATUS_PILL[order.status] || { label: order.status, class: "bg-slate-100 text-slate-600" };
+  const t = useTranslations("InfluencerServicesId");
+  const pillMeta = STATUS_PILL[order.status];
+  const pill = pillMeta
+    ? { label: t(`statusPill.${pillMeta.key}`), class: pillMeta.class }
+    : { label: order.status, class: "bg-slate-100 text-slate-600" };
   const amount =
     order.total_amount ||
     order.quoted_amount ||
@@ -266,7 +276,7 @@ function LatestOrderCard({ order, onOpen }) {
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-bold text-pink-600 uppercase tracking-widest">
-          Your latest request
+          {t("yourLatestRequest")}
         </p>
         <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded ${pill.class}`}>
           {pill.label}
@@ -278,7 +288,7 @@ function LatestOrderCard({ order, onOpen }) {
           ₹{Number(amount).toLocaleString("en-IN")}
         </p>
       )}
-      <p className="text-[12px] font-bold text-pink-500 mt-2">Open order →</p>
+      <p className="text-[12px] font-bold text-pink-500 mt-2">{t("openOrder")}</p>
     </button>
   );
 }

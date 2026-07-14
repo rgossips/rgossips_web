@@ -16,17 +16,19 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 const tools = [
-  { title: "Captions", icon: <Type size={16} className="text-orange-500" />, active: true },
-  { title: "Hashtags", icon: <Hash size={16} className="text-blue-500" /> },
-  { title: "Scripts", icon: <FileText size={16} className="text-amber-500" /> },
-  { title: "Rate Card", icon: <BarChart3 size={16} className="text-emerald-500" /> },
-  { title: "Hook Ideas", icon: <Zap size={16} className="text-rose-500" /> },
-  { title: "Brief Helper", icon: <ClipboardCheck size={16} className="text-indigo-500" /> },
+  { key: "captions", icon: <Type size={16} className="text-orange-500" />, active: true },
+  { key: "hashtags", icon: <Hash size={16} className="text-blue-500" /> },
+  { key: "scripts", icon: <FileText size={16} className="text-amber-500" /> },
+  { key: "rateCard", icon: <BarChart3 size={16} className="text-emerald-500" /> },
+  { key: "hookIdeas", icon: <Zap size={16} className="text-rose-500" /> },
+  { key: "briefHelper", icon: <ClipboardCheck size={16} className="text-indigo-500" /> },
 ];
 
 export default function CreatorWorkspace() {
+  const t = useTranslations("CreatorWorkspace");
   const { profile } = useAuth();
   const router = useRouter();
   const scrollRef = useRef(null);
@@ -55,21 +57,21 @@ export default function CreatorWorkspace() {
   const hasInstagram = !!profile?.instagram_handle;
 
   const steps = [
-    { id: 1, title: "Create account", completed: true },
+    { id: 1, title: t("steps.createAccount"), completed: true },
     {
       id: 2,
-      title: "Connect Instagram",
+      title: t("steps.connectInstagram"),
       completed: hasInstagram,
       active: !hasInstagram,
     },
     {
       id: 3,
-      title: "AI Media Kit",
+      title: t("steps.aiMediaKit"),
       completed: false,
       active: hasInstagram,
     },
-    { id: 4, title: "Set rate card", completed: false },
-    { id: 5, title: "First campaign", completed: false },
+    { id: 4, title: t("steps.setRateCard"), completed: false },
+    { id: 5, title: t("steps.firstCampaign"), completed: false },
   ];
 
   const completedCount = steps.filter((s) => s.completed).length;
@@ -80,17 +82,17 @@ export default function CreatorWorkspace() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
-            Creator Workspace
+            {t("header.title")}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Tools and tasks to grow your career
+            {t("header.subtitle")}
           </p>
         </div>
         <button
           onClick={() => router.push("/influencer/profile")}
           className="text-xs font-semibold text-pink-500 flex items-center gap-1"
         >
-          See all <ChevronRight size={14} />
+          {t("header.seeAll")} <ChevronRight size={14} />
         </button>
       </div>
 
@@ -103,7 +105,7 @@ export default function CreatorWorkspace() {
         {/* Card 1: Onboarding */}
         <Card className="min-w-[280px] lg:min-w-0 lg:flex-1 snap-start p-5 rounded-2xl border border-slate-200 bg-white shadow-sm shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Onboarding</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("onboarding.title")}</h3>
             <span className="text-xs font-semibold text-slate-400">
               {completedCount}/5
             </span>
@@ -156,10 +158,10 @@ export default function CreatorWorkspace() {
         <Card className="min-w-[280px] lg:min-w-0 lg:flex-1 snap-start p-5 rounded-2xl border border-slate-200 bg-white shadow-sm shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-slate-900">
-              Creator Tools
+              {t("creatorTools.title")}
             </h3>
             <span className="text-xs font-semibold text-slate-400">
-              AI Powered
+              {t("creatorTools.aiPowered")}
             </span>
           </div>
 
@@ -177,7 +179,7 @@ export default function CreatorWorkspace() {
                   {tool.icon}
                 </div>
                 <span className="text-[11px] font-semibold text-slate-700">
-                  {tool.title}
+                  {t(`tools.${tool.key}`)}
                 </span>
               </button>
             ))}
@@ -187,12 +189,12 @@ export default function CreatorWorkspace() {
         {/* Card 3: Discover / Browse Matches */}
         <Card className="min-w-[280px] lg:min-w-0 lg:flex-1 snap-start p-5 rounded-2xl border border-slate-200 bg-white shadow-sm shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Discover</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("discover.title")}</h3>
             <Sparkles size={16} className="text-purple-500" />
           </div>
 
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Find brands and campaigns that match your niche and audience.
+            {t("discover.description")}
           </p>
 
           {/* Quick Stats */}
@@ -200,13 +202,13 @@ export default function CreatorWorkspace() {
             <div className="flex-1 bg-purple-50 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-purple-700">{counts.brands}</p>
               <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wide">
-                Brands
+                {t("discover.brands")}
               </p>
             </div>
             <div className="flex-1 bg-pink-50 rounded-xl p-3 text-center">
               <p className="text-lg font-bold text-pink-700">{counts.campaigns}</p>
               <p className="text-[10px] font-semibold text-pink-500 uppercase tracking-wide">
-                Campaigns
+                {t("discover.campaigns")}
               </p>
             </div>
           </div>
@@ -216,7 +218,7 @@ export default function CreatorWorkspace() {
             className="w-full py-3 rounded-xl bg-linear-to-r from-[#9810fa] to-[#e60076] text-white text-sm font-bold cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
           >
             <Search size={16} />
-            Browse Matches
+            {t("discover.browseMatches")}
           </button>
         </Card>
       </div>

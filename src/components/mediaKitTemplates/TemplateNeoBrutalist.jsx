@@ -2,11 +2,13 @@
 
 import React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
 
 // Loud, blocky neo-brutalist look — hard black borders, offset shadows,
 // chunky display type and a stamped colour palette. Read-only.
 export default function TemplateNeoBrutalist({ profile }) {
+  const t = useTranslations("MediaKitTemplatesTemplateNeoBrutalist");
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
@@ -54,15 +56,15 @@ export default function TemplateNeoBrutalist({ profile }) {
           <div className="flex flex-col gap-5">
             {/* About */}
             <div className="p-6" style={{ background: yellow, border: bd, boxShadow: sh, ...blk }}>
-              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">About Me</span>
+              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("about.label")}</span>
               <div className="text-[22px] sm:text-[26px] uppercase leading-tight">"{p.bio.slice(0, 70)}"</div>
             </div>
 
             {/* Expertise */}
             <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Expertise</span>
+              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("expertise.label")}</span>
               <div className="flex flex-wrap gap-2.5">
-                {(p.categories.length ? p.categories : ["Content"]).map((c, i) => {
+                {(p.categories.length ? p.categories : [t("expertise.defaultCategory")]).map((c, i) => {
                   const bgs = [cyan, pink, purple, yellow];
                   const fgs = [ink, "#fff", "#fff", ink];
                   const bg = bgs[i % bgs.length];
@@ -74,7 +76,7 @@ export default function TemplateNeoBrutalist({ profile }) {
 
             {/* Social */}
             <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Social Media</span>
+              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("social.label")}</span>
               {socials.map((s) => (
                 <div key={s.key} className="flex items-center gap-3 bg-white p-3 mb-2.5 last:mb-0" style={{ border: bd }}>
                   <span className="w-9 h-9 grid place-items-center text-white shrink-0 font-bold" style={{ border: bd, background: ink }}>{s.label.charAt(0)}</span>
@@ -90,7 +92,7 @@ export default function TemplateNeoBrutalist({ profile }) {
             {/* Services */}
             {p.services.length > 0 && (
               <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-                <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Services &amp; Rates</span>
+                <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("services.label")}</span>
                 {p.services.map((sv, i) => {
                   const rate = p.serviceRates[sv];
                   const last = i === p.services.length - 1;
@@ -99,7 +101,7 @@ export default function TemplateNeoBrutalist({ profile }) {
                       <span className="font-bold text-[15px]">{toServiceLabel(sv)}</span>
                       {rate
                         ? <span className="text-lg" style={{ ...blk, background: yellow, border: `2px solid ${ink}`, padding: "2px 10px" }}>₹{Number(rate).toLocaleString("en-IN")}</span>
-                        : <span className="font-bold text-sm" style={{ ...mono, background: cyan, border: `2px solid ${ink}`, padding: "2px 10px" }}>On request</span>}
+                        : <span className="font-bold text-sm" style={{ ...mono, background: cyan, border: `2px solid ${ink}`, padding: "2px 10px" }}>{t("services.onRequest")}</span>}
                     </div>
                   );
                 })}
@@ -111,30 +113,30 @@ export default function TemplateNeoBrutalist({ profile }) {
           <div className="flex flex-col gap-5">
             {/* Performance */}
             <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Performance</span>
+              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("performance.label")}</span>
               <div style={blk} className="text-[26px] sm:text-[30px] uppercase leading-none mb-5">
-                The <em className="not-italic px-2" style={{ background: pink, color: "#fff" }}>Number</em><br />That Matters
+                {t.rich("performance.headline", { em: (c) => <em className="not-italic px-2" style={{ background: pink, color: "#fff" }}>{c}</em>, br: () => <br /> })}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <BStat lbl="Accounts Reached" v={formatCount(p.totalReach || p.totalImpressions)} sub="last 30 days" ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl="Engagement Rate" v={`${p.engagementRate || 0}%`} sub="vs 1.9% cat avg" hl bg={purple} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl="Non-Follower Reach" v={`${p.nonFollowerReachPct}%`} sub="organic discovery" ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl="Interactions" v={formatCount(p.avgLikes + p.avgComments)} sub="avg per post" ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={t("performance.stats.accountsReached.label")} v={formatCount(p.totalReach || p.totalImpressions)} sub={t("performance.stats.accountsReached.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={t("performance.stats.engagementRate.label")} v={`${p.engagementRate || 0}%`} sub={t("performance.stats.engagementRate.sub")} hl bg={purple} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={t("performance.stats.nonFollowerReach.label")} v={`${p.nonFollowerReachPct}%`} sub={t("performance.stats.nonFollowerReach.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={t("performance.stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.stats.interactions.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
               </div>
             </div>
 
             {/* Audience */}
             <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Who's Watching</span>
-              <BSubH ink={ink} mono={mono}>Top Cities</BSubH>
+              <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("audience.label")}</span>
+              <BSubH ink={ink} mono={mono}>{t("audience.topCities")}</BSubH>
               {demo.topCities.map((c) => <BBar key={c.name} label={c.name} pct={c.pct} fill={pink} ink={ink} mono={mono} />)}
-              <BSubH ink={ink} mono={mono}>Age Brackets</BSubH>
+              <BSubH ink={ink} mono={mono}>{t("audience.ageBrackets")}</BSubH>
               {demo.ageRanges.map((a) => <BBar key={a.range} label={a.range} pct={a.pct} fill={purple} ink={ink} mono={mono} />)}
-              <BSubH ink={ink} mono={mono}>Gender Split</BSubH>
+              <BSubH ink={ink} mono={mono}>{t("audience.genderSplit")}</BSubH>
               <BrutalDonut g={demo.gender} ink={ink} />
               {demo.topCountries.length > 0 && (
                 <>
-                  <BSubH ink={ink} mono={mono}>Top Countries</BSubH>
+                  <BSubH ink={ink} mono={mono}>{t("audience.topCountries")}</BSubH>
                   {demo.topCountries.map((c) => <BBar key={c.name} label={c.name} pct={c.pct} fill={cyan} ink={ink} mono={mono} />)}
                 </>
               )}
@@ -143,13 +145,13 @@ export default function TemplateNeoBrutalist({ profile }) {
             {/* Top content */}
             {p.topReels.length > 0 && (
               <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
-                <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">Top Content</span>
+                <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("topContent.label")}</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
                   {p.topReels.map((reel, i) => {
                     const thumb = reel.thumbnail || reel.thumbnailUrl || reel.mediaUrl;
                     return (
                       <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative aspect-square block overflow-hidden" style={{ border: bd, boxShadow: sh }}>
-                        {thumb ? <img src={thumb} alt={reel.caption || "Reel"} className="w-full h-full object-cover" />
+                        {thumb ? <img src={thumb} alt={reel.caption || t("topContent.reelAlt")} className="w-full h-full object-cover" />
                           : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#7F47CD,#E94560)" }} />}
                         <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(15,15,15,.85),transparent 50%)" }} />
                         {reel.caption && <div style={mono} className="absolute left-2 right-2 bottom-7 font-bold text-[11px] text-white uppercase leading-tight">{reel.caption.slice(0, 50)}</div>}
@@ -168,10 +170,10 @@ export default function TemplateNeoBrutalist({ profile }) {
 
         {/* CTA */}
         <div className="mt-5 p-8 text-center" style={{ background: cyan, border: bd, boxShadow: shLg }}>
-          <h3 style={blk} className="text-[26px] uppercase mb-2">Open for Collabs!</h3>
-          <p style={mono} className="text-[13px]">Interested in working together? Reach out via Instagram or RGossips.</p>
+          <h3 style={blk} className="text-[26px] uppercase mb-2">{t("cta.title")}</h3>
+          <p style={mono} className="text-[13px]">{t("cta.body")}</p>
         </div>
-        <div className="text-center mt-5 font-bold text-xs uppercase tracking-wider" style={mono}>Generated on <b style={{ background: ink, color: "#fff", padding: "3px 8px" }}>RGossips</b></div>
+        <div className="text-center mt-5 font-bold text-xs uppercase tracking-wider" style={mono}>{t.rich("footer.generatedOn", { brand: (c) => <b style={{ background: ink, color: "#fff", padding: "3px 8px" }}>{c}</b> })}</div>
       </div>
     </div>
   );
@@ -201,10 +203,11 @@ function BBar({ label, pct, fill, ink, mono }) {
   );
 }
 function BrutalDonut({ g, ink }) {
+  const t = useTranslations("MediaKitTemplatesTemplateNeoBrutalist");
   const segs = [
-    [g.female || 0, "#7F47CD", "Female"],
-    [g.male || 0, "#E94560", "Male"],
-    [g.other || 0, "#ffd23f", "Other"],
+    [g.female || 0, "#7F47CD", t("gender.female")],
+    [g.male || 0, "#E94560", t("gender.male")],
+    [g.other || 0, "#ffd23f", t("gender.other")],
   ];
   const C = 2 * Math.PI * 45;
   let off = 0;

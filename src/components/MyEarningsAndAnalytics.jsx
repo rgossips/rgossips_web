@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -70,6 +71,7 @@ const initialData = {
 };
 
 export default function MyEarningsAndAnalytics() {
+  const t = useTranslations("MyEarningsAndAnalytics");
   const uid = "USER_Demo"; // Replace with logged-in user's UID
   const [selectedYear, setSelectedYear] = useState("2025");
 
@@ -120,7 +122,7 @@ export default function MyEarningsAndAnalytics() {
         labels: months,
         datasets: [
           {
-            label: "Monthly Earnings",
+            label: t("charts.monthlyEarnings"),
             data: monthlyEarnings,
             borderColor: "#22c55e",
             backgroundColor: "rgba(34,197,94,0.2)",
@@ -133,10 +135,10 @@ export default function MyEarningsAndAnalytics() {
       setCategoryDataState({
         labels: months,
         datasets: [
-          { label: "Hotel", data: hotel, backgroundColor: "#3b82f6" },
-          { label: "Product", data: product, backgroundColor: "#f43f5e" },
-          { label: "Restaurant", data: restaurant, backgroundColor: "#f59e0b" },
-          { label: "Salon", data: salon, backgroundColor: "#10b981" },
+          { label: t("categories.hotel"), data: hotel, backgroundColor: "#3b82f6" },
+          { label: t("categories.product"), data: product, backgroundColor: "#f43f5e" },
+          { label: t("categories.restaurant"), data: restaurant, backgroundColor: "#f59e0b" },
+          { label: t("categories.salon"), data: salon, backgroundColor: "#10b981" },
         ],
       });
     } catch (error) {
@@ -154,7 +156,7 @@ export default function MyEarningsAndAnalytics() {
       <div className="flex justify-end">
         <Select value={selectedYear} onValueChange={setSelectedYear}>
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Select Year" />
+            <SelectValue placeholder={t("selectYear")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="2025">2025</SelectItem>
@@ -167,7 +169,7 @@ export default function MyEarningsAndAnalytics() {
       {/* ========== LINE CHART ========== */}
       <Card className="shadow">
         <CardContent className="p-6">
-          <div className="text-xl font-semibold mb-4">Monthly Earnings</div>
+          <div className="text-xl font-semibold mb-4">{t("charts.monthlyEarnings")}</div>
           {monthlyDataState && (
             <Line
               data={monthlyDataState}
@@ -184,7 +186,7 @@ export default function MyEarningsAndAnalytics() {
       <Card className="shadow">
         <CardContent className="p-6">
           <div className="text-xl font-semibold mb-4">
-            Category Earnings Per Month
+            {t("charts.categoryEarningsPerMonth")}
           </div>
           {categoryDataState && (
             <Bar

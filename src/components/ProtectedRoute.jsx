@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
 import InstagramRequiredGate from "@/components/InstagramRequiredGate";
+import { useTranslations } from "next-intl";
 
 const publicPaths = [
   "/",
@@ -35,6 +36,7 @@ const publicPrefixes = [
 const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions
 
 function BrandedLoader() {
+  const t = useTranslations("ProtectedRoute");
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#F3F4F9] gap-5">
       <div className="relative">
@@ -44,7 +46,7 @@ function BrandedLoader() {
         <div className="absolute -inset-2 rounded-2xl border-2 border-transparent border-t-[#9810FA] border-r-[#E60076] animate-spin" />
       </div>
       <div className="flex flex-col items-center gap-1.5">
-        <p className="text-sm font-bold text-slate-600">Loading your experience</p>
+        <p className="text-sm font-bold text-slate-600">{t("loading")}</p>
         <div className="flex gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-[#9810FA] animate-bounce" style={{ animationDelay: "0ms" }} />
           <span className="w-1.5 h-1.5 rounded-full bg-[#c040c0] animate-bounce" style={{ animationDelay: "150ms" }} />

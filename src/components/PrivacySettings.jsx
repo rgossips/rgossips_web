@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Eye, Shield, Smartphone, UserMinus, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
@@ -10,6 +11,7 @@ const DEFAULT_PREFS = {
 };
 
 const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) => {
+  const t = useTranslations("PrivacySettings");
   const supabase = createClient();
   const { user } = useAuth();
   const [settings, setSettings] = useState(DEFAULT_PREFS);
@@ -66,8 +68,8 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
             <ArrowLeft size={20} strokeWidth={3} />
           </button>
           <div>
-            <h1 className="text-lg font-black tracking-tight">Privacy & Security</h1>
-            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">Control your account privacy and security settings</p>
+            <h1 className="text-lg font-black tracking-tight">{t("title")}</h1>
+            <p className="hidden lg:block text-[10px] text-gray-400 font-black uppercase tracking-widest">{t("subtitle")}</p>
           </div>
         </div>
       </div>
@@ -84,12 +86,12 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
               <div className="p-2 bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-100">
                 <Eye size={18} />
               </div>
-              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-gray-400">Privacy Settings</h3>
+              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-gray-400">{t("privacySettings")}</h3>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-[2rem] p-8 space-y-6 shadow-sm">
-              <ToggleRow title="Public Profile" description="Allow brands to find your profile" isEnabled={settings.publicProfile} onToggle={() => toggleSetting("publicProfile")} />
-              <ToggleRow title="Show Email" description="Display email on public profile" isEnabled={settings.showEmail} onToggle={() => toggleSetting("showEmail")} />
+              <ToggleRow title={t("publicProfile.title")} description={t("publicProfile.description")} isEnabled={settings.publicProfile} onToggle={() => toggleSetting("publicProfile")} />
+              <ToggleRow title={t("showEmail.title")} description={t("showEmail.description")} isEnabled={settings.showEmail} onToggle={() => toggleSetting("showEmail")} />
             </div>
           </section>
 
@@ -99,12 +101,12 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
               <div className="p-2 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-100">
                 <Shield size={18} />
               </div>
-              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-gray-400">Security Control</h3>
+              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-gray-400">{t("securityControl")}</h3>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-[2rem] p-8 space-y-6 shadow-sm">
-              <SecurityLink onClick={onTrustedDevices} icon={<Smartphone size={18} />} title="Trusted Devices" description="Manage your active login sessions" />
-              <SecurityLink onClick={onDeactiveAccount} icon={<UserMinus size={18} />} title="Deactivate Account" description="Temporarily disable your account" isDestructive />
+              <SecurityLink onClick={onTrustedDevices} icon={<Smartphone size={18} />} title={t("trustedDevices.title")} description={t("trustedDevices.description")} />
+              <SecurityLink onClick={onDeactiveAccount} icon={<UserMinus size={18} />} title={t("deactivateAccount.title")} description={t("deactivateAccount.description")} isDestructive />
             </div>
 
             {/* Security Tips Component */}
@@ -117,14 +119,14 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
 
       {/* Global Save Button - Desktop Floating / Mobile Fixed */}
       <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 p-4 z-40 lg:bg-transparent lg:border-none lg:relative lg:flex lg:justify-end lg:px-6 lg:pb-10 lg:items-center lg:gap-4">
-        {justSaved ? <p className="hidden lg:block text-xs font-bold text-emerald-600">Saved ✓</p> : null}
+        {justSaved ? <p className="hidden lg:block text-xs font-bold text-emerald-600">{t("saved")}</p> : null}
         <button
           onClick={handleSave}
           disabled={saving || !loaded}
           className="w-full cursor-pointer lg:w-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white px-10 py-4 rounded-xl font-black text-sm shadow-xl shadow-pink-200 active:scale-95 transition-all disabled:opacity-60 inline-flex items-center justify-center gap-2"
         >
           {saving && <Loader2 size={14} className="animate-spin" />}
-          {saving ? "Saving…" : justSaved ? "Saved ✓" : "Save Changes"}
+          {saving ? t("saving") : justSaved ? t("saved") : t("saveChanges")}
         </button>
       </div>
     </div>
@@ -132,26 +134,29 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount }) =>
 };
 
 // Security Tips Card (Matches your image)
-const SecurityTipsCard = () => (
-  <div className="bg-[#FFF9E6] border border-[#FFE7A1] rounded-[2rem] p-6 relative overflow-hidden">
-    <div className="flex gap-4 relative z-10">
-      <div className="p-3 bg-amber-400 text-white rounded-xl h-fit shadow-md">
-        <ShieldCheck size={20} />
-      </div>
-      <div>
-        <h4 className="text-sm font-black text-amber-900 mb-2">Security Tips</h4>
-        <ul className="space-y-1.5">
-          {["Use a strong, unique password", "Review trusted devices regularly", "Never share your password"].map((tip, i) => (
-            <li key={i} className="flex items-center gap-2 text-[11px] font-bold text-amber-700/80">
-              <div className="w-1 h-1 rounded-full bg-amber-400" />
-              {tip}
-            </li>
-          ))}
-        </ul>
+const SecurityTipsCard = () => {
+  const t = useTranslations("PrivacySettings");
+  return (
+    <div className="bg-[#FFF9E6] border border-[#FFE7A1] rounded-[2rem] p-6 relative overflow-hidden">
+      <div className="flex gap-4 relative z-10">
+        <div className="p-3 bg-amber-400 text-white rounded-xl h-fit shadow-md">
+          <ShieldCheck size={20} />
+        </div>
+        <div>
+          <h4 className="text-sm font-black text-amber-900 mb-2">{t("securityTips.heading")}</h4>
+          <ul className="space-y-1.5">
+            {["tip1", "tip2", "tip3"].map((key) => (
+              <li key={key} className="flex items-center gap-2 text-[11px] font-bold text-amber-700/80">
+                <div className="w-1 h-1 rounded-full bg-amber-400" />
+                {t(`securityTips.${key}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ToggleRow = ({ title, description, isEnabled, onToggle }) => (
   <div className="flex items-center justify-between gap-4 cursor-pointer group" onClick={onToggle}>

@@ -32,6 +32,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
@@ -94,25 +95,25 @@ const statusStyles = {
 };
 
 const appStatusConfig = {
-  pending: { bg: "bg-amber-50 text-amber-700", label: "Applied" },
+  pending: { bg: "bg-amber-50 text-amber-700", labelKey: "applied" },
   // B15 negotiation flow — brand sends a priced offer, creator accepts
   // (or withdraws), and only then does escrow funding happen.
-  offer_sent: { bg: "bg-purple-50 text-purple-700", label: "Offer Sent" },
-  offer_accepted: { bg: "bg-emerald-50 text-emerald-700", label: "Offer Accepted — Pay" },
-  withdrawn: { bg: "bg-gray-100 text-gray-600", label: "Withdrawn" },
-  approved: { bg: "bg-indigo-50 text-indigo-700", label: "Approved" },
-  submitted: { bg: "bg-purple-50 text-purple-700", label: "Submitted" },
-  revision_needed: { bg: "bg-orange-50 text-orange-700", label: "Revision Needed" },
-  accepted: { bg: "bg-emerald-50 text-emerald-700", label: "Accepted" },
-  live_submitted: { bg: "bg-cyan-50 text-cyan-700", label: "Live" },
+  offer_sent: { bg: "bg-purple-50 text-purple-700", labelKey: "offerSent" },
+  offer_accepted: { bg: "bg-emerald-50 text-emerald-700", labelKey: "offerAcceptedPay" },
+  withdrawn: { bg: "bg-gray-100 text-gray-600", labelKey: "withdrawn" },
+  approved: { bg: "bg-indigo-50 text-indigo-700", labelKey: "approved" },
+  submitted: { bg: "bg-purple-50 text-purple-700", labelKey: "submitted" },
+  revision_needed: { bg: "bg-orange-50 text-orange-700", labelKey: "revisionNeeded" },
+  accepted: { bg: "bg-emerald-50 text-emerald-700", labelKey: "accepted" },
+  live_submitted: { bg: "bg-cyan-50 text-cyan-700", labelKey: "live" },
   // From the brand's perspective, releasing payment is their final step —
   // the campaign is effectively done for them. The influencer side still
   // labels this stage as "Payment in Progress" because admin reconciliation
   // happens on their payout pipeline.
-  payment: { bg: "bg-blue-50 text-blue-700", label: "Completed" },
-  completed: { bg: "bg-blue-50 text-blue-700", label: "Completed" },
-  rejected: { bg: "bg-red-50 text-red-700", label: "Rejected" },
-  withdrawn: { bg: "bg-gray-100 text-gray-600", label: "Withdrawn" },
+  payment: { bg: "bg-blue-50 text-blue-700", labelKey: "completed" },
+  completed: { bg: "bg-blue-50 text-blue-700", labelKey: "completed" },
+  rejected: { bg: "bg-red-50 text-red-700", labelKey: "rejected" },
+  withdrawn: { bg: "bg-gray-100 text-gray-600", labelKey: "withdrawn" },
 };
 
 const formatDate = (d) => {
@@ -136,6 +137,7 @@ const formatCount = (n) => {
 };
 
 const CampaignDetailPage = () => {
+  const t = useTranslations("BrandsCampaignId");
   const { id } = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -178,7 +180,7 @@ const CampaignDetailPage = () => {
     setError("");
     const { data, error: err } = await supabase.functions.invoke("brand-campaigns", { body: { action: "get", campaignId: id, brandId: user.id } });
     if (err || data?.error) {
-      setError(err?.message || data?.error || "Failed to load campaign");
+      setError(err?.message || data?.error || t("errors.loadFailed"));
       setLoading(false);
       return;
     }
@@ -210,7 +212,7 @@ const CampaignDetailPage = () => {
   const updateStatus = async (newStatus) => {
     if (!user?.id || !campaign?.id) return;
     setStatusUpdating(true);
-    startLoading(`Updating status to ${newStatus}…`);
+    startLoading(t("loading.updatingStatus", { status: newStatus }));
     try {
       const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
         body: {
@@ -221,7 +223,7 @@ const CampaignDetailPage = () => {
         },
       });
       if (err || data?.error) {
-        setErrorPopup(err?.message || data?.error || "Failed to update status");
+        setErrorPopup(err?.message || data?.error || t("errors.updateStatusFailed"));
         return;
       }
       setCampaign((prev) => ({ ...prev, status: newStatus }));
@@ -272,7 +274,7 @@ const CampaignDetailPage = () => {
     setNotEditableOpen(false);
     setDuplicatePrefill({
       ...campaign,
-      title: `Copy of ${campaign.title || "Campaign"}`,
+      title: t("copyOfTitle", { title: campaign.title || t("campaignFallback") }),
     });
   };
 
@@ -283,7 +285,7 @@ const CampaignDetailPage = () => {
   const handleDelete = async () => {
     if (!user?.id || !campaign?.id || deleting) return;
     setDeleting(true);
-    startLoading("Deleting campaign…");
+    startLoading(t("loading.deletingCampaign"));
     try {
       const { data, error: err } = await supabase.functions.invoke("brand-campaigns", {
         body: { action: "delete", brandId: user.id, campaignId: campaign.id },
@@ -293,8 +295,8 @@ const CampaignDetailPage = () => {
         // between the client-side check and now — treat it the same as
         // any other server error and surface a clear message.
         const msg = data?.error === "has_applications"
-          ? "A creator applied to this campaign just now, so it can't be deleted."
-          : (err?.message || data?.error || "Failed to delete campaign");
+          ? t("errors.deleteHasApplications")
+          : (err?.message || data?.error || t("errors.deleteFailed"));
         setErrorPopup(msg);
         return;
       }
@@ -327,9 +329,9 @@ const CampaignDetailPage = () => {
     return (
       <div className="min-h-screen bg-[#F8F9FE] flex flex-col items-center justify-center px-6">
         <AlertCircle size={40} className="text-red-400 mb-3" />
-        <p className="text-sm font-semibold text-gray-700">{error || "Campaign not found"}</p>
+        <p className="text-sm font-semibold text-gray-700">{error || t("errors.notFound")}</p>
         <button onClick={() => router.back()} className="mt-4 text-sm font-semibold text-[#5851DB]">
-          Go back
+          {t("actions.goBack")}
         </button>
       </div>
     );
@@ -350,16 +352,16 @@ const CampaignDetailPage = () => {
             campaign.applicationDeadline &&
             new Date(campaign.applicationDeadline).getTime() < Date.now() && (
               <span className="px-3 py-1 rounded-full text-[11px] font-bold border bg-red-50 text-red-700 border-red-200">
-                DEADLINE PASSED
+                {t("statusBadge.deadlinePassed")}
               </span>
             )}
           <button
             onClick={handleEditClick}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border border-[#5851DB] text-[#5851DB] hover:bg-purple-50 cursor-pointer"
-            title={applications.length > 0 ? "Editing locked — see options" : "Edit campaign"}
+            title={applications.length > 0 ? t("tooltips.editLocked") : t("tooltips.edit")}
           >
             <Edit size={13} />
-            Edit
+            {t("actions.edit")}
           </button>
           {/* Delete is only offered when zero creators have applied.
               After the first application, the brief is frozen and the
@@ -369,13 +371,13 @@ const CampaignDetailPage = () => {
             <button
               onClick={() => setDeleteOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
-              title="Delete campaign"
+              title={t("tooltips.delete")}
             >
               <Trash2 size={13} />
-              Delete
+              {t("actions.delete")}
             </button>
           )}
-          <button onClick={load} disabled={loading} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 cursor-pointer disabled:opacity-50" title="Refresh">
+          <button onClick={load} disabled={loading} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 cursor-pointer disabled:opacity-50" title={t("tooltips.refresh")}>
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
@@ -408,19 +410,19 @@ const CampaignDetailPage = () => {
             {matchingCount > 0 ? (
               <>
                 <p className="text-[13px] font-black text-gray-900">
-                  {matchingCount.toLocaleString("en-IN")} influencer{matchingCount === 1 ? "" : "s"} match perfectly to your needs.
+                  {t("match.perfect", { count: matchingCount })}
                 </p>
                 <p className="text-[11px] text-gray-500 mt-0.5">
-                  They&apos;ve been notified. Tap to open Find Creators with these filters prefilled.
+                  {t("match.notified")}
                 </p>
               </>
             ) : (
               <>
                 <p className="text-[13px] font-black text-gray-900">
-                  No influencers currently match this brief.
+                  {t("match.noneTitle")}
                 </p>
                 <p className="text-[11px] text-gray-500 mt-0.5">
-                  Try broadening categories, the follower band, or target cities. Tap to open Find Creators with the current filters.
+                  {t("match.noneSubtitle")}
                 </p>
               </>
             )}
@@ -460,47 +462,47 @@ const CampaignDetailPage = () => {
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3">
-            <StatCard icon={<IndianRupee size={16} />} label="Budget / Influencer" value={campaign.budgetPerInfluencer ? `₹${campaign.budgetPerInfluencer.toLocaleString("en-IN")}` : "—"} />
-            <StatCard icon={<IndianRupee size={16} />} label="Total Budget" value={campaign.budgetTotal ? `₹${campaign.budgetTotal.toLocaleString("en-IN")}` : "—"} />
-            <StatCard icon={<Users size={16} />} label="Slots" value={`${applications.length}/${campaign.maxInfluencers || 0}`} />
-            <StatCard icon={<Calendar size={16} />} label="Deadline" value={formatDate(campaign.applicationDeadline)} />
+            <StatCard icon={<IndianRupee size={16} />} label={t("stats.budgetPerInfluencer")} value={campaign.budgetPerInfluencer ? `₹${campaign.budgetPerInfluencer.toLocaleString("en-IN")}` : "—"} />
+            <StatCard icon={<IndianRupee size={16} />} label={t("stats.totalBudget")} value={campaign.budgetTotal ? `₹${campaign.budgetTotal.toLocaleString("en-IN")}` : "—"} />
+            <StatCard icon={<Users size={16} />} label={t("stats.slots")} value={`${applications.length}/${campaign.maxInfluencers || 0}`} />
+            <StatCard icon={<Calendar size={16} />} label={t("stats.deadline")} value={formatDate(campaign.applicationDeadline)} />
           </div>
 
           {/* Deliverables */}
-          <Section title="Content Deliverables [per Creator]">
+          <Section title={t("sections.contentDeliverables")}>
             <div className="grid grid-cols-4 gap-3">
               {[
-                { key: "reels", label: "Reels" },
-                { key: "posts", label: "Posts" },
-                { key: "stories", label: "Stories" },
-                { key: "videos", label: "Videos" },
+                { key: "reels" },
+                { key: "posts" },
+                { key: "stories" },
+                { key: "videos" },
               ].map((d) => (
                 <div key={d.key} className="bg-[#F8F9FE] rounded-xl p-3 text-center">
                   <p className="text-xl font-extrabold text-gray-900">{parsedContent[d.key]}</p>
-                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">{d.label}</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">{t(`deliverables.${d.key}`)}</p>
                 </div>
               ))}
             </div>
           </Section>
 
           {/* Requirements */}
-          <Section title="Influencer Requirements">
-            <DetailRow icon={<TrendingUp size={16} />} label="Followers" value={`${formatCount(campaign.targetFollowerMin)} – ${formatCount(campaign.targetFollowerMax)}`} />
-            <DetailRow icon={<Target size={16} />} label="Tier" value={campaign.targetInfluencerTier || "All"} capitalize />
-            {campaign.minEngagementRate > 0 && <DetailRow icon={<TrendingUp size={16} />} label="Min. Engagement" value={`${campaign.minEngagementRate}%`} />}
-            <DetailRow icon={<MapPin size={16} />} label="Location" value={(campaign.targetCities || []).join(", ") || "Pan India"} />
+          <Section title={t("sections.influencerRequirements")}>
+            <DetailRow icon={<TrendingUp size={16} />} label={t("requirements.followers")} value={`${formatCount(campaign.targetFollowerMin)} – ${formatCount(campaign.targetFollowerMax)}`} />
+            <DetailRow icon={<Target size={16} />} label={t("requirements.tier")} value={campaign.targetInfluencerTier || t("requirements.tierAll")} capitalize />
+            {campaign.minEngagementRate > 0 && <DetailRow icon={<TrendingUp size={16} />} label={t("requirements.minEngagement")} value={`${campaign.minEngagementRate}%`} />}
+            <DetailRow icon={<MapPin size={16} />} label={t("requirements.location")} value={(campaign.targetCities || []).join(", ") || t("requirements.panIndia")} />
           </Section>
 
           {/* Schedule */}
-          <Section title="Schedule">
-            <DetailRow icon={<Calendar size={16} />} label="Start" value={formatDate(campaign.startDate)} />
-            <DetailRow icon={<Calendar size={16} />} label="Application Deadline" value={formatDate(campaign.applicationDeadline)} />
-            <DetailRow icon={<Calendar size={16} />} label="Campaign End" value={formatDate(campaign.endDate)} />
+          <Section title={t("sections.schedule")}>
+            <DetailRow icon={<Calendar size={16} />} label={t("schedule.start")} value={formatDate(campaign.startDate)} />
+            <DetailRow icon={<Calendar size={16} />} label={t("schedule.applicationDeadline")} value={formatDate(campaign.applicationDeadline)} />
+            <DetailRow icon={<Calendar size={16} />} label={t("schedule.campaignEnd")} value={formatDate(campaign.endDate)} />
           </Section>
 
           {/* Gallery */}
           {campaign.galleryImages?.length > 0 && (
-            <Section title="Gallery">
+            <Section title={t("sections.gallery")}>
               <BrandGallery images={campaign.galleryImages} />
             </Section>
           )}
@@ -512,20 +514,20 @@ const CampaignDetailPage = () => {
         <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
           <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Applications</h3>
+              <h3 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">{t("applications.heading")}</h3>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-[#5851DB]">{applications.length}</span>
             </div>
             {applications.length === 0 ? (
               <div className="py-10 text-center">
                 <Users size={24} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-xs text-gray-400">No applications yet.</p>
-                <p className="text-[10px] text-gray-400 mt-1">Creators will appear here once they apply.</p>
+                <p className="text-xs text-gray-400">{t("applications.empty")}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{t("applications.emptyHint")}</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {applications.map((a) => {
                   const inf = a.influencer_profiles || {};
-                  const name = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+                  const name = inf.full_name || inf.username || inf.instagram_handle || t("common.creator");
                   const st = appStatusConfig[a.status] || appStatusConfig.pending;
                   return (
                     <button
@@ -541,7 +543,7 @@ const CampaignDetailPage = () => {
                         <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
                         {inf.instagram_handle && <p className="text-[11px] text-gray-400 truncate">@{inf.instagram_handle}</p>}
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{st.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{t(`appStatus.${st.labelKey}`)}</span>
                       <ChevronRight size={14} className="text-gray-300 shrink-0" />
                     </button>
                   );
@@ -648,39 +650,41 @@ const CampaignDetailPage = () => {
 };
 
 const StatusActions = ({ status, onChange, loading }) => {
+  const t = useTranslations("BrandsCampaignId");
   const btn = "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed border";
   return (
     <>
       {status === "draft" && (
         <button onClick={() => onChange("active")} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-          Activate
+          {t("statusActions.activate")}
         </button>
       )}
       {status === "active" && (
         <>
           <button onClick={() => onChange("paused")} disabled={loading} className={`${btn} bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100`}>
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Pause size={14} />}
-            Pause
+            {t("statusActions.pause")}
           </button>
           <button onClick={() => onChange("completed")} disabled={loading} className={`${btn} bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100`}>
             {loading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-            Complete
+            {t("statusActions.complete")}
           </button>
         </>
       )}
       {status === "paused" && (
         <button onClick={() => onChange("active")} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-          Resume
+          {t("statusActions.resume")}
         </button>
       )}
-      {status === "completed" && <span className="text-xs text-gray-400 italic">This campaign is completed.</span>}
+      {status === "completed" && <span className="text-xs text-gray-400 italic">{t("statusActions.completedNote")}</span>}
     </>
   );
 };
 
 const BrandGallery = ({ images }) => {
+  const t = useTranslations("BrandsCampaignId");
   const [index, setIndex] = useState(-1);
   const close = () => setIndex(-1);
   const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
@@ -706,13 +710,13 @@ const BrandGallery = ({ images }) => {
       <div className="grid grid-cols-3 gap-2">
         {images.map((src, i) => (
           <button key={i} type="button" onClick={() => setIndex(i)} className="aspect-square rounded-xl overflow-hidden bg-gray-100 block group cursor-pointer">
-            <img src={src} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={src} alt={t("gallery.imageAlt", { n: i + 1 })} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
           </button>
         ))}
       </div>
       {index >= 0 && (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={close}>
-          <button type="button" onClick={close} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer" aria-label="Close">
+          <button type="button" onClick={close} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer" aria-label={t("common.close")}>
             <X size={24} />
           </button>
           {images.length > 1 && (
@@ -724,7 +728,7 @@ const BrandGallery = ({ images }) => {
                   prev();
                 }}
                 className="absolute left-4 md:left-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-                aria-label="Previous"
+                aria-label={t("gallery.previous")}
               >
                 <ChevronLeft size={28} />
               </button>
@@ -735,13 +739,13 @@ const BrandGallery = ({ images }) => {
                   next();
                 }}
                 className="absolute right-4 md:right-8 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer"
-                aria-label="Next"
+                aria-label={t("gallery.next")}
               >
                 <ChevronRight size={28} />
               </button>
             </>
           )}
-          <img src={images[index]} alt={`Gallery ${index + 1}`} className="max-w-[90vw] max-h-[85vh] object-contain" onClick={(e) => e.stopPropagation()} />
+          <img src={images[index]} alt={t("gallery.imageAlt", { n: index + 1 })} className="max-w-[90vw] max-h-[85vh] object-contain" onClick={(e) => e.stopPropagation()} />
           {images.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold">
               {index + 1} / {images.length}
@@ -781,6 +785,7 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
 );
 
 const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh, alwaysExpanded = false }) => {
+  const t = useTranslations("BrandsCampaignId");
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
   // Auto-expand actionable statuses so the brand can review immediately.
@@ -803,12 +808,12 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 
   const inf = app.influencer_profiles || {};
   const st = appStatusConfig[app.status] || appStatusConfig.pending;
-  const displayName = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+  const displayName = inf.full_name || inf.username || inf.instagram_handle || t("common.creator");
   const links = Array.isArray(app.submission_links) ? app.submission_links : [];
 
   const updateStatus = async (newStatus, extra = {}) => {
     setLoading(true);
-    startLoading("Updating application…");
+    startLoading(t("loading.updatingApplication"));
     try {
       const { data, error } = await supabase.functions.invoke("update-application-status", {
         body: {
@@ -819,7 +824,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         },
       });
       if (error || data?.error) {
-        setPopup(error?.message || data?.error || "Failed to update");
+        setPopup(error?.message || data?.error || t("errors.updateFailed"));
         return;
       }
       setMode(null);
@@ -838,7 +843,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // or withdraw. Escrow funding happens only after acceptance.
   const handleSendOffer = () => {
     const rate = parseInt(payAmount || "0", 10);
-    if (!rate || rate <= 0) { setPopup({ title: "Enter an amount", message: "Please enter an offer amount first.", tone: "info" }); return; }
+    if (!rate || rate <= 0) { setPopup({ title: t("popups.enterAmount.title"), message: t("popups.enterAmount.message"), tone: "info" }); return; }
     updateStatus("offer_sent", { agreedRate: rate });
   };
 
@@ -856,9 +861,9 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // If the brand dismisses Checkout, the application stays 'offer_accepted'.
   const handleApprove = async () => {
     const rate = Number(app.brand_offered_rate || 0);
-    if (!rate || rate <= 0) { setPopup("No accepted offer amount on this application."); return; }
+    if (!rate || rate <= 0) { setPopup(t("errors.noAcceptedOffer")); return; }
     setLoading(true);
-    startLoading("Preparing escrow…");
+    startLoading(t("loading.preparingEscrow"));
     try {
       // Explicit session check — supabase.functions.invoke() falls back
       // to sending the publishable key as Bearer when no user session
@@ -869,7 +874,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       // clients derive their key from the same project ref.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setPopup({ title: "Session expired", message: "Please sign in again and retry.", tone: "info" });
+        setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
         return;
       }
       const { data: fund, error: fundErr } = await withTimeout(
@@ -881,12 +886,12 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         "Escrow"
       );
       if (fundErr || fund?.error) {
-        setPopup(fundErr?.message || fund?.error || "Could not create escrow.");
+        setPopup(fundErr?.message || fund?.error || t("errors.escrowCreateFailed"));
         return;
       }
       await loadRazorpayCheckout();
       if (typeof window === "undefined" || !window.Razorpay) {
-        setPopup("Razorpay Checkout failed to load. Check your network and try again.");
+        setPopup(t("errors.razorpayLoadFailed"));
         return;
       }
 
@@ -897,11 +902,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         amount: fund.amount_paise,
         currency: fund.currency || "INR",
         name: "RGossips",
-        description: `Escrow for ${displayName}`,
+        description: t("razorpay.escrowDescription", { name: displayName }),
         theme: { color: "#5851DB" },
         handler: async (response) => {
           // Payment captured. Confirm to the server so escrow flips to held.
-          startLoading("Confirming payment…");
+          startLoading(t("loading.confirmingPayment"));
           setLoading(true);
           try {
             await updateStatus("approved", {
@@ -924,14 +929,14 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       });
       rzp.on("payment.failed", (resp) => {
         console.error("Escrow payment failed:", resp?.error);
-        setPopup(resp?.error?.description || "Payment failed. Please try again.");
+        setPopup(resp?.error?.description || t("errors.paymentFailed"));
         setLoading(false);
         stopLoading();
       });
       rzp.open();
     } catch (e) {
       console.error("handleApprove failed:", e);
-      setPopup(e?.message || "Something went wrong.");
+      setPopup(e?.message || t("errors.somethingWrong"));
       setLoading(false);
       stopLoading();
     }
@@ -948,14 +953,14 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // brand confirms the live submission is good.
   const releaseEscrow = async () => {
     setLoading(true);
-    startLoading("Releasing payment…");
+    startLoading(t("loading.releasingPayment"));
     try {
       // Same session-guard as handleApprove — escrow-release also
       // does an inline supabase.auth.getUser() so a fallback publishable
       // key Bearer fails the same way.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        setPopup({ title: "Session expired", message: "Please sign in again and retry.", tone: "info" });
+        setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
         return;
       }
       const { data, error } = await supabase.functions.invoke("escrow-release", {
@@ -963,7 +968,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || data?.error) {
-        setPopup(error?.message || data?.error || "Could not release payment.");
+        setPopup(error?.message || data?.error || t("errors.releaseFailed"));
         return;
       }
       onRefresh?.();
@@ -975,9 +980,9 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 
   const handleRevision = () => {
     if (revisionIndexes.length === 0) {
-      { setPopup({ title: "Nothing selected", message: "Select at least one deliverable that needs revision.", tone: "info" }); return; }
+      { setPopup({ title: t("popups.nothingSelected.title"), message: t("popups.nothingSelected.message"), tone: "info" }); return; }
     }
-    const selectedLabels = revisionIndexes.map((i) => links[i]?.label || links[i]?.type || `Deliverable ${i + 1}`);
+    const selectedLabels = revisionIndexes.map((i) => links[i]?.label || links[i]?.type || t("common.deliverableN", { n: i + 1 }));
     updateStatus("revision_needed", {
       revisionNote,
       revisionLinks: selectedLabels,
@@ -1012,7 +1017,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           <p className="text-sm font-bold text-gray-900 truncate">{displayName}</p>
           <p className="text-[11px] text-gray-400 truncate">
             {inf.instagram_handle && <>@{inf.instagram_handle} · </>}
-            {formatCount(inf.followers_count)} followers
+            {formatCount(inf.followers_count)} {t("row.followers")}
             {app.proposed_rate != null && (
               <>
                 {" "}
@@ -1021,11 +1026,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
             )}
           </p>
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{st.label}</span>
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{t(`appStatus.${st.labelKey}`)}</span>
         {app.escrow_status === "held" && app.escrow_amount != null && (
           <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 text-[10px] font-bold shrink-0">
             <IndianRupee size={9} />
-            {Math.round(app.escrow_amount / 100).toLocaleString("en-IN")} held
+            {Math.round(app.escrow_amount / 100).toLocaleString("en-IN")} {t("row.held")}
           </span>
         )}
         {rating && (
@@ -1046,7 +1051,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 <Star size={14} className="fill-amber-400 text-amber-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Your rating</p>
+                <p className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">{t("panel.yourRating")}</p>
                 <p className="text-[11px] text-amber-800 mt-0.5">
                   {displayName} <span className="font-bold">{rating.target_rating}/5</span>
                 </p>
@@ -1057,37 +1062,37 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           {/* Creator details — review before approving */}
           <div className="mt-3 p-3 bg-[#F8F9FE] rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Creator Details</p>
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">{t("panel.creatorDetails")}</p>
               {inf.instagram_handle && inf.media_kit_published && (
                 <a href={`/kit/${inf.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-[#5851DB] hover:underline">
-                  <ExternalLink size={10} /> Media Kit
+                  <ExternalLink size={10} /> {t("panel.mediaKit")}
                 </a>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-              <Fact label="Full Name" value={inf.full_name || "—"} />
+              <Fact label={t("facts.fullName")} value={inf.full_name || "—"} />
               <Fact label="Instagram" value={inf.instagram_handle ? `@${inf.instagram_handle}` : "—"} href={inf.instagram_handle ? `https://instagram.com/${inf.instagram_handle}` : null} />
-              <Fact label="Followers" value={formatCount(inf.followers_count)} />
-              <Fact label="Engagement" value={inf.engagement_rate != null ? `${inf.engagement_rate}%` : "—"} />
-              <Fact label="Posts" value={formatCount(inf.media_count)} />
-              <Fact label="Location" value={inf.location || "—"} />
-              {inf.email && <Fact label="Email" value={inf.email} />}
-              {app.proposed_rate != null && <Fact label="Proposed Rate" value={`₹${Number(app.proposed_rate).toLocaleString("en-IN")}`} highlight />}
-              {app.brand_offered_rate != null && Number(app.brand_offered_rate) > 0 && <Fact label="Your Offer" value={`₹${Number(app.brand_offered_rate).toLocaleString("en-IN")}`} highlight />}
-              {app.final_agreed_rate != null && <Fact label="Agreed Rate" value={`₹${Number(app.final_agreed_rate).toLocaleString("en-IN")}`} highlight />}
+              <Fact label={t("facts.followers")} value={formatCount(inf.followers_count)} />
+              <Fact label={t("facts.engagement")} value={inf.engagement_rate != null ? `${inf.engagement_rate}%` : "—"} />
+              <Fact label={t("facts.posts")} value={formatCount(inf.media_count)} />
+              <Fact label={t("facts.location")} value={inf.location || "—"} />
+              {inf.email && <Fact label={t("facts.email")} value={inf.email} />}
+              {app.proposed_rate != null && <Fact label={t("facts.proposedRate")} value={`₹${Number(app.proposed_rate).toLocaleString("en-IN")}`} highlight />}
+              {app.brand_offered_rate != null && Number(app.brand_offered_rate) > 0 && <Fact label={t("facts.yourOffer")} value={`₹${Number(app.brand_offered_rate).toLocaleString("en-IN")}`} highlight />}
+              {app.final_agreed_rate != null && <Fact label={t("facts.agreedRate")} value={`₹${Number(app.final_agreed_rate).toLocaleString("en-IN")}`} highlight />}
             </div>
 
             {inf.bio && (
               <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">Bio</p>
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">{t("panel.bio")}</p>
                 <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap">{inf.bio}</p>
               </div>
             )}
 
             {Array.isArray(inf.categories) && inf.categories.length > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1.5">Categories</p>
+                <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1.5">{t("panel.categories")}</p>
                 <div className="flex flex-wrap gap-1">
                   {inf.categories.map((c) => (
                     <span key={c} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white text-gray-600 border border-gray-200">
@@ -1100,7 +1105,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 
             {app.status === "rejected" && app.rejection_reason && (
               <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider mb-1">Rejection Reason</p>
+                <p className="text-[10px] font-extrabold text-red-500 uppercase tracking-wider mb-1">{t("panel.rejectionReason")}</p>
                 <p className="text-[11px] text-gray-700">{app.rejection_reason}</p>
               </div>
             )}
@@ -1109,11 +1114,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           {/* Submission links (when present) */}
           {links.length > 0 && (
             <div className="mt-3 space-y-1.5">
-              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Submissions</p>
+              <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">{t("panel.submissions")}</p>
               {links.map((item, i) => (
                 <a key={i} href={item.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-[#F8F9FE] hover:bg-gray-100 rounded-lg transition-colors group">
                   <ExternalLink size={12} className="text-[#5851DB] shrink-0" />
-                  <p className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">{item.label || item.type || `Deliverable ${i + 1}`}</p>
+                  <p className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">{item.label || item.type || t("common.deliverableN", { n: i + 1 })}</p>
                   <span className="text-[9px] uppercase font-bold text-gray-400 shrink-0">{item.type}</span>
                 </a>
               ))}
@@ -1126,34 +1131,34 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               {app.status === "pending" && (
                 <>
                   <button onClick={() => setMode("offer")} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
-                    <Check size={12} /> Approve with Price
+                    <Check size={12} /> {t("actions.approveWithPrice")}
                   </button>
                   <button onClick={() => setMode("reject")} className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}>
-                    <X size={12} /> Reject
+                    <X size={12} /> {t("actions.reject")}
                   </button>
                 </>
               )}
               {app.status === "offer_sent" && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-purple-700 font-semibold bg-purple-50 border border-purple-200 px-2 py-1 rounded-lg">
-                  <Clock size={12} /> Offer of ₹{Number(app.brand_offered_rate || 0).toLocaleString("en-IN")} sent — waiting for the creator to accept.
+                  <Clock size={12} /> {t("actionMsgs.offerSent", { amount: Number(app.brand_offered_rate || 0).toLocaleString("en-IN") })}
                 </span>
               )}
               {app.status === "offer_accepted" && (
                 <button onClick={handleApprove} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
                   {loading ? <Loader2 size={12} className="animate-spin" /> : <IndianRupee size={12} />}
-                  Pay ₹{Number(app.brand_offered_rate || 0).toLocaleString("en-IN")} to Escrow
+                  {t("actions.payToEscrow", { amount: Number(app.brand_offered_rate || 0).toLocaleString("en-IN") })}
                 </button>
               )}
               {app.status === "withdrawn" && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 font-semibold bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg">
-                  <X size={12} /> The creator withdrew from this campaign.
+                  <X size={12} /> {t("actionMsgs.withdrew")}
                 </span>
               )}
               {app.status === "approved" && (
                 <>
-                  <span className="text-[11px] text-gray-400 italic px-1 py-1">Waiting for submission…</span>
+                  <span className="text-[11px] text-gray-400 italic px-1 py-1">{t("actionMsgs.waitingSubmission")}</span>
                   <button onClick={() => setMode("reject")} className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}>
-                    <X size={12} /> Reject
+                    <X size={12} /> {t("actions.reject")}
                   </button>
                 </>
               )}
@@ -1161,36 +1166,36 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 <>
                   <button onClick={() => updateStatus("accepted")} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
                     {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                    Accept
+                    {t("actions.accept")}
                   </button>
                   <button onClick={() => setMode("revision")} className={`${btn} bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}>
-                    <RotateCcw size={12} /> Revision
+                    <RotateCcw size={12} /> {t("actions.revision")}
                   </button>
                   <button onClick={() => setMode("reject")} className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}>
-                    <X size={12} /> Reject
+                    <X size={12} /> {t("actions.reject")}
                   </button>
                 </>
               )}
-              {app.status === "revision_needed" && <span className="text-[11px] text-gray-400 italic px-1 py-1">Waiting for creator to re-submit…</span>}
+              {app.status === "revision_needed" && <span className="text-[11px] text-gray-400 italic px-1 py-1">{t("actionMsgs.waitingResubmit")}</span>}
               {app.status === "accepted" && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
-                  <Check size={12} /> Drafts accepted — waiting for the creator to post live.
+                  <Check size={12} /> {t("actionMsgs.draftsAccepted")}
                 </span>
               )}
               {app.status === "live_submitted" && (
                 <>
                   <button onClick={() => setShowRating(true)} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
                     {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                    Approve & Release Payment
+                    {t("actions.approveRelease")}
                   </button>
                   <button onClick={() => setMode("revision")} className={`${btn} bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}>
-                    <RotateCcw size={12} /> Revision
+                    <RotateCcw size={12} /> {t("actions.revision")}
                   </button>
                 </>
               )}
               {app.status === "payment" && (
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-blue-700 font-semibold bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg">
-                  <Check size={12} /> Campaign completed. Payment released to the creator.
+                  <Check size={12} /> {t("actionMsgs.paymentReleased")}
                 </span>
               )}
             </div>
@@ -1202,7 +1207,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               only accept or withdraw, not counter back. */}
           {mode === "offer" && (
             <div className="mt-3 space-y-2 p-3 bg-emerald-50/40 rounded-lg border border-emerald-100">
-              <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Your Offer (₹)</label>
+              <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{t("offerForm.label")}</label>
               <input
                 type="number"
                 min="0"
@@ -1211,15 +1216,15 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 className="w-full px-3 py-2 rounded-lg bg-white border border-emerald-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
               <p className="text-[10px] text-emerald-700/80 leading-snug">
-                The creator can accept or withdraw — no counter-offers. You&apos;ll pay into escrow only after they accept.
+                {t("offerForm.hint")}
               </p>
               <div className="flex gap-2">
                 <button onClick={handleSendOffer} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
                   {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                  Send Offer
+                  {t("offerForm.send")}
                 </button>
                 <button onClick={() => setMode(null)} className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1228,21 +1233,21 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           {/* Reject form */}
           {mode === "reject" && (
             <div className="mt-3 space-y-2 p-3 bg-red-50/40 rounded-lg border border-red-100">
-              <label className="text-[10px] font-bold text-red-700 uppercase tracking-wider">Reason (optional)</label>
+              <label className="text-[10px] font-bold text-red-700 uppercase tracking-wider">{t("rejectForm.label")}</label>
               <textarea
                 rows={2}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Briefly explain why..."
+                placeholder={t("rejectForm.placeholder")}
                 className="w-full px-3 py-2 rounded-lg bg-white border border-red-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
               />
               <div className="flex gap-2">
                 <button onClick={handleReject} disabled={loading} className={`${btn} bg-red-600 text-white border-red-600 hover:bg-red-500`}>
                   {loading ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                  Confirm Reject
+                  {t("rejectForm.confirm")}
                 </button>
                 <button onClick={() => setMode(null)} className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1251,7 +1256,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
           {/* Revision form */}
           {mode === "revision" && (
             <div className="mt-3 space-y-2 p-3 bg-orange-50/40 rounded-lg border border-orange-100">
-              <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">Select deliverables needing revision</p>
+              <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">{t("revisionForm.title")}</p>
               <div className="space-y-1">
                 {links.map((item, i) => {
                   const selected = revisionIndexes.includes(i);
@@ -1267,7 +1272,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                       <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${selected ? "bg-orange-500 border-orange-500" : "border-gray-300"}`}>
                         {selected && <Check size={10} className="text-white" />}
                       </div>
-                      <span className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">{item.label || item.type || `Deliverable ${i + 1}`}</span>
+                      <span className="text-[11px] font-semibold text-gray-700 capitalize flex-1 truncate">{item.label || item.type || t("common.deliverableN", { n: i + 1 })}</span>
                     </button>
                   );
                 })}
@@ -1276,16 +1281,16 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
                 rows={2}
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="What needs to change?"
+                placeholder={t("revisionForm.placeholder")}
                 className="w-full px-3 py-2 rounded-lg bg-white border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
               />
               <div className="flex gap-2">
                 <button onClick={handleRevision} disabled={loading || revisionIndexes.length === 0} className={`${btn} bg-orange-600 text-white border-orange-600 hover:bg-orange-500`}>
                   {loading ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
-                  Send for Revision
+                  {t("revisionForm.send")}
                 </button>
                 <button onClick={() => setMode(null)} className={`${btn} bg-white text-gray-600 border-gray-200 hover:bg-gray-50`}>
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1301,11 +1306,11 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         brandId={brandId}
         influencerId={app.influencer_id}
         raterRole="brand"
-        title="Rate this collaboration"
-        subtitle={`Share your experience working with ${displayName} before approving payment.`}
-        sections={[{ key: "target_rating", label: `How would you rate ${displayName}?` }]}
-        primaryCta="Submit & Release Payment"
-        secondaryCta="Skip & Approve"
+        title={t("rating.title")}
+        subtitle={t("rating.subtitle", { name: displayName })}
+        sections={[{ key: "target_rating", label: t("rating.sectionLabel", { name: displayName }) }]}
+        primaryCta={t("rating.primaryCta")}
+        secondaryCta={t("rating.secondaryCta")}
         onSaved={(saved) => onRated?.(saved)}
         onPrimary={() => releaseEscrow()}
         onSkip={() => releaseEscrow()}
@@ -1320,27 +1325,28 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
 // campaigns) + the complete review panel (ApplicationRow, permanently
 // expanded) with every action the brand can take at the current stage.
 const JOURNEY_LABELS = {
-  pending: "Applied",
-  offer_sent: "Offer sent",
-  offer_accepted: "Offer accepted by creator",
-  withdrawn: "Creator withdrew",
-  approved: "Escrow funded — work started",
-  submitted: "Drafts submitted",
-  revision_needed: "Revision requested",
-  accepted: "Drafts accepted",
-  live_submitted: "Posted live",
-  payment: "Payment released",
-  completed: "Completed",
-  rejected: "Rejected",
+  pending: "pending",
+  offer_sent: "offer_sent",
+  offer_accepted: "offer_accepted",
+  withdrawn: "withdrawn",
+  approved: "approved",
+  submitted: "submitted",
+  revision_needed: "revision_needed",
+  accepted: "accepted",
+  live_submitted: "live_submitted",
+  payment: "payment",
+  completed: "completed",
+  rejected: "rejected",
 };
 
 function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, onRefresh, onClose }) {
+  const t = useTranslations("BrandsCampaignId");
   const supabase = createClient();
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
   const inf = app.influencer_profiles || {};
-  const displayName = inf.full_name || inf.username || inf.instagram_handle || "Creator";
+  const displayName = inf.full_name || inf.username || inf.instagram_handle || t("common.creator");
 
   useEffect(() => {
     let cancelled = false;
@@ -1374,7 +1380,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
         id: "applied",
         to_status: "pending",
         changed_by_role: "influencer",
-        reason: app.proposed_rate ? `Proposed ₹${Number(app.proposed_rate).toLocaleString("en-IN")}` : null,
+        reason: app.proposed_rate ? t("journeyModal.proposed", { amount: Number(app.proposed_rate).toLocaleString("en-IN") }) : null,
         created_at: app.created_at,
       });
     }
@@ -1393,7 +1399,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="min-w-0">
             <h2 className="text-base font-black text-gray-900 truncate">{displayName}</h2>
-            <p className="text-[11px] text-gray-400">Application journey &amp; review</p>
+            <p className="text-[11px] text-gray-400">{t("journeyModal.subtitle")}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 cursor-pointer shrink-0">
             <X size={18} />
@@ -1403,19 +1409,19 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Timeline */}
           <div className="bg-[#F8F9FE] rounded-2xl p-4">
-            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">Journey</p>
+            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">{t("journeyModal.journey")}</p>
             {historyLoading ? (
               <div className="flex items-center gap-2 text-gray-400 text-xs py-2">
-                <Loader2 size={14} className="animate-spin" /> Loading history…
+                <Loader2 size={14} className="animate-spin" /> {t("journeyModal.loadingHistory")}
               </div>
             ) : events.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">No history recorded yet.</p>
+              <p className="text-xs text-gray-400 py-2">{t("journeyModal.noHistory")}</p>
             ) : (
               <div className="relative pl-5">
                 <div className="absolute left-[7px] top-2 bottom-2 w-[2px] bg-gray-200 rounded-full" />
                 {events.map((ev, i) => {
                   const isLast = i === events.length - 1;
-                  const label = JOURNEY_LABELS[ev.to_status] || ev.to_status;
+                  const label = JOURNEY_LABELS[ev.to_status] ? t(`journey.${JOURNEY_LABELS[ev.to_status]}`) : ev.to_status;
                   return (
                     <div key={ev.id} className="relative pb-4 last:pb-0">
                       <div
@@ -1428,7 +1434,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
                       <p className={`text-[12px] font-bold ${isLast ? "text-gray-900" : "text-gray-600"}`}>{label}</p>
                       <p className="text-[10px] text-gray-400">
                         {formatDate(ev.created_at)}
-                        {ev.changed_by_role && ` · by ${ev.changed_by_role}`}
+                        {ev.changed_by_role && ` · ${t("journeyModal.by", { role: ev.changed_by_role })}`}
                         {ev.reason && ` · ${ev.reason}`}
                       </p>
                     </div>
@@ -1462,6 +1468,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
 // creators agreed to those specific terms) — we surface Pause +
 // Duplicate as the two safe paths forward.
 function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, applicationCount }) {
+  const t = useTranslations("BrandsCampaignId");
   if (!open) return null;
   return (
     <div
@@ -1477,12 +1484,9 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
             <AlertCircle size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-black text-gray-900">This campaign can't be edited</h2>
+            <h2 className="text-base font-black text-gray-900">{t("notEditable.title")}</h2>
             <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              {applicationCount} creator{applicationCount === 1 ? " has" : "s have"} already applied to
-              this campaign, so the brief is locked to protect them. You can pause
-              it to stop new applications, or duplicate it — the create form opens
-              prefilled with this campaign's details for you to tweak before saving.
+              {t("notEditable.body", { count: applicationCount })}
             </p>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer">
@@ -1497,7 +1501,7 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
             className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Pause size={14} />
-            {isPaused ? "Already Paused" : "Pause Campaign"}
+            {isPaused ? t("notEditable.alreadyPaused") : t("notEditable.pauseCampaign")}
           </button>
           <button
             type="button"
@@ -1505,7 +1509,7 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
             className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold text-white bg-[#5851DB] hover:bg-[#4742c4] cursor-pointer"
           >
             <Copy size={14} />
-            Duplicate as New
+            {t("notEditable.duplicate")}
           </button>
         </div>
       </div>
@@ -1517,6 +1521,7 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
 // campaign has zero applications (client-side gate); the server
 // re-verifies before executing.
 function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
+  const t = useTranslations("BrandsCampaignId");
   if (!open) return null;
   return (
     <div
@@ -1532,11 +1537,12 @@ function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
             <Trash2 size={18} />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-black text-gray-900">Delete this campaign?</h2>
+            <h2 className="text-base font-black text-gray-900">{t("deleteModal.title")}</h2>
             <p className="text-xs text-gray-500 leading-relaxed mt-1">
-              <span className="font-bold text-gray-800">{title || "Campaign"}</span> will be
-              permanently removed. No creators have applied yet, so this is safe — but
-              there's no undo.
+              {t.rich("deleteModal.body", {
+                title: title || t("campaignFallback"),
+                b: (c) => <span className="font-bold text-gray-800">{c}</span>,
+              })}
             </p>
           </div>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer">
@@ -1550,7 +1556,7 @@ function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
             disabled={deleting}
             className="py-3 rounded-2xl text-xs font-bold text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -1559,7 +1565,7 @@ function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
             className="inline-flex items-center justify-center gap-1.5 py-3 rounded-2xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-            {deleting ? "Deleting…" : "Delete Campaign"}
+            {deleting ? t("deleteModal.deleting") : t("deleteModal.confirm")}
           </button>
         </div>
       </div>

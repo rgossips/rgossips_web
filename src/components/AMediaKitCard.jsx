@@ -3,10 +3,12 @@
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Users, TrendingUp, Eye, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export function AiMediaKitCard() {
+  const t = useTranslations("MediaKitCard");
   const { profile } = useAuth();
   const router = useRouter();
 
@@ -17,14 +19,14 @@ export function AiMediaKitCard() {
     return String(n);
   };
 
-  const userName = profile?.full_name || "Creator";
+  const userName = profile?.full_name || t("creatorFallback");
   const userHandle = profile?.username || profile?.instagram_handle || "creator";
   const userPhoto = profile?.profile_photo_url;
 
   const stats = [
-    { icon: <Users size={18} />, label: "FOLLOWERS", value: formatCount(profile?.followers_count) },
-    { icon: <TrendingUp size={18} />, label: "POSTS", value: formatCount(profile?.media_count) },
-    { icon: <Eye size={18} />, label: "FOLLOWING", value: formatCount(profile?.follows_count) },
+    { icon: <Users size={18} />, label: t("stats.followers"), value: formatCount(profile?.followers_count) },
+    { icon: <TrendingUp size={18} />, label: t("stats.posts"), value: formatCount(profile?.media_count) },
+    { icon: <Eye size={18} />, label: t("stats.following"), value: formatCount(profile?.follows_count) },
   ];
 
   return (
@@ -34,15 +36,15 @@ export function AiMediaKitCard() {
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              AI Media Kit
+              {t("title")}
               <Sparkles size={20} className="text-blue-500 fill-blue-500/10" />
             </h3>
             <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-wider">
-              Real-time analytics
+              {t("subtitle")}
             </p>
           </div>
           <span className="text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 font-black border border-blue-100">
-            Preview
+            {t("preview")}
           </span>
         </div>
 
@@ -105,7 +107,7 @@ export function AiMediaKitCard() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-[#7c3aed] to-[#ec4899] transition-opacity group-hover:opacity-90" />
           <span className="relative flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
-            {profile?.media_kit_published ? "View Media Kit" : "Generate Media Kit"}
+            {profile?.media_kit_published ? t("view") : t("generate")}
             <ArrowRight
               size={18}
               className="transition-transform group-hover:translate-x-1"

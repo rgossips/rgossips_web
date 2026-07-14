@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,21 +17,22 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext"; // Import global auth hook
 
 const profileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(2, "errors.nameMin"),
+  email: z.string().email("errors.emailInvalid"),
   instagram: z.string().optional(),
   twitter: z.string().optional(),
   upi: z.string().optional(),
   bank: z.string().optional(),
   primaryCategories: z
     .array(z.string())
-    .min(1, "Select at least 1 primary category"),
+    .min(1, "errors.primaryCategoriesMin"),
   secondaryCategories: z.array(z.string()).optional(),
-  contentLanguages: z.array(z.string()).min(1, "Select at least 1 language"),
+  contentLanguages: z.array(z.string()).min(1, "errors.contentLanguagesMin"),
   yearsOfExperience: z.string().optional(),
 });
 
 export default function UserSettingsForm() {
+  const t = useTranslations("UserSettingsForm");
   // 1. Pull everything from global Context
   const { profile, setProfile, user, role, loading: authLoading } = useAuth();
 
@@ -133,27 +135,27 @@ export default function UserSettingsForm() {
   };
 
   if (authLoading)
-    return <div className="p-10 text-center">Loading Settings...</div>;
+    return <div className="p-10 text-center">{t("loading")}</div>;
 
   return (
     <>
       <form onSubmit={form.handleSubmit(onSave)} className="grid gap-6">
         {/* BASIC FIELDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <InputField form={form} name="name" label="Name" />
-          <InputField form={form} name="email" label="Email" />
-          <InputField form={form} name="instagram" label="Instagram URL" />
-          <InputField form={form} name="twitter" label="Twitter URL" />
-          <InputField form={form} name="upi" label="UPI ID" />
-          <InputField form={form} name="bank" label="Bank Details" />
+          <InputField form={form} name="name" label={t("fields.name")} />
+          <InputField form={form} name="email" label={t("fields.email")} />
+          <InputField form={form} name="instagram" label={t("fields.instagram")} />
+          <InputField form={form} name="twitter" label={t("fields.twitter")} />
+          <InputField form={form} name="upi" label={t("fields.upi")} />
+          <InputField form={form} name="bank" label={t("fields.bank")} />
         </div>
 
         {/* PROFESSIONAL SECTION */}
         <div className="border rounded-xl p-5 bg-white grid gap-4">
-          <h2 className="font-semibold text-lg">Professional Info</h2>
+          <h2 className="font-semibold text-lg">{t("professionalInfo")}</h2>
 
           <div className="flex flex-col gap-2">
-            <Label>Primary Categories</Label>
+            <Label>{t("primaryCategories")}</Label>
             <MultiSelectInput
               options={PRIMARY_OPTIONS}
               selected={form.watch("primaryCategories")}
@@ -162,27 +164,27 @@ export default function UserSettingsForm() {
                   shouldValidate: true,
                 })
               }
-              placeholder="Select categories..."
+              placeholder={t("selectCategories")}
             />
             {form.formState.errors.primaryCategories && (
               <p className="text-red-500 text-xs">
-                {form.formState.errors.primaryCategories.message}
+                {t(form.formState.errors.primaryCategories.message)}
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>Secondary Categories</Label>
+            <Label>{t("secondaryCategories")}</Label>
             <MultiSelectInput
               options={PRIMARY_OPTIONS}
               selected={form.watch("secondaryCategories")}
               onChange={(vals) => form.setValue("secondaryCategories", vals)}
-              placeholder="Select categories..."
+              placeholder={t("selectCategories")}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>Content Languages</Label>
+            <Label>{t("contentLanguages")}</Label>
             <div className="flex gap-2 flex-wrap">
               {LANGUAGES.map((lang) => (
                 <button
@@ -201,18 +203,18 @@ export default function UserSettingsForm() {
             </div>
             {form.formState.errors.contentLanguages && (
               <p className="text-red-500 text-xs">
-                {form.formState.errors.contentLanguages.message}
+                {t(form.formState.errors.contentLanguages.message)}
               </p>
             )}
           </div>
 
           <div>
-            <Label>Years of Experience</Label>
+            <Label>{t("yearsOfExperience")}</Label>
             <select
               {...form.register("yearsOfExperience")}
               className="w-full mt-2 p-2 rounded-lg border bg-white focus:ring-2 focus:ring-blue-100 outline-none"
             >
-              <option value="">Select Experience</option>
+              <option value="">{t("selectExperience")}</option>
               {YEARS.map((y) => (
                 <option key={y} value={y}>
                   {y}
@@ -230,10 +232,10 @@ export default function UserSettingsForm() {
           {isSaving ? (
             <>
               <span className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Saving Changes...
+              {t("saving")}
             </>
           ) : (
-            "Save All Changes"
+            t("saveAll")
           )}
         </Button>
       </form>
@@ -241,18 +243,19 @@ export default function UserSettingsForm() {
       <SuccessModal
         open={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
-        text="Your profile has been updated successfully!"
+        text={t("successText")}
       />
       <ErrorModal
         open={errorModalOpen}
         onClose={() => setErrorModalOpen(false)}
-        text="Failed to update details. Please try again later."
+        text={t("errorText")}
       />
     </>
   );
 }
 
 function InputField({ form, name, label }) {
+  const t = useTranslations("UserSettingsForm");
   return (
     <div className="flex flex-col gap-2">
       <Label className="text-slate-700 font-medium">{label}</Label>
@@ -263,7 +266,7 @@ function InputField({ form, name, label }) {
       />
       {form.formState.errors[name] && (
         <p className="text-red-500 text-xs">
-          {form.formState.errors[name].message}
+          {t(form.formState.errors[name].message)}
         </p>
       )}
     </div>

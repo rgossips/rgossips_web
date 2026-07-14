@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -13,6 +14,10 @@ function formatCount(n) {
 }
 
 const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loading: externalLoading = false, error: externalError = "" }) => {
+  const t = useTranslations("Auth.instagram");
+  const tr = useTranslations("Auth.roles");
+  // Localized indefinite role label: "a Brand" / "an Influencer" / "another account".
+  const sourceLabel = (src) => (src === "brand" ? tr("brandIndefinite") : src === "influencer" ? tr("influencerIndefinite") : t("otherAccount"));
   const [connecting, setConnecting] = useState(false);
   const [checking, setChecking] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -82,7 +87,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       }
     } catch (err) {
       if (mountedRef.current) {
-        setError(err.message || "Failed to connect Instagram");
+        setError(err.message || t("errors.connectFailed"));
       }
     } finally {
       if (mountedRef.current) {
@@ -123,13 +128,12 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
 
         if (isSignIn) {
           if (source && source !== role) {
-            setError(`This Instagram is registered as ${source === "brand" ? "a Brand" : "an Influencer"}. Please sign in as ${source === "brand" ? "a Brand" : "an Influencer"} instead.`);
+            setError(t("errors.registeredAsRoleSignin", { source: sourceLabel(source) }));
             setChecking(false);
             return;
           }
         } else {
-          const sourceLabel = source === "brand" ? "a Brand" : source === "influencer" ? "an Influencer" : "another account";
-          setError(`This Instagram is already registered as ${sourceLabel}. Please sign in instead.`);
+          setError(t("errors.registeredAsRoleSignup", { source: sourceLabel(source) }));
           setChecking(false);
           return;
         }
@@ -139,7 +143,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       onNext(profile);
     } catch (err) {
       if (mountedRef.current) {
-        setError(err.message || "Failed to verify Instagram");
+        setError(err.message || t("errors.verifyFailed"));
         setChecking(false);
       }
     }
@@ -148,8 +152,8 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-slate-900">{isSignIn ? "Sign In with Instagram" : "Connect Instagram"}</h2>
-        <p className="text-slate-500 text-sm">{isSignIn ? "Connect your Instagram to sign in to your account" : "Link your Instagram to unlock brand collaborations & build your media kit"}</p>
+        <h2 className="text-2xl font-bold text-slate-900">{isSignIn ? t("titleSignin") : t("titleConnect")}</h2>
+        <p className="text-slate-500 text-sm">{isSignIn ? t("subtitleSignin") : t("subtitleConnect")}</p>
       </div>
 
       {displayError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 max-h-60 overflow-y-auto whitespace-pre-wrap break-all">{displayError}</div>}
@@ -159,7 +163,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FCAF45] via-[#E1306C] to-[#833AB4] flex items-center justify-center shadow-lg shadow-pink-200">
             <Loader2 size={28} className="text-white animate-spin" />
           </div>
-          <p className="text-sm font-semibold text-slate-500">Connecting to Instagram...</p>
+          <p className="text-sm font-semibold text-slate-500">{t("connecting")}</p>
         </div>
       ) : !profile ? (
         <div className="flex flex-col items-center gap-6">
@@ -172,16 +176,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
             className="w-full h-14 rounded-2xl border-2 border-dashed border-slate-200 hover:border-[#E1306C] flex items-center justify-center gap-3 text-sm font-semibold transition-all cursor-pointer group bg-white hover:bg-gradient-to-r hover:from-[#FCAF45]/5 hover:via-[#E1306C]/5 hover:to-[#833AB4]/5"
           >
             <Instagram size={20} className="text-[#E1306C] group-hover:scale-110 transition-transform" />
-            <span className="bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] bg-clip-text text-transparent">Connect with Instagram</span>
+            <span className="bg-gradient-to-r from-[#F77737] via-[#E1306C] to-[#833AB4] bg-clip-text text-transparent">{t("connectButton")}</span>
           </button>
 
           {/* Permissions disclaimer */}
           <div className="w-full text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-left">
-            <p className="font-bold text-slate-600">Requirements:</p>
-            <p>• Your profile info — username, name, bio, profile picture</p>
-            <p>• Audience stats — followers, following, post count</p>
-            <p>• Reels & media insights — reach, impressions, engagement</p>
-            <p className="pt-1.5 text-slate-400">This info will be shown to brands on your media kit to help them evaluate collaborations. We never post, comment, or message on your behalf.</p>
+            <p className="font-bold text-slate-600">{t("requirements")}</p>
+            <p>{t("perm1")}</p>
+            <p>{t("perm2")}</p>
+            <p>{t("perm3")}</p>
+            <p className="pt-1.5 text-slate-400">{t("permNote")}</p>
           </div>
         </div>
       ) : (
@@ -197,16 +201,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
             <div className="flex-1 min-w-0">
               <p className="text-base font-bold text-slate-900 truncate">@{profile.username}</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                {formatCount(profile.followersCount)} followers
+                {t("followers", { count: formatCount(profile.followersCount) })}
                 {" · "}
-                {formatCount(profile.followsCount)} following
+                {t("following", { count: formatCount(profile.followsCount) })}
                 {" · "}
-                {formatCount(profile.mediaCount)} posts
+                {t("posts", { count: formatCount(profile.mediaCount) })}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 size={22} className="text-green-500" />
-              <button onClick={handleDisconnect} className="p-1.5 rounded-full hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors cursor-pointer" title="Disconnect">
+              <button onClick={handleDisconnect} className="p-1.5 rounded-full hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors cursor-pointer" title={t("disconnect")}>
                 <X size={14} />
               </button>
             </div>
@@ -225,26 +229,22 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
           {checking || externalLoading ? (
             <>
               <Loader2 size={18} className="animate-spin mr-2" />
-              {isSignIn ? "Signing in..." : "Verifying..."}
+              {isSignIn ? t("signingIn") : t("verifying")}
             </>
           ) : isSignIn ? (
-            "Sign In"
+            t("signIn")
           ) : (
-            "Continue"
+            t("continue")
           )}
         </Button>
         {!profile && !connecting && (
           <div className="text-center space-y-2">
-            <p className="text-[11px] text-slate-400">Instagram connection is required to proceed</p>
+            <p className="text-[11px] text-slate-400">{t("required")}</p>
             <div className="text-[10px] text-slate-400 bg-slate-50 rounded-xl p-3 text-left space-y-1">
-              <p className="font-bold text-slate-500">Requirements:</p>
-              <p>
-                • Your Instagram must be a <span className="font-semibold text-slate-600">Professional account</span> (Business or Creator)
-              </p>
-              <p>
-                • Make sure you're logged into the <span className="font-semibold text-slate-600">correct Instagram account</span> in your browser
-              </p>
-              <p>• If you see "profile doesn't exist", log out of Instagram in your browser and log in with your Professional account</p>
+              <p className="font-bold text-slate-500">{t("requirements")}</p>
+              <p>{t.rich("req1", { b: (c) => <span className="font-semibold text-slate-600">{c}</span> })}</p>
+              <p>{t.rich("req2", { b: (c) => <span className="font-semibold text-slate-600">{c}</span> })}</p>
+              <p>{t("req3")}</p>
             </div>
           </div>
         )}
