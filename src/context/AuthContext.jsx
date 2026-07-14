@@ -15,6 +15,28 @@ export const AuthProvider = ({ children }) => {
 
   const supabase = createClient();
 
+  // A signed-in user always has a profile (create-profile issues the session
+  // only after the profile row is written). So a live session whose profile
+  // has vanished means the account was removed (e.g. admin deletion). Rather
+  // than let the stale JWT linger until it expires, sign the user out and
+  // send them to the public home page. Skipped on the auth pages so an
+  // in-flight signup/onboarding (session set a beat before the first profile
+  // read resolves) can't bounce itself.
+  const handleRemovedAccount = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return; // already signed out — nothing to do
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname || "";
+        if (path.startsWith("/login") || path.startsWith("/register")) return;
+      }
+      await supabase.auth.signOut();
+    } catch {
+      /* best-effort */
+    }
+    if (typeof window !== "undefined") window.location.replace("/");
+  }, [supabase]);
+
   const fetchProfile = useCallback(async (userId) => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,15 +65,18 @@ export const AuthProvider = ({ children }) => {
         setProfile(data.profile);
         setRole(data.role);
       } else {
+        // Profile gone but the session is still live → account was removed.
         setProfile(null);
         setRole(null);
+        await handleRemovedAccount();
       }
     } catch (error) {
+      // Transient error (network / edge fn) — do NOT sign out; just clear.
       console.error("Error fetching user profile:", error);
       setProfile(null);
       setRole(null);
     }
-  }, []);
+  }, [handleRemovedAccount]);
 
   const refreshInstagram = useCallback(async (userId) => {
     try {
