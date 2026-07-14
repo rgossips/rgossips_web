@@ -1,12 +1,12 @@
 import { MessageCircle, Instagram, Hash } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 // Public-facing contact targets. wa.me uses E.164 without the leading +.
 const WHATSAPP_URL = "https://wa.me/918802907907";
 const INSTAGRAM_URL = "https://www.instagram.com/rgossips.agency/";
 
-export async function CreatorCTASection() {
-  const t = await getTranslations("BrandsCreatorCTASection");
+export function CreatorCTASection() {
+  const t = useTranslations("BrandsCreatorCTASection");
   return (
     <>
       <section className="w-full px-4 lg:px-6 text-center lg:hidden pb-20">

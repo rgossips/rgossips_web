@@ -1,8 +1,8 @@
 import { Search, Bell, MapPin } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-const HomeHeader = async ({ user }) => {
-  const t = await getTranslations("HomeHeader");
+const HomeHeader = ({ user }) => {
+  const t = useTranslations("HomeHeader");
   return (
     <header className="bg-white px-6 pt-6 pb-4 rounded-b-[30px] shadow-sm">
       <div className="flex justify-between items-center mb-6">

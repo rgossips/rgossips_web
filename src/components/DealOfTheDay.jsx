@@ -1,8 +1,8 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Button } from "./ui/button";
 
-const DealOfTheDay = async () => {
-  const t = await getTranslations("DealOfTheDay");
+const DealOfTheDay = () => {
+  const t = useTranslations("DealOfTheDay");
   return (
     <div className="relative rounded-[40px] overflow-hidden shadow-xl group cursor-pointer">
       <img

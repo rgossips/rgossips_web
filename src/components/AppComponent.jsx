@@ -2,13 +2,13 @@ import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Star } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import mobileImg from "@/assets/mobile1.png";
 import gplay from "@/assets/gplay.png";
 import appstore from "@/assets/apple.png";
 
-const AppSection = async () => {
-  const t = await getTranslations("AppComponent");
+const AppSection = () => {
+  const t = useTranslations("AppComponent");
 
   const features = [
     "realtimeNotifications",

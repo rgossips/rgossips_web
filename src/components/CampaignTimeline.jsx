@@ -1,8 +1,8 @@
 import { Calendar } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export async function CampaignTimeline() {
-  const t = await getTranslations("CampaignTimeline");
+export function CampaignTimeline() {
+  const t = useTranslations("CampaignTimeline");
 
   const steps = [
     { label: t("steps.applicationReview.label"), time: t("steps.applicationReview.time") },

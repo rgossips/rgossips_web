@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 // Asset Imports
 import gucci from "@/assets/brands/gucci.png";
@@ -61,8 +61,8 @@ const BrandSlider = () => {
   );
 };
 
-const Hero2 = async () => {
-  const t = await getTranslations("Hero2");
+const Hero2 = () => {
+  const t = useTranslations("Hero2");
   return (
     <section className="bg-white pt-16 md:pt-24 overflow-hidden max-w-full px-10 lg:px-0 border-b border-slate-50">
       <div className="container mx-auto px-4 text-center">

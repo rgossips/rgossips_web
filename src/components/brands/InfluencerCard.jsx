@@ -1,5 +1,5 @@
 import { Instagram, Users, FileText } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -8,7 +8,7 @@ const formatCount = (n) => {
   return String(n);
 };
 
-export const InfluencerCard = async ({
+export const InfluencerCard = ({
   full_name,
   username,
   instagram_handle,
@@ -17,7 +17,7 @@ export const InfluencerCard = async ({
   categories,
   media_kit_published,
 }) => {
-  const t = await getTranslations("BrandsInfluencerCard");
+  const t = useTranslations("BrandsInfluencerCard");
   const handle = instagram_handle || username || "";
   const displayName = full_name || handle || t("unknown");
   const categoryLabel = Array.isArray(categories)

@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function GalleryCollage({ images = [] }) {
-  const t = await getTranslations("GalleryCarousel");
+export default function GalleryCollage({ images = [] }) {
+  const t = useTranslations("GalleryCarousel");
 
   const galleryImages = images.map((src, idx) => ({
     id: idx,

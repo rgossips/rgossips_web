@@ -1,5 +1,5 @@
 import React from "react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import {
   CheckCircle,
   Eye,
@@ -13,8 +13,8 @@ import {
   Heart,
 } from "lucide-react";
 
-export const CampaignCompletedView = async () => {
-  const t = await getTranslations("CampaignCompletedView");
+export const CampaignCompletedView = () => {
+  const t = useTranslations("CampaignCompletedView");
   const deliveredContent = [
     {
       type: "REEL",

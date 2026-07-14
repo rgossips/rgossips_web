@@ -8,7 +8,7 @@ import {
   Svg,
   Rect,
 } from "@react-pdf/renderer";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 const styles = StyleSheet.create({
   page: {
@@ -112,8 +112,8 @@ const AudienceChart = ({ data }) => {
   );
 };
 
-export default async function ResumeTemplate({ data }) {
-  const t = await getTranslations("ResumeTemplate");
+export default function ResumeTemplate({ data }) {
+  const t = useTranslations("ResumeTemplate");
 
   return (
     <Document>

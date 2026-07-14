@@ -1,8 +1,8 @@
 import Image from "next/image";
 import { FaCheckCircle, FaInstagram } from "react-icons/fa";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function CreatorCard({
+export default function CreatorCard({
   name,
   verified,
   image,
@@ -12,7 +12,7 @@ export default async function CreatorCard({
   bio,
   link,
 }) {
-  const t = await getTranslations("CreatorCard");
+  const t = useTranslations("CreatorCard");
   return (
     <div className="border rounded-xl p-6 w-full sm:w-72 md:w-80 flex flex-col gap-4 shadow-sm bg-white mb-10">
       {/* Name */}

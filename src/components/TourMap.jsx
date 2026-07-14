@@ -1,7 +1,7 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function TourMap({ location = "" }) {
-  const t = await getTranslations("TourMap");
+export default function TourMap({ location = "" }) {
+  const t = useTranslations("TourMap");
 
   // Build a reliable Google Maps embed URL.
   // Accepts:

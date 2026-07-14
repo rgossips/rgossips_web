@@ -1,9 +1,9 @@
 import { Banknote, Calendar, Clock, Plus } from "lucide-react";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export const FeaturedCampaign = async () => {
-  const t = await getTranslations("BrandsFeaturedCampaign");
+export const FeaturedCampaign = () => {
+  const t = useTranslations("BrandsFeaturedCampaign");
   return (
     <div className="bg-white rounded-4xl p-6 shadow-2xl shadow-purple-100/50 relative border border-purple-50">
       <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#EBE9FE] text-[#5851DB] rounded-full text-[10px] font-bold uppercase mb-4">

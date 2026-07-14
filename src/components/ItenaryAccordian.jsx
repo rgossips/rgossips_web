@@ -4,10 +4,10 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-export default async function ItineraryAccordion() {
-  const t = await getTranslations("ItenaryAccordian");
+export default function ItineraryAccordion() {
+  const t = useTranslations("ItenaryAccordian");
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">{t("heading")}</h2>

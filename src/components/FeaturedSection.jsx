@@ -2,10 +2,10 @@ import React from "react";
 import one from "@/assets/influencers/1.jpg";
 import two from "@/assets/influencers/2.jpg";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
-const FeaturedSection = async () => {
-  const t = await getTranslations("FeaturedSection");
+const FeaturedSection = () => {
+  const t = useTranslations("FeaturedSection");
   return (
     <div className="my-10 px-10 lg:px-20 grid grid-cols-2 gap-x-20">
       <div className="flex flex-col items-center justify-center gap-10">
