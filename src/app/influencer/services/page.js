@@ -274,29 +274,50 @@ function ServiceCard({ service }) {
   const router = useRouter();
   const Icon = iconForName(service.icon_name);
   const open = () => router.push(`/influencer/services/${service.slug}`);
+  const hasImage = !!service.featured_image_url;
+  // `accent` is a combined "bg-… text-…" class. The banner uses the whole
+  // thing (pastel bg + tinted icon); the category label reuses just the
+  // text-… token so it reads as coloured text, not a filled pill.
+  const labelColor =
+    (service.accent && service.accent.match(/text-[^\s]+/)?.[0]) || "text-slate-600";
   return (
     <div
       onClick={open}
-      className="bg-white rounded-3xl border border-slate-100 p-5 hover:shadow-md hover:border-slate-200 transition-all flex flex-col gap-4 cursor-pointer"
+      className="group bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-md hover:border-slate-200 transition-all flex flex-col cursor-pointer"
     >
-      <div className="flex items-start gap-3">
-        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 shrink-0 ${service.accent}`}>
-          <span className="text-[8px] font-black uppercase tracking-widest opacity-80">
+      {/* Banner on top — featured image when set, else the accent colour with
+          the service icon centred (matches the top-services cards). */}
+      <div
+        className={`relative h-32 sm:h-36 flex items-center justify-center overflow-hidden ${
+          hasImage ? "bg-slate-100" : service.accent
+        }`}
+      >
+        {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={service.featured_image_url}
+            alt={service.title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <Icon size={40} strokeWidth={1.6} className="group-hover:scale-110 transition-transform duration-500" />
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="p-5 flex flex-col gap-3 flex-1">
+        <div>
+          <span className={`text-[10px] font-black uppercase tracking-widest ${labelColor}`}>
             {service.tag}
           </span>
-          <Icon size={22} strokeWidth={1.8} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[15px] font-black text-slate-900 leading-tight">
+          <h3 className="text-[15px] font-black text-slate-900 leading-tight mt-1">
             {service.title}
           </h3>
           <p className="text-[12px] text-slate-500 mt-1.5 leading-snug line-clamp-2">
             {service.description}
           </p>
         </div>
-      </div>
 
-      <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">
           <Star size={12} className="fill-amber-400 text-amber-400" />
           <span className="text-[11px] font-black text-slate-700">
@@ -304,31 +325,31 @@ function ServiceCard({ service }) {
             <span className="text-slate-400 font-bold"> ({service.reviews_count || 0})</span>
           </span>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-        <div>
-          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-            Starting at
-          </p>
-          <p className="text-lg font-black text-slate-900 leading-tight">
-            {formatINR(service.price_starting)}
-            {service.price_suffix && (
-              <span className="text-[10px] font-bold text-slate-400">
-                {service.price_suffix}
-              </span>
-            )}
-          </p>
+        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-100">
+          <div>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              Starting at
+            </p>
+            <p className="text-lg font-black text-slate-900 leading-tight">
+              {formatINR(service.price_starting)}
+              {service.price_suffix && (
+                <span className="text-[10px] font-bold text-slate-400">
+                  {service.price_suffix}
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              open();
+            }}
+            className="btn-purple px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-md shadow-pink-100 cursor-pointer"
+          >
+            Get Quote
+          </button>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            open();
-          }}
-          className="btn-purple px-5 py-2.5 rounded-xl text-xs font-black text-white shadow-md shadow-pink-100 cursor-pointer"
-        >
-          Get Quote
-        </button>
       </div>
     </div>
   );
