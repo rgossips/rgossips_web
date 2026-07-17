@@ -18,6 +18,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { log } from "../_shared/log.ts";
+import { ensureReferralCode, qualifyReferralIfEligible } from "../_shared/referrals.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -307,6 +308,26 @@ Deno.serve(async (req) => {
     if (upErr) {
       log.error("reconcile.profile_update_failed", { rid, userId }, upErr);
       return json({ error: "profile_update_failed" }, 200);
+    }
+
+    // Refer & Earn — the payment webhooks normally do this on a successful
+    // charge, but webhooks are off, so mirror it here (this reconcile is the
+    // active post-payment path). (1) This user is now paid, so mint their own
+    // referral code. (2) If THIS user was referred, mark that referral REWARDED
+    // and credit the referrer's RC. Both are idempotent + best-effort.
+    try {
+      await ensureReferralCode(admin, userId);
+      await qualifyReferralIfEligible(admin, {
+        refereeId: userId,
+        refereePlan: keeper.plan as "starter" | "pro" | "elite",
+        qualifyingEventId: keeper.id,
+      });
+    } catch (e) {
+      log.warn("reconcile.referral_qualify_failed", {
+        rid,
+        userId,
+        err: String((e as any)?.message || e),
+      });
     }
 
     // Finish a first-cycle-discount subscription: swap it off the throwaway

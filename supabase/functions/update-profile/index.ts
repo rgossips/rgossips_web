@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
     if (fields.categories !== undefined) updateData.categories = fields.categories;
     if (fields.services !== undefined) updateData.services = fields.services;
     if (fields.notificationsEnabled !== undefined) updateData.notifications_enabled = fields.notificationsEnabled;
+    if (fields.welcomeRewardSeen !== undefined) updateData.welcome_reward_seen = !!fields.welcomeRewardSeen;
 
     // Also support updating basic profile fields
     if (fields.name !== undefined) updateData.full_name = fields.name;
@@ -166,6 +167,13 @@ Deno.serve(async (req) => {
     }
     if (fields.customProfilePhotoUrl !== undefined) updateData.custom_profile_photo_url = fields.customProfilePhotoUrl || null;
     if (fields.location !== undefined) updateData.location = fields.location;
+    // Content languages the creator publishes in (text[]). Coerce to an array
+    // of trimmed non-empty strings; anything else becomes an empty array.
+    if (fields.contentLanguages !== undefined) {
+      updateData.content_languages = Array.isArray(fields.contentLanguages)
+        ? fields.contentLanguages.map((l: unknown) => String(l).trim()).filter(Boolean)
+        : [];
+    }
     // Gender — self-service (previously only admin could set it). Allow-
     // listed to the values the brand-side Gender filter understands;
     // anything else (including "") clears the field.

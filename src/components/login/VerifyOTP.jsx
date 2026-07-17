@@ -5,10 +5,9 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
-// Matches the server-side cooldown in send-otp (60s per phone) — a 30s
-// UI timer let users hit Resend while the backend still refused, which
-// read as a broken button.
-const RESEND_COOLDOWN_SECONDS = 60;
+// Matches the server-side cooldown in whatsapp-otp-sender (30s per phone) so
+// the Resend button re-enables exactly when the backend will accept it.
+const RESEND_COOLDOWN_SECONDS = 30;
 
 const VerifyOTP = ({ onNext, onResend, loading = false, error = "", otp = "", setOtp = () => {}, phoneNumber = "+91 98765 43210", resendSuccess = false }) => {
   const t = useTranslations("Auth.verifyOtp");

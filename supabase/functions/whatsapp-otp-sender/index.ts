@@ -47,7 +47,17 @@ Deno.serve(async (req) => {
       req.headers.get("cf-connecting-ip") ||
       (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
       "unknown";
-    const COOLDOWN_MS = 60 * 1000;
+    // Test-phone bypass — seeded QA logins skip the rate limits entirely so
+    // they can be exercised repeatedly. Phone is normalised (+91…) on the
+    // client; compare against the bare-digits form.
+    const TEST_PHONES = new Set(["919999999990", "919999999991"]);
+    const TEST_OTP = "123456";
+    const isTestPhone = TEST_PHONES.has(phone.replace(/\+/g, ""));
+
+    // 30s cooldown is just double-tap protection; the 5/phone/hr cap below is
+    // the real abuse limiter, so a genuine resend after a missed delivery
+    // isn't stuck behind a full minute.
+    const COOLDOWN_MS = 30 * 1000;
     const PHONE_HOURLY_CAP = 5;
     const IP_HOURLY_CAP = 20;
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -72,7 +82,7 @@ Deno.serve(async (req) => {
         .gte("sent_at", oneHourAgo),
     ]);
 
-    if ((cooldownRes.data || []).length > 0) {
+    if (!isTestPhone && (cooldownRes.data || []).length > 0) {
       const lastSentMs = new Date((cooldownRes.data as any[])[0].sent_at).getTime();
       const waitSecs = Math.max(1, Math.ceil((lastSentMs + COOLDOWN_MS - Date.now()) / 1000));
       return new Response(
@@ -80,25 +90,18 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if ((phoneCountRes.count ?? 0) >= PHONE_HOURLY_CAP) {
+    if (!isTestPhone && (phoneCountRes.count ?? 0) >= PHONE_HOURLY_CAP) {
       return new Response(
         JSON.stringify({ error: "Too many OTP requests for this number. Try again in an hour." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if ((ipCountRes.count ?? 0) >= IP_HOURLY_CAP) {
+    if (!isTestPhone && (ipCountRes.count ?? 0) >= IP_HOURLY_CAP) {
       return new Response(
         JSON.stringify({ error: "Too many OTP requests from your network. Try again in an hour." }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Test-phone bypass — for QA test logins seeded by seed-test-users.
-    // Phone is already normalised on the client (+91…). We compare against
-    // the bare-digits form the verifier later reads from the row.
-    const TEST_PHONES = new Set(["919999999990", "919999999991"]);
-    const TEST_OTP = "123456";
-    const isTestPhone = TEST_PHONES.has(phone.replace(/\+/g, ""));
 
     // Generate a cryptographically secure 6-digit OTP — replaced by the
     // fixed test value for QA accounts so they don't need a real WhatsApp.

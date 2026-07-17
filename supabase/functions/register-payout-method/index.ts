@@ -46,6 +46,55 @@ type BankBody = {
   is_primary?: boolean;
 };
 
+// Razorpay "Validate VPA" — the standard Payments API (NOT RazorpayX). Confirms
+// a UPI ID resolves to a real account and returns the account-holder's name.
+//   valid       → resolves (name may be present)
+//   invalid     → Razorpay says the VPA doesn't exist / isn't valid → reject
+//   unavailable → couldn't validate (creds missing, feature off in the
+//                 dashboard, network, rate-limit). The caller must NOT hard-
+//                 reject on this — we save the method as pending instead so a
+//                 Razorpay hiccup never loses the user's payout info.
+async function validateVpa(
+  vpa: string,
+): Promise<
+  | { outcome: "valid"; name: string | null }
+  | { outcome: "invalid" }
+  | { outcome: "unavailable"; error: string }
+> {
+  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  if (!keyId || !keySecret) {
+    return { outcome: "unavailable", error: "razorpay_creds_missing" };
+  }
+  try {
+    const res = await fetch(
+      "https://api.razorpay.com/v1/payments/validate/vpa",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ vpa }),
+      },
+    );
+    const data = (await res.json().catch(() => ({}))) as Record<string, any>;
+    if (!res.ok) {
+      // e.g. feature not enabled on the account, auth error, rate-limit.
+      return {
+        outcome: "unavailable",
+        error: data?.error?.description || `http_${res.status}`,
+      };
+    }
+    if (data?.success === true) {
+      return { outcome: "valid", name: data?.customer_name || null };
+    }
+    return { outcome: "invalid" };
+  } catch (e) {
+    return { outcome: "unavailable", error: String((e as any)?.message || e) };
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -100,14 +149,51 @@ Deno.serve(async (req) => {
     if (profErr) return json({ error: "Profile lookup failed: " + profErr.message }, 500);
     if (!profile) return json({ error: "Influencer profile not found" }, 404);
 
-    // Manual-payout validation policy:
-    //   UPI  → trust the syntax check. Razorpay never offered a sync
-    //          name-match anyway and the admin verifies at payout time.
-    //   Bank → mark `manual` so the admin queue surfaces an "unverified"
-    //          banner. They'll eyeball the IFSC/account before sending.
-    const validationStatus: "success" | "manual" =
-      payload.type === "upi" ? "success" : "manual";
-    const validatedAt = payload.type === "upi" ? new Date().toISOString() : null;
+    // Validation policy:
+    //   UPI  → real-time VPA validation via Razorpay's Validate-VPA API. A
+    //          definitively-invalid VPA is rejected (400); if validation can't
+    //          run (feature off / network / rate-limit) the method is saved as
+    //          `manual` (pending) so a Razorpay hiccup never loses payout info.
+    //          Set RAZORPAY_VPA_VALIDATION=off to fall back to the format check
+    //          only (e.g. on a test key that can't resolve real VPAs).
+    //   Bank → always `manual`; the admin eyeballs IFSC/account before paying.
+    let validationStatus: "success" | "manual" = "manual";
+    let validatedAt: string | null = null;
+    let validationFailureReason: string | null = null;
+    let verifiedHolderName: string | null = null;
+
+    if (payload.type === "upi") {
+      const vpaValidationOn =
+        (Deno.env.get("RAZORPAY_VPA_VALIDATION") ?? "on").toLowerCase() !== "off";
+      if (!vpaValidationOn) {
+        validationStatus = "success";
+        validatedAt = new Date().toISOString();
+      } else {
+        const v = await validateVpa(String((payload as UpiBody).upi_id).trim());
+        if (v.outcome === "invalid") {
+          return json(
+            {
+              error:
+                "This UPI ID couldn't be verified. Please check that it's correct and active.",
+              code: "vpa_invalid",
+            },
+            400,
+          );
+        }
+        if (v.outcome === "valid") {
+          validationStatus = "success";
+          validatedAt = new Date().toISOString();
+          verifiedHolderName = v.name;
+        } else {
+          // Couldn't validate — keep the method but leave it pending for admin
+          // review rather than falsely marking it verified.
+          console.error("VPA validation unavailable:", v.error);
+          validationStatus = "manual";
+          validationFailureReason =
+            "Automatic verification unavailable — pending manual review.";
+        }
+      }
+    }
 
     // First method auto-primary.
     const { count: existingCount } = await supabase
@@ -123,11 +209,15 @@ Deno.serve(async (req) => {
             type: "upi" as const,
             label: payload.label || "UPI",
             upi_id: payload.upi_id.trim(),
+            // Prefer the holder name Razorpay confirmed on a valid VPA.
             account_holder_name:
-              (payload as UpiBody).holder_name || profile.full_name || null,
+              verifiedHolderName ||
+              (payload as UpiBody).holder_name ||
+              profile.full_name ||
+              null,
             razorpay_fund_account_id: null,
             validation_status: validationStatus,
-            validation_failure_reason: null,
+            validation_failure_reason: validationFailureReason,
             validated_at: validatedAt,
             is_primary: isPrimary,
           }

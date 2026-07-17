@@ -68,24 +68,8 @@ Deno.serve(async (req) => {
       // No body / not JSON → default.
     }
 
-    const { data: featured, error: fErr } = await supabaseAdmin
-      .from("featured_campaigns")
-      .select("campaign_id, position")
-      .eq("is_active", true)
-      .eq("section", section)
-      .order("position", { ascending: true });
-
-    if (fErr) {
-      return new Response(JSON.stringify({ error: fErr.message }), {
-        status: 200,
-        headers: jsonHeaders,
-      });
-    }
-
-    // Admin-editable section title — different key per section. For the
-    // historical 'stay' carousel we keep the existing `featured_section_title`
-    // key so admin-edited titles don't reset; for the new 'campaign'
-    // strip we use `featured_campaigns_section_title`.
+    // Section title. 'stay' is now auto-curated (below) but we keep reading
+    // the historical title key so an existing custom title still applies.
     const titleKey =
       section === "stay" ? "featured_section_title" : "featured_campaigns_section_title";
     const DEFAULT_SECTION_TITLE =
@@ -102,18 +86,70 @@ Deno.serve(async (req) => {
       // Table missing in older deployments — fall back to default.
     }
 
-    const ids = (featured || []).map((r) => r.campaign_id);
-    if (ids.length === 0) {
+    const CAMPAIGN_FIELDS =
+      "campaign_id, title, brand_id, brand_invitation_id, description, target_cities, target_categories, campaign_end_date, application_deadline, status, created_at, budget_total, budget_per_influencer";
+
+    // 'stay' ("Plan your stay with us") is AUTO-curated — the top 8 active
+    // Travel & Hospitality campaigns, newest first. It is NOT admin-controlled
+    // (the old featured_campaigns(section='stay') admin list + its dashboard
+    // page were removed). The 'campaign' strip stays admin-curated.
+    let campaigns: any[] = [];
+    const orderMap = new Map<string, number>();
+    if (section === "stay") {
+      // `target_categories` is a `json` column (not jsonb/text[]), so the
+      // array-contains operator can't run in SQL — pull the newest active
+      // campaigns and filter for Travel & Hospitality in JS, then take 8.
+      const { data } = await supabaseAdmin
+        .from("campaigns")
+        .select(CAMPAIGN_FIELDS)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const num = (v: any) => Number(v) || 0;
+      campaigns = (data || [])
+        .filter(
+          (c: any) =>
+            Array.isArray(c.target_categories) &&
+            c.target_categories.includes("Travel & Hospitality"),
+        )
+        // Costliest first — by total budget, then per-influencer payout, then
+        // newest (the fetch is already created_at desc, so it's the tiebreak).
+        .sort(
+          (a: any, b: any) =>
+            num(b.budget_total) - num(a.budget_total) ||
+            num(b.budget_per_influencer) - num(a.budget_per_influencer),
+        )
+        .slice(0, 8);
+    } else {
+      const { data: featured, error: fErr } = await supabaseAdmin
+        .from("featured_campaigns")
+        .select("campaign_id, position")
+        .eq("is_active", true)
+        .eq("section", section)
+        .order("position", { ascending: true });
+      if (fErr) {
+        return new Response(JSON.stringify({ error: fErr.message }), {
+          status: 200,
+          headers: jsonHeaders,
+        });
+      }
+      const ids = (featured || []).map((r: any) => r.campaign_id);
+      if (ids.length > 0) {
+        const { data } = await supabaseAdmin
+          .from("campaigns")
+          .select(CAMPAIGN_FIELDS)
+          .in("campaign_id", ids);
+        campaigns = data || [];
+      }
+      (featured || []).forEach((r: any) => orderMap.set(r.campaign_id, r.position));
+    }
+
+    if (campaigns.length === 0) {
       return new Response(JSON.stringify({ campaigns: [], sectionTitle }), {
         status: 200,
         headers: jsonHeaders,
       });
     }
-
-    const { data: campaigns } = await supabaseAdmin
-      .from("campaigns")
-      .select("campaign_id, title, brand_id, brand_invitation_id, description, target_cities, target_categories, campaign_end_date, application_deadline, status")
-      .in("campaign_id", ids);
 
     // Brand lookups (both registered + invitation-based)
     const brandIds = [...new Set((campaigns || []).map((c: any) => c.brand_id).filter(Boolean))];
@@ -147,9 +183,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Preserve the admin-set ordering — featured.position drives the list.
-    const orderMap = new Map((featured || []).map((r) => [r.campaign_id, r.position]));
-    const sortedCampaigns = (campaigns || []).slice().sort((a: any, b: any) =>
+    // 'campaign' strip: admin-set ordering (featured.position). 'stay' keeps
+    // the query order (created_at desc) since its orderMap is empty.
+    const sortedCampaigns = campaigns.slice().sort((a: any, b: any) =>
       (orderMap.get(a.campaign_id) ?? 0) - (orderMap.get(b.campaign_id) ?? 0)
     );
 

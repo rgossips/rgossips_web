@@ -76,6 +76,20 @@ export default function TemplateEditorialNoir({ profile }) {
               </div>
             </Block>
 
+            {p.contentLanguages.length > 0 && (
+              <Block>
+                <SecTitle>{t("languages")}</SecTitle>
+                <div style={SER} className="text-[22px] leading-[1.7]">
+                  {p.contentLanguages.map((lang, i) => (
+                    <React.Fragment key={lang}>
+                      {i > 0 && <span style={{ color: pink }} className="mx-2">·</span>}
+                      {lang}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </Block>
+            )}
+
             <Block>
               <SecTitle>{t("onTheChannels")}</SecTitle>
               <div style={{ borderTop: `1px solid ${line}` }}>

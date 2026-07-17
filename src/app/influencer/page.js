@@ -15,7 +15,7 @@ import UserDoc from "@/components/UserDoc";
 import { useAuth } from "@/context/AuthContext";
 import DealsLaptop from "@/components/DealsLaptop";
 import { ProStatusCard } from "@/components/ProStatusCard";
-import { CompleteProfileCard } from "@/components/CompleteProfileCard";
+import { CompleteProfileCard, useProfileCompletion } from "@/components/CompleteProfileCard";
 import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
@@ -34,7 +34,10 @@ const CATEGORIES = [
 export default function HomePage() {
   const router = useRouter();
   const t = useTranslations("InfluencerHome");
-  const { loading } = useAuth();
+  const { loading, profile } = useAuth();
+  // Hide the "Get Your First Brand Deal" checklist once all 5 steps are done.
+  const profileCompletion = useProfileCompletion(profile);
+  const onboardingDone = profileCompletion.completed >= profileCompletion.total;
 
   const handleCategoryClick = (cat) => {
     if (cat.action === "navigate") {
@@ -170,9 +173,11 @@ export default function HomePage() {
           </div>
 
           <div className="flex w-full px-4 lg:px-10 justify-center gap-6 lg:gap-10 flex-col lg:flex-row items-stretch">
-            <div className="flex w-full order-2 lg:order-1 lg:flex-1">
-              <CompleteProfileCard />
-            </div>
+            {!onboardingDone && (
+              <div className="flex w-full order-2 lg:order-1 lg:flex-1">
+                <CompleteProfileCard />
+              </div>
+            )}
             <div className="flex w-full order-1 lg:order-2 lg:flex-1">
               <AiMediaKitCard />
             </div>

@@ -66,6 +66,16 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
               </div>
             </SectionCard>
 
+            {p.contentLanguages.length > 0 && (
+              <SectionCard title={t("sections.languages")}>
+                <div className="flex flex-wrap gap-2">
+                  {p.contentLanguages.map((lang) => (
+                    <span key={lang} className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-full">{lang}</span>
+                  ))}
+                </div>
+              </SectionCard>
+            )}
+
             {p.services.length > 0 && (
               <SectionCard title={t("sections.servicesRates")}>
                 <div className="space-y-2">

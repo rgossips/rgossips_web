@@ -439,17 +439,22 @@ conversion is incremental (foundation + one reference surface each so far).
     (`InfluencerMediaKit` `.map((t: MediaKitTemplate)…` renamed param → `tpl`
     so the inner `t('…live')` resolves to the translation fn) and a pre-existing
     `new Promise(r => setTimeout(r, 1200))` typing.
-  - **ADMIN: IN PROGRESS, PAUSED (2026-07).** next-intl over ~69 `.tsx` was
-    launched then **stopped mid-run**. State on disk: SOME `rgossips-admin`
-    files edited to use `t(...)`, namespace parts written to
-    `rgossips-admin/messages/i18n-parts/` but **NOT merged** → converted
-    components render raw keys. Not re-built. Nothing committed.
-    **To finish (new session):**
-    1. Re-discover still-unconverted files (those NOT importing `next-intl`) and
-       re-run the same next-intl recipe as web.
-    2. Deep-merge `messages/i18n-parts/` into `messages/en.json`, delete the
-       parts dir.
-    3. Verify `npx next build`; fix any agent-introduced compile errors.
+  - **ADMIN: DONE (2026-07).** The paused workflow had converted ~66 `.tsx`
+    (next-intl) but never merged the parts and left ~37 files unconverted.
+    Completed by: (1) deep-merging existing parts, (2) writing the missing
+    catalog entries for 12 already-converted-but-partless files by recovering
+    original English from the pre-conversion commit (`2322389^`), (3) converting
+    the ~20 remaining files that had copy (subagents; the other ~21 — loading
+    spinners, layout wrappers, theme/context/avatar primitives, recharts config,
+    delete-modal wrappers whose strings arrive via props — are genuinely
+    no-copy), (4) mopping up residual literals the original pass left hardcoded
+    (only `quote-response-form` + `login/page` had real ones). Result:
+    `messages/en.json` = **82 namespaces / ~1,441 keys**, **82/103 tsx** use
+    next-intl, `next build` green, `tsc` 0 errors, all `t()` keys resolve.
+    Fixes made: rewrote `stats.*` etc. from flat-dotted keys (`"stats.total"`)
+    to nested objects (next-intl does nested-path lookup); renamed a
+    `const t = setInterval(...)` in `notification-bell.tsx` that shadowed the
+    translation `t`. **i18n across web + mobile + admin is now complete.**
   - Tradeoff: reading the cookie in `getRequestConfig` makes pages render
     dynamically (all routes `ƒ`). Fine here (auth-heavy app); revisit only if a
     public page needs static caching.
@@ -610,6 +615,17 @@ metrics under the Applied / Completed tabs.
 - Apply new migration: `npx supabase db push`
 - Deploy one edge function: `npx supabase functions deploy <name>`
 - Deploy multiple: same command, space-separated names
+- **⚠️ verify_jwt landmine (2026-07): there is NO `supabase/config.toml`**, so a
+  plain `functions deploy` uses the CLI default `verify_jwt = true` and
+  **re-gates the function behind JWT auth on every deploy**. The app calls edge
+  functions with the **publishable key** (`sb_publishable_…`, NOT a JWT) and does
+  its own in-function auth, so any PUBLIC function redeployed without the flag
+  starts returning `{"error":"Authentication Error"}`. **Deploy public functions
+  with `--no-verify-jwt`.** Known public (must use the flag): `whatsapp-otp-sender`,
+  `whatsapp-otp-verifier`, `public-media-kit`, `update-profile`, `list-influencers`
+  (and most others called pre-auth / with the publishable key — when unsure, use
+  the flag; a plain deploy that suddenly 401s is this). Example:
+  `npx supabase functions deploy whatsapp-otp-sender --no-verify-jwt`
 - Query DB directly (from web repo root — SUPA_KEY is in `.env.local`):
   ```
   curl -sS "$SUPA_URL/rest/v1/<table>?<filter>&select=..." \

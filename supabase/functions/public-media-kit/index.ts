@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     );
 
     // Try influencer profile first
-    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status";
+    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status";
 
     let influencer = null;
 
@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
         followsCount: influencer.follows_count,
         mediaCount: influencer.media_count,
         categories: influencer.categories,
+        contentLanguages: influencer.content_languages,
         services: influencer.services,
         bio: influencer.bio,
         createdAt: influencer.created_at,

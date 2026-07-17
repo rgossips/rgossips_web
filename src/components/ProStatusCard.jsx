@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/utils/supabase/client";
 import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
 
 function getTrialInfo(profile) {
@@ -22,11 +23,15 @@ function getTrialInfo(profile) {
   return { daysLeft, progress, expired: daysLeft === 0 };
 }
 
-// Approximation while we don't surface `subscription_current_period_end`
-// from Stripe: assume the active subscription renews `cycle_days` after the
-// last profile update (which is bumped on plan change). Good enough to
-// give the user a real number without a backend schema change.
-function getPlanRenewalInfo(profile) {
+// Prefer the EXACT next-billing date from the gateway (subscription-history's
+// `next_charge_at`, unix seconds). The updated_at approximation below resets
+// the countdown whenever the profile is touched for any reason (a profile edit
+// bumps updated_at) — only used as a fallback until the real date loads.
+function getPlanRenewalInfo(profile, realRenewalTs) {
+  if (realRenewalTs) {
+    const daysLeft = Math.max(0, Math.ceil((realRenewalTs * 1000 - Date.now()) / (1000 * 60 * 60 * 24)));
+    return { daysLeft, exact: true };
+  }
   if (!profile?.updated_at) return { daysLeft: null };
   const cycleDays = profile.billing_cycle === "annual" ? 365 : 30;
   const start = new Date(profile.updated_at);
@@ -55,9 +60,35 @@ const scrollToRecommendedCampaigns = () => {
 
 export function ProStatusCard() {
   const t = useTranslations("ProStatusCard");
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const supabase = createClient();
+  const [realRenewalTs, setRealRenewalTs] = useState(null);
   const { daysLeft, progress, expired } = getTrialInfo(profile);
-  const renewal = getPlanRenewalInfo(profile);
+  const renewal = getPlanRenewalInfo(profile, realRenewalTs);
+
+  // Fetch the exact next-billing date (paid plans only) so the renewal
+  // countdown reflects the real gateway schedule, not the updated_at
+  // approximation that resets on any profile edit.
+  useEffect(() => {
+    const plan = (profile?.subscription_plan || "").toLowerCase();
+    const paid = !!plan && plan !== "free" && plan !== "trial";
+    if (!user?.id || !paid) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
+        const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
+        const ts = invoices.reduce((max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max), 0);
+        if (!cancelled && ts > 0) setRealRenewalTs(ts);
+      } catch {
+        // keep the approximation
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.subscription_plan]);
   const currentPlan = (profile?.subscription_plan || "").toLowerCase();
   // Any explicit non-empty plan (other than the placeholder "free"/"trial"
   // strings) counts as a paid subscription — that includes Starter, which is

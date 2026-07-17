@@ -37,7 +37,19 @@ const PLAN_ORDER = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
 // assume the active subscription renews `cycleDays` after the last profile
 // update (bumped on plan change / renewal). Good enough to give the user a
 // real "renews in N days" without a schema change.
-function getPlanRenewalInfo(profile) {
+function getPlanRenewalInfo(profile, realRenewalTs) {
+  // Prefer the EXACT next-billing date from the gateway (subscription-history's
+  // `next_charge_at`, unix seconds). The updated_at approximation below is
+  // wrong whenever the profile was touched for any reason — a profile edit
+  // bumps updated_at and resets the fake countdown to a full cycle (the
+  // @saquib.siddiqui bug: on Pro since April, but edited today → "renews in
+  // 30 days"). Only fall back to the approximation when the real date is
+  // unavailable (e.g. subscription-history hasn't returned yet).
+  if (realRenewalTs) {
+    const date = new Date(realRenewalTs * 1000);
+    const daysLeft = Math.max(0, Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+    return { daysLeft, date, exact: true };
+  }
   if (!profile?.updated_at) return { daysLeft: null, date: null };
   const cycleDays = profile.billing_cycle === "annual" ? 365 : 30;
   const start = new Date(profile.updated_at);
@@ -120,6 +132,10 @@ export default function PricingPage() {
   // both are blocking but a styled modal is consistent with the rest of
   // the app and lets us surface gateway-specific guidance.
   const [errorModal, setErrorModal] = useState(null);
+  // Exact next-billing timestamp (unix seconds) from the gateway, fetched via
+  // subscription-history on mount. Drives the "renews in N days" line so it
+  // doesn't reset every time the profile's updated_at is bumped.
+  const [realRenewalTs, setRealRenewalTs] = useState(null);
   const showError = (message, title = t("errors.checkoutTitle")) =>
     setErrorModal({ title, message: String(message || t("errors.genericMessage")) });
 
@@ -129,7 +145,7 @@ export default function PricingPage() {
   // Paid plans show a "renews in N days" line at the top. Gate on an
   // actual paid subscription_plan (not a lapsed trial) — same rule as
   // ProStatusCard's hasPaidPlan.
-  const renewal = getPlanRenewalInfo(profile);
+  const renewal = getPlanRenewalInfo(profile, realRenewalTs);
   const currentPlanRaw = (profile?.subscription_plan || "").toLowerCase();
   const hasPaidPlan = !!currentPlanRaw && currentPlanRaw !== "free" && currentPlanRaw !== "trial";
   const showRenewal = !onTrial && hasPaidPlan && renewal.daysLeft != null;
@@ -151,6 +167,28 @@ export default function PricingPage() {
   const routerRef = useRef(router);
   refreshProfileRef.current = refreshProfile;
   routerRef.current = router;
+
+  // Pull the exact next-billing date from the gateway (via subscription-history)
+  // so the renewal countdown is real, not the updated_at approximation that
+  // resets on every profile edit. Falls back silently on error.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
+        const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
+        const ts = invoices.reduce((max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max), 0);
+        if (!cancelled && ts > 0) setRealRenewalTs(ts);
+      } catch {
+        // keep the approximation
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -69,6 +69,25 @@ export default function TemplateBentoSunset({ profile }) {
             </div>
           </div>
 
+          {/* Languages */}
+          {p.contentLanguages.length > 0 && (
+            <div className={`${tile} col-span-12`}>
+              <div className={lbl} style={{ color: muted }}>{t("languages.label")}</div>
+              <div className="flex flex-wrap gap-2">
+                {p.contentLanguages.map((lang, i) => {
+                  const colors = [
+                    { bg: "#fdeee4", fg: "#c2632f" },
+                    { bg: "#fde4ec", fg: "#E94560" },
+                    { bg: "#efe6fb", fg: "#7F47CD" },
+                    { bg: "#e4f3ee", fg: "#1f9d6b" },
+                  ];
+                  const col = colors[i % colors.length];
+                  return <span key={lang} className="px-3.5 py-2 rounded-2xl font-semibold text-[14px]" style={{ background: col.bg, color: col.fg }}>{lang}</span>;
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Engagement big tile */}
           <div className="col-span-12 sm:col-span-4 rounded-[26px] p-6 text-white flex flex-col justify-center" style={{ background: sunset }}>
             <div className={lbl} style={{ color: "rgba(255,255,255,.85)" }}>{t("engagement.label")}</div>

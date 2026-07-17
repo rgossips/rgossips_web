@@ -41,7 +41,10 @@
     "label": "Language"
   },
   "InfluencerAccountActionsModal": {
-    "title": { "delete": "Delete Account", "deactivate": "Deactivate Account" },
+    "title": {
+      "delete": "Delete Account",
+      "deactivate": "Deactivate Account"
+    },
     "subtitle": {
       "delete": "30-day grace period — admin can restore on request",
       "deactivate": "Reversible — sign back in any time"
@@ -87,8 +90,15 @@
       "deactivate": "I understand my account will be deactivated and brands will no longer see my profile."
     },
     "typeToConfirm": "Type <hl>DELETE</hl> to confirm",
-    "actions": { "cancel": "Cancel", "working": "Working…", "deleteAccount": "Delete Account", "deactivate": "Deactivate" },
-    "errors": { "failedToSubmit": "Failed to submit" }
+    "actions": {
+      "cancel": "Cancel",
+      "working": "Working…",
+      "deleteAccount": "Delete Account",
+      "deactivate": "Deactivate"
+    },
+    "errors": {
+      "failedToSubmit": "Failed to submit"
+    }
   },
   "InfluencerHome": {
     "loading": "Loading…",
@@ -3701,6 +3711,9 @@
     },
     "footer": {
       "generatedOn": "Generated on <b>RGossips</b>"
+    },
+    "languages": {
+      "label": "Languages"
     }
   },
   "MediaKitTemplatesTemplateClassic": {
@@ -3712,7 +3725,8 @@
       "openForCollaborations": "Open for Collaborations",
       "socialMedia": "Social Media",
       "performance": "Performance",
-      "topContent": "Top Content"
+      "topContent": "Top Content",
+      "languages": "Languages"
     },
     "expertiseFallback": "Content Creation",
     "onRequest": "On request",
@@ -3798,7 +3812,8 @@
       "female": "Female",
       "male": "Male",
       "other": "Other"
-    }
+    },
+    "languages": "Languages"
   },
   "MediaKitTemplatesTemplateGlassBlue": {
     "stats": {
@@ -4045,7 +4060,9 @@
       "noServices": "No services selected. Tap Edit to add.",
       "saving": "Saving...",
       "saved": "Saved!",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "contentLanguages": "Content languages",
+      "tapToSelectLanguages": "Tap to select languages"
     },
     "videoCard": {
       "views": "{views} views"
@@ -4086,6 +4103,11 @@
       "title": "Crop Photo",
       "saving": "Saving...",
       "zoom": "Zoom"
+    },
+    "languageModal": {
+      "title": "Content languages",
+      "searchPlaceholder": "Search languages…",
+      "save": "Save"
     }
   },
   "NotificationSettings": {
@@ -4154,10 +4176,10 @@
       "paymentMethod": "Payment Method"
     },
     "validation": {
-      "verified": "Verified",
+      "verified": "Saved",
       "failed": "Verify failed",
-      "verifying": "Verifying…",
-      "failedReason": "Could not verify the account holder"
+      "verifying": "Pending review",
+      "failedReason": "Could not save this account"
     },
     "creditHistory": "Credit History",
     "noPayouts": "No payouts yet",
@@ -4201,7 +4223,7 @@
     "ifscCode": "IFSC Code",
     "ifscPlaceholder": "e.g. HDFC0001234",
     "cancel": "Cancel",
-    "verifyingWithBank": "Verifying with bank…",
+    "verifyingWithBank": "Saving…",
     "addMethod": "Add Method",
     "notSignedIn": "Not signed in",
     "failedToSave": "Failed to save",

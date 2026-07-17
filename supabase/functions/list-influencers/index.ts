@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     // Content Language data only exists on invitation notes. The old
     // select("*") masked this (r.languages was just undefined).
     const PROFILE_COLS =
-      "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, location, services, service_rates, gender, creator_type, media_kit_published, status";
+      "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, location, services, service_rates, gender, creator_type, content_languages, media_kit_published, status";
     const PAGE = 1000;
     const pageThrough = async (
       table: string,
@@ -186,7 +186,10 @@ Deno.serve(async (req) => {
       service_rates: r.service_rates || {},
       // Gender + languages power the brand-side search filters.
       gender: r.gender || "",
-      languages: Array.isArray(r.languages) ? r.languages : [],
+      // Registered influencers store content languages in the
+      // `content_languages` text[] column (invited stubs fall back to
+      // invitation-notes `meta.languages`, mapped further down).
+      languages: Array.isArray(r.content_languages) ? r.content_languages : [],
       creator_type: r.creator_type || "",
       // B4 — the client only renders the media-kit action when a kit
       // actually exists; otherwise /kit/<handle> would 404.

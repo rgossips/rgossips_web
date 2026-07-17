@@ -231,6 +231,7 @@ const DeleteConfirmModal = ({ onCancel, onConfirm }) => {
 // --- Category Selection Modal ---
 import { CATEGORIES as CATEGORY_OPTIONS } from "@/utils/categories";
 import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
+import { CONTENT_LANGUAGES } from "@/utils/contentLanguages";
 
 const CategoryModal = ({ selected, onSave, onClose }) => {
   const t = useTranslations("MyInformationDetail");
@@ -388,6 +389,83 @@ const LocationModal = ({ selected, onSave, onClose }) => {
   );
 };
 
+// Content-language multiselect — same shape as LocationModal, over the
+// fixed CONTENT_LANGUAGES list. Language names stay untranslated (proper nouns).
+const LanguageModal = ({ selected, onSave, onClose }) => {
+  const t = useTranslations("MyInformationDetail");
+  const [localSelected, setLocalSelected] = useState([...selected]);
+  const [search, setSearch] = useState("");
+  const options = CONTENT_LANGUAGES;
+
+  const toggle = (lang) => {
+    setLocalSelected((prev) => (prev.includes(lang) ? prev.filter((c) => c !== lang) : [...prev, lang]));
+  };
+
+  const q = search.trim().toLowerCase();
+  const filtered = q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="text-lg font-black text-gray-900">{t("languageModal.title")}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <X size={20} className="text-gray-400" />
+          </button>
+        </div>
+
+        <div className="px-5 pt-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("languageModal.searchPlaceholder")}
+            className="w-full p-3 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex flex-wrap gap-2">
+            {filtered.map((lang) => {
+              const isSelected = localSelected.includes(lang);
+              return (
+                <button
+                  key={lang}
+                  onClick={() => toggle(lang)}
+                  className={`px-4 py-2.5 rounded-full text-xs font-black transition-all cursor-pointer border ${
+                    isSelected ? "bg-purple-500 text-white border-purple-500 shadow-md shadow-purple-200" : "bg-white text-gray-600 border-gray-200 hover:border-purple-200 hover:bg-purple-50"
+                  }`}
+                >
+                  {isSelected && <span className="mr-1">✓</span>}
+                  {lang}
+                </button>
+              );
+            })}
+          </div>
+
+          {localSelected.length > 0 && <p className="text-[10px] font-bold text-gray-400 mt-4">{t("common.selectedCount", { count: localSelected.length })}</p>}
+        </div>
+
+        <div className="p-5 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all">
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={() => {
+              onSave(localSelected);
+              onClose();
+            }}
+            className="flex-1 py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all shadow-lg"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            {t("languageModal.save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Service Options (same as signup) ---
 const SERVICE_OPTIONS = [
   { id: "reels", icon: <Video size={20} /> },
@@ -538,6 +616,9 @@ const MyInformationDetail = ({ onBack }) => {
       : [],
   );
   const [showLocationModal, setShowLocationModal] = useState(false);
+  // Content languages the creator publishes in (text[] column).
+  const [contentLanguages, setContentLanguages] = useState(Array.isArray(profile?.content_languages) ? profile.content_languages : []);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   // Gender — powers the brand-side Gender filter. Previously only
   // settable by admins; creators can now maintain it themselves.
   const [gender, setGender] = useState(profile?.gender || "");
@@ -754,6 +835,7 @@ const MyInformationDetail = ({ onBack }) => {
           // fuzzy match in list-influencers + campaign matcher already
           // does substring matches so "Mumbai, Pune" matches both.
           location: locationList.join(", "),
+          contentLanguages,
           gender,
           email,
           address,
@@ -1008,6 +1090,32 @@ const MyInformationDetail = ({ onBack }) => {
                     className="inline-flex items-center gap-1 text-[11px] font-black text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full"
                   >
                     <MapPin size={10} /> {c}
+                  </span>
+                ))}
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* Content languages — the languages the creator publishes in.
+            Multiselect chips + a searchable modal over the fixed list. */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase ml-1">{t("editForm.contentLanguages")}</label>
+          <button
+            type="button"
+            onClick={() => setShowLanguageModal(true)}
+            className="w-full min-h-[52px] p-3 bg-gray-50 border border-gray-100 hover:border-purple-300 hover:bg-white rounded-2xl text-left transition-all"
+          >
+            {contentLanguages.length === 0 ? (
+              <span className="text-sm font-bold text-gray-400 pl-1">{t("editForm.tapToSelectLanguages")}</span>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {contentLanguages.map((l) => (
+                  <span
+                    key={l}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-purple-700 bg-purple-100 px-2.5 py-1 rounded-full"
+                  >
+                    <Globe size={10} /> {l}
                   </span>
                 ))}
               </div>
@@ -1435,6 +1543,7 @@ const MyInformationDetail = ({ onBack }) => {
       {viewState === "delete_confirm" && <DeleteConfirmModal onCancel={() => setViewState("edit")} onConfirm={handleDeleteReel} />}
       {showCategoryModal && <CategoryModal selected={editCategories} onSave={setEditCategories} onClose={() => setShowCategoryModal(false)} />}
       {showLocationModal && <LocationModal selected={locationList} onSave={setLocationList} onClose={() => setShowLocationModal(false)} />}
+      {showLanguageModal && <LanguageModal selected={contentLanguages} onSave={setContentLanguages} onClose={() => setShowLanguageModal(false)} />}
       {showServicesModal && (
         <ServicesRatesModal
           services={editServices}

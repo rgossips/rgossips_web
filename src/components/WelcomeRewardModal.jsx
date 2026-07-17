@@ -20,7 +20,7 @@ const SEEN_KEY = (uid) => `rg_welcome_reward_seen_v1_${uid}`;
 export default function WelcomeRewardModal() {
   const t = useTranslations("WelcomeRewardModal");
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   // Referrer identity when this signup came through a referral link — drives
@@ -28,10 +28,13 @@ export default function WelcomeRewardModal() {
   const [referrer, setReferrer] = useState(null);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !profile) return;
     let cancelled = false;
 
-    // Already dismissed on this device? Never show again.
+    // Server-side flag is authoritative — once dismissed it never re-shows on
+    // any device / browser (localStorage was per-device and too fragile).
+    if (profile.welcome_reward_seen) return;
+    // Fast local suppressor too, so it doesn't flash before the server write.
     try {
       if (localStorage.getItem(SEEN_KEY(user.id))) return;
     } catch { /* storage unavailable — fall through, will just re-check */ }
@@ -60,11 +63,18 @@ export default function WelcomeRewardModal() {
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, profile?.welcome_reward_seen]);
 
   const dismiss = (goToRefer) => {
     try { localStorage.setItem(SEEN_KEY(user.id), "1"); } catch { /* ignore */ }
     setOpen(false);
+    // Persist server-side so it never re-shows on any other device / after a
+    // storage clear. Fire-and-forget; the local suppressors cover this session.
+    supabase.functions
+      .invoke("update-profile", { body: { userId: user.id, table: "influencer_profiles", welcomeRewardSeen: true } })
+      .then(() => refreshProfile?.())
+      .catch(() => {});
     if (goToRefer) router.push("/influencer/refer");
   };
 

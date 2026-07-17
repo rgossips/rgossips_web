@@ -78,7 +78,7 @@ const SignUpForm = ({
       }
       await onSendOtp(formData.phone);
       setOtpSent(true);
-      setTimer(60);
+      setTimer(30);
     } catch (err) {
       setLocalError(err.message || t("errors.sendOtpFailed"));
     } finally {
@@ -105,7 +105,7 @@ const SignUpForm = ({
     setLocalError("");
     try {
       await onResendOtp(formData.phone);
-      setTimer(60);
+      setTimer(30);
       setOtp("");
     } catch (err) {
       setLocalError(err.message || t("errors.resendFailed"));

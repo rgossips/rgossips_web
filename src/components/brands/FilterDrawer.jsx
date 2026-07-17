@@ -22,6 +22,7 @@ import {
 import { SlidersHorizontal, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
+import { CONTENT_LANGUAGES } from "@/utils/contentLanguages";
 
 // Filter options shown in the drawer. Keys that map to real DB columns drive
 // filtering in the page: Categories, "Follower Count", "Creator Type", Location.
@@ -60,15 +61,7 @@ export const filterData = {
   // the top for creators who explicitly work location-independent.
   Location: ["Remote", ...INDIAN_CITIES_SORTED],
   Gender: ["Male", "Female", "Non-binary", "Prefer not to say"],
-  "Content Language": [
-    "English",
-    "Hindi",
-    "Marathi",
-    "Bengali",
-    "Tamil",
-    "Telugu",
-    "Gujarati",
-  ],
+  "Content Language": CONTENT_LANGUAGES,
 };
 
 const sortOptions = [

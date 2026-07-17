@@ -1,26 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp } from "react-icons/fa";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useGlobal } from "@/context/GlobalContext";
 
 const Footer = () => {
   const t = useTranslations("Footer");
+  const router = useRouter();
+  const { setScrollTo, setType } = useGlobal();
   const currentYear = new Date().getFullYear();
-  const [message, setMessage] = useState("");
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  // Route to the landing and scroll to the For Brands / For Influencers tab,
+  // switching the Audiences tab via GlobalContext (same as the header nav).
+  const scrollToAudience = (audienceType) => {
+    setType(audienceType);
+    setScrollTo("brands-influencers-section");
+    router.push("/");
+  };
 
   // Only links that point at a real route or external resource. Dead links
   // were trimmed — add them back as content is written. `name` is a message
   // key resolved via t(`links.${name}`) at render.
   const navigation = {
     platform: [
-      { name: "forBrands", href: "/brands" },
-      { name: "forInfluencers", href: "/influencer" },
+      { name: "forBrands", onClick: () => scrollToAudience("brands") },
+      { name: "forInfluencers", onClick: () => scrollToAudience("influencers") },
       // Landing-page pricing section (public) — /influencer/pricing is
       // behind auth and dead-ends logged-out visitors.
       { name: "pricing", href: "/#pricing" },
@@ -40,29 +47,6 @@ const Footer = () => {
     ],
   };
 
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      // Add email to Firestore collection 'subscribers'
-      await addDoc(collection(db, "subscribers"), {
-        email: email,
-        subscribedAt: serverTimestamp(),
-      });
-      setMessage(t("subscribeSuccess"));
-      setEmail(""); // Clear input
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      setMessage(t("subscribeError"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <footer className="bg-[#0a051a] text-slate-400 py-16 px-6 md:px-12 lg:px-20 border-t border-slate-800/50">
       <div className="max-w-7xl mx-auto">
@@ -71,24 +55,6 @@ const Footer = () => {
           <div className="md:col-span-4 space-y-4">
             <h2 className="text-white text-3xl font-bold tracking-tight">RGossips</h2>
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">{t("tagline")}</p>
-            <p className="text-white text-sm font-medium pt-2">{t("newsletterPrompt")}</p>
-
-            {/* Newsletter Subscription */}
-            <div className="flex gap-2 pt-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                }}
-                placeholder={t("emailPlaceholder")}
-                className="bg-[#1a142c] border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white w-full max-w-[280px]"
-              />
-              <button disabled={loading} onClick={handleSubscribe} className="px-6 py-3 cursor-pointer bg-[#6C4DFF] text-white rounded-xl font-semibold text-sm hover:bg-[#5b21b6] transition-all">
-                {t("subscribe")}
-              </button>
-            </div>
-            {message && <div className="text-[#6C4DFF] font-semiboldm">{message}</div>}
 
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-4">
@@ -116,9 +82,15 @@ const Footer = () => {
                 <ul className="space-y-4">
                   {section.links.map((link) => (
                     <li key={link.name}>
-                      <Link href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
-                        {t(`links.${link.name}`)}
-                      </Link>
+                      {link.onClick ? (
+                        <button onClick={link.onClick} className="text-slate-400 hover:text-white text-sm transition-colors duration-200 text-left cursor-pointer">
+                          {t(`links.${link.name}`)}
+                        </button>
+                      ) : (
+                        <Link href={link.href} className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
+                          {t(`links.${link.name}`)}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

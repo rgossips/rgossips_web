@@ -32,10 +32,11 @@ const labelForMethod = (m, t) => {
   return m.label || t("methods.paymentMethod");
 };
 
-// Renders the verification badge next to the method type. Validation
-// happens server-side on register (RazorpayX fund-account validation
-// API); pending → verification webhook hasn't arrived yet, success →
-// safe to receive payouts, failed → name/account mismatch, fix needed.
+// Renders a status badge next to the method type. Since the manual-payouts
+// switch there is NO real-time bank verification — register-payout-method
+// only format-checks the UPI/account and the admin verifies at actual payout
+// time. So `success` = saved & usable (not bank-confirmed), `manual` =
+// pending admin review. Copy is worded honestly ("Saved" / "Pending review").
 const ValidationChip = ({ status, reason }) => {
   const t = useTranslations("PaymentMethods");
   if (status === "success") {
@@ -238,7 +239,17 @@ const PaymentMethods = ({ onBack }) => {
       body: payload,
     });
     if (error || data?.error) {
-      const msg = error?.message || data?.error || t("failedToSave");
+      // supabase-js surfaces a non-2xx as a FunctionsHttpError with a GENERIC
+      // message and stashes the real body on `error.context` (a Response). Pull
+      // the edge fn's `{ error }` out so the user sees e.g. "This UPI ID
+      // couldn't be verified…" instead of "…returned a non-2xx status code".
+      let msg = data?.error || error?.message || t("failedToSave");
+      try {
+        const body = await error?.context?.json?.();
+        if (body?.error) msg = body.error;
+      } catch {
+        /* keep the fallback message */
+      }
       console.error("register-payout-method failed:", msg);
       return { ok: false, error: msg };
     }

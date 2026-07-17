@@ -36,6 +36,11 @@ export function readProfile(profile) {
     profile?.profilePhotoUrl ||
     null;
   const categories = Array.isArray(profile?.categories) ? profile.categories : [];
+  const contentLanguages = Array.isArray(
+    profile?.content_languages || profile?.contentLanguages,
+  )
+    ? profile.content_languages || profile.contentLanguages
+    : [];
   const bio =
     profile?.bio ||
     "Passionate content creator helping brands connect with audiences through authentic storytelling and creative content.";
@@ -73,6 +78,7 @@ export function readProfile(profile) {
     handle,
     photo,
     categories,
+    contentLanguages,
     bio,
     location,
     followers,

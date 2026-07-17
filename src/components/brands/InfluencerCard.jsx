@@ -1,4 +1,4 @@
-import { Instagram, Users, FileText } from "lucide-react";
+import { Instagram, Users, FileText, Languages } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 const formatCount = (n) => {
@@ -15,6 +15,7 @@ export const InfluencerCard = ({
   profile_photo_url,
   followers_count,
   categories,
+  languages,
   media_kit_published,
 }) => {
   const t = useTranslations("BrandsInfluencerCard");
@@ -23,6 +24,9 @@ export const InfluencerCard = ({
   const categoryLabel = Array.isArray(categories)
     ? categories.slice(0, 2).join(", ")
     : categories || "";
+  const languageLabel = Array.isArray(languages)
+    ? languages.slice(0, 3).join(", ")
+    : "";
   const initial = displayName.charAt(0).toUpperCase();
 
   const instagramUrl = handle ? `https://instagram.com/${handle}` : null;
@@ -67,6 +71,14 @@ export const InfluencerCard = ({
               {formatCount(followers_count)}
             </span>
           </div>
+          {languageLabel && (
+            <div className="flex items-center gap-1 min-w-0">
+              <Languages size={12} className="text-gray-500 shrink-0" />
+              <span className="text-[10px] font-bold text-gray-700 truncate">
+                {languageLabel}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
