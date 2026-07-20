@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,8 +36,31 @@ const SignUpForm = ({
   const [otpLoading, setOtpLoading] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [localError, setLocalError] = useState("");
   const [consentAgreed, setConsentAgreed] = useState(false);
+
+  // Per-field validation errors: { name?, phone?, otp?, consent? }. The old
+  // single top-of-form banner was invisible once the user scrolled down —
+  // now each error highlights its own field and we scroll it into view.
+  const [fieldErrors, setFieldErrors] = useState({});
+  const nameRef = useRef(null);
+  const phoneRef = useRef(null);
+  const otpRef = useRef(null);
+  const consentRef = useRef(null);
+  const bannerRef = useRef(null);
+  const FIELD_REFS = { name: nameRef, phone: phoneRef, otp: otpRef, consent: consentRef };
+
+  const raiseFieldError = (field, message) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: message }));
+    // Scroll the offending field into the middle of the scrollable form.
+    setTimeout(() => FIELD_REFS[field]?.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  };
+  const clearFieldError = (field) => setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+
+  // Server-side errors (the `error` prop, e.g. from create-profile) still use
+  // the banner — but scroll it into view so it can't be missed off-screen.
+  useEffect(() => {
+    if (error) setTimeout(() => bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }, [error]);
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -49,7 +72,9 @@ const SignUpForm = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    clearFieldError(name);
     if (name === "phone") {
+      clearFieldError("otp");
       setFormData((prev) => ({
         ...prev,
         [name]: value.replace(/\D/g, "").slice(0, 10),
@@ -67,12 +92,12 @@ const SignUpForm = ({
   const handleSendOtp = async () => {
     if (formData.phone.length < 10) return;
     setOtpLoading(true);
-    setLocalError("");
+    clearFieldError("phone");
     try {
       // Check phone uniqueness first
       const { data: uniqueCheck } = await supabase.functions.invoke("check-uniqueness", { body: { phone: formData.phone } });
       if (uniqueCheck?.conflicts?.includes("phone")) {
-        setLocalError(t("errors.phoneRegistered"));
+        raiseFieldError("phone", t("errors.phoneRegistered"));
         setOtpLoading(false);
         return;
       }
@@ -80,7 +105,7 @@ const SignUpForm = ({
       setOtpSent(true);
       setTimer(30);
     } catch (err) {
-      setLocalError(err.message || t("errors.sendOtpFailed"));
+      raiseFieldError("phone", err.message || t("errors.sendOtpFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -89,12 +114,12 @@ const SignUpForm = ({
   const handleVerifyOtp = async () => {
     if (otp.length < 6) return;
     setVerifyLoading(true);
-    setLocalError("");
+    clearFieldError("otp");
     try {
       await onVerifyOtp(formData.phone, otp);
       setOtpVerified(true);
     } catch (err) {
-      setLocalError(err.message || t("errors.invalidOtp"));
+      raiseFieldError("otp", err.message || t("errors.invalidOtp"));
     } finally {
       setVerifyLoading(false);
     }
@@ -102,13 +127,13 @@ const SignUpForm = ({
 
   const handleResend = async () => {
     setOtpLoading(true);
-    setLocalError("");
+    clearFieldError("otp");
     try {
       await onResendOtp(formData.phone);
       setTimer(30);
       setOtp("");
     } catch (err) {
-      setLocalError(err.message || t("errors.resendFailed"));
+      raiseFieldError("otp", err.message || t("errors.resendFailed"));
     } finally {
       setOtpLoading(false);
     }
@@ -116,21 +141,19 @@ const SignUpForm = ({
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      setLocalError(t("errors.nameRequired"));
+      raiseFieldError("name", t("errors.nameRequired"));
       return;
     }
     if (!otpVerified) {
-      setLocalError(t("errors.verifyPhone"));
+      raiseFieldError("phone", t("errors.verifyPhone"));
       return;
     }
     if (!consentAgreed) {
-      setLocalError(t("errors.acceptConsent"));
+      raiseFieldError("consent", t("errors.acceptConsent"));
       return;
     }
     onSubmit({ ...formData });
   };
-
-  const displayError = error || localError;
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 max-h-[75vh] overflow-y-auto px-1">
@@ -139,7 +162,7 @@ const SignUpForm = ({
         <p className="text-sm text-slate-500">{t("subtitle")}</p>
       </div>
 
-      {displayError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{displayError}</div>}
+      {error && <div ref={bannerRef} className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
       <div className="space-y-4">
         {/* Instagram Connected Badge */}
@@ -161,16 +184,23 @@ const SignUpForm = ({
         )}
 
         {/* Full Name */}
-        <div className="space-y-1.5">
+        <div ref={nameRef} className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">{t("fullName")}</Label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6347F9]/60" size={18} />
-            <Input placeholder={t("fullNamePlaceholder")} name="name" value={formData.name} onChange={handleChange} className="h-12 pl-12 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]" />
+            <Input
+              placeholder={t("fullNamePlaceholder")}
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className={`h-12 pl-12 rounded-xl ${fieldErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-slate-200 focus-visible:ring-[#6347F9]"}`}
+            />
           </div>
+          {fieldErrors.name && <p className="text-xs font-semibold text-red-500 ml-1">{fieldErrors.name}</p>}
         </div>
 
         {/* Phone + OTP */}
-        <div className="space-y-1.5">
+        <div ref={phoneRef} className="space-y-1.5">
           <Label className="text-xs font-semibold text-slate-500 ml-1">{t("mobileNumber")}</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -184,7 +214,7 @@ const SignUpForm = ({
                 value={formData.phone}
                 onChange={handleChange}
                 disabled={otpVerified}
-                className="h-12 pl-16 rounded-xl border-slate-200 focus-visible:ring-[#6347F9]"
+                className={`h-12 pl-16 rounded-xl ${fieldErrors.phone ? "border-red-400 focus-visible:ring-red-400" : "border-slate-200 focus-visible:ring-[#6347F9]"}`}
               />
             </div>
             {!otpVerified && !otpSent && (
@@ -198,10 +228,11 @@ const SignUpForm = ({
               </div>
             )}
           </div>
+          {fieldErrors.phone && <p className="text-xs font-semibold text-red-500 ml-1">{fieldErrors.phone}</p>}
 
           {/* OTP Input */}
           {otpSent && !otpVerified && (
-            <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div ref={otpRef} className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <p className="text-[11px] text-center text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                 {t.rich("whatsappHint", { strong: (c) => <span className="font-bold">{c}</span> })}
               </p>
@@ -214,6 +245,7 @@ const SignUpForm = ({
                   </InputOTPGroup>
                 </InputOTP>
               </div>
+              {fieldErrors.otp && <p className="text-xs font-semibold text-red-500 text-center">{fieldErrors.otp}</p>}
               <div className="flex flex-col items-center gap-2">
                 <Button onClick={handleVerifyOtp} disabled={otp.length < 6 || verifyLoading} className="h-9 px-8 rounded-lg btn-purple text-sm font-semibold cursor-pointer">
                   {verifyLoading ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
@@ -262,11 +294,11 @@ const SignUpForm = ({
       </div>
 
       {/* Consent (mandatory) */}
-      <label className="flex items-start gap-3 px-1 cursor-pointer select-none">
+      <label ref={consentRef} className={`flex items-start gap-3 px-1 cursor-pointer select-none ${fieldErrors.consent ? "p-2 -mx-1 rounded-xl border border-red-200 bg-red-50/60" : ""}`}>
         <input
           type="checkbox"
           checked={consentAgreed}
-          onChange={(e) => setConsentAgreed(e.target.checked)}
+          onChange={(e) => { setConsentAgreed(e.target.checked); if (e.target.checked) clearFieldError("consent"); }}
           className="mt-0.5 w-4 h-4 accent-[#6347F9] cursor-pointer"
         />
         <span className="text-[12px] text-slate-600 leading-snug">
@@ -284,6 +316,7 @@ const SignUpForm = ({
           })}
         </span>
       </label>
+      {fieldErrors.consent && <p className="text-xs font-semibold text-red-500 px-1 -mt-3">{fieldErrors.consent}</p>}
 
       {/* Submit */}
       <div className="pt-2">

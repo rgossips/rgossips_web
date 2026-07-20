@@ -260,7 +260,10 @@ const LoginInner = () => {
   // --- SHARED: Send OTP ---
   const sendOtp = async (phoneNumber) => {
     const rawDigits = phoneNumber.replace(/\D/g, "");
-    const formattedPhone = rawDigits.startsWith("91") ? rawDigits : `91${rawDigits}`;
+    // Length-based, NOT startsWith("91") — Indian mobiles can legitimately
+    // begin with 91 (e.g. 91136…), and the old check skipped the country
+    // code for them, storing a 10-digit phone the backend couldn't match.
+    const formattedPhone = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
 
     const { data, error: funcError } = await supabase.functions.invoke("whatsapp-otp-sender", { body: { phone: formattedPhone, role: signupData.role || "influencer" } });
 
@@ -295,7 +298,8 @@ const LoginInner = () => {
   // confirms they want to bring a deactivated account back online.
   const verifyOtp = async (phoneNumber, otpCode, mode = "signup", reactivate = false) => {
     const rawDigits = phoneNumber.replace(/\D/g, "");
-    const fullPhone = `+${rawDigits.startsWith("91") ? rawDigits : `91${rawDigits}`}`;
+    // Same length-based rule as sendOtp (see comment there).
+    const fullPhone = `+${rawDigits.length === 10 ? `91${rawDigits}` : rawDigits}`;
 
     const { data, error: authError } = await supabase.functions.invoke("whatsapp-otp-verifier", { body: { phone: fullPhone, otp: otpCode, mode, reactivate } });
 

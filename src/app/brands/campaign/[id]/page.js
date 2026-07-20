@@ -1083,6 +1083,13 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               {app.final_agreed_rate != null && <Fact label={t("facts.agreedRate")} value={`₹${Number(app.final_agreed_rate).toLocaleString("en-IN")}`} highlight />}
             </div>
 
+            {app.pitch && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-extrabold text-[#5851DB] uppercase tracking-wider mb-1">{t("panel.pitch")}</p>
+                <p className="text-[11px] text-gray-800 leading-relaxed whitespace-pre-wrap bg-[#5851DB]/5 rounded-lg p-2.5">{app.pitch}</p>
+              </div>
+            )}
+
             {inf.bio && (
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">{t("panel.bio")}</p>

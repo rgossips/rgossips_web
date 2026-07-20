@@ -14,7 +14,9 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { campaignId, influencerId, proposedRate } = await req.json();
+    const { campaignId, influencerId, proposedRate, pitch } = await req.json();
+    // Creator's "why choose you" note (draftable via the AI Pitch Assistant).
+    const pitchClean = pitch ? String(pitch).trim().slice(0, 800) : null;
 
     if (!campaignId || !influencerId) {
       return new Response(
@@ -114,6 +116,7 @@ Deno.serve(async (req) => {
           status: "pending",
           initiated_by: "influencer",
           proposed_rate: proposedRate || null,
+          pitch: pitchClean,
           brand_offered_rate: null,
           final_agreed_rate: null,
           rejection_reason: null,
@@ -133,6 +136,7 @@ Deno.serve(async (req) => {
           initiated_by: "influencer",
           status: "pending",
           proposed_rate: proposedRate || null,
+          pitch: pitchClean,
         })
         .select()
         .single();

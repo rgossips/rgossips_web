@@ -4,9 +4,12 @@ import React, { useState, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import MediaKitLayout from "@/components/MediaKitLayout";
-import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate } from "lucide-react";
+import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage } from "@/lib/plans";
+import { useAiTool } from "@/hooks/useAiTool";
+import { AiMarkdown } from "@/components/AiMarkdown";
 
 export default function MediaKitPage() {
   const t = useTranslations("InfluencerMediaKit");
@@ -236,6 +239,7 @@ export default function MediaKitPage() {
               onPreview={(id) => { setTemplateError(""); setPreviewTemplate(id); }}
               onSave={handleTemplateSave}
             />
+            <AiMediaKitCard onUseBio={handleBioSave} />
             {published ? (
               <>
                 {/* Share Card — only after publish */}
@@ -344,6 +348,103 @@ export default function MediaKitPage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// AI Media Kit v2 — turns the stat sheet into a sales page. Generates a
+// positioning line, a bio in the creator's voice, and a plain-language
+// audience narrative from their demographics (tool: media_kit). The bio can
+// be applied to the profile in one click; the rest is copy-and-paste.
+function AiMediaKitCard({ onUseBio }) {
+  const t = useTranslations("InfluencerMediaKit");
+  const router = useRouter();
+  const { generate, loading, result, error, remaining, limitReached, setResult } = useAiTool();
+  const [copied, setCopied] = useState(false);
+  const [applied, setApplied] = useState(false);
+
+  const run = () => generate({ tool: "media_kit", inputs: {} });
+
+  const copy = async () => {
+    if (!result) return;
+    await navigator.clipboard.writeText(result);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  // The media_kit prompt returns three labelled sections (**Positioning**,
+  // **Bio**, **Audience**). Only the Bio section becomes the profile bio —
+  // positioning + audience narrative are media-kit copy, and the bio field is
+  // capped at 500 chars. Prefer the explicit label; fall back to the middle
+  // block for any older unlabelled generation.
+  const useBio = () => {
+    if (!result) return;
+    const labelled = result.match(/\*\*\s*Bio\s*\*\*:?\s*\n?([\s\S]*?)(?=\n\s*\*\*|$)/i);
+    let bioBlock;
+    if (labelled) {
+      bioBlock = labelled[1].trim();
+    } else {
+      const blocks = result.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+      bioBlock = blocks.length >= 2 ? blocks[1] : result.trim();
+    }
+    // Strip markdown markers (the bio is stored as plain text) and cap at 500
+    // chars (matches the editor + server guard).
+    const plain = bioBlock.replace(/\*\*|__|^#+\s*/gm, "").replace(/^[-*•]\s+/gm, "");
+    onUseBio?.(plain.slice(0, 500));
+    setApplied(true);
+    setTimeout(() => setApplied(false), 2000);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-purple-100 shadow-sm p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#9810FA] to-[#E60076] flex items-center justify-center">
+          <Sparkles size={15} className="text-white" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-900">{t("ai.title")}</h3>
+      </div>
+      <p className="text-[11px] text-slate-500 leading-relaxed">{t("ai.subtitle")}</p>
+
+      {!limitReached && (
+        <button
+          onClick={run}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          {loading ? t("ai.writing") : result ? t("ai.regenerate") : t("ai.generate")}
+        </button>
+      )}
+
+      {limitReached && (
+        <div className="text-center bg-slate-50 rounded-xl p-3">
+          <p className="text-[11px] text-slate-600 mb-2">{t("ai.limit")}</p>
+          <button onClick={() => router.push("/influencer/pricing")} className="h-8 px-3 rounded-lg bg-[#9810FA] text-white text-[11px] font-bold">
+            {t("ai.upgrade")}
+          </button>
+        </div>
+      )}
+
+      {error && !limitReached && <p className="text-[11px] text-rose-500">{error}</p>}
+
+      {result && (
+        <div className="bg-gradient-to-br from-[#9810FA]/5 to-[#E60076]/5 rounded-xl p-3 border border-purple-50 space-y-2">
+          <AiMarkdown text={result} className="text-[11.5px]" />
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={useBio} className="flex-1 h-8 rounded-lg bg-[#9810FA] text-white text-[11px] font-bold">
+              {applied ? t("ai.applied") : t("ai.useBio")}
+            </button>
+            <button onClick={copy} className="h-8 px-3 rounded-lg border border-slate-200 text-slate-500 text-[11px] font-bold flex items-center gap-1">
+              {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? t("ai.copied") : t("ai.copy")}
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400 leading-snug">{t("ai.bioHint")}</p>
+          {typeof remaining === "number" && Number.isFinite(remaining) && (
+            <p className="text-[10px] text-slate-400">{t("ai.remaining", { count: remaining })}</p>
+          )}
         </div>
       )}
     </div>

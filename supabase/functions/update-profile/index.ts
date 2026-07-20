@@ -98,7 +98,9 @@ Deno.serve(async (req) => {
     if (fields.mediaCount !== undefined) updateData.media_count = fields.mediaCount;
     if (fields.subscriptionPlan !== undefined) updateData.subscription_plan = fields.subscriptionPlan;
     if (fields.billingCycle !== undefined) updateData.billing_cycle = fields.billingCycle;
-    if (fields.bio !== undefined) updateData.bio = fields.bio;
+    // Bio is capped at 500 chars everywhere (matches the media-kit editor's
+    // maxLength) — enforce it here too so AI-applied / API bios can't exceed it.
+    if (fields.bio !== undefined) updateData.bio = fields.bio == null ? fields.bio : String(fields.bio).slice(0, 500);
     if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
     // Media-kit template change is plan-gated and counted server-side so a
     // determined client can't bypass the cap. Starter → Classic only;

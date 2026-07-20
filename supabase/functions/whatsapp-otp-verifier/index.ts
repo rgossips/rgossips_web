@@ -54,8 +54,10 @@ Deno.serve(async (req) => {
     // them to sign up instead.
     const isSignIn = mode === "signin";
 
-    // Normalize phone: strip '+' for DB lookup
-    const normalizedPhone = phone.replace(/\+/g, "");
+    // Canonical phone = "91" + last 10 digits — must match the sender's
+    // storage format AND create-profile's proof lookup. (A bare '+'-strip
+    // broke for numbers whose 10 digits start with 91 — see sender.)
+    const normalizedPhone = `91${String(phone).replace(/\D/g, "").slice(-10)}`;
 
     // Initialize Supabase client (for DB operations only)
     const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);

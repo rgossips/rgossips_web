@@ -394,7 +394,7 @@ Deno.serve(async (req) => {
       const { data: apps } = await supabase
         .from("campaign_applications")
         .select(
-          "id, campaign_id, influencer_id, initiated_by, proposed_rate, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
+          "id, campaign_id, influencer_id, initiated_by, proposed_rate, pitch, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
         )
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });

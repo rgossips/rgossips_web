@@ -115,14 +115,36 @@
     "usage": "<b>0/50 used</b> • all free",
     "tools": {
       "captions": "Captions",
-      "hashtags": "Hashtags",
+      "hashtags": "Hashtag Sets",
       "scripts": "Scripts",
       "rateCard": "Rate Card",
       "hookIdeas": "Hook Ideas",
       "briefHelper": "Brief Helper"
     },
     "tryFree": "Try free →",
-    "generate": "Generate"
+    "generate": "Generate",
+    "generating": "Generating…",
+    "regenerate": "Regenerate",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "leftThisMonth": "{count} left this month",
+    "unlimited": "Unlimited",
+    "limitTitle": "You've used your AI generations for this month",
+    "limitBody": "Upgrade to Pro for 150 generations a month, or Elite for unlimited — plus the pitch assistant, match coach and more.",
+    "upgradeCta": "See plans",
+    "usageLabel": "AI usage this month",
+    "usedOfLimit": "{used} / {limit} used",
+    "placeholders": {
+      "captions": "What is the post about? e.g. “monsoon skincare routine reel for a Bangalore brand, playful tone” — leave blank to use your profile.",
+      "scripts": "What is the reel about? e.g. “30s unboxing of a fitness band, hook first, end with a discount code”.",
+      "hookIdeas": "Topic or niche for the hooks, e.g. “street food tour in Delhi” — leave blank for hooks in your niche.",
+      "hashtags": "Topic of the post, e.g. “cafe hopping reel in Mumbai” — leave blank for your niche + reach sets.",
+      "rateCard": "Anything specific? e.g. “quote for a 3-reel + 2-story bundle” — leave blank to price from your profile stats.",
+      "briefHelper": "Paste the brand brief or describe the campaign — you will get a tickable checklist of deliverables + rules."
+    },
+    "updatePricing": "Update my pricing",
+    "updatingPricing": "Updating…",
+    "pricingUpdated": "Rates saved to your profile"
   },
   "MediaKitCard": {
     "title": "AI Media Kit",
@@ -636,7 +658,11 @@
     },
     "why": {
       "heading": "Why should we choose you?",
-      "placeholder": "Tell the brand why you're the perfect fit for this campaign..."
+      "placeholder": "Tell the brand why you're the perfect fit for this campaign...",
+      "draftAi": "Draft with AI",
+      "drafting": "Drafting…",
+      "required": "Add a short line on why you're a great fit — brands skip blank applications.",
+      "aiLimit": "You've used your AI generations this month. Upgrade for more."
     },
     "actions": {
       "cancel": "Cancel",
@@ -1137,7 +1163,8 @@
       "bio": "Bio",
       "categories": "Categories",
       "rejectionReason": "Rejection Reason",
-      "submissions": "Submissions"
+      "submissions": "Submissions",
+      "pitch": "Their Pitch"
     },
     "facts": {
       "fullName": "Full Name",
@@ -2638,6 +2665,21 @@
       "upgradeUnlimited": "Upgrade for unlimited switches",
       "upgradeUnlock": "Upgrade to unlock more templates",
       "editHint": "Use the floating <editBio>Edit Bio</editBio> / <editReels>Edit Top Reels</editReels> buttons in the bottom-right to update content on any template."
+    },
+    "ai": {
+      "title": "AI Media Kit Writer",
+      "subtitle": "Turn your stats into a sales page — a positioning line, a bio in your voice, and a plain-language audience story from your demographics.",
+      "generate": "Write my media kit",
+      "regenerate": "Rewrite",
+      "writing": "Writing…",
+      "useBio": "Use as my bio",
+      "applied": "Bio updated ✓",
+      "copy": "Copy",
+      "copied": "Copied",
+      "remaining": "{count} AI generations left this month",
+      "limit": "You’ve used your AI generations this month.",
+      "upgrade": "Upgrade",
+      "bioHint": "“Use as my bio” applies only the Bio section (your profile bio is capped at 500 characters). Copy grabs all three sections for your media kit."
     }
   },
   "InfluencerNotifications": {
@@ -2895,6 +2937,19 @@
       "submitLiveLinks": "Submit {count, plural, one {# Live Link} other {# Live Links}}",
       "resubmitDeliverables": "Resubmit {count, plural, one {# Deliverable} other {# Deliverables}}",
       "submitDeliverables": "Submit {count, plural, one {# Deliverable} other {# Deliverables}}"
+    },
+    "compliance": {
+      "title": "AI Compliance Pre-Check",
+      "subtitle": "Paste your caption and we’ll check it against the brief — brand tag, required hashtags, and the mandatory #ad disclosure — before the brand sees it.",
+      "placeholder": "Paste your post caption here…",
+      "run": "Check my caption",
+      "checking": "Checking…",
+      "resultTitle": "Compliance result",
+      "recheck": "Check again",
+      "copy": "Copy",
+      "copied": "Copied",
+      "limit": "You’ve used your AI generations this month.",
+      "upgrade": "Upgrade"
     }
   },
   "InfluencerPricing": {
@@ -4002,7 +4057,9 @@
     "servicesModal": {
       "title": "Services & Rates",
       "selectServices": "Select services you offer",
-      "setRates": "Set your rates"
+      "setRates": "Set your rates",
+      "aiFill": "Fill with AI",
+      "aiFilling": "Suggesting…"
     },
     "services": {
       "reels": "Reels",

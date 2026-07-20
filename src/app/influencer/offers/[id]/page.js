@@ -39,6 +39,7 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ import { AnimatePresence } from "framer-motion";
 import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { useAiTool } from "@/hooks/useAiTool";
+import { AiMarkdown } from "@/components/AiMarkdown";
 import RatingModal from "@/components/RatingModal";
 import AlertPopup from "@/components/AlertPopup";
 
@@ -1935,6 +1938,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
 
 function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const t = useTranslations("InfluencerOffersId");
+  const router = useRouter();
   const isRevision = campaign?.applicationStatus === "revision_needed";
 
   // Parse revision info
@@ -2015,6 +2019,30 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // AI compliance pre-check — runs the draft caption against the campaign's
+  // requirements (brand tag, required hashtags, ASCI #ad/#collab disclosure,
+  // dos/donts) BEFORE the brand ever sees it. Optional, campaign-aware.
+  const [caption, setCaption] = useState("");
+  const [checkOpen, setCheckOpen] = useState(false);
+  const [complianceCopied, setComplianceCopied] = useState(false);
+  const {
+    generate: runCompliance,
+    loading: checking,
+    result: complianceResult,
+    error: complianceErr,
+    limitReached: complianceLimit,
+    setResult: setComplianceResult,
+  } = useAiTool();
+
+  const handleCompliance = () => {
+    if (!caption.trim()) return;
+    runCompliance({
+      tool: "compliance",
+      campaignId: campaign?.id,
+      inputs: { draft_caption: caption.trim() },
+    });
+  };
 
   // All deliverables must have links — non-revision ones are prefilled so they pass
   const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
@@ -2221,6 +2249,72 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           {deliverables.length === 0 && (
             <div className="text-center py-8 text-sm text-slate-400">{t("modal.noDeliverables")}</div>
           )}
+
+          {/* AI Compliance Pre-Check — optional, catches missing #ad / brand tag / hashtags before the brand sees it */}
+          <div className="mt-2 rounded-2xl border border-purple-100 bg-gradient-to-br from-[#9810FA]/[0.03] to-[#E60076]/[0.03] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCheckOpen((v) => !v)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-left"
+            >
+              <ShieldCheck size={16} className="text-[#9810FA] shrink-0" />
+              <span className="text-xs font-bold text-slate-700 flex-1">{t("compliance.title")}</span>
+              <ChevronRight size={15} className={`text-slate-400 transition-transform ${checkOpen ? "rotate-90" : ""}`} />
+            </button>
+
+            {checkOpen && (
+              <div className="px-4 pb-4 space-y-3">
+                <p className="text-[11px] text-slate-500 leading-snug">{t("compliance.subtitle")}</p>
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  rows={3}
+                  placeholder={t("compliance.placeholder")}
+                  className="w-full py-2.5 px-3 border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none focus:border-purple-300 resize-none"
+                />
+
+                {!complianceLimit && (
+                  <button
+                    type="button"
+                    onClick={handleCompliance}
+                    disabled={checking || !caption.trim()}
+                    className="w-full h-10 rounded-xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-xs shadow-lg shadow-pink-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Sparkles size={14} />
+                    {checking ? t("compliance.checking") : t("compliance.run")}
+                  </button>
+                )}
+
+                {complianceLimit && (
+                  <div className="text-center bg-white rounded-xl p-3 border border-slate-100">
+                    <p className="text-[11px] text-slate-600 mb-2">{t("compliance.limit")}</p>
+                    <button type="button" onClick={() => router.push("/influencer/pricing")} className="h-8 px-3 rounded-lg bg-[#9810FA] text-white text-[11px] font-bold">
+                      {t("compliance.upgrade")}
+                    </button>
+                  </div>
+                )}
+
+                {complianceErr && !complianceLimit && <p className="text-[11px] text-rose-500">{complianceErr}</p>}
+
+                {complianceResult && (
+                  <div className="bg-white rounded-xl p-3 border border-purple-100">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-extrabold text-[#9810FA] uppercase tracking-wider">{t("compliance.resultTitle")}</span>
+                      <button
+                        type="button"
+                        onClick={async () => { await navigator.clipboard.writeText(complianceResult); setComplianceCopied(true); setTimeout(() => setComplianceCopied(false), 1500); }}
+                        className="text-slate-400 hover:text-slate-600 flex items-center gap-1 text-[10px] font-bold"
+                      >
+                        {complianceCopied ? <Check size={12} /> : <Copy size={12} />} {complianceCopied ? t("compliance.copied") : t("compliance.copy")}
+                      </button>
+                    </div>
+                    <AiMarkdown text={complianceResult} className="text-[11.5px]" />
+                    <button type="button" onClick={() => setComplianceResult("")} className="mt-2 text-[10px] font-bold text-[#9810FA]">{t("compliance.recheck")}</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer — shrink-0 so it stays anchored at the bottom */}

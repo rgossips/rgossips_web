@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Users, TrendingUp, Eye, Sparkles } from "lucide-react";
+import { ArrowRight, Users, TrendingUp, Eye, Sparkles, Globe } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,7 @@ export function AiMediaKitCard() {
   const userName = profile?.full_name || t("creatorFallback");
   const userHandle = profile?.username || profile?.instagram_handle || "creator";
   const userPhoto = profile?.profile_photo_url;
+  const languages = Array.isArray(profile?.content_languages) ? profile.content_languages.filter(Boolean) : [];
 
   const stats = [
     { icon: <Users size={18} />, label: t("stats.followers"), value: formatCount(profile?.followers_count) },
@@ -77,6 +78,18 @@ export function AiMediaKitCard() {
             <p className="text-sm font-bold text-slate-400 tracking-wide">
               @{userHandle}
             </p>
+            {languages.length > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3">
+                {languages.map((lang) => (
+                  <span
+                    key={lang}
+                    className="inline-flex items-center gap-1 text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-full"
+                  >
+                    <Globe size={10} /> {lang}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Stats Row */}

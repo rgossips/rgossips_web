@@ -106,6 +106,17 @@ export const FEATURE_MATRIX = {
   media_kit_template_switches:  { starter: false,           pro: "3 lifetime",    elite: "Unlimited" },
   media_kit_share_link:         { starter: true,            pro: true,            elite: true },
 
+  // AI Creator Tools (metered by ai_generations_limit; see ai-generate edge fn)
+  ai_generations_limit:     { starter: 25,    pro: 150,   elite: Infinity },
+  ai_content_studio:        { starter: true,  pro: true,  elite: true },
+  ai_pitch_assistant:       { starter: true,  pro: true,  elite: true },
+  ai_match_coach:           { starter: false, pro: true,  elite: true },
+  ai_media_kit_v2:          { starter: false, pro: true,  elite: true },
+  ai_rate_card_benchmarks:  { starter: false, pro: true,  elite: true },
+  ai_growth_audit:          { starter: false, pro: true,  elite: true },
+  ai_preflight_review:      { starter: false, pro: false, elite: true },
+  ai_copilot:               { starter: false, pro: false, elite: true },
+
   // Payouts (display string)
   payout_speed: { starter: "7–10 days", pro: "3–5 days", elite: "Within 48 hrs" },
 
@@ -127,6 +138,17 @@ export const FEATURE_GROUPS = [
       { key: "discovery_homepage_spotlight",label: "Homepage spotlight feature" },
       { key: "badge_verified_eligible",     label: "Verified badge eligibility" },
       { key: "badge_elite_verified",        label: "Elite verified badge" },
+    ],
+  },
+  {
+    title: "AI Creator Tools",
+    features: [
+      { key: "ai_generations_limit",   label: "AI generations per month" },
+      { key: "ai_content_studio",      label: "AI Content Studio (captions, scripts, hooks)" },
+      { key: "ai_pitch_assistant",     label: "AI Pitch Assistant" },
+      { key: "ai_match_coach",         label: "AI Match Coach" },
+      { key: "ai_media_kit_v2",        label: "AI Media Kit writer" },
+      { key: "ai_rate_card_benchmarks",label: "AI rate-card benchmarks" },
     ],
   },
   {
@@ -351,4 +373,17 @@ export function getProfileTemplateChangeUsage(profile) {
   const used = profile?.media_kit_template_changes || profile?.mediaKitTemplateChanges || 0;
   const remaining = isFinite(limit) ? Math.max(0, limit - used) : Infinity;
   return { used, limit, remaining, plan };
+}
+
+/**
+ * Monthly AI-generation quota status. `usedThisMonth` is fetched by the caller
+ * from `ai_generation_usage` (sum of `count` for the current YYYY-MM). Mirrors
+ * getProfileTemplateChangeUsage. `remaining` is Infinity for unlimited (Elite).
+ */
+export function getAiUsageStatus(profile, usedThisMonth = 0) {
+  const plan = getEffectivePlan(profile);
+  const limit = getFeatureValue(plan, "ai_generations_limit");
+  const unlimited = !isFinite(limit);
+  const remaining = unlimited ? Infinity : Math.max(0, limit - usedThisMonth);
+  return { used: usedThisMonth, limit, remaining, unlimited, plan };
 }

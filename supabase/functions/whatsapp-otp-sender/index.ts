@@ -29,6 +29,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Canonical phone = "91" + last 10 digits — the SAME rule create-profile
+    // uses to look up the proof-of-phone row. Storing/matching on anything
+    // else breaks signup for numbers that legitimately START with 91 (e.g.
+    // 91136…): the client's old startsWith("91") heuristic skipped the
+    // country code for them, the OTP row got stored as 10 bare digits, and
+    // create-profile (which prepends 91) then couldn't find the proof →
+    // "phone_not_verified" right after a successful verify. India-only app,
+    // so the 91 assumption is safe.
+    const canonicalPhone = `91${phoneDigits.slice(-10)}`;
+
     // Initialize Supabase Admin client
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -52,7 +62,7 @@ Deno.serve(async (req) => {
     // client; compare against the bare-digits form.
     const TEST_PHONES = new Set(["919999999990", "919999999991"]);
     const TEST_OTP = "123456";
-    const isTestPhone = TEST_PHONES.has(phone.replace(/\+/g, ""));
+    const isTestPhone = TEST_PHONES.has(canonicalPhone);
 
     // 30s cooldown is just double-tap protection; the 5/phone/hr cap below is
     // the real abuse limiter, so a genuine resend after a missed delivery
@@ -67,13 +77,13 @@ Deno.serve(async (req) => {
       supabaseAdmin
         .from("otp_send_log")
         .select("sent_at")
-        .eq("phone", phone)
+        .eq("phone", canonicalPhone)
         .gte("sent_at", cooldownCutoff)
         .limit(1),
       supabaseAdmin
         .from("otp_send_log")
         .select("id", { count: "exact", head: true })
-        .eq("phone", phone)
+        .eq("phone", canonicalPhone)
         .gte("sent_at", oneHourAgo),
       supabaseAdmin
         .from("otp_send_log")
@@ -113,11 +123,11 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
     // Invalidate any previous OTPs for this phone
-    await supabaseAdmin.from("otp_verifications").delete().eq("phone", phone);
+    await supabaseAdmin.from("otp_verifications").delete().eq("phone", canonicalPhone);
 
     // Insert new OTP
     const { error: dbError } = await supabaseAdmin.from("otp_verifications").insert({
-      phone,
+      phone: canonicalPhone,
       otp,
       expires_at: expiresAt,
       verified: false,
@@ -135,7 +145,7 @@ Deno.serve(async (req) => {
     // outage doesn't break sign-up.
     supabaseAdmin
       .from("otp_send_log")
-      .insert({ phone, ip })
+      .insert({ phone: canonicalPhone, ip })
       .then((res: any) => {
         if (res?.error) console.error("otp_send_log insert failed:", res.error.message);
       });
@@ -165,7 +175,7 @@ Deno.serve(async (req) => {
     const messageBody = useTemplate
       ? {
           messaging_product: "whatsapp",
-          to: phone,
+          to: canonicalPhone,
           type: "template",
           template: {
             name: templateName,
@@ -187,7 +197,7 @@ Deno.serve(async (req) => {
       : {
           messaging_product: "whatsapp",
           recipient_type: "individual",
-          to: phone,
+          to: canonicalPhone,
           type: "text",
           text: {
             preview_url: false,

@@ -30,7 +30,10 @@ import {
   Home,
   IndianRupee,
   Globe,
+  Sparkles,
 } from "lucide-react";
+import { useAiTool } from "@/hooks/useAiTool";
+import { parseAiRates } from "@/components/AiMarkdown";
 import EditReelModal from "./EditReelModal";
 import AlertPopup from "./AlertPopup";
 import { useAuth } from "@/context/AuthContext";
@@ -480,6 +483,20 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
   const t = useTranslations("MyInformationDetail");
   const [localServices, setLocalServices] = useState([...services]);
   const [localRates, setLocalRates] = useState({ ...rates });
+  const { generate: aiSuggest, loading: aiFilling, error: aiError } = useAiTool();
+
+  // AI rate suggestions — runs the same rate_card tool as the Content Studio,
+  // parses the machine-readable RATES_JSON line and fills the inputs. The user
+  // still reviews + hits Save; nothing is written until then.
+  const handleAiFill = async () => {
+    const text = await aiSuggest({ tool: "rate_card", inputs: {} });
+    const { rates: suggested } = parseAiRates(text);
+    if (!suggested) return;
+    // Fill every suggested service; auto-select ones the user hadn't picked so
+    // the newly priced rows are visible (they can toggle any off before saving).
+    setLocalServices((prev) => [...new Set([...prev, ...Object.keys(suggested)])]);
+    setLocalRates((prev) => ({ ...prev, ...suggested }));
+  };
 
   const toggleService = (id) => {
     setLocalServices((prev) => {
@@ -524,9 +541,33 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
             })}
           </div>
 
+          {localServices.length === 0 && (
+            <button
+              type="button"
+              onClick={handleAiFill}
+              disabled={aiFilling}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-black text-purple-700 bg-purple-50 border border-purple-100 hover:bg-purple-100 transition-colors disabled:opacity-60 cursor-pointer"
+            >
+              {aiFilling ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              {aiFilling ? t("servicesModal.aiFilling") : t("servicesModal.aiFill")}
+            </button>
+          )}
+
           {localServices.length > 0 && (
             <>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pt-2">{t("servicesModal.setRates")}</p>
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("servicesModal.setRates")}</p>
+                <button
+                  type="button"
+                  onClick={handleAiFill}
+                  disabled={aiFilling}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black text-purple-700 bg-purple-50 border border-purple-100 hover:bg-purple-100 transition-colors disabled:opacity-60 cursor-pointer"
+                >
+                  {aiFilling ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                  {aiFilling ? t("servicesModal.aiFilling") : t("servicesModal.aiFill")}
+                </button>
+              </div>
+              {aiError && <p className="text-[10px] font-semibold text-amber-600">{aiError}</p>}
               <div className="space-y-3">
                 {localServices.map((svcId) => {
                   const svc = SERVICE_OPTIONS.find((s) => s.id === svcId);
@@ -1018,6 +1059,17 @@ const MyInformationDetail = ({ onBack }) => {
             </div>
           )}
         </div>
+
+        {/* Content languages the creator publishes in */}
+        {contentLanguages.length > 0 && (
+          <div className="flex gap-1.5 mt-2 flex-wrap justify-center">
+            {contentLanguages.map((l) => (
+              <div key={l} className="flex items-center gap-1 text-[9px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
+                <Globe size={11} /> {l}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="w-full mt-5 pt-4 border-t border-gray-100 flex justify-around items-center px-2">

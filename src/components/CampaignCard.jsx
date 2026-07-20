@@ -1,14 +1,124 @@
 "use client";
-import React from "react";
-import { Calendar, MapPin, FileText, DollarSign, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap } from "lucide-react";
+import React, { useState } from "react";
+import { Calendar, MapPin, FileText, DollarSign, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap, Sparkles, X, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { explainCampaignMatch } from "@/utils/matchScore";
+import { useAiTool } from "@/hooks/useAiTool";
+import { AiMarkdown } from "@/components/AiMarkdown";
+
+// "Why this match?" coach — shows the transparent score breakdown and, on
+// demand, an AI-narrated prioritised to-do list to raise it (tool: match_coach).
+function MatchCoachModal({ campaign, profile, score, breakdown, onClose }) {
+  const router = useRouter();
+  const { generate, loading, result, error, remaining, limitReached, setResult } = useAiTool();
+  const [copied, setCopied] = useState(false);
+
+  const barColor = (s) => (s === "strong" ? "bg-emerald-500" : s === "ok" ? "bg-amber-500" : "bg-rose-400");
+  const scoreColor = score >= 80 ? "text-emerald-600" : score >= 60 ? "text-amber-600" : "text-slate-500";
+
+  const coachMe = () => {
+    const summary = breakdown.map((b) => `- ${b.label}: ${b.points}/${b.max} (${b.status}) — ${b.reason}`).join("\n");
+    generate({
+      tool: "match_coach",
+      campaignId: campaign.id,
+      inputs: { matchScore: score, breakdown: summary },
+    });
+  };
+
+  const copy = async () => {
+    if (!result) return;
+    await navigator.clipboard.writeText(result);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white/95 backdrop-blur px-5 py-4 flex items-center justify-between border-b border-slate-50">
+          <div className="flex items-center gap-2">
+            <Zap size={16} className={scoreColor} />
+            <h3 className="font-bold text-slate-800 text-sm">Why this match?</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className={`text-3xl font-black ${scoreColor}`}>{score}%</div>
+            <p className="text-xs text-slate-500 leading-snug">
+              match with <span className="font-semibold text-slate-700">{campaign.title}</span>
+            </p>
+          </div>
+
+          <div className="space-y-2.5">
+            {breakdown.map((b) => (
+              <div key={b.key}>
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="font-semibold text-slate-600">{b.label}</span>
+                  <span className="font-bold text-slate-400">
+                    {b.points}/{b.max}
+                  </span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${barColor(b.status)}`} style={{ width: `${Math.round((b.points / b.max) * 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 leading-snug">{b.reason}</p>
+              </div>
+            ))}
+          </div>
+
+          {!result && !limitReached && (
+            <Button onClick={coachMe} disabled={loading} className="w-full h-11 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100">
+              <Sparkles size={15} className="mr-2" />
+              {loading ? "Coaching…" : "How do I improve this? (AI)"}
+            </Button>
+          )}
+
+          {limitReached && (
+            <div className="text-center bg-slate-50 rounded-2xl p-4">
+              <p className="text-xs text-slate-600 mb-2">You've used your AI generations this month.</p>
+              <Button onClick={() => router?.push?.("/influencer/pricing")} className="h-9 px-4 rounded-xl bg-[#9810FA] text-white text-xs font-bold">
+                Upgrade
+              </Button>
+            </div>
+          )}
+
+          {error && !limitReached && <p className="text-xs text-rose-500">{error}</p>}
+
+          {result && (
+            <div className="bg-gradient-to-br from-[#9810FA]/5 to-[#E60076]/5 rounded-2xl p-4 border border-purple-50">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-extrabold text-[#9810FA] uppercase tracking-wider">Your coach</span>
+                <button onClick={copy} className="text-slate-400 hover:text-slate-600 flex items-center gap-1 text-[10px] font-bold">
+                  {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <AiMarkdown text={result} className="text-[12px]" />
+              <button onClick={() => setResult("")} className="mt-3 text-[11px] font-bold text-[#9810FA]">
+                Regenerate
+              </button>
+              {typeof remaining === "number" && Number.isFinite(remaining) && <p className="text-[10px] text-slate-400 mt-2">{remaining} AI generations left this month</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function CampaignCard({ campaign, onApply, matchScore }) {
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   const isActive = campaign.status === "Active";
   const router = useRouter();
+  const { profile } = useAuth();
+  const [coachOpen, setCoachOpen] = useState(false);
+  const match = profile ? explainCampaignMatch(profile, campaign) : { score: matchScore || 0, breakdown: [] };
 
   // Status Badge Colors
   const statusStyles = {
@@ -29,18 +139,9 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
         {/* Dark gradient overlay for badges */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-        {/* Status + match score over banner */}
+        {/* Status over banner — the match % moved to a full button in the
+            action row (it was too tiny to discover up here). */}
         <div className="absolute top-3 right-3 flex items-center gap-2">
-          {matchScore > 0 && (
-            <div
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-sm ${
-                matchScore >= 80 ? "text-emerald-600 bg-emerald-50/90" : matchScore >= 60 ? "text-amber-600 bg-amber-50/90" : "text-slate-500 bg-white/90"
-              }`}
-            >
-              <Zap size={10} />
-              <span className="text-[10px] font-black">{matchScore}%</span>
-            </div>
-          )}
           <span className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm ${statusStyles[campaign.status]}`}>{campaign.status}</span>
         </div>
       </div>
@@ -98,9 +199,7 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
                   {/* daysLeft is either a day count ("3d") or a status word
                       ("Expired" / "Today"). Only append " left" to counts,
                       so an expired campaign reads "Expired", not "Expired left". */}
-                  {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today"
-                    ? campaign.daysLeft
-                    : `${campaign.daysLeft} left`}
+                  {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today" ? campaign.daysLeft : `${campaign.daysLeft} left`}
                 </span>
               )}
             </p>
@@ -121,6 +220,16 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
 
         {/* Conditional Action Button */}
         <div className="flex gap-3">
+          {match.score > 0 && (
+            <Button
+              onClick={() => setCoachOpen(true)}
+              className={`h-12 px-4 rounded-2xl cursor-pointer font-black text-sm border shadow-sm bg-white hover:bg-slate-50 ${
+                match.score >= 80 ? "text-emerald-600 border-emerald-200" : match.score >= 60 ? "text-amber-600 border-amber-200" : "text-slate-500 border-slate-200"
+              }`}
+            >
+              <Zap size={15} className="mr-1" /> {match.score}% <Sparkles size={12} className="ml-1 opacity-70" />
+            </Button>
+          )}
           {isActive && (
             <Button
               onClick={() => {
@@ -155,6 +264,8 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           )}
         </div>
       </div>
+
+      {coachOpen && <MatchCoachModal campaign={campaign} profile={profile} score={match.score} breakdown={match.breakdown} onClose={() => setCoachOpen(false)} />}
     </div>
   );
 }

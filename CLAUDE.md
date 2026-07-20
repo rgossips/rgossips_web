@@ -485,6 +485,109 @@ and data (hrefs, enum values) untranslated.
 | 041 | security_hardening | OTP attempts col + `consume_otp_attempt` RPC, apply-campaign unique index, leaderboard anon revoke |
 | 042 | perf_indexes_and_stats | Hot-filter indexes + `get_referral_admin_stats()` RPC. **Renamed from 040** — it collided with `040_admin_activity_log` in `schema_migrations` (version tracked by numeric prefix), which aborted a `db push`. Never reuse a version prefix. |
 | 043 | leaderboard_revoke_public | Completes 041's leaderboard revoke (also revoke from PUBLIC, not just anon) |
+| 049 | ai_config | `ai_config` singleton (provider + model-per-task-class + admin-editable API keys). RLS enabled, **NO policies** (keys readable by service role only) |
+| 050 | ai_usage | `ai_generation_usage(user_id, period, tool)` + `bump_ai_usage` RPC (metered AI quota) |
+| 051 | application_pitch | `campaign_applications.pitch` — the creator's "why choose you", AI-draftable |
+
+## Feature: AI layer (2026-07)
+
+Provider-swappable, metered LLM layer. English strategy doc endorsed a 3-tier
+roadmap; **Foundation + all of Tier 1 shipped web-side** (mobile fast-follow
+pending). Decisions locked: provider swappable from admin, API keys
+admin-editable, web-first.
+
+### Foundation
+
+- **`ai_config` singleton (migration 049)** — admin picks `active_provider`
+  (anthropic/openai/gemini) + a model per **task class** (`cheap`/`standard`/
+  `reasoning`/`multimodal`) + a global `enabled` toggle. API keys stored in the
+  row (`anthropic_api_key`/…), **masked in admin UI**, only overwritten when a
+  new value is typed. RLS on, **no policies** → only the service role reads the
+  keys. Adapter falls back to the env secret (`ANTHROPIC_API_KEY` etc.) when the
+  DB key is blank.
+- **`_shared/ai.ts`** — `aiGenerate(admin, {taskClass, system, messages, …})`;
+  30s config cache; `keyFor()` (DB key ‖ env); `anthropic()`/`openai()`/`gemini()`
+  REST callers normalized to `{text, provider, model, usage}`.
+- **`_shared/campaign-context.ts`** (`buildCampaignContext`, `contextToPrompt`,
+  `unpackDescription`) + **`_shared/creator-voice.ts`** (`buildCreatorVoice`,
+  `voiceToPrompt`) make every tool campaign-aware + voice-matched.
+- **`ai-generate` edge fn** (deploy `--no-verify-jwt`; **caller-JWT auth** so
+  quota can't be spoofed) fronts ALL text tools. `TOOLS` registry = prompt
+  templates keyed by tool: `caption`, `script`, `hooks`, `rate_card`,
+  `brief_checklist`, `pitch`, `match_coach`, `compliance`, `media_kit`. Quota =
+  sum of `ai_generation_usage` for the period vs `AI_LIMITS`
+  {starter:25, pro:150, elite:∞}; `effectivePlan()` (trial→pro, floor→starter);
+  `bump_ai_usage` after each call. Returns `{text, remaining, model}`; known
+  errors `ai_disabled`/`ai_key_missing`/`ai_config_missing`/`ai_limit_reached`.
+- **Gating**: `src/lib/plans.js` + mobile `plans.ts` `FEATURE_MATRIX` AI rows +
+  `getAiUsageStatus(profile, usedThisMonth)`.
+- **Client hook** `src/hooks/useAiTool.js` — `generate({tool, campaignId, inputs})`
+  → `{loading, result, remaining, error, limitReached, generate, setResult}`.
+- **Admin** `rgossips-admin/.../dashboard/ai-settings/` (page + actions, super-admin
+  gated, keys masked) + sidebar "AI Settings" entry.
+- ⚠️ **Nothing generates until an API key is set** in admin AI Settings (or the
+  `ANTHROPIC_API_KEY` Supabase secret).
+- **Admin model dropdowns are provider-aware (2026-07)**: `ai-settings/page.tsx`
+  has `PROVIDER_MODELS` + `PROVIDER_DEFAULTS`; switching provider auto-remaps any
+  model that belonged to a different provider to the new provider's default
+  (custom values preserved), with a "Custom…" escape hatch. OpenAI list stays on
+  the `gpt-4o`/`4.1` family — the adapter sends `max_tokens`+`temperature`, which
+  the o-series/GPT-5 reject (they need `max_completion_tokens`).
+- **`buildCreatorVoice` `city`-column bug (fixed 2026-07)**: it selected a
+  non-existent `city` column → the whole select 42703'd → returned null → EVERY
+  tool ran with **empty creator context** (model asked for info / hallucinated a
+  generic creator). `city` is NOT a column on `influencer_profiles` (location is
+  `location`). Also: `ai-generate` appends a global **no-questions directive** to
+  every system prompt — there's no chat UI, the reply renders as-is, so the model
+  must never ask a follow-up.
+
+### Tier 1 (web done; deal-loop order)
+
+- **1.1 Content Studio** — `AiToolsGrid.jsx` rewritten: 5 live tools
+  (captions/scripts/hooks/rate_card/brief_helper), monthly quota meter, per-tool
+  modal (context → generate → copy/regenerate → upgrade CTA). "Coming Soon"
+  removed.
+- **1.2 Pitch Assistant** — `campaign_applications.pitch` (051); `apply-campaign`
+  stores it (both insert + re-activate paths, trim/slice 800); `ApplyCampaignForm`
+  has "Draft with AI" (tool `pitch`) + **mandatory pitch guardrail** (blank
+  rejected); brand-side `/brands/campaign/[id]` review panel shows "Their Pitch"
+  (`brand-campaigns` get select gained `pitch`).
+- **1.3 Match Coach** — `matchScore.js` `explainCampaignMatch(profile, campaign)`
+  returns `{score, breakdown[]}` **now factoring engagement + location** (both
+  previously ignored); `calculateCampaignMatchScore` delegates to it so badge +
+  coach agree. `CampaignCard` match badge is clickable → "Why this match?" modal
+  (breakdown bars + AI coach, tool `match_coach`).
+- **1.4 Media Kit v2** — `media-kit/page.js` `AiMediaKitCard` in sidebar:
+  positioning + bio + audience narrative (tool `media_kit`), one-click "Use as
+  my bio" (→ `update-profile`).
+- **1.5 Compliance Pre-Check** — `SubmitDeliverablesModal` gained an optional
+  "AI Compliance Pre-Check": paste caption → checks brand tag / required hashtags
+  / **ASCI `#ad` disclosure** / dos-donts (tool `compliance`) before the brand
+  sees it.
+
+### Mobile fast-follow (2026-07, DONE)
+
+All five Tier 1 features ported to the RN app (parallel subagents; `tsc` 0
+errors, all 153 static `t()` keys resolve). Foundation:
+`src/hooks/useAiTool.ts` (rides `invokeFn` — JWT/timeout/401-retry;
+`EdgeFunctionError.data.error` carries the known codes) +
+`src/components/AiMarkdown.tsx` (native markdown renderer + `parseAiRates`).
+Surfaces: `AIToolsGrid.tsx` (6 tools, usage meter, bottom-sheet modal,
+Update-my-pricing), `ApplyCampaignForm.tsx` (Draft-with-AI + regenerate +
+mandatory pitch + `pitch` in body), `matchScore.ts` (`explainCampaignMatch`
+port; `calculateCampaignMatchScore` delegates) + `CampaignCard.tsx` (match %
+button beside Apply → coach modal), `InfluencerMediaKit.tsx` (`AiMediaKitCard`,
+labelled-Bio extraction + 500 cap), `SubmitDeliverablesModal.tsx` (collapsible
+compliance pre-check). i18n merged centrally into `src/i18n/en.json`
+(61 keys; note `CampaignCard.coach.remaining` uses `{{n}}` not `{{count}}` to
+dodge plural-suffix lookup). Upgrade CTAs navigate to `InfluencerPricing`
+(modals close first — RN Modal would cover the pricing screen).
+
+**Pending**: Tier 2/3; the 1.5 "brief_checklist" tool exists web+mobile but the
+brand-brief checklist isn't surfaced in the deliverables flow; apply-campaign
+guardrail is mandatory-pitch only (per-day cap + fail-closed monthly cap not
+yet tightened); web pricing-page AI rows + home usage meter not yet mirrored to
+mobile pricing screen.
 
 ## Brand-side campaign lifecycle
 

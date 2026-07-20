@@ -76,7 +76,7 @@ export async function generateMetadata({ params }) {
     ? `${formatFollowers(profile.followersCount)} followers`
     : null;
   const categoriesLabel = Array.isArray(profile.categories) && profile.categories.length > 0
-    ? profile.categories.slice(0, 3).join(" · ")
+    ? profile.categories.slice(0, 3).join(", ")
     : null;
   // Description preference: bio → followers + category mix → handle.
   const description =

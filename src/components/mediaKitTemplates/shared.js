@@ -69,7 +69,9 @@ export function readProfile(profile) {
     .join("")
     .toUpperCase()
     .slice(0, 2);
-  const primaryCategory = categories.slice(0, 2).join(" & ") || "Creator";
+  // Comma-join — category names already contain "&" ("Fashion & Lifestyle"),
+  // so an "&" separator read as one garbled category.
+  const primaryCategory = categories.slice(0, 2).join(", ") || "Creator";
   const nonFollowerReachPct =
     totalReach && followers ? Math.round((totalReach / followers) * 100) : 0;
 

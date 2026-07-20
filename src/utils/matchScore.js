@@ -179,52 +179,60 @@ export function scoreCampaignForUser(profile, campaign) {
 }
 
 /**
- * Calculate match score between an influencer profile and a campaign
- * @param {Object} profile - influencer profile from useAuth
- * @param {Object} campaign - campaign object with tags, platforms, etc.
- * @returns {number} score 0-100
+ * Full, explainable match breakdown between an influencer profile and a
+ * campaign. This is the single source of truth for the campaign-card match %
+ * AND the AI Match Coach — the coach narrates exactly these sub-scores, so
+ * they must stay in sync. Unlike the older number-only scorer, this one
+ * factors in ENGAGEMENT RATE and LOCATION (both were previously ignored even
+ * though they live on the profile), so the coach's advice is real.
+ *
+ * @returns {{ score:number, breakdown: Array<{key,label,points,max,status,reason}> }}
+ *   status ∈ 'strong' | 'ok' | 'weak' — drives colour + coach tone.
  */
-export function calculateCampaignMatchScore(profile, campaign) {
-  if (!profile) return 0;
+export function explainCampaignMatch(profile, campaign) {
+  if (!profile) return { score: 0, breakdown: [] };
 
-  let score = 0;
   const userCategories = (profile.categories || []).map((c) => c.toLowerCase());
   const userServices = profile.services || [];
+  const band = (pts, max) => (pts >= max * 0.75 ? "strong" : pts >= max * 0.45 ? "ok" : "weak");
+  const breakdown = [];
 
-  // 1. Tag/category overlap (40 points)
+  // 1. Category / niche fit (40)
   const tags = (campaign.tags || []).map((t) => t.toLowerCase());
   let tagMatchCount = 0;
-
   for (const tag of tags) {
-    // Direct match
     if (userCategories.some((uc) => uc.includes(tag) || tag.includes(uc.split(" ")[0].toLowerCase()))) {
       tagMatchCount++;
       continue;
     }
-    // Mapped match
     const titleCase = tag.charAt(0).toUpperCase() + tag.slice(1);
     const mapped = CATEGORY_MAP[titleCase] || [];
-    if (mapped.some((mc) => userCategories.includes(mc.toLowerCase()))) {
-      tagMatchCount++;
-    }
+    if (mapped.some((mc) => userCategories.includes(mc.toLowerCase()))) tagMatchCount++;
   }
+  const catPts = tags.length > 0 ? Math.round((tagMatchCount / tags.length) * 40) : 12;
+  breakdown.push({
+    key: "category", label: "Niche fit", points: catPts, max: 40, status: band(catPts, 40),
+    reason: tags.length === 0
+      ? "This campaign has no niche tags, so it's open to all creators."
+      : `${tagMatchCount} of ${tags.length} campaign tag${tags.length === 1 ? "" : "s"} overlap your categories (${(profile.categories || []).join(", ") || "none set"}).`,
+  });
 
-  if (tags.length > 0) {
-    const tagRatio = tagMatchCount / tags.length;
-    score += Math.round(tagRatio * 40);
-  } else {
-    score += 10;
-  }
+  // 2. Engagement rate (15) — previously ignored
+  const er = Number(profile.engagement_rate || profile.engagementRate) || 0;
+  let erPts;
+  if (!er) erPts = 8;
+  else if (er >= 6) erPts = 15;
+  else if (er >= 3) erPts = 11;
+  else if (er >= 1.5) erPts = 7;
+  else erPts = 4;
+  breakdown.push({
+    key: "engagement", label: "Engagement rate", points: erPts, max: 15, status: band(erPts, 15),
+    reason: !er
+      ? "Your engagement rate isn't synced yet — connect/refresh Instagram to strengthen this."
+      : `Your engagement rate is ${er.toFixed(1)}% (${er >= 3 ? "healthy" : "below the ~3% brands look for"}).`,
+  });
 
-  // 2. Platform match (25 points)
-  const campaignPlatforms = (campaign.platforms || []).map((p) => p.toLowerCase());
-  const hasInstagram = campaignPlatforms.includes("instagram") && (profile.instagram_handle || profile.instagramHandle);
-  const hasYoutube = campaignPlatforms.includes("youtube") && userServices.includes("shorts");
-  if (hasInstagram) score += 15;
-  if (hasYoutube) score += 10;
-  if (!hasInstagram && !hasYoutube) score += 5;
-
-  // 3. Deliverables vs services fit (20 points)
+  // 3. Deliverables vs your services (15)
   const deliverables = (campaign.deliverables || "").toLowerCase();
   let serviceMatchCount = 0;
   if (deliverables.includes("reel") && userServices.includes("reels")) serviceMatchCount++;
@@ -232,17 +240,60 @@ export function calculateCampaignMatchScore(profile, campaign) {
   if (deliverables.includes("short") && userServices.includes("shorts")) serviceMatchCount++;
   if (deliverables.includes("video") && userServices.includes("ugc")) serviceMatchCount++;
   if (deliverables.includes("post") && userServices.includes("posts")) serviceMatchCount++;
+  const delPts = serviceMatchCount >= 2 ? 15 : serviceMatchCount >= 1 ? 9 : 4;
+  breakdown.push({
+    key: "deliverables", label: "Deliverables", points: delPts, max: 15, status: band(delPts, 15),
+    reason: serviceMatchCount >= 1
+      ? `You offer ${serviceMatchCount} of the formats this campaign needs (${campaign.deliverables || "—"}).`
+      : `Add the formats this campaign needs (${campaign.deliverables || "—"}) to your services.`,
+  });
 
-  if (serviceMatchCount >= 2) score += 20;
-  else if (serviceMatchCount >= 1) score += 12;
-  else score += 5;
+  // 4. Location (10) — previously ignored
+  const campLoc = String(campaign.location || "").toLowerCase().trim();
+  const userLoc = String(profile.city || profile.location || "").toLowerCase().trim();
+  const openLoc = !campLoc || ["all india", "remote", "pan india", "anywhere"].some((x) => campLoc.includes(x));
+  let locPts, locReason;
+  if (openLoc) { locPts = 10; locReason = "This campaign is open to any location."; }
+  else if (!userLoc) { locPts = 6; locReason = `Campaign targets ${campaign.location}. Add your city to your profile to match location-based briefs.`; }
+  else if (campLoc.includes(userLoc) || userLoc.includes(campLoc)) { locPts = 10; locReason = `Your location (${profile.city || profile.location}) matches the campaign's target (${campaign.location}).`; }
+  else { locPts = 4; locReason = `This campaign targets ${campaign.location}; you're in ${profile.city || profile.location}.`; }
+  breakdown.push({ key: "location", label: "Location", points: locPts, max: 10, status: band(locPts, 10), reason: locReason });
 
-  // 4. Followers fit (15 points)
+  // 5. Platform (10)
+  const campaignPlatforms = (campaign.platforms || []).map((p) => p.toLowerCase());
+  const hasInstagram = campaignPlatforms.includes("instagram") && (profile.instagram_handle || profile.instagramHandle);
+  const hasYoutube = campaignPlatforms.includes("youtube") && userServices.includes("shorts");
+  let platPts = 0;
+  if (hasInstagram) platPts += 8;
+  if (hasYoutube) platPts += 2;
+  if (!platPts) platPts = 3;
+  platPts = Math.min(platPts, 10);
+  breakdown.push({
+    key: "platform", label: "Platforms", points: platPts, max: 10, status: band(platPts, 10),
+    reason: hasInstagram || hasYoutube
+      ? "You're active on the platform(s) this campaign wants."
+      : "Connect the platform this campaign runs on to raise this.",
+  });
+
+  // 6. Reach / followers (10)
   const followers = profile.followers_count || profile.followersCount || 0;
-  if (followers >= 10000) score += 15;
-  else if (followers >= 5000) score += 10;
-  else if (followers >= 1000) score += 7;
-  else score += 3;
+  const folPts = followers >= 10000 ? 10 : followers >= 5000 ? 8 : followers >= 1000 ? 6 : 3;
+  breakdown.push({
+    key: "reach", label: "Reach", points: folPts, max: 10, status: band(folPts, 10),
+    reason: `You have ${Number(followers).toLocaleString("en-IN")} followers.`,
+  });
 
-  return Math.min(score, 100);
+  const score = Math.min(100, breakdown.reduce((s, b) => s + b.points, 0));
+  return { score, breakdown };
+}
+
+/**
+ * Calculate match score between an influencer profile and a campaign.
+ * Thin wrapper over {@link explainCampaignMatch} so the card badge and the
+ * AI Match Coach never disagree.
+ * @returns {number} score 0-100
+ */
+export function calculateCampaignMatchScore(profile, campaign) {
+  if (!profile) return 0;
+  return explainCampaignMatch(profile, campaign).score;
 }

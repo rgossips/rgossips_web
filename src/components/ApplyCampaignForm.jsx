@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -17,10 +17,12 @@ import {
   MapPin,
   Tag,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useAiTool } from "@/hooks/useAiTool";
 
 export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const t = useTranslations("ApplyCampaignForm");
@@ -30,6 +32,21 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const [error, setError] = useState("");
   const [proposedRate, setProposedRate] = useState("");
   const [whyChooseYou, setWhyChooseYou] = useState("");
+  const { generate: draftPitch, loading: drafting, error: draftError, limitReached: draftLimit } = useAiTool();
+
+  // AI Pitch Assistant — drafts a short, campaign-aware "why choose you" note in
+  // the creator's voice, referencing their real past work. Clicking again is a
+  // regenerate: we pass the previous draft + a regenerate flag so the model
+  // returns a distinctly different version instead of lightly rephrasing.
+  const pitchNonceRef = useRef(0);
+  const handleDraftPitch = async () => {
+    const prev = whyChooseYou.trim();
+    const inputs = prev
+      ? { regenerate: true, previousDraft: prev, variation: ++pitchNonceRef.current }
+      : {};
+    const text = await draftPitch({ tool: "pitch", campaignId: campaignData?.id, inputs });
+    if (text) setWhyChooseYou(text);
+  };
 
   // Auto-populated from profile
   const fullName = profile?.full_name || "";
@@ -59,6 +76,12 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
 
   const handleSubmit = async () => {
     if (submitting) return;
+    // Guardrail: a personalised pitch is mandatory — keeps brands from drowning
+    // in one-click AI-spam applications, so they see better applications.
+    if (!whyChooseYou.trim()) {
+      setError(t("why.required"));
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -76,6 +99,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           campaignId: campaignData?.id,
           influencerId: user?.id,
           proposedRate: proposedRate ? Number(proposedRate) : null,
+          pitch: whyChooseYou.trim(),
         }),
       });
 
@@ -256,15 +280,29 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             </section>
           )}
 
-          {/* Why Choose You (Editable) */}
+          {/* Why Choose You (Editable) + AI Pitch Assistant */}
           <section className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900">{t("why.heading")}</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-slate-900">{t("why.heading")}</h3>
+              <button
+                type="button"
+                onClick={handleDraftPitch}
+                disabled={drafting}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black text-purple-700 bg-purple-50 border border-purple-100 hover:bg-purple-100 transition-colors disabled:opacity-60 cursor-pointer"
+              >
+                {drafting ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                {drafting ? t("why.drafting") : t("why.draftAi")}
+              </button>
+            </div>
             <textarea
               placeholder={t("why.placeholder")}
               value={whyChooseYou}
               onChange={(e) => setWhyChooseYou(e.target.value)}
               className="w-full p-4 bg-slate-50 border border-slate-100 focus:border-pink-200 focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 min-h-[100px] outline-none transition-all resize-none"
             />
+            {(draftLimit || draftError) && (
+              <p className="text-xs font-semibold text-amber-600">{draftLimit ? t("why.aiLimit") : draftError}</p>
+            )}
           </section>
         </div>
 
