@@ -583,11 +583,20 @@ compliance pre-check). i18n merged centrally into `src/i18n/en.json`
 dodge plural-suffix lookup). Upgrade CTAs navigate to `InfluencerPricing`
 (modals close first — RN Modal would cover the pricing screen).
 
+**Parity sweep (2026-07)**: `AIToolsGrid` was ported but never MOUNTED (home
+had an "AI Creator Tools removed per spec" comment) — now rendered on
+`InfluencerHome` after `AiMediaKitCard`, which also brings the usage meter.
+Also added for full web parity: `EditProfilePage` services-rates "Fill with
+AI" (rate_card → parseAiRates, auto-selects priced services, Save persists),
+mobile pricing plans' AI lines corrected to the real quotas (25/150/∞ across
+all 6 plan variants in `ScreensInfluencerPricing.plans.*`), and brand-side
+"Their Pitch" panel in `BrandCampaignDetail` (`pitch` on the Application type;
+server already returns it). Every web AI surface now has a mobile equivalent.
+
 **Pending**: Tier 2/3; the 1.5 "brief_checklist" tool exists web+mobile but the
 brand-brief checklist isn't surfaced in the deliverables flow; apply-campaign
 guardrail is mandatory-pitch only (per-day cap + fail-closed monthly cap not
-yet tightened); web pricing-page AI rows + home usage meter not yet mirrored to
-mobile pricing screen.
+yet tightened).
 
 ## Brand-side campaign lifecycle
 
