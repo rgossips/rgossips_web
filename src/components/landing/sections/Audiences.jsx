@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useGlobal } from "@/context/GlobalContext";
 
 export default function Audiences() {
@@ -71,8 +72,17 @@ export default function Audiences() {
           </div>
           <div style={{ position: "relative" }}>
             <div style={{ position: "absolute", inset: "-14px", borderRadius: "32px", background: "linear-gradient(135deg, rgba(168,85,247,0.16), rgba(236,72,153,0.12))", transform: "rotate(-2deg)", pointerEvents: "none" }}></div>
-            <div style={{ position: "relative", width: "100%", height: "380px" }}>
-              <div style={{ width: "100%", height: "380px", borderRadius: "24px", background: "linear-gradient(135deg,#EDE9FE,#FCE7F3)", display: "grid", placeItems: "center", color: "#9CA3AF", fontSize: "13px", fontWeight: 600, textAlign: "center", padding: "16px" }}>Drop your creator photo here</div>
+            <div style={{ position: "relative", width: "100%", height: "380px", borderRadius: "24px", overflow: "hidden", background: "linear-gradient(135deg,#EDE9FE,#FCE7F3)" }}>
+              {/* Tab-driven product mock — swaps with the For Brands / For
+                  Influencers toggle. Both PNGs are 1134×760. */}
+              <Image
+                src={isBrand ? "/landing/for-brands.png" : "/landing/for-influencers.png"}
+                alt={isBrand ? "RGossips for brands — AI creator matching, live results and escrow" : "RGossips for influencers — brand invites, earnings and on-time payouts"}
+                fill
+                sizes="(max-width: 1024px) 100vw, 640px"
+                style={{ objectFit: "cover", objectPosition: "top", transition: "opacity 0.3s ease" }}
+                priority={false}
+              />
             </div>
             <div style={{ position: "absolute", top: "30px", left: "-22px", background: "#FFFFFF", borderRadius: "16px", padding: "12px 18px", boxShadow: "0 16px 40px rgba(17,24,39,0.12)", display: "flex", alignItems: "center", gap: "12px", animation: "floatA 5s ease-in-out infinite" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "12px", background: "#ECFDF5", display: "grid", placeItems: "center", color: "#10B981", fontSize: "16px", fontWeight: 800 }}>{chip1Glyph}</div>
