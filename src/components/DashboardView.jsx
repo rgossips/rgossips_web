@@ -213,25 +213,64 @@ const DashboardView = ({
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
+  // Letterbox support: objectFit="cover" keeps the image BIG (crop box =
+  // container min dimension) while restrictPosition off + sub-1 zoom lets the
+  // whole photo sit inside the square with white space. "Fit full photo"
+  // jumps straight to that letterboxed view.
+  const cropContainerRef = useRef(null);
+  const [fitZoom, setFitZoom] = useState(null);
+  const onMediaLoaded = useCallback((mediaSize) => {
+    const rect = cropContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const boxSide = Math.min(rect.width, rect.height);
+    setFitZoom(boxSide / Math.max(mediaSize.width, mediaSize.height));
+  }, []);
+  const minZoom = Math.min(0.3, fitZoom || 1);
+  const fitWholeImage = () => {
+    if (!fitZoom) return;
+    setZoom(fitZoom);
+    setCrop({ x: 0, y: 0 });
+  };
+
   const getCroppedImg = async (src, pixelCrop) => {
     const image = new window.Image();
     image.src = src;
     await new Promise((resolve) => { image.onload = resolve; });
 
+    // Crop box can extend past the image (letterboxed view): white-fill, draw
+    // at offset, cap the output edge.
+    const MAX_OUT = 1600;
+    const scale = Math.min(1, MAX_OUT / Math.max(pixelCrop.width, pixelCrop.height));
     const canvas = document.createElement("canvas");
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    canvas.width = Math.round(pixelCrop.width * scale);
+    canvas.height = Math.round(pixelCrop.height * scale);
     const ctx = canvas.getContext("2d");
-
-    ctx.drawImage(
-      image,
-      pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
-      0, 0, pixelCrop.width, pixelCrop.height
-    );
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, -pixelCrop.x * scale, -pixelCrop.y * scale, image.width * scale, image.height * scale);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.9);
     });
+  };
+
+  const uploadPhotoBlob = async (blob) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+    const formData = new FormData();
+    formData.append("userId", user.id);
+    formData.append("file", blob, "profile.jpg");
+    const res = await fetch(`${supabaseUrl}/functions/v1/upload-profile-photo`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Upload failed");
+    return data.url;
   };
 
   const handleCropSave = async () => {
@@ -240,28 +279,8 @@ const DashboardView = ({
 
     try {
       const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-      const formData = new FormData();
-      formData.append("userId", user.id);
-      formData.append("file", blob, "profile.jpg");
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/upload-profile-photo`, {
-        method: "POST",
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!data.success) throw new Error(data.error || "Upload failed");
-
-      setCustomPhoto(data.url);
+      const url = await uploadPhotoBlob(blob);
+      setCustomPhoto(url);
       setShowCropper(false);
       setImageSrc(null);
     } catch (err) {
@@ -943,16 +962,20 @@ const DashboardView = ({
             </button>
           </div>
 
-          <div className="flex-1 relative">
+          <div ref={cropContainerRef} className="flex-1 relative">
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
               aspect={1}
               cropShape="rect"
+              objectFit="cover"
+              minZoom={minZoom}
+              restrictPosition={false}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
+              onMediaLoaded={onMediaLoaded}
             />
           </div>
 
@@ -960,13 +983,20 @@ const DashboardView = ({
             <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
-              min={1}
+              min={minZoom}
               max={3}
-              step={0.1}
+              step={0.05}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               className="flex-1 accent-purple-500"
             />
+            <button
+              type="button"
+              onClick={fitWholeImage}
+              className="shrink-0 px-3 py-1.5 rounded-full border border-white/30 text-white/80 text-xs font-bold hover:bg-white/10 transition-colors"
+            >
+              {t("crop.fit")}
+            </button>
           </div>
         </div>
       )}

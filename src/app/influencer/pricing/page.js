@@ -136,6 +136,10 @@ export default function PricingPage() {
   // subscription-history on mount. Drives the "renews in N days" line so it
   // doesn't reset every time the profile's updated_at is bumped.
   const [realRenewalTs, setRealRenewalTs] = useState(null);
+  // Placeholder gate: the updated_at approximation flashed a wrong "renews in
+  // 30 days" before the gateway date arrived. Show a skeleton chip until the
+  // fetch settles; approximation is only the after-fetch fallback.
+  const [renewalFetching, setRenewalFetching] = useState(true);
   const showError = (message, title = t("errors.checkoutTitle")) =>
     setErrorModal({ title, message: String(message || t("errors.genericMessage")) });
 
@@ -172,8 +176,12 @@ export default function PricingPage() {
   // so the renewal countdown is real, not the updated_at approximation that
   // resets on every profile edit. Falls back silently on error.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setRenewalFetching(false);
+      return;
+    }
     let cancelled = false;
+    setRenewalFetching(true);
     (async () => {
       try {
         const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
@@ -182,6 +190,8 @@ export default function PricingPage() {
         if (!cancelled && ts > 0) setRealRenewalTs(ts);
       } catch {
         // keep the approximation
+      } finally {
+        if (!cancelled) setRenewalFetching(false);
       }
     })();
     return () => {
@@ -598,11 +608,14 @@ export default function PricingPage() {
                   <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? t("currentPlan.freeTrial") : effectivePlan}</h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">{t("currentPlan.current")}</Badge>
                   {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">{t("currentPlan.proFeaturesUnlocked")}</Badge>}
-                  {showRenewal && (
-                    <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px] font-bold">
-                      {t("currentPlan.renewsIn", { days: renewal.daysLeft })}
-                    </Badge>
-                  )}
+                  {showRenewal &&
+                    (renewalFetching && !renewal.exact ? (
+                      <span className="inline-block w-24 h-5 rounded-full bg-slate-100 animate-pulse" aria-label="…" />
+                    ) : (
+                      <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px] font-bold">
+                        {t("currentPlan.renewsIn", { days: renewal.daysLeft })}
+                      </Badge>
+                    ))}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {onTrial

@@ -63,6 +63,11 @@ export function ProStatusCard() {
   const { profile, user } = useAuth();
   const supabase = createClient();
   const [realRenewalTs, setRealRenewalTs] = useState(null);
+  // While the exact next-billing date is in flight, show a placeholder — the
+  // updated_at approximation flashed a wrong number (often "30") for a few
+  // seconds before snapping to the real value. Approximation is now only the
+  // FALLBACK after the fetch settles without a date.
+  const [renewalFetching, setRenewalFetching] = useState(true);
   const { daysLeft, progress, expired } = getTrialInfo(profile);
   const renewal = getPlanRenewalInfo(profile, realRenewalTs);
 
@@ -72,8 +77,12 @@ export function ProStatusCard() {
   useEffect(() => {
     const plan = (profile?.subscription_plan || "").toLowerCase();
     const paid = !!plan && plan !== "free" && plan !== "trial";
-    if (!user?.id || !paid) return;
+    if (!user?.id || !paid) {
+      setRenewalFetching(false);
+      return;
+    }
     let cancelled = false;
+    setRenewalFetching(true);
     (async () => {
       try {
         const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
@@ -82,6 +91,8 @@ export function ProStatusCard() {
         if (!cancelled && ts > 0) setRealRenewalTs(ts);
       } catch {
         // keep the approximation
+      } finally {
+        if (!cancelled) setRenewalFetching(false);
       }
     })();
     return () => {
@@ -224,9 +235,13 @@ export function ProStatusCard() {
                     </p>
                   </div>
                   <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
-                    <span className="text-3xl lg:text-3xl font-black leading-none bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text">
-                      {renewal.daysLeft != null ? renewal.daysLeft : "—"}
-                    </span>
+                    {renewalFetching && !renewal.exact ? (
+                      <span className="inline-block w-10 h-8 rounded-lg bg-slate-100 animate-pulse" aria-label="…" />
+                    ) : (
+                      <span className="text-3xl lg:text-3xl font-black leading-none bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text">
+                        {renewal.daysLeft != null ? renewal.daysLeft : "—"}
+                      </span>
+                    )}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
                       {t("days")}
                     </p>

@@ -119,28 +119,55 @@ const BrandProfile = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Letterbox support: objectFit="cover" keeps the image BIG (crop box =
+  // container min dimension) while restrictPosition off + sub-1 zoom lets the
+  // whole logo sit inside the square with white space. "Fit full photo" jumps
+  // straight to that letterboxed view.
+  const cropContainerRef = useRef(null);
+  const [fitZoom, setFitZoom] = useState(null);
+  const onMediaLoaded = useCallback((mediaSize) => {
+    const rect = cropContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const boxSide = Math.min(rect.width, rect.height);
+    setFitZoom(boxSide / Math.max(mediaSize.width, mediaSize.height));
+  }, []);
+  const minZoom = Math.min(0.3, fitZoom || 1);
+  const fitWholeImage = () => {
+    if (!fitZoom) return;
+    setZoom(fitZoom);
+    setCrop({ x: 0, y: 0 });
+  };
+
   const getCroppedBlob = async (src, pixelCrop) => {
     const img = new window.Image();
     img.src = src;
     await new Promise((r) => (img.onload = r));
+    // Crop box can extend past the image (letterboxed view): white-fill, draw
+    // at offset, cap the output edge.
+    const MAX_OUT = 1600;
+    const scale = Math.min(1, MAX_OUT / Math.max(pixelCrop.width, pixelCrop.height));
     const canvas = document.createElement("canvas");
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    canvas.width = Math.round(pixelCrop.width * scale);
+    canvas.height = Math.round(pixelCrop.height * scale);
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(
-      img,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      0,
-      0,
-      pixelCrop.width,
-      pixelCrop.height
-    );
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, -pixelCrop.x * scale, -pixelCrop.y * scale, img.width * scale, img.height * scale);
     return new Promise((resolve) =>
       canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.92)
     );
+  };
+
+  const uploadLogoBlob = async (blob) => {
+    const fd = new FormData();
+    fd.append("userId", user.id);
+    fd.append("file", blob, "logo.jpg");
+    fd.append("table", "brand_profiles");
+    const { data, error } = await supabase.functions.invoke("upload-profile-photo", {
+      body: fd,
+    });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
   };
 
   const handleCropSave = async () => {
@@ -150,15 +177,7 @@ const BrandProfile = () => {
     startLoading(t("loading.uploadingLogo"));
     try {
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels);
-      const fd = new FormData();
-      fd.append("userId", user.id);
-      fd.append("file", blob, "logo.jpg");
-      fd.append("table", "brand_profiles");
-      const { data, error } = await supabase.functions.invoke("upload-profile-photo", {
-        body: fd,
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      await uploadLogoBlob(blob);
       await refreshProfile();
       setImageSrc(null);
     } catch (err) {
@@ -748,29 +767,40 @@ const BrandProfile = () => {
               {uploading ? t("crop.saving") : t("actions.save")}
             </button>
           </div>
-          <div className="flex-1 relative">
+          <div ref={cropContainerRef} className="flex-1 relative">
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
               aspect={1}
               cropShape="rect"
+              objectFit="cover"
+              minZoom={minZoom}
+              restrictPosition={false}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
+              onMediaLoaded={onMediaLoaded}
             />
           </div>
           <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
             <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
-              min={1}
+              min={minZoom}
               max={3}
-              step={0.1}
+              step={0.05}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
               className="flex-1 accent-purple-500"
             />
+            <button
+              type="button"
+              onClick={fitWholeImage}
+              className="shrink-0 px-3 py-1.5 rounded-full border border-white/30 text-white/80 text-xs font-bold hover:bg-white/10 transition-colors"
+            >
+              {t("crop.fit")}
+            </button>
           </div>
         </div>
       )}

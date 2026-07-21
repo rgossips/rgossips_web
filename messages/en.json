@@ -1645,7 +1645,8 @@
     "crop": {
       "title": "Crop Logo",
       "saving": "Saving...",
-      "zoom": "Zoom"
+      "zoom": "Zoom",
+      "fit": "Fit full photo"
     },
     "categoriesModal": {
       "title": "Edit Categories",
@@ -2135,7 +2136,8 @@
       "title": "Crop Photo",
       "saving": "Saving...",
       "save": "Save",
-      "zoom": "Zoom"
+      "zoom": "Zoom",
+      "fit": "Fit full photo"
     },
     "logoutModal": {
       "title": "Log out?",
@@ -4159,7 +4161,8 @@
     "crop": {
       "title": "Crop Photo",
       "saving": "Saving...",
-      "zoom": "Zoom"
+      "zoom": "Zoom",
+      "fit": "Fit full photo"
     },
     "languageModal": {
       "title": "Content languages",

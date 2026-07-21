@@ -70,7 +70,9 @@
       "Bash(python -c ' *)",
       "Bash(SP=\"C:/Users/Deepak/AppData/Local/Temp/claude/d--Development-React-RS-Gossips/c0a278b7-81cb-453d-880a-8ec521170e57/scratchpad\" node ./_shot2.mjs)",
       "Bash(rm -f _shot.mjs _shot2.mjs _shot3.mjs _probe.mjs _cmp.mjs)",
-      "Bash(npm un *)"
+      "Bash(npm un *)",
+      "Bash(grep -nA12 \"<Cropper\" src/components/MyInformationDetail.jsx)",
+      "Bash(grep -nB2 \"<Cropper\" src/components/MyInformationDetail.jsx)"
     ],
     "additionalDirectories": [
       "d:\\Development\\React\\rgossips-admin\\src\\i18n",
