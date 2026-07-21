@@ -43,6 +43,7 @@ export default function Hero() {
         }}
       ></div>
       <div
+        className="hero-container"
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
@@ -62,6 +63,7 @@ export default function Hero() {
           }}
         >
           <div
+            className="hero-badge"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -88,6 +90,7 @@ export default function Hero() {
             Now live: AI-powered Influencer Matching
           </div>
           <h1
+            className="hero-headline"
             style={{
               fontSize: "64px",
               lineHeight: 1.06,
@@ -111,6 +114,7 @@ export default function Hero() {
             </span>
           </h1>
           <p
+            className="hero-subtitle"
             style={{
               fontSize: "17.5px",
               color: "#6B7280",
@@ -125,6 +129,7 @@ export default function Hero() {
             agencies, no guesswork.
           </p>
           <div
+            className="hero-stats"
             style={{
               display: "flex",
               justifyContent: "center",
@@ -136,6 +141,7 @@ export default function Hero() {
             {heroStats.map((st, i) => (
               <div key={i}>
                 <div
+                  className="hero-stat-value"
                   style={{
                     fontSize: "26px",
                     fontWeight: 800,
@@ -162,6 +168,39 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .hero-container {
+            padding: 44px 20px 64px !important;
+          }
+          .hero-badge {
+            font-size: 11.5px !important;
+            padding: 7px 14px !important;
+            max-width: 100% !important;
+            text-align: left !important;
+          }
+          .hero-headline {
+            font-size: 33px !important;
+            line-height: 1.15 !important;
+            margin-top: 20px !important;
+            max-width: 100% !important;
+          }
+          .hero-subtitle {
+            font-size: 14.5px !important;
+            line-height: 1.65 !important;
+            margin-top: 16px !important;
+            max-width: 100% !important;
+          }
+          .hero-stats {
+            flex-wrap: wrap !important;
+            gap: 18px 24px !important;
+            margin-top: 28px !important;
+          }
+          .hero-stat-value {
+            font-size: 22px !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }

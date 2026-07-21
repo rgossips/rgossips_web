@@ -82,9 +82,9 @@ export default function Pricing() {
         .pricing-feat-row:hover { background: #FAF7FE; }
         .pricing-brand-cta:hover { transform: translateY(-2px); }
       `}</style>
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
+      <div className="prc-wrap" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-          <h2 style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: 0 }}>Simple, transparent pricing.</h2>
+          <h2 className="prc-title" style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: 0 }}>Simple, transparent pricing.</h2>
           <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
             <span style={{ fontSize: "15px", color: "#6B7280", fontWeight: 600 }}>Creators pay a little. Brands pay nothing — ever.</span>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#FFFFFF", border: "1px solid #EDECF2", borderRadius: "999px", padding: "4px", boxShadow: "0 4px 14px rgba(17,24,39,0.05)" }}>
@@ -94,13 +94,13 @@ export default function Pricing() {
           </div>
         </div>
         <div style={{ marginTop: "48px", background: "linear-gradient(#FFFFFF, #FFFFFF) padding-box, linear-gradient(135deg, rgba(244,114,182,0.5), rgba(168,85,247,0.25) 45%, rgba(124,58,237,0.5)) border-box", border: "1.5px solid transparent", borderRadius: "28px", overflow: "hidden", boxShadow: "0 14px 40px rgba(124,58,237,0.1)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr" }}>
-            <div style={{ padding: "28px 30px", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div className="prc-planshead" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr" }}>
+            <div className="prc-intro" style={{ padding: "28px 30px", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
               <div style={{ fontSize: "12px", fontWeight: 800, letterSpacing: "0.12em", color: "#9CA3AF" }}>COMPARE PLANS</div>
               <p style={{ fontSize: "13px", color: "#6B7280", lineHeight: 1.6, margin: "8px 0 0" }}>Every plan, feature by feature. Click a plan to see exactly what you'd get — and what you'd miss.</p>
             </div>
             {plans.map((pl, i) => (
-              <div key={i} onClick={pl.select} style={{ position: "relative", padding: "24px 22px", cursor: "pointer", borderLeft: "1px solid #F1F0F5", background: pl.headBg, transition: "background 0.25s ease" }}>
+              <div key={i} onClick={pl.select} className="prc-plancol" style={{ position: "relative", padding: "24px 22px", cursor: "pointer", borderLeft: "1px solid #F1F0F5", background: pl.headBg, transition: "background 0.25s ease" }}>
                 {pl.popular && (
                   <span style={{ position: "absolute", top: "14px", right: "14px", fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.08em", background: "linear-gradient(95deg, #8B5CF6, #EC4899)", color: "#FFFFFF", padding: "4px 10px", borderRadius: "999px" }}>POPULAR</span>
                 )}
@@ -108,7 +108,7 @@ export default function Pricing() {
                   <span style={{ width: "16px", height: "16px", borderRadius: "50%", border: `2px solid ${pl.radioBorder}`, background: pl.radioBg, boxShadow: pl.radioShadow, transition: "all 0.2s ease", flexShrink: 0 }}></span>
                   <span style={{ fontSize: "12.5px", fontWeight: 800, letterSpacing: "0.12em", color: pl.nameColor, transition: "color 0.2s ease" }}>{pl.name}</span>
                 </div>
-                <div style={{ marginTop: "12px" }}><span style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.02em" }}>{pl.price}</span><span style={{ fontSize: "12px", color: "#9CA3AF" }}>{pl.per}</span></div>
+                <div style={{ marginTop: "12px" }}><span className="prc-price" style={{ fontSize: "34px", fontWeight: 800, letterSpacing: "-0.02em" }}>{pl.price}</span><span style={{ fontSize: "12px", color: "#9CA3AF" }}>{pl.per}</span></div>
                 <div style={{ fontSize: "11.5px", color: "#6B7280", lineHeight: 1.5, marginTop: "6px" }}>{pl.who}</div>
                 <Link href="/login" style={{ display: "block", textAlign: "center", marginTop: "16px", padding: "10px", borderRadius: "999px", fontWeight: 800, fontSize: "12.5px", background: pl.ctaBg, color: pl.ctaFg, border: `1.5px solid ${pl.ctaBorder}`, boxShadow: pl.ctaShadow, transition: "all 0.25s ease" }}>{pl.cta}</Link>
               </div>
@@ -117,20 +117,20 @@ export default function Pricing() {
           {planRows.map((row, i) => (
             <div key={i}>
               {row.isGroup && (
-                <div style={{ padding: "16px 30px 9px", borderTop: "1px solid #F1F0F5", fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.14em", color: "#A855F7", background: "#FCFBFE" }}>{row.label}</div>
+                <div className="prc-grouphead" style={{ padding: "16px 30px 9px", borderTop: "1px solid #F1F0F5", fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.14em", color: "#A855F7", background: "#FCFBFE" }}>{row.label}</div>
               )}
               {row.isFeature && (
-                <div className="pricing-feat-row" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", alignItems: "stretch", borderTop: "1px solid #F7F6FA", transition: "background 0.2s ease" }}>
-                  <span style={{ padding: "12px 30px", fontSize: "13.5px", fontWeight: 700, color: "#4B5563", display: "flex", alignItems: "center" }}>{row.label}</span>
+                <div className="pricing-feat-row prc-featrow" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", alignItems: "stretch", borderTop: "1px solid #F7F6FA", transition: "background 0.2s ease" }}>
+                  <span className="prc-featlabel" style={{ padding: "12px 30px", fontSize: "13.5px", fontWeight: 700, color: "#4B5563", display: "flex", alignItems: "center" }}>{row.label}</span>
                   {row.cells.map((cell, ci) => (
-                    <span key={ci} style={{ padding: "12px 18px", borderLeft: "1px solid #F1F0F5", background: cell.bg, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: "12.5px", fontWeight: cell.weight, color: cell.color, transition: "background 0.25s ease, color 0.25s ease" }}>{cell.text}</span>
+                    <span key={ci} className="prc-featcell" style={{ padding: "12px 18px", borderLeft: "1px solid #F1F0F5", background: cell.bg, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: "12.5px", fontWeight: cell.weight, color: cell.color, transition: "background 0.25s ease, color 0.25s ease" }}>{cell.text}</span>
                   ))}
                 </div>
               )}
             </div>
           ))}
         </div>
-        <div style={{ position: "relative", marginTop: "22px", background: "linear-gradient(115deg, #7C3AED, #A855F7 55%, #EC4899)", borderRadius: "24px", padding: "30px 36px", color: "#FFFFFF", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap", boxShadow: "0 18px 44px rgba(124,58,237,0.3)" }}>
+        <div className="prc-banner" style={{ position: "relative", marginTop: "22px", background: "linear-gradient(115deg, #7C3AED, #A855F7 55%, #EC4899)", borderRadius: "24px", padding: "30px 36px", color: "#FFFFFF", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px", flexWrap: "wrap", boxShadow: "0 18px 44px rgba(124,58,237,0.3)" }}>
           <div style={{ position: "absolute", top: "-46px", right: "22%", width: "120px", height: "120px", borderRadius: "50%", border: "16px solid rgba(255,255,255,0.12)", animation: "floatA 6s ease-in-out infinite", pointerEvents: "none" }}></div>
           <div style={{ position: "absolute", bottom: "-30px", left: "34%", width: "64px", height: "64px", background: "rgba(255,255,255,0.1)", borderRadius: "18px", transform: "rotate(20deg)", animation: "floatB 7s ease-in-out infinite", pointerEvents: "none" }}></div>
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
@@ -140,9 +140,26 @@ export default function Pricing() {
               <span style={{ display: "block", fontSize: "13.5px", color: "rgba(255,255,255,0.82)", marginTop: "3px" }}>No subscription, no commission — just a flat 5% escrow fee on payouts.</span>
             </span>
           </div>
-          <Link href="/login" className="pricing-brand-cta" style={{ position: "relative", background: "#FFFFFF", color: "#7C3AED", fontWeight: 800, padding: "14px 28px", borderRadius: "999px", fontSize: "14px", boxShadow: "0 10px 24px rgba(30,27,46,0.2)", transition: "transform 0.2s ease" }}>Join as a brand →</Link>
+          <Link href="/login" className="pricing-brand-cta prc-cta" style={{ position: "relative", background: "#FFFFFF", color: "#7C3AED", fontWeight: 800, padding: "14px 28px", borderRadius: "999px", fontSize: "14px", boxShadow: "0 10px 24px rgba(30,27,46,0.2)", transition: "transform 0.2s ease" }}>Join as a brand →</Link>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .prc-wrap { padding: 56px 20px 0 !important; }
+          .prc-title { font-size: 28px !important; }
+          .prc-planshead { grid-template-columns: 1fr !important; }
+          .prc-intro { padding: 22px 20px 12px !important; }
+          .prc-plancol { border-left: none !important; border-top: 1px solid #F1F0F5 !important; padding: 20px !important; }
+          .prc-price { font-size: 30px !important; }
+          .prc-featrow { grid-template-columns: 1fr 1fr 1fr !important; }
+          .prc-featlabel { grid-column: 1 / -1 !important; padding: 10px 20px 2px !important; font-size: 13px !important; }
+          .prc-featcell { padding: 8px 6px 12px !important; font-size: 12px !important; }
+          .prc-featrow .prc-featcell:nth-of-type(2) { border-left: none !important; }
+          .prc-grouphead { padding: 14px 20px 8px !important; }
+          .prc-banner { padding: 24px 20px !important; }
+          .prc-cta { display: block !important; width: 100% !important; text-align: center !important; }
+        }
+      `}</style>
     </section>
   );
 }

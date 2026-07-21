@@ -48,31 +48,112 @@ export default function Audiences() {
   const creatorTabFg = isCreator ? "#FFFFFF" : "#6B7280";
 
   return (
-    <section id="brands-influencers-section" data-screen-label="Audiences" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0", scrollMarginTop: "80px" }}>
-      <div style={{ position: "relative", background: audBg, borderRadius: "28px", padding: "40px 52px 52px", overflow: "hidden", transition: "background 0.5s ease" }}>
-        <div style={{ position: "absolute", top: "-50px", right: "-50px", width: "190px", height: "190px", borderRadius: "50%", border: "22px solid rgba(168,85,247,0.12)", pointerEvents: "none" }}></div>
-        <div style={{ position: "absolute", bottom: "-60px", left: "-60px", width: "200px", height: "200px", borderRadius: "50%", border: "1.5px dashed #EC4899", opacity: 0.4, animation: "spinSlow 30s linear infinite", pointerEvents: "none" }}></div>
+    <section id="brands-influencers-section" data-screen-label="Audiences" className="aud-section" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0", scrollMarginTop: "80px" }}>
+      <div className="aud-card" style={{ position: "relative", background: audBg, borderRadius: "28px", padding: "40px 52px 52px", overflow: "hidden", transition: "background 0.5s ease" }}>
+        <div
+          style={{ position: "absolute", top: "-50px", right: "-50px", width: "190px", height: "190px", borderRadius: "50%", border: "22px solid rgba(168,85,247,0.12)", pointerEvents: "none" }}
+        ></div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "-60px",
+            left: "-60px",
+            width: "200px",
+            height: "200px",
+            borderRadius: "50%",
+            border: "1.5px dashed #EC4899",
+            opacity: 0.4,
+            animation: "spinSlow 30s linear infinite",
+            pointerEvents: "none",
+          }}
+        ></div>
         <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#FFFFFF", borderRadius: "999px", padding: "5px", boxShadow: "0 8px 24px rgba(17,24,39,0.08)" }}>
-            <button onClick={pickBrand} style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: "none", cursor: "pointer", fontFamily: "'Manrope', sans-serif", fontSize: "13.5px", fontWeight: 800, padding: "10px 22px", borderRadius: "999px", background: brandTabBg, color: brandTabFg, transition: "all 0.25s ease" }}>For Brands <span style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.06em", background: "#10B981", color: "#FFFFFF", borderRadius: "999px", padding: "3px 9px" }}>FREE</span></button>
-            <button onClick={pickCreator} style={{ border: "none", cursor: "pointer", fontFamily: "'Manrope', sans-serif", fontSize: "13.5px", fontWeight: 800, padding: "10px 22px", borderRadius: "999px", background: creatorTabBg, color: creatorTabFg, transition: "all 0.25s ease" }}>For Influencers</button>
+          <div className="aud-toggle-pill" style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#FFFFFF", borderRadius: "999px", padding: "5px", boxShadow: "0 8px 24px rgba(17,24,39,0.08)" }}>
+            <button
+              onClick={pickBrand}
+              className="aud-tab"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: "13.5px",
+                fontWeight: 800,
+                padding: "10px 22px",
+                borderRadius: "999px",
+                background: brandTabBg,
+                color: brandTabFg,
+                transition: "all 0.25s ease",
+              }}
+            >
+              For Brands <span className="aud-tab-badge" style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.06em", background: "#10B981", color: "#FFFFFF", borderRadius: "999px", padding: "3px 9px" }}>FREE</span>
+            </button>
+            <button
+              onClick={pickCreator}
+              className="aud-tab"
+              style={{
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'Manrope', sans-serif",
+                fontSize: "13.5px",
+                fontWeight: 800,
+                padding: "10px 22px",
+                borderRadius: "999px",
+                background: creatorTabBg,
+                color: creatorTabFg,
+                transition: "all 0.25s ease",
+              }}
+            >
+              For Influencers
+            </button>
           </div>
         </div>
-        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "56px", alignItems: "center", marginTop: "34px" }}>
+        <div className="aud-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: "56px", alignItems: "center", marginTop: "34px" }}>
           <div>
             <div style={{ fontSize: "13px", fontWeight: 800, letterSpacing: "0.1em", color: audAccent, transition: "color 0.3s ease" }}>{audEyebrow}</div>
-            <h3 style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.02em", margin: "14px 0 0", lineHeight: 1.15 }}>{audTitle}</h3>
+            <h3 className="aud-title" style={{ fontSize: "36px", fontWeight: 800, letterSpacing: "-0.02em", margin: "14px 0 0", lineHeight: 1.15 }}>{audTitle}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "24px" }}>
               {audPoints.map((pt, i) => (
-                <div key={i} style={{ display: "flex", gap: "12px", fontSize: "14.5px", color: "#4B5563", lineHeight: 1.55, fontWeight: 500 }}><span style={{ color: audAccent, transition: "color 0.3s ease" }}>✦</span>{pt}</div>
+                <div key={i} className="aud-point" style={{ display: "flex", gap: "12px", fontSize: "14.5px", color: "#4B5563", lineHeight: 1.55, fontWeight: 500 }}>
+                  <span style={{ color: audAccent, transition: "color 0.3s ease" }}>✦</span>
+                  {pt}
+                </div>
               ))}
             </div>
-            <Link href="/login" style={{ display: "inline-block", marginTop: "28px", background: audCtaBg, color: "#FFFFFF", padding: "14px 28px", borderRadius: "999px", fontWeight: 800, fontSize: "14px", boxShadow: "0 8px 20px rgba(139,92,246,0.3)", transition: "all 0.3s ease" }}>{audCta}</Link>
+            <Link
+              href="/login"
+              className="aud-cta"
+              style={{
+                display: "inline-block",
+                marginTop: "28px",
+                background: audCtaBg,
+                color: "#FFFFFF",
+                padding: "14px 28px",
+                borderRadius: "999px",
+                fontWeight: 800,
+                fontSize: "14px",
+                boxShadow: "0 8px 20px rgba(139,92,246,0.3)",
+                transition: "all 0.3s ease",
+              }}
+            >
+              {audCta}
+            </Link>
             <div style={{ fontSize: "12px", fontWeight: 700, color: "#9CA3AF", marginTop: "12px" }}>{audCtaNote}</div>
           </div>
           <div style={{ position: "relative" }}>
-            <div style={{ position: "absolute", inset: "-14px", borderRadius: "32px", background: "linear-gradient(135deg, rgba(168,85,247,0.16), rgba(236,72,153,0.12))", transform: "rotate(-2deg)", pointerEvents: "none" }}></div>
-            <div style={{ position: "relative", width: "100%", height: "380px", borderRadius: "24px", overflow: "hidden", background: "linear-gradient(135deg,#EDE9FE,#FCE7F3)" }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: "-14px",
+                borderRadius: "32px",
+                background: "linear-gradient(135deg, rgba(168,85,247,0.16), rgba(236,72,153,0.12))",
+                transform: "rotate(-2deg)",
+                pointerEvents: "none",
+              }}
+            ></div>
+            <div className="aud-image-frame" style={{ position: "relative", width: "100%", height: "380px", borderRadius: "24px", overflow: "hidden", background: "linear-gradient(135deg,#EDE9FE,#FCE7F3)" }}>
               {/* Tab-driven product mock — swaps with the For Brands / For
                   Influencers toggle. Both PNGs are 1134×760. */}
               <Image
@@ -84,23 +165,54 @@ export default function Audiences() {
                 priority={false}
               />
             </div>
-            <div style={{ position: "absolute", top: "30px", left: "-22px", background: "#FFFFFF", borderRadius: "16px", padding: "12px 18px", boxShadow: "0 16px 40px rgba(17,24,39,0.12)", display: "flex", alignItems: "center", gap: "12px", animation: "floatA 5s ease-in-out infinite" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "12px", background: "#ECFDF5", display: "grid", placeItems: "center", color: "#10B981", fontSize: "16px", fontWeight: 800 }}>{chip1Glyph}</div>
-              <div>
-                <div style={{ fontSize: "16px", fontWeight: 800 }}>{chip1Val}</div>
-                <div style={{ fontSize: "11.5px", color: "#9CA3AF", fontWeight: 600 }}>{chip1Label}</div>
-              </div>
-            </div>
-            <div style={{ position: "absolute", bottom: "34px", right: "-18px", background: "#FFFFFF", borderRadius: "16px", padding: "12px 18px", boxShadow: "0 16px 40px rgba(17,24,39,0.12)", display: "flex", alignItems: "center", gap: "12px", animation: "floatB 6s ease-in-out infinite" }}>
-              <div style={{ width: "36px", height: "36px", borderRadius: "12px", background: "#F3EEFD", display: "grid", placeItems: "center", color: "#8B5CF6", fontSize: "16px", fontWeight: 800 }}>✦</div>
-              <div>
-                <div style={{ fontSize: "16px", fontWeight: 800 }}>{chip2Val}</div>
-                <div style={{ fontSize: "11.5px", color: "#9CA3AF", fontWeight: 600 }}>{chip2Label}</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .aud-section {
+            padding: 56px 16px 0 !important;
+          }
+          .aud-card {
+            padding: 24px 20px 28px !important;
+            border-radius: 22px !important;
+          }
+          .aud-toggle-pill {
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+            max-width: 100% !important;
+          }
+          .aud-tab {
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            gap: 6px !important;
+          }
+          .aud-tab-badge {
+            font-size: 8.5px !important;
+            padding: 2px 7px !important;
+          }
+          .aud-grid {
+            grid-template-columns: 1fr !important;
+            gap: 28px !important;
+            margin-top: 26px !important;
+          }
+          .aud-title {
+            font-size: 26px !important;
+          }
+          .aud-point {
+            font-size: 13.5px !important;
+          }
+          .aud-cta {
+            display: block !important;
+            width: 100% !important;
+            text-align: center !important;
+            padding: 14px 20px !important;
+          }
+          .aud-image-frame {
+            height: 240px !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }

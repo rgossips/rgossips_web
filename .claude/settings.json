@@ -63,7 +63,14 @@
       "Bash(grep -nE \"whatsapp-otp-sender|whatsapp-otp-verifier|phone:|fullPhone|\\\\\\\\+91|91\\\\\\\\$\\\\\\\\{\" src/app/\\\\\\(auth\\\\\\)/login/page.js)",
       "Bash(grep -nB2 -A8 \"\\\\.insert\" supabase/functions/whatsapp-otp-sender/index.ts)",
       "Bash(python -)",
-      "Bash(grep -vE \"canonicalPhone|phoneDigits|Phone number|phone number|phones|//|const \\\\{ phone|phoneId|PHONES\")"
+      "Bash(grep -vE \"canonicalPhone|phoneDigits|Phone number|phone number|phones|//|const \\\\{ phone|phoneId|PHONES\")",
+      "Bash(npm ls *)",
+      "Bash(cp \"C:/Users/Deepak/AppData/Local/Temp/claude/d--Development-React-RS-Gossips/c0a278b7-81cb-453d-880a-8ec521170e57/scratchpad/shot.mjs\" ./_shot.mjs)",
+      "Bash(SP=\"C:/Users/Deepak/AppData/Local/Temp/claude/d--Development-React-RS-Gossips/c0a278b7-81cb-453d-880a-8ec521170e57/scratchpad\" node ./_shot.mjs mob)",
+      "Bash(python -c ' *)",
+      "Bash(SP=\"C:/Users/Deepak/AppData/Local/Temp/claude/d--Development-React-RS-Gossips/c0a278b7-81cb-453d-880a-8ec521170e57/scratchpad\" node ./_shot2.mjs)",
+      "Bash(rm -f _shot.mjs _shot2.mjs _shot3.mjs _probe.mjs _cmp.mjs)",
+      "Bash(npm un *)"
     ],
     "additionalDirectories": [
       "d:\\Development\\React\\rgossips-admin\\src\\i18n",

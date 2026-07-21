@@ -15,18 +15,18 @@ export default function HowItWorks() {
   const stepPct = (((activeStep + 1) / 4) * 100) + '%';
 
   return (
-    <section id="works" data-screen-label="How it works" style={{ maxWidth: '1280px', margin: '0 auto', padding: '88px 40px 0', fontFamily: "'Manrope', sans-serif", scrollMarginTop: '80px' }}>
+    <section id="works" data-screen-label="How it works" className="hiw-section" style={{ maxWidth: '1280px', margin: '0 auto', padding: '88px 40px 0', fontFamily: "'Manrope', sans-serif", scrollMarginTop: '80px' }}>
       <style>{`
         .how-step-card:hover { transform: translateY(-4px) !important; box-shadow: 0 12px 28px rgba(124,58,237,0.12); }
       `}</style>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <h2 style={{ fontSize: '42px', fontWeight: 800, letterSpacing: '-0.025em', margin: 0, fontFamily: "'Baloo 2','Manrope',sans-serif" }}>From prompt to payout.</h2>
+        <h2 className="hiw-title" style={{ fontSize: '42px', fontWeight: 800, letterSpacing: '-0.025em', margin: 0, fontFamily: "'Baloo 2','Manrope',sans-serif" }}>From prompt to payout.</h2>
         <span style={{ fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.12em', color: '#9CA3AF' }}>FOUR STEPS · TEN MINUTES</span>
       </div>
       <div style={{ position: 'relative', height: '6px', background: '#F1F0F5', borderRadius: '3px', marginTop: '48px', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: stepPct, background: 'linear-gradient(90deg, #8B5CF6, #EC4899)', borderRadius: '3px', transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '20px' }}>
+      <div className="hiw-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '20px' }}>
         {STEPS.map((s, i) => {
           const active = activeStep === i;
           const done = activeStep > i;
@@ -55,6 +55,14 @@ export default function HowItWorks() {
           );
         })}
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .hiw-section { padding: 56px 20px 0 !important; }
+          .hiw-title { font-size: 28px !important; }
+          .hiw-grid { grid-template-columns: 1fr !important; gap: 14px !important; }
+          .how-step-card { padding: 20px !important; }
+        }
+      `}</style>
     </section>
   );
 }

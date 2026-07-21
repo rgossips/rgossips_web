@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const chipsData = [
   { label: "Skincare launch in Mumbai", dot: "#F9A8D4" },
@@ -8,12 +8,7 @@ const chipsData = [
   { label: "Fitness creators, barter", dot: "#6EE7B7" },
 ];
 
-const scanSteps = [
-  "Parsing your brief…",
-  "Scanning 200,412 verified profiles…",
-  "Auditing for fake followers…",
-  "Ranking by audience fit…",
-];
+const scanSteps = ["Parsing your brief…", "Scanning 200,412 verified profiles…", "Auditing for fake followers…", "Ranking by audience fit…"];
 
 const resultsData = [
   { handle: "@glowbyaisha", niche: "Beauty · Mumbai", followers: "86K", er: "6.2%", score: 97 },
@@ -21,11 +16,7 @@ const resultsData = [
   { handle: "@dermadiaries.in", niche: "Beauty · Bengaluru", followers: "128K", er: "4.9%", score: 91 },
 ];
 
-const AVATAR_BG = [
-  "linear-gradient(135deg, #8B5CF6, #A855F7)",
-  "linear-gradient(135deg, #EC4899, #F472B6)",
-  "linear-gradient(135deg, #7C3AED, #EC4899)",
-];
+const AVATAR_BG = ["linear-gradient(135deg, #8B5CF6, #A855F7)", "linear-gradient(135deg, #EC4899, #F472B6)", "linear-gradient(135deg, #7C3AED, #EC4899)"];
 
 const liveCount = "200,412";
 const resultsHeader = "TOP MATCHES — 200,412 PROFILES SCANNED IN 0.4s";
@@ -38,6 +29,16 @@ export default function AIPrompt() {
   const [focused, setFocused] = useState(false);
   const promptRef = useRef(null);
   const timerRef = useRef(null);
+
+  // Auto-grow the prompt textarea with its content (and shrink back on
+  // delete). Keyed on `prompt` so chip clicks and clears resize too, not
+  // just keystrokes.
+  useEffect(() => {
+    const el = promptRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [prompt]);
 
   const isScanning = phase === "matching";
   const showResults = phase === "done";
@@ -79,17 +80,100 @@ export default function AIPrompt() {
   const shortlistLabel = `${shortlistCount} creator${shortlistCount === 1 ? "" : "s"} shortlisted`;
 
   return (
-    <section
-      data-screen-label="AI Prompt"
-      style={{ maxWidth: "1080px", margin: "0 auto", padding: "8px 40px 48px" }}
-    >
+    <section data-screen-label="AI Prompt" className="aip-section" style={{ maxWidth: "1080px", margin: "0 auto", padding: "8px 40px 48px" }}>
       <style>{`
         .aip-match-btn:hover { filter: brightness(1.15); }
         .aip-chip:hover { border-color: #F9A8D4; color: #F9A8D4; transform: translateY(-1px); }
         .aip-rerun:hover { color: #F9A8D4; border-color: #F9A8D4; }
         .aip-card:hover { transform: translateY(-3px); border-color: rgba(249,168,212,0.5); }
+
+        @media (max-width: 767px) {
+          .aip-section {
+            padding: 8px 20px 40px !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+          }
+          .aip-panel {
+            margin-top: 0px !important;
+            border-radius: 24px !important;
+            padding: 26px 18px 24px !important;
+          }
+          .aip-glow {
+            width: 200px !important;
+            height: 200px !important;
+          }
+          .aip-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+            margin-bottom: 16px !important;
+          }
+          .aip-promptbar {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 4px !important;
+            border-radius: 20px !important;
+            padding: 12px 14px 12px !important;
+          }
+          .aip-search-icon {
+            display: none !important;
+          }
+          .aip-input {
+            width: 100% !important;
+            font-size: 15px !important;
+            padding: 6px 0 !important;
+            /* placeholder wraps to 2 lines at 390px — the JS auto-grow only
+               tracks typed content, so the placeholder needs this floor */
+            min-height: 54px !important;
+          }
+          .aip-match-btn {
+            width: 100% !important;
+            justify-content: center !important;
+            min-height: 44px !important;
+            padding: 12px 20px !important;
+          }
+          .aip-chip {
+            padding: 9px 14px !important;
+            min-height: 38px !important;
+          }
+          .aip-scan {
+            padding: 16px !important;
+          }
+          .aip-results-title {
+            white-space: normal !important;
+            word-break: break-word !important;
+            flex-wrap: wrap !important;
+            line-height: 1.5 !important;
+          }
+          .aip-results-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          .aip-card {
+            padding: 16px !important;
+          }
+          .aip-card:hover {
+            transform: none;
+          }
+          .aip-handle {
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+          .aip-shortlist {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+            padding: 16px !important;
+            text-align: center !important;
+          }
+          .aip-invite {
+            justify-content: center !important;
+            min-height: 44px !important;
+          }
+        }
       `}</style>
       <div
+        className="aip-panel"
         style={{
           position: "relative",
           background: "linear-gradient(120deg, #1E1B2E, #2D2350)",
@@ -103,6 +187,7 @@ export default function AIPrompt() {
         }}
       >
         <div
+          className="aip-glow"
           style={{
             position: "absolute",
             top: "-90px",
@@ -110,12 +195,12 @@ export default function AIPrompt() {
             width: "300px",
             height: "300px",
             borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(168,85,247,0.35), rgba(168,85,247,0))",
+            background: "radial-gradient(circle, rgba(168,85,247,0.35), rgba(168,85,247,0))",
             pointerEvents: "none",
           }}
         ></div>
         <div
+          className="aip-glow"
           style={{
             position: "absolute",
             bottom: "-110px",
@@ -123,12 +208,12 @@ export default function AIPrompt() {
             width: "300px",
             height: "300px",
             borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(236,72,153,0.25), rgba(236,72,153,0))",
+            background: "radial-gradient(circle, rgba(236,72,153,0.25), rgba(236,72,153,0))",
             pointerEvents: "none",
           }}
         ></div>
         <div
+          className="aip-header"
           style={{
             position: "relative",
             display: "flex",
@@ -150,14 +235,8 @@ export default function AIPrompt() {
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z"
-                fill="url(#sparkGrad)"
-              ></path>
-              <path
-                d="M19 15l.9 2.6L22.5 18l-2.6.9L19 21.5l-.9-2.6-2.6-.9 2.6-.9L19 15z"
-                fill="#F9A8D4"
-              ></path>
+              <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z" fill="url(#sparkGrad)"></path>
+              <path d="M19 15l.9 2.6L22.5 18l-2.6.9L19 21.5l-.9-2.6-2.6-.9 2.6-.9L19 15z" fill="#F9A8D4"></path>
               <defs>
                 <linearGradient id="sparkGrad" x1="4" y1="2" x2="20" y2="18">
                   <stop stopColor="#C4B5FD"></stop>
@@ -203,6 +282,7 @@ export default function AIPrompt() {
           </span>
         </div>
         <div
+          className="aip-promptbar"
           style={{
             position: "relative",
             display: "flex",
@@ -215,22 +295,12 @@ export default function AIPrompt() {
             transition: "border-color 0.3s ease",
           }}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ flexShrink: 0, opacity: 0.55 }}
-          >
+          <svg className="aip-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.55 }}>
             <circle cx="11" cy="11" r="7" stroke="#FFFFFF" strokeWidth="2"></circle>
-            <path
-              d="M20 20l-3.5-3.5"
-              stroke="#FFFFFF"
-              strokeWidth="2"
-              strokeLinecap="round"
-            ></path>
+            <path d="M20 20l-3.5-3.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"></path>
           </svg>
           <textarea
+            className="aip-input"
             ref={promptRef}
             rows="1"
             value={prompt}
@@ -275,17 +345,12 @@ export default function AIPrompt() {
           >
             {matchLabel}
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 12h16m0 0l-6-6m6 6l-6 6"
-                stroke="#FFFFFF"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              ></path>
+              <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
             </svg>
           </button>
         </div>
         <div
+          className="aip-chips"
           style={{
             position: "relative",
             display: "flex",
@@ -331,6 +396,7 @@ export default function AIPrompt() {
         {/* SCANNING STATE */}
         {isScanning && (
           <div
+            className="aip-scan"
             style={{
               position: "relative",
               marginTop: "26px",
@@ -342,31 +408,12 @@ export default function AIPrompt() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{ animation: "spinSlow 1.2s linear infinite" }}
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="rgba(255,255,255,0.15)"
-                  strokeWidth="3"
-                ></circle>
-                <path
-                  d="M21 12a9 9 0 00-9-9"
-                  stroke="#F472B6"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                ></path>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{ animation: "spinSlow 1.2s linear infinite" }}>
+                <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.15)" strokeWidth="3"></circle>
+                <path d="M21 12a9 9 0 00-9-9" stroke="#F472B6" strokeWidth="3" strokeLinecap="round"></path>
               </svg>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "14px", fontWeight: 800 }}>
-                  {scanStepText}
-                </div>
+                <div style={{ fontSize: "14px", fontWeight: 800 }}>{scanStepText}</div>
                 <div
                   style={{
                     height: "5px",
@@ -387,11 +434,7 @@ export default function AIPrompt() {
                   ></div>
                 </div>
               </div>
-              <span
-                style={{ fontSize: "13px", fontWeight: 800, color: "#F9A8D4" }}
-              >
-                {scanPct}
-              </span>
+              <span style={{ fontSize: "13px", fontWeight: 800, color: "#F9A8D4" }}>{scanPct}</span>
             </div>
           </div>
         )}
@@ -416,6 +459,7 @@ export default function AIPrompt() {
               }}
             >
               <span
+                className="aip-results-title"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -427,19 +471,9 @@ export default function AIPrompt() {
                 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 3a9 9 0 109 9"
-                    stroke="#34D399"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                  ></path>
+                  <path d="M12 3a9 9 0 109 9" stroke="#34D399" strokeWidth="2.4" strokeLinecap="round"></path>
                   <circle cx="12" cy="12" r="2.4" fill="#34D399"></circle>
-                  <path
-                    d="M12 12l6-6"
-                    stroke="#34D399"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                  ></path>
+                  <path d="M12 12l6-6" stroke="#34D399" strokeWidth="2.4" strokeLinecap="round"></path>
                 </svg>
                 {resultsHeader}
               </span>
@@ -462,18 +496,13 @@ export default function AIPrompt() {
                 }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M20 11a8 8 0 10.9 4.9M20 5v6h-6"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  ></path>
+                  <path d="M20 11a8 8 0 10.9 4.9M20 5v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
                 </svg>
                 Re-run
               </button>
             </div>
             <div
+              className="aip-results-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
@@ -484,13 +513,9 @@ export default function AIPrompt() {
                 const picked = !!shortlist[r.handle];
                 const initial = r.handle[1].toUpperCase();
                 const bg = AVATAR_BG[i % 3];
-                const border = picked
-                  ? "rgba(52,211,153,0.6)"
-                  : "rgba(255,255,255,0.14)";
+                const border = picked ? "rgba(52,211,153,0.6)" : "rgba(255,255,255,0.14)";
                 const pickGlyph = picked ? "✓" : "+";
-                const pickBg = picked
-                  ? "linear-gradient(95deg, #10B981, #34D399)"
-                  : "rgba(255,255,255,0.08)";
+                const pickBg = picked ? "linear-gradient(95deg, #10B981, #34D399)" : "rgba(255,255,255,0.08)";
                 const pickFg = picked ? "#FFFFFF" : "rgba(255,255,255,0.7)";
                 return (
                   <div
@@ -534,6 +559,7 @@ export default function AIPrompt() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
+                          className="aip-handle"
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -544,24 +570,9 @@ export default function AIPrompt() {
                           }}
                         >
                           {r.handle}
-                          <svg
-                            width="13"
-                            height="13"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            style={{ flexShrink: 0 }}
-                          >
-                            <path
-                              d="M12 2l2.4 2.4H18v3.6L20.4 12 18 14.4V18h-3.6L12 20.4 9.6 18H6v-3.6L3.6 12 6 9.6V6h3.6L12 2z"
-                              fill="#60A5FA"
-                            ></path>
-                            <path
-                              d="M9.2 12.2l2 2 3.8-4"
-                              stroke="#FFFFFF"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            ></path>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                            <path d="M12 2l2.4 2.4H18v3.6L20.4 12 18 14.4V18h-3.6L12 20.4 9.6 18H6v-3.6L3.6 12 6 9.6V6h3.6L12 2z" fill="#60A5FA"></path>
+                            <path d="M9.2 12.2l2 2 3.8-4" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"></path>
                           </svg>
                         </div>
                         <div
@@ -611,19 +622,8 @@ export default function AIPrompt() {
                         }}
                       >
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <circle
-                            cx="12"
-                            cy="8"
-                            r="4"
-                            stroke="#C4B5FD"
-                            strokeWidth="2"
-                          ></circle>
-                          <path
-                            d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"
-                            stroke="#C4B5FD"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          ></path>
+                          <circle cx="12" cy="8" r="4" stroke="#C4B5FD" strokeWidth="2"></circle>
+                          <path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5" stroke="#C4B5FD" strokeWidth="2" strokeLinecap="round"></path>
                         </svg>
                         {r.followers}
                       </span>
@@ -655,9 +655,7 @@ export default function AIPrompt() {
                           marginBottom: "6px",
                         }}
                       >
-                        <span style={{ color: "rgba(255,255,255,0.45)" }}>
-                          AUDIENCE FIT
-                        </span>
+                        <span style={{ color: "rgba(255,255,255,0.45)" }}>AUDIENCE FIT</span>
                         <span
                           style={{
                             background: "linear-gradient(95deg, #C4B5FD, #F9A8D4)",
@@ -694,6 +692,7 @@ export default function AIPrompt() {
             </div>
             {hasShortlist && (
               <div
+                className="aip-shortlist"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -717,6 +716,7 @@ export default function AIPrompt() {
                 </span>
                 <a
                   href="/login"
+                  className="aip-invite"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -731,13 +731,7 @@ export default function AIPrompt() {
                 >
                   Invite to campaign
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M3 12h16m0 0l-6-6m6 6l-6 6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    ></path>
+                    <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
                   </svg>
                 </a>
               </div>

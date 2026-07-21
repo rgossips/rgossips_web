@@ -54,18 +54,48 @@ export default function CreatorStories() {
   }, [playing]);
 
   return (
-    <section id="creator-stories" data-screen-label="Creator stories" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0", scrollMarginTop: "80px" }}>
+    <section id="creator-stories" data-screen-label="Creator stories" className="cst-section" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0", scrollMarginTop: "80px" }}>
       <style>{`
         .cs-reel:hover{transform:translateY(-5px)}
         .cs-close:hover{background:rgba(255,255,255,0.35)}
         @media (max-width: 1000px){ .cs-grid{ grid-template-columns: repeat(4, 1fr) !important } }
         @media (max-width: 560px){ .cs-grid{ grid-template-columns: repeat(3, 1fr) !important } }
       `}</style>
+      <style>{`
+        @media (max-width: 767px) {
+          .cst-section {
+            padding: 88px 20px 0 !important;
+          }
+          .cst-title {
+            font-size: 26px !important;
+          }
+          .cst-track {
+            display: flex !important;
+            grid-template-columns: none !important;
+            overflow-x: auto !important;
+            scroll-snap-type: x mandatory !important;
+            -webkit-overflow-scrolling: touch !important;
+            gap: 14px !important;
+            margin: 28px -20px 0 !important;
+            padding: 0 20px 12px !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+          .cst-track::-webkit-scrollbar {
+            display: none !important;
+          }
+          .cst-card {
+            flex: 0 0 72vw !important;
+            max-width: 300px !important;
+            scroll-snap-align: center !important;
+          }
+        }
+      `}</style>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-        <h2 style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: 0 }}>Reels people couldn&apos;t scroll past.</h2>
+        <h2 className="cst-title" style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: 0 }}>Reels people couldn&apos;t scroll past.</h2>
         <span style={{ fontSize: "12.5px", fontWeight: 800, letterSpacing: "0.12em", color: "#9CA3AF" }}>TOP CREATOR STORIES · TAP TO EXPAND</span>
       </div>
-      <div className="cs-grid" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "14px", marginTop: "40px" }}>
+      <div className="cs-grid cst-track" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "14px", marginTop: "40px" }}>
         {stories.map((r, i) => {
           const initial = (r.handle || "?")[1]?.toUpperCase() || "•";
           const isPlaying = playing === i;
@@ -73,7 +103,7 @@ export default function CreatorStories() {
           return (
             <div
               key={i}
-              className="cs-reel"
+              className="cs-reel cst-card"
               onClick={() => setPlaying(i)}
               style={{ position: "relative", aspectRatio: "9 / 16", borderRadius: "18px", overflow: "hidden", background: r.bg || "#2D2350", cursor: "pointer", transition: "transform 0.25s ease, box-shadow 0.25s ease", boxShadow: shadow }}
             >

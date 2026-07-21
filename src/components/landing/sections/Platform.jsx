@@ -64,47 +64,15 @@ export default function Platform() {
   const showF4 = activeFeature === 4;
   const showF5 = activeFeature === 5;
 
-  return (
-    <section id="features" data-screen-label="Platform" style={{ maxWidth: '1280px', margin: '0 auto', padding: '88px 40px 0', fontFamily: "'Manrope', sans-serif", scrollMarginTop: '80px' }}>
-      <style>{`
-        .platform-feature-row:hover { transform: translateX(3px); box-shadow: 0 8px 20px rgba(124,58,237,0.1); }
-      `}</style>
-      <div style={{ maxWidth: '640px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.12em', color: '#A855F7' }}>COMPLETE PLATFORM</div>
-        <h2 style={{ fontSize: '42px', fontWeight: 800, letterSpacing: '-0.025em', margin: '14px 0 0', lineHeight: 1.12, fontFamily: "'Baloo 2','Manrope',sans-serif" }}>Everything in between, handled.</h2>
-        <p style={{ fontSize: '15.5px', color: '#6B7280', lineHeight: 1.7, margin: '18px 0 0' }}>From discovery to payout — one intelligent workspace instead of spreadsheets, DMs, and chasing invoices. Click a feature to see it in action.</p>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 420px) 1fr', gap: '32px', marginTop: '44px', alignItems: 'stretch' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {FEATURES.map((f, i) => {
-            const rowBg = activeFeature === i
-              ? 'linear-gradient(95deg, #FAF7FE, #FEF5FA) padding-box, linear-gradient(135deg, #F472B6, #A855F7 50%, #7C3AED) border-box'
-              : 'linear-gradient(#FFFFFF, #FFFFFF) padding-box, linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,85,247,0.2) 45%, rgba(124,58,237,0.4)) border-box';
-            const chevOpacity = activeFeature === i ? 1 : 0;
-            return (
-              <div key={i} className="platform-feature-row" onClick={() => setActiveFeature(i)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '15px 18px', borderRadius: '18px', border: '1.5px solid transparent', background: rowBg, cursor: 'pointer', boxShadow: '0 3px 10px rgba(124,58,237,0.05)', transition: 'all 0.25s ease' }}>
-                <span style={{ width: '42px', height: '42px', borderRadius: '14px', background: f.bg, display: 'grid', placeItems: 'center', flexShrink: 0, transition: 'all 0.25s ease' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d={f.icon} stroke={f.fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: '15.5px', fontWeight: 800, letterSpacing: '-0.01em' }}>{f.title}</span>
-                  <span style={{ display: 'block', fontSize: '12.5px', color: '#6B7280', lineHeight: 1.5, marginTop: '2px' }}>{f.desc}</span>
-                </span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: chevOpacity, transition: 'opacity 0.25s ease' }}><path d="M9 5l7 7-7 7" stroke="#A855F7" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"></path></svg>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* LIVE PREVIEW PANEL */}
-        <div style={{ position: 'relative', borderRadius: '28px', background: 'linear-gradient(135deg, #F3EEFD, #FBEAF4)', padding: '34px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '480px' }}>
-          <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '220px', height: '220px', borderRadius: '50%', border: '24px solid rgba(168,85,247,0.1)', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'absolute', bottom: '-40px', left: '-30px', width: '120px', height: '120px', background: 'rgba(236,72,153,0.08)', borderRadius: '32px', transform: 'rotate(18deg)', pointerEvents: 'none' }}></div>
-
+  // All six feature previews. Rendered in the desktop preview panel AND
+  // inline under the active feature row on mobile (accordion) — same JSX,
+  // CSS decides which container is visible.
+  const preview = (
+    <>
           {/* 1: Discovery */}
           {showF0 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', left: '36px', width: '220px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', left: '36px', width: '220px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#F3EEFD', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M7 12h10M10 19h4" stroke="#8B5CF6" strokeWidth="2.4" strokeLinecap="round"></path></svg>
                 </span>
@@ -114,7 +82,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#7C3AED', background: '#F3EEFD', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>AI</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', right: '40px', width: '216px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', right: '40px', width: '216px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#FBEAF4', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z" fill="#EC4899"></path></svg>
                 </span>
@@ -125,7 +93,7 @@ export default function Platform() {
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#10B981', background: '#ECFDF5', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>NEW</span>
               </div>
               <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '420px', animation: 'riseIn 0.4s ease both' }}>
-                <div style={{ background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '22px' }}>
+                <div className="plt-card" style={{ background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '22px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F8F7FC', border: '1.5px solid #E4D9FB', borderRadius: '999px', padding: '10px 18px' }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" stroke="#A855F7" strokeWidth="2" strokeLinecap="round"></path></svg>
                     <span style={{ fontSize: '13px', fontWeight: 600, color: '#4B5563' }}>beauty creators · Mumbai · Reels</span>
@@ -149,7 +117,7 @@ export default function Platform() {
           {/* 2: Autopilot */}
           {showF1 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#F3EEFD', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 10-12 0c0 5-2 6-2 6h16s-2-1-2-6M10.3 19a2 2 0 003.4 0" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                 </span>
@@ -159,7 +127,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#7C3AED', background: '#F3EEFD', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>AUTO</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', left: '40px', width: '228px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', left: '40px', width: '228px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#ECFDF5', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7" stroke="#10B981" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                 </span>
@@ -169,7 +137,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#10B981', background: '#ECFDF5', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>DONE</span>
               </div>
-              <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
+              <div className="plt-card" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
                 <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', color: '#9CA3AF', marginBottom: '14px' }}>CAMPAIGN · SERUM LAUNCH</div>
                 {demoTasks.map((t, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderTop: '1px solid #F1F0F5', animation: 'riseIn 0.5s ease both', animationDelay: t.delay }}>
@@ -187,7 +155,7 @@ export default function Platform() {
           {/* 3: Content */}
           {showF2 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', right: '36px', width: '232px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', right: '36px', width: '232px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#FBEAF4', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z" fill="#EC4899"></path></svg>
                 </span>
@@ -197,7 +165,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#EC4899', background: '#FBEAF4', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>A/B</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#F3EEFD', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                 </span>
@@ -207,7 +175,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#7C3AED', background: '#F3EEFD', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>98%</span>
               </div>
-              <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
+              <div className="plt-card" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', color: '#A855F7', marginBottom: '14px' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z" fill="#A855F7"></path></svg>
                   GENERATED CAPTION
@@ -229,7 +197,7 @@ export default function Platform() {
           {/* 4: Fraud */}
           {showF3 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#FDF0F6', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#F43F5E" strokeWidth="2.6" strokeLinecap="round"></path></svg>
                 </span>
@@ -239,7 +207,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#F43F5E', background: '#FDF0F6', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>BLOCKED</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', left: '40px', width: '232px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', left: '40px', width: '232px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ animation: 'spinSlow 1.2s linear infinite', flexShrink: 0 }}><circle cx="12" cy="12" r="8" stroke="#F1F0F5" strokeWidth="3"></circle><path d="M20 12a8 8 0 00-8-8" stroke="#A855F7" strokeWidth="3" strokeLinecap="round"></path></svg>
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -252,7 +220,7 @@ export default function Platform() {
                   <div style={{ height: '100%', background: 'linear-gradient(90deg, #8B5CF6, #EC4899)', borderRadius: '2px', animation: 'reelProg 2.4s ease-in-out infinite' }}></div>
                 </div>
               </div>
-              <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
+              <div className="plt-card" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <span style={{ width: '46px', height: '46px', borderRadius: '16px', background: '#ECFDF5', display: 'grid', placeItems: 'center' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="#10B981" strokeWidth="2" strokeLinejoin="round"></path><path d="M9.2 12l2 2 3.6-4" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
@@ -276,7 +244,7 @@ export default function Platform() {
           {/* 5: Escrow */}
           {showF4 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', right: '36px', width: '228px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', right: '36px', width: '228px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#EEF2FE', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V7l-4-4zM14 3v4h4M9 13h6M9 17h4" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                 </span>
@@ -286,7 +254,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#6366F1', background: '#EEF2FE', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>PDF</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#ECFDF5', display: 'grid', placeItems: 'center', color: '#10B981', fontSize: '13px', fontWeight: 800, flexShrink: 0 }}>₹</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#111827' }}>Payout scheduled</span>
@@ -294,7 +262,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#10B981', background: '#ECFDF5', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>48 HRS</span>
               </div>
-              <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
+              <div className="plt-card" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', color: '#9CA3AF' }}>ESCROW · #RG-2481</span>
                   <span style={{ fontSize: '22px', fontWeight: 800 }}>₹45,000</span>
@@ -322,7 +290,7 @@ export default function Platform() {
           {/* 6: Analytics */}
           {showF5 && (
             <>
-              <div style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
+              <div className="plt-float" style={{ position: 'absolute', top: '44px', right: '36px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(5deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'riseIn 0.5s ease 0.15s both' }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#F3EEFD', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                 </span>
@@ -332,7 +300,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#7C3AED', background: '#F3EEFD', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>7 DAYS</span>
               </div>
-              <div style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
+              <div className="plt-float" style={{ position: 'absolute', bottom: '46px', left: '40px', width: '224px', background: '#FFFFFF', borderRadius: '16px', padding: '12px 16px', boxShadow: '0 12px 30px rgba(17,24,39,0.09)', transform: 'rotate(-4deg)', display: 'flex', alignItems: 'center', gap: '10px', animation: 'floatB 6s ease-in-out infinite', zIndex: 2 }}>
                 <span style={{ width: '28px', height: '28px', borderRadius: '10px', background: '#ECFDF5', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', animation: 'pulse-dot 1.6s infinite' }}></span>
                 </span>
@@ -342,7 +310,7 @@ export default function Platform() {
                 </span>
                 <span style={{ fontSize: '9px', fontWeight: 800, color: '#10B981', background: '#ECFDF5', borderRadius: '999px', padding: '3px 8px', flexShrink: 0 }}>LIVE</span>
               </div>
-              <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
+              <div className="plt-card" style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '400px', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 20px 50px rgba(17,24,39,0.1)', padding: '24px', animation: 'riseIn 0.4s ease both' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '0.1em', color: '#9CA3AF' }}>REACH · LAST 7 DAYS</span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800, color: '#10B981' }}><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'pulse-dot 1.6s infinite' }}></span>LIVE</span>
@@ -357,8 +325,69 @@ export default function Platform() {
               </div>
             </>
           )}
+    </>
+  );
+
+  return (
+    <section id="features" data-screen-label="Platform" className="plt-section" style={{ maxWidth: '1280px', margin: '0 auto', padding: '88px 40px 0', fontFamily: "'Manrope', sans-serif", scrollMarginTop: '80px' }}>
+      <style>{`
+        .platform-feature-row:hover { transform: translateX(3px); box-shadow: 0 8px 20px rgba(124,58,237,0.1); }
+      `}</style>
+      <div style={{ maxWidth: '640px' }}>
+        <div style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.12em', color: '#A855F7' }}>COMPLETE PLATFORM</div>
+        <h2 className="plt-title" style={{ fontSize: '42px', fontWeight: 800, letterSpacing: '-0.025em', margin: '14px 0 0', lineHeight: 1.12, fontFamily: "'Baloo 2','Manrope',sans-serif" }}>Everything in between, handled.</h2>
+        <p className="plt-sub" style={{ fontSize: '15.5px', color: '#6B7280', lineHeight: 1.7, margin: '18px 0 0' }}>From discovery to payout — one intelligent workspace instead of spreadsheets, DMs, and chasing invoices. Click a feature to see it in action.</p>
+      </div>
+      <div className="plt-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 420px) 1fr', gap: '32px', marginTop: '44px', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {FEATURES.map((f, i) => {
+            const rowBg = activeFeature === i
+              ? 'linear-gradient(95deg, #FAF7FE, #FEF5FA) padding-box, linear-gradient(135deg, #F472B6, #A855F7 50%, #7C3AED) border-box'
+              : 'linear-gradient(#FFFFFF, #FFFFFF) padding-box, linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,85,247,0.2) 45%, rgba(124,58,237,0.4)) border-box';
+            const chevOpacity = activeFeature === i ? 1 : 0;
+            return (
+              <div key={i}>
+              <div className="platform-feature-row plt-row" onClick={() => setActiveFeature(i)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '15px 18px', borderRadius: '18px', border: '1.5px solid transparent', background: rowBg, cursor: 'pointer', boxShadow: '0 3px 10px rgba(124,58,237,0.05)', transition: 'all 0.25s ease' }}>
+                <span style={{ width: '42px', height: '42px', borderRadius: '14px', background: f.bg, display: 'grid', placeItems: 'center', flexShrink: 0, transition: 'all 0.25s ease' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d={f.icon} stroke={f.fg} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: '15.5px', fontWeight: 800, letterSpacing: '-0.01em' }}>{f.title}</span>
+                  <span className="plt-row-desc" style={{ display: 'block', fontSize: '12.5px', color: '#6B7280', lineHeight: 1.5, marginTop: '2px' }}>{f.desc}</span>
+                </span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: chevOpacity, transition: 'opacity 0.25s ease' }}><path d="M9 5l7 7-7 7" stroke="#A855F7" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+              </div>
+              {activeFeature === i && (
+                <div className="plt-inline">{preview}</div>
+              )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* LIVE PREVIEW PANEL */}
+        <div className="plt-preview" style={{ position: 'relative', borderRadius: '28px', background: 'linear-gradient(135deg, #F3EEFD, #FBEAF4)', padding: '34px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '480px' }}>
+          <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '220px', height: '220px', borderRadius: '50%', border: '24px solid rgba(168,85,247,0.1)', pointerEvents: 'none' }}></div>
+          <div style={{ position: 'absolute', bottom: '-40px', left: '-30px', width: '120px', height: '120px', background: 'rgba(236,72,153,0.08)', borderRadius: '32px', transform: 'rotate(18deg)', pointerEvents: 'none' }}></div>
+
+          {preview}
         </div>
       </div>
+      <style>{`
+        .plt-inline { display: none; }
+        @media (max-width: 767px) {
+          .plt-section { padding: 60px 20px 0 !important; }
+          .plt-title { font-size: 28px !important; }
+          .plt-sub { font-size: 14px !important; }
+          .plt-grid { grid-template-columns: 1fr !important; gap: 22px !important; margin-top: 30px !important; }
+          .plt-row { padding: 13px 14px !important; gap: 13px !important; }
+          .plt-row-desc { font-size: 13px !important; }
+          .plt-preview { display: none !important; }
+          .plt-inline { display: block !important; position: relative; margin: 10px 0 4px; border-radius: 20px; background: linear-gradient(135deg, #F3EEFD, #FBEAF4); padding: 18px 14px; overflow: hidden; animation: riseIn 0.35s ease both; }
+          .plt-float { display: none !important; }
+          .plt-card { padding: 18px !important; }
+        }
+      `}</style>
     </section>
   );
 }

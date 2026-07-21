@@ -9,14 +9,14 @@ const community = [
 
 export default function Community() {
   return (
-    <section data-screen-label="Community" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
+    <section data-screen-label="Community" className="cmt-section" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
       <style>{`.cm-card:hover{transform:translateY(-4px)}`}</style>
       <div style={{ textAlign: "center", maxWidth: "560px", margin: "0 auto" }}>
         <div style={{ fontSize: "13px", fontWeight: 800, letterSpacing: "0.12em", color: "#A855F7" }}>THE MOVEMENT</div>
-        <h2 style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: "14px 0 0", lineHeight: 1.12 }}>More than a platform.</h2>
+        <h2 className="cmt-title" style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: "14px 0 0", lineHeight: 1.12 }}>More than a platform.</h2>
         <p style={{ fontSize: "15.5px", color: "#6B7280", lineHeight: 1.7, margin: "18px 0 0" }}>Join India's fastest-growing creator community — the deals are just the start.</p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "44px" }}>
+      <div className="cmt-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "44px" }}>
         {community.map((c, i) => (
           <div key={i} className="cm-card" style={{ background: c.bg, borderRadius: "22px", padding: "28px 24px", transition: "all 0.25s ease" }}>
             <span style={{ width: "42px", height: "42px", borderRadius: "14px", background: "#FFFFFF", display: "grid", placeItems: "center", boxShadow: "0 6px 16px rgba(17,24,39,0.06)" }}>
@@ -27,6 +27,13 @@ export default function Community() {
           </div>
         ))}
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .cmt-section { padding: 64px 20px 0 !important; }
+          .cmt-title { font-size: 28px !important; }
+          .cmt-grid { grid-template-columns: 1fr !important; margin-top: 32px !important; }
+        }
+      `}</style>
     </section>
   );
 }

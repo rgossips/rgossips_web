@@ -18,6 +18,7 @@ export default function Brands() {
   return (
     <section
       data-screen-label="Brands"
+      className="brd-section"
       style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 40px 0" }}
     >
       <style>{`
@@ -37,6 +38,7 @@ export default function Brands() {
       </div>
       <div style={{ overflow: "hidden", position: "relative" }}>
         <div
+          className="brd-track"
           style={{
             display: "flex",
             width: "max-content",
@@ -48,7 +50,7 @@ export default function Brands() {
           {brands.map((b, i) => (
             <span
               key={i}
-              className="brand-word"
+              className="brand-word brd-word"
               style={{
                 fontFamily: "'Baloo 2', sans-serif",
                 fontWeight: 700,
@@ -72,6 +74,13 @@ export default function Brands() {
           }}
         ></div>
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .brd-section { padding: 32px 20px 0 !important; }
+          .brd-track { gap: 36px !important; }
+          .brd-word { font-size: 22px !important; }
+        }
+      `}</style>
     </section>
   );
 }

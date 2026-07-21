@@ -25,14 +25,14 @@ export default function PainPoints() {
       : "All four killed — in about ten minutes, on RGossips. ↓";
 
   return (
-    <section data-screen-label="Pain points" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
+    <section data-screen-label="Pain points" className="pp-section" style={{ maxWidth: "1280px", margin: "0 auto", padding: "88px 40px 0" }}>
       <style>{`.pp-card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(124,58,237,0.14)}.pp-reset:hover{background:#F3EEFD}`}</style>
       <div style={{ textAlign: "center", maxWidth: "620px", margin: "0 auto" }}>
         <div style={{ fontSize: "13px", fontWeight: 800, letterSpacing: "0.12em", color: "#EC4899" }}>THE OLD WAY</div>
-        <h2 style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: "14px 0 0", lineHeight: 1.12 }}>Influencer marketing shouldn't feel this hard.</h2>
-        <p style={{ fontSize: "15.5px", color: "#6B7280", lineHeight: 1.7, margin: "18px 0 0" }}>Weeks of hunting. 30–40% agency commissions. Payments that never arrive. Here's what we set out to kill.</p>
+        <h2 className="pp-title" style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: "14px 0 0", lineHeight: 1.12 }}>Influencer marketing shouldn't feel this hard.</h2>
+        <p className="pp-sub" style={{ fontSize: "15.5px", color: "#6B7280", lineHeight: 1.7, margin: "18px 0 0" }}>Weeks of hunting. 30–40% agency commissions. Payments that never arrive. Here's what we set out to kill.</p>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "44px" }}>
+      <div className="pp-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "44px" }}>
         {painsData.map((p, i) => {
           const fixed = painsFixed[i];
           const broken = !fixed;
@@ -87,6 +87,15 @@ export default function PainPoints() {
           <button className="pp-reset" onClick={resetPains} style={{ marginLeft: "14px", border: "1.5px solid #E4D9FB", background: "transparent", cursor: "pointer", fontFamily: "'Manrope', sans-serif", fontSize: "11.5px", fontWeight: 800, color: "#7C3AED", borderRadius: "999px", padding: "6px 14px", animation: "riseIn 0.3s ease both" }}>↻ Break it again</button>
         )}
       </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .pp-section { padding: 56px 20px 0 !important; }
+          .pp-title { font-size: 28px !important; }
+          .pp-sub { font-size: 14px !important; }
+          .pp-grid { grid-template-columns: 1fr !important; gap: 14px !important; margin-top: 32px !important; }
+          .pp-card { padding: 22px 20px 56px !important; }
+        }
+      `}</style>
     </section>
   );
 }
