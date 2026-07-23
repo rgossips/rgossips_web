@@ -34,11 +34,15 @@ const BrandHero = () => {
   const trustScore = trust?.score || trustMin;
   const trustBand = trust?.band || "Building Trust";
   const trustBorder =
-    trustBand === "Elite"       ? "border-emerald-500" :
-    trustBand === "Trusted"     ? "border-blue-500"    :
-    trustBand === "Established" ? "border-indigo-500"  :
-    trustBand === "Emerging"    ? "border-amber-500"   :
-                                  "border-slate-400";
+    trustBand === "Elite"
+      ? "border-emerald-500"
+      : trustBand === "Trusted"
+        ? "border-blue-500"
+        : trustBand === "Established"
+          ? "border-indigo-500"
+          : trustBand === "Emerging"
+            ? "border-amber-500"
+            : "border-slate-400";
 
   return (
     <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
@@ -47,25 +51,12 @@ const BrandHero = () => {
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 bg-white/10 flex items-center justify-center">
-              {logoUrl ? (
-                <Image
-                  src={logoUrl}
-                  alt={brandName}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <span className="text-white font-bold text-lg">{initials}</span>
-              )}
+              {logoUrl ? <Image src={logoUrl} alt={brandName} fill className="object-cover" /> : <span className="text-white font-bold text-lg">{initials}</span>}
             </div>
 
             <div>
-              <p className="text-slate-300 text-xs md:text-sm font-medium">
-                {t("welcomeBack")}
-              </p>
-              <h3 className="text-white font-bold text-sm md:text-base">
-                {brandName}
-              </h3>
+              <p className="text-slate-300 text-xs md:text-sm font-medium">{t("welcomeBack")}</p>
+              <h3 className="text-white font-bold text-sm md:text-base">{brandName}</h3>
             </div>
           </div>
 
@@ -101,19 +92,10 @@ const BrandHero = () => {
             <div className="flex items-center gap-5">
               <div className="flex lg:hidden -space-x-3">
                 {baseBrands.map((i, index) => (
-                  <Image
-                    key={index}
-                    src={i}
-                    width={36}
-                    height={36}
-                    alt="agency"
-                    className="rounded-full border-2 border-[#2A1885]"
-                  />
+                  <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#2A1885]" />
                 ))}
               </div>
-              <div className="text-slate-100 opacity-90 font-light">
-                {t("agenciesCount")}
-              </div>
+              <div className="text-slate-100 opacity-90 font-light">{t("agenciesCount")}</div>
             </div>
 
             {/* ACTION BUTTONS */}
@@ -142,27 +124,16 @@ const BrandHero = () => {
           <div className="hidden lg:flex flex-col gap-6 items-end">
             {/* Agencies Card */}
             <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl w-[400px]">
-              <p className="text-sm text-slate-300 mb-4">
-                {t("trustedByAgencies")}
-              </p>
+              <p className="text-sm text-slate-300 mb-4">{t("trustedByAgencies")}</p>
 
               <div className="flex items-center">
                 <div className="flex -space-x-3">
                   {baseBrands.map((i, index) => (
-                    <Image
-                      key={index}
-                      src={i}
-                      width={36}
-                      height={36}
-                      alt="agency"
-                      className="rounded-full border-2 border-[#2A1885]"
-                    />
+                    <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#2A1885]" />
                   ))}
                 </div>
 
-                <div className="ml-3 bg-[#2A1885] text-xs px-3 py-1 rounded-full">
-                  +2k
-                </div>
+                <div className="ml-3 bg-[#2A1885] text-xs px-3 py-1 rounded-full">+2k</div>
               </div>
             </div>
 
@@ -170,9 +141,7 @@ const BrandHero = () => {
             <div className="bg-black/80 border border-white/10 p-5 rounded-2xl w-[400px] flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-gray-400 uppercase">
-                    {t("trustScoreLabel")}
-                  </p>
+                  <p className="text-xs text-gray-400 uppercase">{t("trustScoreLabel")}</p>
                   <button
                     onClick={() => setTrustInfoOpen(true)}
                     className="cursor-pointer hover:scale-110 transition-transform inline-flex"
@@ -185,21 +154,13 @@ const BrandHero = () => {
 
                 <div className="flex items-end gap-2 mt-1">
                   <span className="text-2xl font-bold">{trustScore}</span>
-                  <span className="text-gray-400 text-xs font-semibold">
-                    /{trustMax}
-                  </span>
+                  <span className="text-gray-400 text-xs font-semibold">/{trustMax}</span>
                 </div>
-                {trust?.coldStart && (
-                  <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">
-                    {t("coldStartNote", { cap: trust.coldStartCap })}
-                  </p>
-                )}
+                {trust?.coldStart && <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">{t("coldStartNote", { cap: trust.coldStartCap })}</p>}
               </div>
 
               {/* Circle indicator */}
-              <div className={`w-14 h-14 rounded-full border-4 ${trustBorder} flex items-center justify-center text-[10px] font-bold text-center leading-tight px-1`}>
-                {trustBand}
-              </div>
+              <div className={`w-14 h-14 ${trustBorder} flex items-center justify-center text-[15px] font-bold text-center leading-tight px-1`}>{trustBand}</div>
             </div>
           </div>
         </div>

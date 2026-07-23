@@ -29,43 +29,79 @@ const CATEGORY_MAP = {
  * @param {Object} brand - brand object with category, platforms, etc.
  * @returns {number} score 0-100
  */
-export function calculateBrandMatchScore(profile, brand) {
-  if (!profile) return 0;
+/**
+ * Explainable brand-match breakdown — the single source of truth for the
+ * brand-card match % AND its "why this match?" modal, so they always agree.
+ * @returns {{ score:number, breakdown: Array<{key,label,points,max,status,reason}> }}
+ */
+export function explainBrandMatch(profile, brand) {
+  if (!profile) return { score: 0, breakdown: [] };
 
-  let score = 0;
   const userCategories = (profile.categories || []).map((c) => c.toLowerCase());
-  const userServices = profile.services || [];
+  const band = (pts, max) => (pts >= max * 0.75 ? "strong" : pts >= max * 0.45 ? "ok" : "weak");
+  const breakdown = [];
 
-  // 1. Category match (40 points)
+  // 1. Category match (40)
   const brandCategory = brand.category || "";
   const mappedCategories = CATEGORY_MAP[brandCategory] || [];
-  const categoryMatch = mappedCategories.some((mc) =>
-    userCategories.includes(mc.toLowerCase())
-  ) || userCategories.some((uc) => brandCategory.toLowerCase().includes(uc.split(" ")[0].toLowerCase()));
+  const categoryMatch =
+    mappedCategories.some((mc) => userCategories.includes(mc.toLowerCase())) ||
+    userCategories.some((uc) => brandCategory.toLowerCase().includes(uc.split(" ")[0].toLowerCase()));
+  const catPts = categoryMatch ? 40 : 10;
+  breakdown.push({
+    key: "category", label: "Niche fit", points: catPts, max: 40, status: band(catPts, 40),
+    reason: categoryMatch
+      ? `${brandCategory || "This brand's niche"} overlaps your categories (${(profile.categories || []).join(", ") || "none set"}).`
+      : brandCategory
+        ? `${brandCategory} doesn't overlap your categories (${(profile.categories || []).join(", ") || "none set"}). Add related categories to your profile if you create this content.`
+        : "This brand has no niche set, so only a base score applies.",
+  });
 
-  if (categoryMatch) score += 40;
-  else score += 10; // base score
-
-  // 2. Platform overlap (25 points)
+  // 2. Platform overlap (25)
   const brandPlatforms = (brand.platforms || []).map((p) => p.toLowerCase());
   const hasInstagram = brandPlatforms.includes("instagram") && (profile.instagram_handle || profile.instagramHandle);
-  const hasPlatformOverlap = brandPlatforms.length > 0 && hasInstagram;
-  if (hasPlatformOverlap) score += 25;
-  else score += 5;
+  const platPts = brandPlatforms.length > 0 && hasInstagram ? 25 : 5;
+  breakdown.push({
+    key: "platform", label: "Platforms", points: platPts, max: 25, status: band(platPts, 25),
+    reason: platPts === 25
+      ? "You're active on the platform(s) this brand campaigns on."
+      : "Connect the platform this brand campaigns on (Instagram) to raise this.",
+  });
 
-  // 3. Engagement/followers fit (20 points)
+  // 3. Reach (20)
   const followers = profile.followers_count || profile.followersCount || 0;
-  if (followers >= 10000) score += 20;
-  else if (followers >= 5000) score += 15;
-  else if (followers >= 1000) score += 10;
-  else score += 5;
+  const folPts = followers >= 10000 ? 20 : followers >= 5000 ? 15 : followers >= 1000 ? 10 : 5;
+  breakdown.push({
+    key: "reach", label: "Reach", points: folPts, max: 20, status: band(folPts, 20),
+    reason: `You have ${Number(followers).toLocaleString("en-IN")} followers.`,
+  });
 
-  // 4. Verified & rating bonus (15 points)
-  if (brand.isVerified) score += 8;
-  if (brand.rating >= 4.5) score += 7;
-  else if (brand.rating >= 4.0) score += 4;
+  // 4. Brand quality (15) — verified badge + community rating
+  let qualPts = 0;
+  if (brand.isVerified) qualPts += 8;
+  if (brand.rating >= 4.5) qualPts += 7;
+  else if (brand.rating >= 4.0) qualPts += 4;
+  breakdown.push({
+    key: "quality", label: "Brand quality", points: qualPts, max: 15, status: band(qualPts, 15),
+    reason: [
+      brand.isVerified ? "Verified brand" : "Not yet verified",
+      brand.rating ? `rated ${Number(brand.rating).toFixed(1)}★ by creators` : "no creator ratings yet",
+    ].join(" · "),
+  });
 
-  return Math.min(score, 100);
+  const score = Math.min(100, breakdown.reduce((s, b) => s + b.points, 0));
+  return { score, breakdown };
+}
+
+/**
+ * Calculate match score between an influencer profile and a brand.
+ * Thin wrapper over {@link explainBrandMatch} so the card badge and the
+ * "why this match?" modal never disagree.
+ * @returns {number} score 0-100
+ */
+export function calculateBrandMatchScore(profile, brand) {
+  if (!profile) return 0;
+  return explainBrandMatch(profile, brand).score;
 }
 
 // Adjacency map of "indirectly related" categories. Used for the lowest

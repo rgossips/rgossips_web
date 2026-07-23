@@ -51,9 +51,12 @@ function embeddedPanFromGstin(gstinRaw) {
 // contact details, and social links.
 const PROFILE_FIELDS = [
   { key: "categories",    label: "Categories",       test: (p) => Array.isArray(p?.categories) && p.categories.length > 0 },
-  { key: "about",         label: "About the brand",  test: (p) => !!(p?.about || p?.description || p?.bio) },
+  // Column names must match brand_profiles: about lives in full_description
+  // (short_description as fallback), website in website_url — the old tests
+  // read non-existent columns so these two never counted as filled.
+  { key: "about",         label: "About the brand",  test: (p) => !!(p?.full_description || p?.short_description) },
   { key: "logo",          label: "Logo",             test: (p) => !!p?.logo_url },
-  { key: "website",       label: "Website",          test: (p) => !!p?.website },
+  { key: "website",       label: "Website",          test: (p) => !!p?.website_url },
   { key: "contactEmail",  label: "Contact email",    test: (p) => !!p?.contact_email },
   { key: "contactPhone",  label: "Contact phone",    test: (p) => !!p?.contact_phone },
   { key: "socials",       label: "Social links",     test: (p) => !!(p?.instagram_username || p?.facebook_url || p?.linkedin_url || p?.twitter_url) },

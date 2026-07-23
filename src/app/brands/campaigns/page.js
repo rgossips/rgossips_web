@@ -24,6 +24,7 @@ const CreateCampaignDialog = dynamic(
 const STATUS_TABS = [
   { key: "all", label: "All" },
   { key: "active", label: "Live" },
+  { key: "under_review", label: "Under Review" },
   { key: "draft", label: "Drafts" },
   { key: "paused", label: "Paused" },
   { key: "completed", label: "Completed" },
@@ -31,7 +32,9 @@ const STATUS_TABS = [
 
 const CampaignsPage = () => {
   const t = useTranslations("BrandsCampaigns");
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+  // Unverified brands can browse but not create campaigns.
+  const brandVerified = profile?.verification_status === "verified";
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,6 +97,19 @@ const CampaignsPage = () => {
 
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-24">
+      {/* Verification gate — unverified brands can browse but not create */}
+      {profile && !brandVerified && (
+        <div className="max-w-6xl mx-auto px-6 pt-6 relative z-10">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+            <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0 animate-pulse" />
+            <div>
+              <p className="text-sm font-bold text-amber-900">{t("verifyGate.title")}</p>
+              <p className="text-[12px] text-amber-700 mt-0.5">{t("verifyGate.body")}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-16 mb-16 lg:mb-24 rounded-b-[40px] text-white relative">
         <div className="flex justify-between items-start mb-6">
@@ -103,7 +119,9 @@ const CampaignsPage = () => {
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="hidden lg:flex items-center gap-2 bg-white text-[#5851DB] px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-purple-900/20 cursor-pointer"
+            disabled={!brandVerified}
+            title={!brandVerified ? t("verifyGate.tooltip") : undefined}
+            className="hidden lg:flex items-center gap-2 bg-white text-[#5851DB] px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-purple-900/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Plus size={16} /> {t("newCampaign")}
           </button>
@@ -176,7 +194,8 @@ const CampaignsPage = () => {
             {!(searchText || activeTab !== "all") && (
               <button
                 onClick={() => setCreateOpen(true)}
-                className="mt-8 bg-[#5851DB] text-white px-8 py-4 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm cursor-pointer"
+                disabled={!brandVerified}
+                className="mt-8 bg-[#5851DB] text-white px-8 py-4 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {t("createCampaign")} <ArrowUpRight size={18} />
               </button>
@@ -194,7 +213,8 @@ const CampaignsPage = () => {
       {/* Floating FAB (mobile) */}
       <button
         onClick={() => setCreateOpen(true)}
-        className="lg:hidden fixed cursor-pointer bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-40 active:scale-95"
+        disabled={!brandVerified}
+        className="lg:hidden fixed cursor-pointer bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-40 active:scale-95 disabled:opacity-60"
       >
         <Plus size={20} /> {t("create")}
       </button>

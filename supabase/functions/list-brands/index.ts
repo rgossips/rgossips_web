@@ -194,10 +194,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch registered brand profiles — use * to avoid missing-column failures
+    // Fetch registered brand profiles — use * to avoid missing-column failures.
+    // Deactivated / pending-deletion brands must not appear on any influencer
+    // surface; filter them in SQL so every consumer of this list is covered.
     const { data: profiles, error: profError } = await supabaseAdmin
       .from("brand_profiles")
-      .select("*");
+      .select("*")
+      // NOT IN would also drop NULL-status legacy rows — keep those.
+      .or("status.is.null,status.not.in.(deactivated,pending_deletion)");
 
     if (profError) console.error("Brand profiles error:", profError.message);
 
@@ -287,19 +291,30 @@ Deno.serve(async (req) => {
     // and collect IDs for downstream queries.
     const { data: campaigns } = await supabaseAdmin
       .from("campaigns")
-      .select("campaign_id, brand_id, brand_invitation_id, status, created_at");
+      .select("campaign_id, brand_id, brand_invitation_id, status, created_at, application_deadline, campaign_end_date");
 
     const campaignCounts: Record<string, number> = {};
     const campaignsLast90dByBrand: Record<string, number> = {};
     const campaignIdToBrandId: Record<string, string> = {};
     const since90 = Date.now() - 90 * 86_400_000;
+    const now = Date.now();
+    // Mirrors list-campaigns' Active-tab visibility: a campaign only counts
+    // as "active" on the brand card if the creator could still actually
+    // apply. Counting deadline-passed campaigns produced "1 active campaign"
+    // cards that opened onto an empty list.
+    const openForApplications = (c: any) => {
+      if (c.application_deadline && new Date(c.application_deadline).getTime() < now) return false;
+      const endSource = c.campaign_end_date || c.application_deadline;
+      if (endSource && new Date(endSource).getTime() < now) return false;
+      return true;
+    };
 
     if (campaigns) {
       for (const c of campaigns as any[]) {
         const brandKey = c.brand_id || c.brand_invitation_id;
         if (brandKey && c.campaign_id) campaignIdToBrandId[c.campaign_id] = brandKey;
 
-        if (c.status === "active" || c.status === "open") {
+        if ((c.status === "active" || c.status === "open") && openForApplications(c)) {
           if (c.brand_invitation_id) campaignCounts[c.brand_invitation_id] = (campaignCounts[c.brand_invitation_id] || 0) + 1;
           if (c.brand_id) campaignCounts[c.brand_id] = (campaignCounts[c.brand_id] || 0) + 1;
         }

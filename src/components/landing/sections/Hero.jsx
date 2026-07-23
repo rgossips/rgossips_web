@@ -1,11 +1,5 @@
 "use client";
 
-const heroStats = [
-  { value: "200K+", label: "Verified creators" },
-  { value: "₹10Cr+", label: "Paid to creators" },
-  { value: "98%", label: "On-time payouts" },
-];
-
 export default function Hero() {
   return (
     <section
@@ -24,8 +18,7 @@ export default function Hero() {
           width: "420px",
           height: "420px",
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(168,85,247,0.14), rgba(168,85,247,0))",
+          background: "radial-gradient(circle, rgba(168,85,247,0.14), rgba(168,85,247,0))",
           pointerEvents: "none",
         }}
       ></div>
@@ -37,8 +30,7 @@ export default function Hero() {
           width: "320px",
           height: "320px",
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(244,114,182,0.12), rgba(244,114,182,0))",
+          background: "radial-gradient(circle, rgba(244,114,182,0.12), rgba(244,114,182,0))",
           pointerEvents: "none",
         }}
       ></div>
@@ -124,48 +116,8 @@ export default function Hero() {
               animation: "riseIn 0.6s ease 0.16s both",
             }}
           >
-            Describe your campaign in a sentence — our AI matches you with
-            verified creators who actually fit. Escrow-protected payments, no
-            agencies, no guesswork.
+            Describe your campaign in a sentence — our AI matches you with verified creators who actually fit. Escrow-protected payments, no agencies, no guesswork.
           </p>
-          <div
-            className="hero-stats"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "36px",
-              marginTop: "36px",
-              animation: "riseIn 0.6s ease 0.32s both",
-            }}
-          >
-            {heroStats.map((st, i) => (
-              <div key={i}>
-                <div
-                  className="hero-stat-value"
-                  style={{
-                    fontSize: "26px",
-                    fontWeight: 800,
-                    background: "linear-gradient(95deg, #7C3AED, #EC4899)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                  }}
-                >
-                  {st.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: "12.5px",
-                    fontWeight: 600,
-                    color: "#9CA3AF",
-                    marginTop: "2px",
-                  }}
-                >
-                  {st.label}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
       <style>{`

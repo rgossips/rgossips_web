@@ -25,15 +25,6 @@ export const TrustSection = () => {
   const max = trust?.scaleMax ?? 900;
   const score = trust?.score || min;
   const band = trust?.band || "Building Trust";
-  // Ring sweep tracks position within the 300–900 range, not score/max,
-  // so a 600 lands roughly half-way around the ring instead of two-thirds.
-  const ringPct = Math.min(100, Math.max(0, ((score - min) / (max - min)) * 100));
-
-  // SVG ring (radius 26, circumference ≈ 163.4)
-  const radius = 26;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (ringPct / 100) * circumference;
-
   const ringColor = BAND_RING[band] || "#f59e0b";
 
   return (
@@ -75,32 +66,14 @@ export const TrustSection = () => {
           )}
         </div>
 
-        {/* Score Ring */}
-        <div className="relative flex items-center justify-center w-16 h-16">
-          <svg className="absolute inset-0" viewBox="0 0 64 64">
-            <circle
-              cx="32"
-              cy="32"
-              r={radius}
-              fill="none"
-              stroke="#2A2A2A"
-              strokeWidth="4"
-            />
-            <circle
-              cx="32"
-              cy="32"
-              r={radius}
-              fill="none"
-              stroke={ringColor}
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
-              transform="rotate(-90 32 32)"
-            />
-          </svg>
-          <span className="text-[9px] font-black italic text-center leading-tight px-1">{band}</span>
-        </div>
+        {/* Band chip — the progress ring was dropped per design feedback;
+            the numeric score already communicates magnitude. */}
+        <span
+          className="text-[10px] font-black italic text-center leading-tight px-3 py-1.5 rounded-full border"
+          style={{ color: ringColor, borderColor: ringColor }}
+        >
+          {band}
+        </span>
       </div>
 
       <TrustScoreInfoModal open={trustInfoOpen} onClose={() => setTrustInfoOpen(false)} />

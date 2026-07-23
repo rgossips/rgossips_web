@@ -18,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import ListPagination from "@/components/ListPagination";
 
 export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
@@ -129,6 +130,37 @@ export default function CampaignsPage() {
       .map(({ c }) => c);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange, profile]);
+
+  // Client-side pagination — 30 per page, reset to page 1 whenever the tab
+  // or any filter changes so the user never lands on an empty page.
+  const PAGE_SIZE = 30;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange]);
+  const pageCount = Math.max(1, Math.ceil(filteredCampaigns.length / PAGE_SIZE));
+  const pagedCampaigns = filteredCampaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const goToPage = (p) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Filtered-state header: "N out of M campaigns" + a Show-all reset. The
+  // total ignores filters (tabCount applies them) so the ratio is honest.
+  const tabTotalUnfiltered = campaigns.filter((c) => tabMatches(c, activeTab)).length;
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    selectedCategories.length > 0 ||
+    selectedBrands.length > 0 ||
+    budgetRange.min > 0 ||
+    budgetRange.max < 200000;
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setSelectedCategories([]);
+    setSelectedBrands([]);
+    setBudgetRange({ min: 0, max: 200000 });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
@@ -258,13 +290,46 @@ export default function CampaignsPage() {
           <main className="lg:col-span-9 space-y-8">
             {/* Desktop Header */}
             <div className="hidden lg:flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-800">
-                {t("headerCampaigns", { tab: t(`tabs.${activeTab}`) })}
-              </h2>
-              <span className="text-sm font-bold text-slate-400">
-                {t("campaignCount", { count: filteredCampaigns.length })}
-              </span>
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-xl font-bold text-slate-800">
+                  {t("headerCampaigns", { tab: t(`tabs.${activeTab}`) })}
+                </h2>
+                {hasActiveFilters && (
+                  <span className="text-sm font-bold text-[#E60076]">
+                    {t("filteredOutOf", { shown: filteredCampaigns.length, total: tabTotalUnfiltered })}
+                  </span>
+                )}
+              </div>
+              {hasActiveFilters ? (
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 rounded-xl text-xs font-black text-white cursor-pointer shadow-md shadow-pink-100 hover:opacity-90 transition-all"
+                  style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+                >
+                  {t("showAll")}
+                </button>
+              ) : (
+                <span className="text-sm font-bold text-slate-400">
+                  {t("campaignCount", { count: filteredCampaigns.length })}
+                </span>
+              )}
             </div>
+
+            {/* Mobile filtered strip — same info without the desktop header */}
+            {hasActiveFilters && (
+              <div className="lg:hidden flex items-center justify-between bg-white rounded-2xl px-4 py-3 shadow-sm border border-slate-50">
+                <span className="text-xs font-bold text-[#E60076]">
+                  {t("filteredOutOf", { shown: filteredCampaigns.length, total: tabTotalUnfiltered })}
+                </span>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-black text-white cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+                >
+                  {t("showAll")}
+                </button>
+              </div>
+            )}
 
             {/* Mobile Stats */}
             <div className="grid grid-cols-3 gap-4 lg:hidden">
@@ -309,10 +374,12 @@ export default function CampaignsPage() {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {filteredCampaigns.map((campaign) => (
+                  {pagedCampaigns.map((campaign) => (
                     <CampaignCard key={campaign.id} campaign={campaign} matchScore={calculateCampaignMatchScore(profile, campaign)} />
                   ))}
                 </div>
+
+                <ListPagination page={page} pageCount={pageCount} onPage={goToPage} />
 
                 {filteredCampaigns.length === 0 && (
                   <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">

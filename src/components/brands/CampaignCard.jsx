@@ -6,9 +6,10 @@ const statusStyles = {
   active: "bg-emerald-100 text-emerald-700",
   paused: "bg-yellow-100 text-yellow-700",
   completed: "bg-blue-100 text-blue-700",
+  under_review: "bg-purple-100 text-purple-700",
 };
 
-const statusLabel = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "Draft");
+const statusLabel = (s) => (s === "under_review" ? "Under Review" : s ? s.charAt(0).toUpperCase() + s.slice(1) : "Draft");
 
 const formatBudget = (n) => {
   if (!n) return "—";
@@ -57,23 +58,24 @@ export const CampaignCard = ({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                statusStyles[status] || statusStyles.draft
-              }`}
-            >
-              {statusLabel(status)}
-            </span>
-            {/* B5 — a campaign can be brand-status "active" while its
-                application deadline is already past. Flag it visibly so
-                the brand knows creators can no longer apply. */}
+            {/* A campaign can be DB-status "active" with its application
+                deadline already past — creators can't apply anymore, so it
+                gets its own display status instead of a misleading Active. */}
             {status === "active" &&
-              applicationDeadline &&
-              new Date(applicationDeadline).getTime() < Date.now() && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
-                  Deadline Passed
-                </span>
-              )}
+            applicationDeadline &&
+            new Date(applicationDeadline).getTime() < Date.now() ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                Applications Closed
+              </span>
+            ) : (
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  statusStyles[status] || statusStyles.draft
+                }`}
+              >
+                {statusLabel(status)}
+              </span>
+            )}
             {campaignType && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-[#5851DB] capitalize">
                 {campaignType}

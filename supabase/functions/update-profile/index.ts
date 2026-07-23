@@ -201,7 +201,11 @@ Deno.serve(async (req) => {
       if (fields.contactName !== undefined) updateData.contact_name = fields.contactName;
       if (fields.contactEmail !== undefined) updateData.contact_email = fields.contactEmail;
       if (fields.contactPhone !== undefined) updateData.contact_phone = fields.contactPhone;
-      if (fields.website !== undefined) updateData.website = fields.website;
+      // Column is website_url — the old `website` mapping wrote to a
+      // non-existent column and failed every save that included it.
+      if (fields.website !== undefined) updateData.website_url = fields.website || null;
+      // "About the brand" — shown to influencers on the brand page.
+      if (fields.aboutBrand !== undefined) updateData.full_description = fields.aboutBrand ? String(fields.aboutBrand).slice(0, 1000) : null;
       if (fields.instagramUsername !== undefined) updateData.instagram_username = fields.instagramUsername;
       if (fields.logoUrl !== undefined) updateData.logo_url = fields.logoUrl || null;
       // GSTIN-derived display fields. We let the brand override these on

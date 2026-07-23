@@ -312,11 +312,18 @@ export const FilterSidebar = ({
               </button>
             );
           })}
-          {selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length > 0 && (
-            <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
-              {t("moreCount", { count: selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length })}
-            </span>
-          )}
+          {/* Clickable "+N more" — opens the full filter modal. Lights up
+              solid when hidden categories are actually selected. */}
+          <button
+            onClick={onExpand}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+              selectedCategories.filter((c) => !["Beauty & Skincare", "Fashion & Lifestyle", "Food & Beverage"].includes(c)).length > 0
+                ? "bg-[#E60076] text-white"
+                : "bg-[#E60076]/10 text-[#E60076] hover:bg-[#E60076]/20"
+            }`}
+          >
+            {t("moreCount", { count: FILTER_CATEGORIES.length - 3 })}
+          </button>
         </div>
       </div>
 
@@ -378,9 +385,16 @@ export const FilterSidebar = ({
               );
             })}
             {brands.length > 4 && (
-              <span className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-[#E60076]/10 text-[#E60076]">
+              <button
+                onClick={onExpand}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                  (selectedBrands || []).some((b) => !brands.slice(0, 4).includes(b))
+                    ? "bg-[#E60076] text-white"
+                    : "bg-[#E60076]/10 text-[#E60076] hover:bg-[#E60076]/20"
+                }`}
+              >
                 {t("moreCount", { count: brands.length - 4 })}
-              </span>
+              </button>
             )}
           </div>
         </div>

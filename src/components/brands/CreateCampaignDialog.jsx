@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
+
+// Heavy and only needed when a banner is picked — lazy-load like the
+// profile-logo cropper does.
+const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
 import { Drawer, DrawerContent, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogClose, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "lucide-react";
@@ -246,6 +251,37 @@ export function CreateCampaignDialog({
   const [stage, setStage] = useState("");
   const bannerInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+
+  // Banner cropper — every banner is cropped to the 3:1 ratio the campaign
+  // card/detail actually render, so uploads can't come out stretched or
+  // off-center. Output is a fixed 1536×512 JPEG.
+  const BANNER_ASPECT = 3;
+  const BANNER_OUT = { w: 1536, h: 512 };
+  const [bannerCropSrc, setBannerCropSrc] = useState(null);
+  const [bCrop, setBCrop] = useState({ x: 0, y: 0 });
+  const [bZoom, setBZoom] = useState(1);
+  const [bPixels, setBPixels] = useState(null);
+  const applyBannerCrop = async () => {
+    if (!bannerCropSrc || !bPixels) return;
+    const img = new window.Image();
+    img.src = bannerCropSrc;
+    await new Promise((r) => (img.onload = r));
+    const canvas = document.createElement("canvas");
+    canvas.width = BANNER_OUT.w;
+    canvas.height = BANNER_OUT.h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, bPixels.x, bPixels.y, bPixels.width, bPixels.height, 0, 0, BANNER_OUT.w, BANNER_OUT.h);
+    const blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", 0.88));
+    if (blob) setBannerFile(new File([blob], "banner.jpg", { type: "image/jpeg" }));
+    URL.revokeObjectURL(bannerCropSrc);
+    setBannerCropSrc(null);
+    setBPixels(null);
+  };
+  const cancelBannerCrop = () => {
+    URL.revokeObjectURL(bannerCropSrc);
+    setBannerCropSrc(null);
+    setBPixels(null);
+  };
   const formScrollRef = useRef(null);
 
   // Prefill on open. Two shapes:
@@ -351,7 +387,9 @@ export function CreateCampaignDialog({
     try {
       const bitmap = await createImageBitmap(file);
       const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
-      if (scale >= 1 && file.size <= 5 * 1024 * 1024) return file;
+      // Re-encode anything over 3MB even if it needs no downscaling —
+      // the upload functions hard-cap at 3MB.
+      if (scale >= 1 && file.size <= 3 * 1024 * 1024) return file;
       const w = Math.round(bitmap.width * scale);
       const h = Math.round(bitmap.height * scale);
       const canvas = document.createElement("canvas");
@@ -369,7 +407,12 @@ export function CreateCampaignDialog({
   };
 
   const uploadOne = async (file, folder) => {
-    const compressed = await compressImage(file);
+    let compressed = await compressImage(file);
+    // Server hard-cap is 3MB — if the standard compression pass still
+    // exceeds it (rare: huge detailed photos), squeeze harder.
+    if (compressed.size > 3 * 1024 * 1024) {
+      compressed = await compressImage(compressed, 1440, 0.7);
+    }
     const fd = new FormData();
     fd.append("file", compressed);
     fd.append("folder", folder);
@@ -698,9 +741,49 @@ export function CreateCampaignDialog({
                 e.target.value = "";
                 return;
               }
-              if (f) setBannerFile(f);
+              // Open the 3:1 cropper instead of accepting the raw file.
+              if (f) {
+                setBCrop({ x: 0, y: 0 });
+                setBZoom(1);
+                setBannerCropSrc(URL.createObjectURL(f));
+              }
+              e.target.value = "";
             }}
           />
+
+          {/* Banner crop overlay (3:1) */}
+          {bannerCropSrc && (
+            <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm flex flex-col">
+              <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+                <button type="button" onClick={cancelBannerCrop} className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors">
+                  {t("bannerCrop.cancel")}
+                </button>
+                <div className="text-center">
+                  <h3 className="text-white text-sm font-bold">{t("bannerCrop.title")}</h3>
+                  <p className="text-white/50 text-[10px] font-semibold">{t("bannerCrop.subtitle")}</p>
+                </div>
+                <button type="button" onClick={applyBannerCrop} disabled={!bPixels} className="text-sm font-bold px-5 py-2 rounded-xl bg-[#5851DB] text-white disabled:opacity-50">
+                  {t("bannerCrop.apply")}
+                </button>
+              </div>
+              <div className="flex-1 relative">
+                <Cropper
+                  image={bannerCropSrc}
+                  crop={bCrop}
+                  zoom={bZoom}
+                  aspect={BANNER_ASPECT}
+                  cropShape="rect"
+                  onCropChange={setBCrop}
+                  onZoomChange={setBZoom}
+                  onCropComplete={(_, px) => setBPixels(px)}
+                />
+              </div>
+              <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+                <span className="text-white/60 text-xs font-bold shrink-0">{t("bannerCrop.zoom")}</span>
+                <input type="range" min={1} max={3} step={0.1} value={bZoom} onChange={(e) => setBZoom(Number(e.target.value))} className="flex-1 accent-purple-500" />
+              </div>
+            </div>
+          )}
         </Section>
 
         {/* Gallery */}
@@ -749,6 +832,7 @@ export function CreateCampaignDialog({
           >
             <ImageIcon size={16} /> {t("galleryUi.addImages")}
           </button>
+          <p className="text-[10px] text-gray-400 mt-1.5 ml-1">{t("galleryUi.fileHint")}</p>
           <input
             ref={galleryInputRef}
             type="file"

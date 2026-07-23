@@ -60,23 +60,15 @@ export const ProfileCompletionSection = () => {
           </div>
         </div>
 
-        {/* Score Ring */}
-        <div className="relative flex items-center justify-center w-16 h-16 shrink-0">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
-          <div
-            className={`absolute inset-0 rounded-full border-4 ${
-              complete
-                ? "border-emerald-400 border-t-transparent"
-                : "border-[#5B3DF5] border-t-transparent"
-            } -rotate-45`}
-            style={{
-              clipPath: `polygon(0 0, 100% 0, 100% ${100 - pct}%, 0 ${100 - pct}%)`,
-            }}
-          />
-          <span className="text-[10px] font-black italic">
-            {complete ? "DONE" : `${filled.length}/${total || 3}`}
-          </span>
-        </div>
+        {/* Count chip — the circular progress ring was dropped per design
+            feedback; the linear bar already shows completion. */}
+        <span
+          className={`text-[10px] font-black italic px-3 py-1.5 rounded-full border shrink-0 ${
+            complete ? "text-emerald-400 border-emerald-400" : "text-[#8B7BF7] border-[#5B3DF5]"
+          }`}
+        >
+          {complete ? "DONE" : `${filled.length}/${total || 3}`}
+        </span>
       </Link>
     </div>
   );

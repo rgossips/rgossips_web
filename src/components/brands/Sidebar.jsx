@@ -1,18 +1,20 @@
 "use client";
 
-import { LayoutGrid, Search, Megaphone, User, HelpCircle, Plus } from "lucide-react";
+import { LayoutGrid, Search, Megaphone, User, HelpCircle, MessageSquare, Plus, Receipt } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import BrandHelpAndSupport from "@/components/brands/BrandHelpAndSupport";
+import BrandSupportChat from "@/components/brands/BrandSupportChat";
 
 export default function Sidebar() {
   const t = useTranslations("BrandsSidebar");
   const router = useRouter();
   const pathname = usePathname();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const mainMenu = [
     { name: t("menu.explore"), icon: LayoutGrid, url: "/brands" },
@@ -24,6 +26,7 @@ export default function Sidebar() {
       url: "/brands/campaigns",
     },
     { name: t("menu.profile"), icon: User, url: "/brands/profile" },
+    { name: t("menu.transactions"), icon: Receipt, url: "/brands/transactions" },
   ];
 
   // Settings was removed — every preference today lives inside the profile
@@ -31,6 +34,7 @@ export default function Sidebar() {
   // entry for. Help & Support opens a slide-out drawer.
   const accountMenu = [
     { name: t("account.helpSupport"), icon: HelpCircle, onClick: () => setHelpOpen(true) },
+    { name: t("account.chatSupport"), icon: MessageSquare, onClick: () => setChatOpen(true) },
   ];
 
   return (
@@ -88,7 +92,15 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <BrandHelpAndSupport open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <BrandHelpAndSupport
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        onOpenChat={() => {
+          setHelpOpen(false);
+          setChatOpen(true);
+        }}
+      />
+      <BrandSupportChat open={chatOpen} onClose={() => setChatOpen(false)} />
 
       {/* Bottom CTA — navigates to campaigns list with ?new=1 which auto-opens the create dialog */}
       <div className="p-4">

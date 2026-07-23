@@ -113,14 +113,21 @@ Deno.serve(async (req) => {
     const invitationIds = [...new Set((campaigns || []).map((c: any) => c.brand_invitation_id).filter(Boolean))];
     let brandMap: Record<string, any> = {};
 
-    // Look up registered brands by brand_id
+    // Look up registered brands by brand_id. Also collect deactivated /
+    // pending-deletion brands — their campaigns must disappear from the
+    // influencer list (a paused brand shouldn't keep collecting applications).
+    const inactiveBrandIds = new Set<string>();
     if (brandIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from("brand_profiles")
-        .select("brand_id, brand_name, gstin_trade_name, logo_url, instagram_username")
+        .select("brand_id, brand_name, gstin_trade_name, logo_url, instagram_username, status")
         .in("brand_id", brandIds);
 
       for (const p of profiles || []) {
+        if (p.status === "deactivated" || p.status === "pending_deletion") {
+          inactiveBrandIds.add(p.brand_id);
+          continue;
+        }
         brandMap[p.brand_id] = {
           name: p.gstin_trade_name || p.brand_name || "",
           logo: p.logo_url || "",
@@ -147,8 +154,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Format campaigns for frontend
-    const formatted = (campaigns || []).map((c: any) => {
+    // Format campaigns for frontend. Campaigns of deactivated / pending-
+    // deletion brands are dropped entirely (their brandMap entry was never
+    // built, and keeping them would show "Unknown Brand" ghosts).
+    const visibleCampaigns = (campaigns || []).filter(
+      (c: any) => !c.brand_id || !inactiveBrandIds.has(c.brand_id)
+    );
+    const formatted = visibleCampaigns.map((c: any) => {
       const brand = brandMap[c.brand_invitation_id] || brandMap[c.brand_id] || { name: "Unknown Brand", logo: "", instagram: "" };
       const initials = brand.name
         .split(" ")

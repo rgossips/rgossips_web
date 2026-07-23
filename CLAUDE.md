@@ -598,6 +598,84 @@ brand-brief checklist isn't surfaced in the deliverables flow; apply-campaign
 guardrail is mandatory-pitch only (per-day cap + fail-closed monthly cap not
 yet tightened).
 
+## Brand support / callbacks / transactions (2026-07)
+
+- **Brand support chat**: `components/brands/BrandSupportChat.jsx` (namespace
+  `BrandSupportChat`) — brand-flavoured clone of the influencer `SupportChat`
+  (campaign picker via brand-campaigns list, payments/escrow/account topic
+  tree, same CallbackForm inserting `support_callbacks` with
+  `user_role:"brand"`). Opened from the brands Sidebar ("Chat with support")
+  and a "Live chat" row inside BrandHelpAndSupport.
+- **Admin Callbacks page**: `rgossips-admin /dashboard/callbacks` (Operations
+  sidebar) — lists `support_callbacks` via service role (RLS is own-row only),
+  requester names batch-joined from influencer/brand profiles, Open/Done tabs,
+  status toggle gated by `adminGate()`.
+- **Brand transactions**: `/brands/transactions` (Sidebar "Transactions") —
+  `brand-campaigns` action `transactions` flattens escrow facts from
+  `campaign_applications` (order/payment ids, amount paise, escrow_status,
+  funded/released timestamps) + campaign title + creator name. Page shows
+  totals (spent / in escrow / released) and a printable per-payment receipt
+  (print-CSS isolates #receipt-print-area; explicitly labelled NOT a GST
+  invoice).
+- **Campaign banner crop**: CreateCampaignDialog crops every banner to 3:1
+  (1536×512 JPEG) via react-easy-crop before upload; hints state recommended
+  sizes. Filter sidebar "+N more" chips (categories/brands) are clickable →
+  open the full filter modal. Campaigns list shows "N out of M campaigns" +
+  a Show-all reset when filters are active.
+
+**Mobile parity sweep 2 (2026-07)**: everything above ported to the RN app
+(6 parallel subagents; tsc 0 errors, 523 t() keys resolve). Highlights:
+campaigns list "N out of M" strip + Show all + Load-more 30 (replaced the
+scroll auto-loader); brand list sort chips (match/A–Z/campaigns) + Load-more
++ clickable match badge → BrandMatchModal (`explainBrandMatch` in
+matchScore.ts keeps mobile's richer tiered category logic); Applications
+Closed chips on BrandCampaigns/-Detail; `crop:'banner'` (1536×512) mode in
+image-picker.ts for CreateCampaignScreen; `BrandSupportChatModal` (floating
+help button on BrandHome, callbacks user_role:"brand");
+BrandProfile About/Website + `BrandAccountActionsModal` (deactivate/delete)
++ `BrandTransactions` screen (Share receipt, route registered in App.tsx);
+signup field-level errors in LoginScreen forms; TrustSection ring → band
+chip; RUDE LABS casing in consent blobs. `CampaignFilters.tsx` is dead code
+(zero importers).
+
+## Moderation gates (2026-07)
+
+- **Brand verification**: create-profile now writes brand signups with
+  `verification_status='pending'` (was auto-verified). Admin verifies from
+  the brands console (existing verification controls). Unverified brands
+  cannot publish campaigns — brand-campaigns `create`/`updateStatus` return
+  `brand_not_verified`; web campaigns page shows an amber banner + disables
+  all New-Campaign triggers (`profile.verification_status !== 'verified'`).
+- **Campaign review queue**: publishing (create-with-active or draft→active)
+  lands campaigns in status **`under_review`** unless the brand's
+  `auto_approve_campaigns` (migration 053, admin edit-brand checkbox) is on.
+  paused→active is exempt (already approved once). The creator match+notify
+  fan-out fires only when a campaign actually goes active.
+- **Admin approval**: campaigns table shows purple "under review" chips with
+  inline Approve / Send back buttons (+ filter tab). Approve calls
+  brand-campaigns action `adminApprove` — guarded by requiring the SERVICE
+  ROLE key as the Bearer (admin server actions hold it; browsers don't) —
+  which flips to active AND runs the same fan-out a direct publish would.
+  Send back → draft. `reviewCampaign()` in admin campaigns actions.ts.
+- Status chips for `under_review` exist on web brand list/detail + mobile
+  BrandCampaigns/-Detail. under_review campaigns never reach influencer
+  lists (Active tab matches status "Active" only).
+
+## Offline gates (2026-07)
+
+All three apps show a full-screen "No signal, no gossip. 📵" takeover with a
+graphic + Try-again button, dismissing ONLY when connectivity actually
+returns (probe-verified, plus 4s background polling):
+- Web `src/components/OfflineGate.jsx` (root layout) — offline/online events
+  + same-origin favicon probe ('online' is verified before dismissing).
+- Admin `src/components/offline-gate.tsx` (root layout) — same, inline SVGs
+  (no lucide in admin).
+- Mobile `src/components/OfflineGate.tsx` (App.tsx, above the navigator) —
+  no NetInfo dep: `invokeFn` emits `NETWORK_ERROR_EVENT` (DeviceEventEmitter)
+  on "Network request failed"; overlay polls `SUPABASE_URL/auth/v1/health`.
+Mobile moderation parity: BrandCampaigns hides the create FAB + shows an
+amber banner when `profile.verification_status !== 'verified'`.
+
 ## Brand-side campaign lifecycle
 
 Actions on `brand-campaigns` edge function:

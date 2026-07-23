@@ -25,7 +25,11 @@ import Community from "./sections/Community";
 import MobileApp from "./sections/MobileApp";
 import FAQ from "./sections/FAQ";
 import CTA from "./sections/CTA";
-
+const heroStats = [
+  { value: "200K+", label: "Verified creators" },
+  { value: "₹10Cr+", label: "Paid to creators" },
+  { value: "98%", label: "On-time payouts" },
+];
 // Exact keyframes from the reference stylesheet.
 const KEYFRAMES = `
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -76,6 +80,46 @@ export default function RGLanding() {
       <AIPrompt />
       <Brands />
       <CreatorStories />
+      <div
+        className="hero-stats"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "100px",
+          marginTop: "60px",
+          animation: "riseIn 0.6s ease 0.32s both",
+        }}
+      >
+        {heroStats.map((st, i) => (
+          <div key={i}>
+            <div
+              className="hero-stat-value"
+              style={{
+                fontSize: "50px",
+                fontWeight: 800,
+                background: "linear-gradient(95deg, #7C3AED, #EC4899)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+                textAlign: "center",
+              }}
+            >
+              {st.value}
+            </div>
+            <div
+              style={{
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#9CA3AF",
+                marginTop: "2px",
+                textAlign: "center",
+              }}
+            >
+              {st.label}
+            </div>
+          </div>
+        ))}
+      </div>
       <Audiences />
       <PainPoints />
       <Platform />

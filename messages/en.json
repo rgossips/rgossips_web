@@ -910,7 +910,8 @@
     },
     "errors": {
       "failedToSubmit": "Failed to submit"
-    }
+    },
+    "reasonSelectPlaceholder": "Select a reason…"
   },
   "BrandsBrandHelpAndSupport": {
     "header": {
@@ -923,7 +924,8 @@
     },
     "contactUs": "Contact Us",
     "labels": {
-      "email": "Email"
+      "email": "Email",
+      "liveChat": "Live chat"
     },
     "faq": {
       "title": "Frequently Asked Questions"
@@ -995,7 +997,8 @@
           }
         }
       }
-    }
+    },
+    "liveChatValue": "Chat with support now"
   },
   "BrandsBrandHero": {
     "welcomeBack": "Welcome back",
@@ -1083,7 +1086,8 @@
       "refresh": "Refresh"
     },
     "statusBadge": {
-      "deadlinePassed": "DEADLINE PASSED"
+      "deadlinePassed": "DEADLINE PASSED",
+      "applicationsClosed": "APPLICATIONS CLOSED"
     },
     "match": {
       "perfect": "{count, plural, one {# influencer match perfectly to your needs.} other {# influencers match perfectly to your needs.}}",
@@ -1145,7 +1149,8 @@
       "pause": "Pause",
       "complete": "Complete",
       "resume": "Resume",
-      "completedNote": "This campaign is completed."
+      "completedNote": "This campaign is completed.",
+      "underReviewNote": "This campaign is under review by the RGossips team. It goes live to creators as soon as it is approved."
     },
     "gallery": {
       "previous": "Previous",
@@ -1272,13 +1277,19 @@
       "active": "Live",
       "draft": "Drafts",
       "paused": "Paused",
-      "completed": "Completed"
+      "completed": "Completed",
+      "under_review": "Under Review"
     },
     "empty": {
       "noMatch": "No campaigns match",
       "noCampaigns": "No campaigns yet",
       "noMatchHint": "Try a different search or filter.",
       "noCampaignsHint": "Create your first campaign to start connecting with creators."
+    },
+    "verifyGate": {
+      "title": "Your brand is under review",
+      "body": "Our team is verifying your account - you can create campaigns as soon as verification completes (usually 1-2 business days).",
+      "tooltip": "Available after your brand is verified"
     }
   },
   "BrandsChats": {
@@ -1485,14 +1496,15 @@
     "banner": {
       "replace": "Replace",
       "clickToUpload": "Click to upload",
-      "fileHint": "PNG, JPG, WebP up to 10MB",
+      "fileHint": "Recommended 1536×512 (3:1) · PNG, JPG, WebP up to 3MB",
       "previewAlt": "Banner preview",
       "alt": "Banner"
     },
     "galleryUi": {
       "addImages": "Add gallery images",
       "imageAlt": "Gallery {index}",
-      "count": "{count, plural, one {# image} other {# images}}"
+      "count": "{count, plural, one {# image} other {# images}}",
+      "fileHint": "Square works best · PNG, JPG, WebP up to 3MB each"
     },
     "platformsSelected": "{count} selected",
     "deliverablesCount": "{count, plural, one {# piece} other {# pieces}}",
@@ -1505,6 +1517,13 @@
       "saveChanges": "Save Changes",
       "saveDraft": "Save Draft",
       "publish": "Publish"
+    },
+    "bannerCrop": {
+      "title": "Crop banner",
+      "subtitle": "3:1 — exactly how it appears on campaign cards",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "zoom": "Zoom"
     }
   },
   "BrandsCreatorCTASection": {
@@ -1616,7 +1635,11 @@
       "legalName": "Legal Name",
       "tradeName": "Trade Name",
       "businessType": "Business Type",
-      "registeredAddress": "Registered Address"
+      "registeredAddress": "Registered Address",
+      "about": "About the brand",
+      "aboutEmpty": "Tell creators about your brand — tap Edit to add",
+      "website": "Website",
+      "websiteEmpty": "Add your website — tap Edit"
     },
     "contact": {
       "addManager": "Add brand manager name",
@@ -1670,7 +1693,12 @@
       "statePlaceholder": "State",
       "pincode": "Pincode",
       "pincodePlaceholder": "6-digit pincode",
-      "gstinNote": "These fields were auto-filled from GSTIN <b>{gstin}</b>. Edits override the auto-fill but the original GSTIN is still on file."
+      "gstinNote": "These fields were auto-filled from GSTIN <b>{gstin}</b>. Edits override the auto-fill but the original GSTIN is still on file.",
+      "about": "About the brand",
+      "aboutPlaceholder": "What does your brand do? What makes it special? Creators see this when deciding to apply.",
+      "aboutHint": "Shown to creators on your brand page. Max 1000 characters.",
+      "website": "Website",
+      "websitePlaceholder": "https://yourbrand.com"
     },
     "contactModal": {
       "title": "Edit Contact Details",
@@ -1701,13 +1729,15 @@
       "explore": "Explore",
       "findCreators": "Find Creators",
       "campaigns": "Campaigns",
-      "profile": "Profile"
+      "profile": "Profile",
+      "transactions": "Transactions"
     },
     "badge": {
       "live": "LIVE"
     },
     "account": {
-      "helpSupport": "Help & Support"
+      "helpSupport": "Help & Support",
+      "chatSupport": "Chat with support"
     },
     "accountLabel": "Account",
     "postRequirement": "Post Requirement"
@@ -1770,7 +1800,7 @@
         }
       }
     },
-    "footer": "Your Trust Score is informational and updates automatically. RGossips · operated by Rude Labs Pvt. Ltd."
+    "footer": "Your Trust Score is informational and updates automatically. RGossips · operated by RUDE LABS PVT. LTD."
   },
   "BrandsTrustSection": {
     "searchPlaceholder": "Looking for 10 nano creators, 15L...",
@@ -2574,7 +2604,14 @@
     "searchPlaceholder": "Search...",
     "loading": "Loading brands...",
     "empty": "No brands match these filters.",
-    "filterTitle": "Filter Brands"
+    "filterTitle": "Filter Brands",
+    "countBrands": "{count, plural, one {# brand} other {# brands}}",
+    "sort": {
+      "label": "Sort by",
+      "match": "Match score",
+      "az": "A – Z",
+      "campaigns": "Active campaigns"
+    }
   },
   "InfluencerCampaigns": {
     "title": "Campaigns",
@@ -2597,7 +2634,9 @@
     "campaignCount": "{count, plural, one {# campaign} other {# campaigns}}",
     "loading": "Loading campaigns...",
     "empty": "No {tab} campaigns found.",
-    "filterTitle": "Filter Campaigns"
+    "filterTitle": "Filter Campaigns",
+    "filteredOutOf": "{shown} out of {total} campaigns",
+    "showAll": "Show all"
   },
   "InfluencerChats": {
     "title": "Messages",
@@ -4834,5 +4873,163 @@
     "giftedBy": "Gifted by",
     "claim": "Claim Your Reward",
     "maybeLater": "Maybe later"
+  },
+  "BrandSupportChat": {
+    "greeting": "Hi {name}! 👋 What can I help you with today?",
+    "greetingFallbackName": "there",
+    "pickClosest": "Pick the closest match:",
+    "back": "← Back",
+    "loadingCampaigns": "Loading campaigns…",
+    "header": {
+      "title": "RGossips Brand Support",
+      "status": "Online · usually replies instantly",
+      "backAria": "Back",
+      "closeAria": "Close"
+    },
+    "actions": {
+      "requestCallback": "Request a callback",
+      "askAnother": "Ask another question",
+      "talkToHuman": "Talk to a human"
+    },
+    "callback": {
+      "intro": "Tell us how to reach you and we'll call back.",
+      "submitted": "Got it ✓ Our team will call back during the time you picked.",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "+91 98765 43210",
+      "phoneHint": "Include country code (e.g. +91 for India)",
+      "bestTime": "Best time to call",
+      "notesLabel": "Anything we should know? (optional)",
+      "notesPlaceholder": "What's the issue?",
+      "cancel": "Cancel",
+      "sending": "Sending…",
+      "submit": "Request callback",
+      "done": {
+        "title": "Callback requested",
+        "body": "We'll call {phone} {time}."
+      },
+      "errors": {
+        "signIn": "Please sign in first.",
+        "invalidPhone": "Enter a valid phone number with country code.",
+        "submitFailed": "Failed to submit"
+      }
+    },
+    "times": {
+      "todayAfternoon": "Today afternoon",
+      "todayEvening": "Today evening",
+      "tomorrowMorning": "Tomorrow morning",
+      "tomorrowEvening": "Tomorrow evening",
+      "anytime": "Anytime"
+    },
+    "timesLower": {
+      "todayAfternoon": "today afternoon",
+      "todayEvening": "today evening",
+      "tomorrowMorning": "tomorrow morning",
+      "tomorrowEvening": "tomorrow evening",
+      "anytime": "anytime"
+    },
+    "campaigns": {
+      "pullingAll": "Pulling your campaigns…",
+      "noneYet": "You haven't created any campaigns yet. Post your first requirement and matching creators get notified instantly.",
+      "pickCampaign": "Pick the campaign you need help with:",
+      "whatsUp": "Got it — what's going on with \"{title}\"?",
+      "applicationsCount": "{count, plural, =0 {No applications} one {# application} other {# applications}}"
+    },
+    "labels": {
+      "my_campaigns": "My campaigns",
+      "payments": "Payments & escrow",
+      "pay_escrow_how": "How does escrow work?",
+      "pay_fund_fail": "Escrow payment not going through",
+      "pay_release_how": "How do I release payment?",
+      "pay_refund": "Refund for a cancelled campaign",
+      "account": "Account & verification",
+      "acct_gstin": "Add or update GSTIN",
+      "acct_verify": "Check my verification status",
+      "acct_edit": "Edit my brand profile",
+      "other": "Something else",
+      "other_callback": "Request a callback",
+      "issue_no_apps": "No applications yet",
+      "issue_review": "How do I review applications?",
+      "issue_deliverables": "Deliverables not submitted",
+      "issue_escrow": "How does escrow work?",
+      "issue_release": "Release payment issue",
+      "issue_callback": "Talk to a human about this"
+    },
+    "responses": {
+      "pay_escrow_how": "Once a creator accepts your offer, you fund the agreed amount into escrow via Razorpay. We hold it safely while the creator delivers; it's only released to them after you approve the live post. If things fall through, the escrow can be resolved via support.",
+      "pay_fund_fail": "Razorpay occasionally declines on the first attempt — retry once, or switch card / UPI / netbanking. Make sure you're signed in on this browser (an expired session causes a silent failure). Still stuck? Request a callback and we'll complete it with you.",
+      "pay_release_how": "Open the campaign, review the creator's live links, and approve them — approval moves the escrow to Payment Released and the creator gets paid. You'll find every application on the campaign detail page.",
+      "pay_refund": "Escrowed funds for work that never happened are refundable. Refunds are handled by our team case-by-case — request a callback with the campaign name and we'll process it.",
+      "acct_gstin": "Open your brand profile and edit the Business Details section to add or correct your GSTIN. It appears on invoices, so double-check the 15-character format.",
+      "acct_verify": "Your verification badge and trust score live on your brand profile. Verification usually completes within 1–2 business days of submitting your business details; the trust score grows as you complete campaigns.",
+      "acct_edit": "Everything — logo, description, website, contact details — is editable from your brand profile page. Creators see this profile when they consider your campaigns, so keep it fresh."
+    },
+    "links": {
+      "pay_release_how": "Go to Campaigns",
+      "acct_gstin": "Go to Profile",
+      "acct_verify": "Go to Profile",
+      "acct_edit": "Go to Profile",
+      "createCampaign": "Create a Campaign",
+      "openThisCampaign": "Open this campaign"
+    },
+    "issues": {
+      "noApps": "{status, select, draft {This campaign is still a Draft — creators can't see it yet. Publish it from the campaign page to start receiving applications.} paused {This campaign is Paused, so it's hidden from creators. Resume it to start receiving applications again.} completed {This campaign is marked Completed, so it no longer accepts applications.} other {Matching creators were notified when you published. Check that your categories, follower range and cities aren't too narrow, and that the application deadline hasn't passed — widening them reaches more creators.}}",
+      "review": "{applications, plural, =0 {No one has applied yet — once creators apply, each application appears on the campaign detail page with the creator's profile, rates and pitch.} one {You have # application waiting. Open the campaign detail page to review the creator's profile and pitch, then use Approve with Price to send your offer.} other {You have # applications waiting. Open the campaign detail page to review each creator's profile and pitch, then use Approve with Price to send offers.}}",
+      "deliverables": "Creators can submit deliverables only after you approve their application and fund the escrow. If an approved creator is late, open the campaign to check their application status — a friendly nudge usually works. If they've gone quiet for 5+ days, request a callback and we'll follow up.",
+      "escrow": "After a creator accepts your offer, you pay the agreed amount into escrow via Razorpay from this campaign's page. We hold the funds while the creator delivers, and release them only after you approve the live post — you never pay for work you haven't seen.",
+      "release": "Payment releases when you approve the creator's live links on the campaign page. If the Release button isn't working or the status looks stuck, note the creator's name and request a callback — we'll resolve the escrow manually."
+    }
+  },
+  "BrandsTransactions": {
+    "title": "Transactions & Invoices",
+    "subtitle": "Every escrow payment you've made, with downloadable receipts.",
+    "summary": {
+      "totalSpent": "Total spent",
+      "inEscrow": "In escrow",
+      "released": "Released to creators"
+    },
+    "listTitle": "Payment history",
+    "empty": {
+      "title": "No transactions yet",
+      "body": "When you fund an escrow for a creator, it shows up here with a receipt.",
+      "cta": "Go to campaigns"
+    },
+    "row": {
+      "toCreator": "to {name}",
+      "receipt": "Receipt",
+      "campaignFallback": "Campaign"
+    },
+    "status": {
+      "inEscrow": "In escrow",
+      "released": "Released",
+      "refunded": "Refunded",
+      "processing": "Processing"
+    },
+    "receipt": {
+      "title": "Payment receipt",
+      "print": "Print / Save PDF",
+      "receiptNo": "Receipt no.",
+      "billedTo": "Billed to",
+      "paymentRefs": "Payment references",
+      "lineItem": "Escrow funding — {campaign}",
+      "total": "Total paid",
+      "note": "This is a payment receipt for funds placed in escrow via Razorpay, held by RUDE LABS PVT. LTD. (RGossips) and released to the creator on your approval. It is not a GST tax invoice."
+    }
+  },
+  "Pagination": {
+    "prev": "Prev",
+    "next": "Next"
+  },
+  "OpenInAppGate": {
+    "title": "Get the RGossips app",
+    "body": "Sign up and manage your campaigns with a smoother, faster experience in the mobile app — or keep going right here on the web.",
+    "useApp": "Use the mobile app",
+    "continueWeb": "Continue on web"
+  },
+  "OfflineGate": {
+    "title": "No signal, no gossip. 📵",
+    "body": "Looks like your internet took a coffee break. We will pick up right where you left off the moment you are back online.",
+    "refresh": "Try again",
+    "checking": "Checking…",
+    "autoNote": "We reconnect automatically when your network returns."
   }
 }

@@ -387,11 +387,12 @@ Deno.serve(async (req) => {
       };
     }
 
-    // Brands that sign up directly are verified by default
-    // (they've already verified GSTIN + phone OTP during signup)
+    // Brands that sign up directly start UNDER REVIEW — an admin verifies
+    // them from the console before they can create campaigns. (Previously
+    // auto-verified; changed 2026-07 so every new brand is human-checked.)
     if (table === "brand_profiles") {
-      row.verification_status = "verified";
-      row.is_verified = true;
+      row.verification_status = "pending";
+      row.is_verified = false;
       if (invitationId) {
         row.source = "admin_invited";
       } else {

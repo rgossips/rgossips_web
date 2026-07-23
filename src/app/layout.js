@@ -6,6 +6,7 @@ import { GlobalProvider } from "@/context/GlobalContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LoadingProvider } from "@/context/LoadingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import OfflineGate from "@/components/OfflineGate";
 import Script from "next/script";
 import NavigationLoader from "@/components/NavigationLoader";
 import ScrollReset from "@/components/ScrollReset";
@@ -40,9 +41,9 @@ export const metadata = {
     "social media marketing India",
     "paid creator campaigns",
   ],
-  authors: [{ name: "Rude Labs Private Limited" }],
-  creator: "Rude Labs Private Limited",
-  publisher: "Rude Labs Private Limited",
+  authors: [{ name: "RUDE LABS PVT. LTD." }],
+  creator: "RUDE LABS PVT. LTD.",
+  publisher: "RUDE LABS PVT. LTD.",
   applicationName: "RGossips",
   category: "marketing",
   // Tell crawlers we want to be indexed + give them image preview rights.
@@ -106,7 +107,7 @@ const ORGANIZATION_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "RGossips",
-  legalName: "Rude Labs Private Limited",
+  legalName: "RUDE LABS PVT. LTD.",
   url: "https://rgossips.com",
   logo: "https://rgossips.com/icon.svg",
   description:
@@ -180,6 +181,7 @@ export default async function RootLayout({ children }) {
           <LoadingProvider>
             <GlobalProvider>
               <AuthProvider>
+                <OfflineGate />
                 <ProtectedRoute>{children}</ProtectedRoute>
               </AuthProvider>
             </GlobalProvider>

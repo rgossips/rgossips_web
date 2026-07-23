@@ -35,10 +35,10 @@ Deno.serve(async (req) => {
     // 10MB; this one had NO limit, so a 100MB upload would be accepted
     // and stream straight into storage. 5MB matches the bucket's
     // fileSizeLimit set at creation time.
-    const MAX_BYTES = 5 * 1024 * 1024;
+    const MAX_BYTES = 3 * 1024 * 1024;
     if (file.size > MAX_BYTES) {
       return new Response(
-        JSON.stringify({ error: "Image too large — maximum size is 5MB. Please compress or crop it and try again." }),
+        JSON.stringify({ error: "Image too large — maximum size is 3MB. Please compress or crop it and try again." }),
         { status: 200, headers: jsonHeaders }
       );
     }

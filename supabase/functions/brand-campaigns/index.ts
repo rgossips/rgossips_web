@@ -315,6 +315,62 @@ Deno.serve(async (req) => {
     const payload = await req.json().catch(() => ({}));
     const action = payload.action;
 
+    // ── TRANSACTIONS ─────────────────────────────────────────────────
+    // Every escrow payment the brand has made, flattened for the
+    // /brands/transactions page: campaign + creator + gateway refs +
+    // status. Escrow facts live on campaign_applications.
+    if (action === "transactions") {
+      const { brandId } = payload;
+      if (!brandId) return ok({ error: "brandId is required" });
+
+      const { data: camps, error: cErr } = await supabase
+        .from("campaigns")
+        .select("campaign_id, title")
+        .eq("brand_id", brandId);
+      if (cErr) return ok({ error: cErr.message });
+      const campaignIds = (camps || []).map((c: any) => c.campaign_id);
+      if (campaignIds.length === 0) return ok({ transactions: [] });
+      const titleById: Record<string, string> = {};
+      for (const c of camps || []) titleById[c.campaign_id] = c.title || "";
+
+      const { data: apps, error: aErr } = await supabase
+        .from("campaign_applications")
+        .select("id, campaign_id, influencer_id, escrow_order_id, escrow_payment_id, escrow_amount, escrow_status, escrow_funded_at, payout_release_at, escrow_refund_id, final_agreed_rate, status")
+        .in("campaign_id", campaignIds)
+        .not("escrow_order_id", "is", null)
+        .order("escrow_funded_at", { ascending: false });
+      if (aErr) return ok({ error: aErr.message });
+
+      const infIds = [...new Set((apps || []).map((a: any) => a.influencer_id).filter(Boolean))];
+      const nameById: Record<string, string> = {};
+      if (infIds.length > 0) {
+        const { data: infs } = await supabase
+          .from("influencer_profiles")
+          .select("influencer_id, full_name, username, instagram_handle")
+          .in("influencer_id", infIds);
+        for (const i of infs || []) {
+          nameById[i.influencer_id] =
+            i.full_name || i.username || (i.instagram_handle ? `@${i.instagram_handle}` : "");
+        }
+      }
+
+      const transactions = (apps || []).map((a: any) => ({
+        id: a.id,
+        campaignId: a.campaign_id,
+        campaignTitle: titleById[a.campaign_id] || "",
+        influencerName: nameById[a.influencer_id] || "Creator",
+        amountPaise: a.escrow_amount || 0,
+        orderId: a.escrow_order_id,
+        paymentId: a.escrow_payment_id,
+        escrowStatus: a.escrow_status,
+        refunded: !!a.escrow_refund_id,
+        fundedAt: a.escrow_funded_at,
+        releasedAt: a.payout_release_at,
+        applicationStatus: a.status,
+      }));
+      return ok({ transactions });
+    }
+
     // ── LIST ─────────────────────────────────────────────────────────
     if (action === "list") {
       const { brandId } = payload;
@@ -536,6 +592,29 @@ Deno.serve(async (req) => {
         status: campaign.status === "active" ? "active" : "draft",
       };
 
+      // Moderation gates on publish (drafts are always allowed):
+      //   - unverified brands can't publish at all;
+      //   - verified brands publish into `under_review` unless the admin
+      //     flipped their auto_approve_campaigns toggle.
+      let underReview = false;
+      if (row.status === "active") {
+        const { data: bp } = await supabase
+          .from("brand_profiles")
+          .select("verification_status, auto_approve_campaigns")
+          .eq("brand_id", brandId)
+          .maybeSingle();
+        if (bp?.verification_status !== "verified") {
+          return ok({
+            error: "brand_not_verified",
+            message: "Your brand is still under review. You can publish campaigns once our team verifies your account.",
+          });
+        }
+        if (!bp?.auto_approve_campaigns) {
+          row.status = "under_review";
+          underReview = true;
+        }
+      }
+
       const { data: created, error } = await supabase
         .from("campaigns")
         .insert(row)
@@ -581,7 +660,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      return ok({ success: true, campaignId: created.campaign_id, matchingCount });
+      return ok({ success: true, campaignId: created.campaign_id, matchingCount, underReview });
     }
 
     // ── UPDATE (full edit) ───────────────────────────────────────────
@@ -790,13 +869,103 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Moderation: a brand publishing a draft goes through the same review
+      // gate as create-with-active. Resuming from `paused` is exempt (that
+      // campaign was already approved once). Brands can never self-approve
+      // an `under_review` campaign.
+      let effectiveStatus = status;
+      let underReview = false;
+      if (status === "active" && (c.status === "draft" || c.status === "under_review")) {
+        const { data: bp } = await supabase
+          .from("brand_profiles")
+          .select("verification_status, auto_approve_campaigns")
+          .eq("brand_id", brandId)
+          .maybeSingle();
+        if (bp?.verification_status !== "verified") {
+          return ok({
+            error: "brand_not_verified",
+            message: "Your brand is still under review. You can publish campaigns once our team verifies your account.",
+          });
+        }
+        if (!bp?.auto_approve_campaigns) {
+          effectiveStatus = "under_review";
+          underReview = true;
+        }
+      }
+
       const { error } = await supabase
         .from("campaigns")
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status: effectiveStatus, updated_at: new Date().toISOString() })
         .eq("campaign_id", campaignId);
 
       if (error) return ok({ error: error.message });
-      return ok({ success: true });
+      return ok({ success: true, underReview });
+    }
+
+    // ── ADMIN APPROVE / REJECT ───────────────────────────────────────
+    // Only callable by the admin console: the caller must present the
+    // SERVICE ROLE key as the Bearer token (admin server actions hold it;
+    // browsers never do). Approve flips under_review → active and runs the
+    // same match-and-notify fan-out a direct publish would have; reject
+    // sends the campaign back to draft for the brand to fix and resubmit.
+    if (action === "adminApprove" || action === "adminReject") {
+      const bearer = (req.headers.get("authorization") || "").replace("Bearer ", "");
+      if (bearer !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+        return ok({ error: "Not authorized" });
+      }
+      const { campaignId } = payload;
+      if (!campaignId) return ok({ error: "campaignId is required" });
+
+      const { data: c, error: findErr } = await supabase
+        .from("campaigns")
+        .select("campaign_id, brand_id, title, status, target_categories, target_follower_min, target_follower_max, target_cities")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (findErr || !c) return ok({ error: "Campaign not found" });
+
+      if (action === "adminReject") {
+        const { error } = await supabase
+          .from("campaigns")
+          .update({ status: "draft", updated_at: new Date().toISOString() })
+          .eq("campaign_id", campaignId);
+        if (error) return ok({ error: error.message });
+        return ok({ success: true });
+      }
+
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ status: "active", updated_at: new Date().toISOString() })
+        .eq("campaign_id", campaignId);
+      if (error) return ok({ error: error.message });
+
+      let matchingCount = 0;
+      try {
+        const match = await findMatchingInfluencers(supabase, {
+          target_categories: (c.target_categories as string[]) || [],
+          target_follower_min: (c.target_follower_min as number) || 0,
+          target_follower_max: (c.target_follower_max as number) || 1000000,
+          target_cities: (c.target_cities as string[]) || [],
+        });
+        matchingCount = match.profileIds.length + match.invitationCount;
+        let brandName = "A brand";
+        try {
+          const { data: bp } = await supabase
+            .from("brand_profiles")
+            .select("brand_name")
+            .eq("brand_id", c.brand_id)
+            .maybeSingle();
+          if (bp?.brand_name) brandName = bp.brand_name;
+        } catch { /* silent */ }
+        await notifyMatchingInfluencers(
+          supabase,
+          match.profileIds,
+          { campaign_id: c.campaign_id, title: c.title as string },
+          brandName,
+        );
+      } catch (e) {
+        console.error("match+notify on adminApprove failed:", (e as any)?.message || e);
+      }
+      return ok({ success: true, matchingCount });
     }
 
     return ok({ error: "Unknown action" });

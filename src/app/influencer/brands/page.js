@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import BrandCard from "@/components/BrandCard";
+import ListPagination from "@/components/ListPagination";
 import FilterModal, { FilterSidebar } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateBrandMatchScore } from "@/utils/matchScore";
@@ -56,6 +57,9 @@ export default function DiscoverBrands() {
     fetchBrands();
   }, []);
 
+  // Sort order: match score (default) / A–Z / most active campaigns.
+  const [sortBy, setSortBy] = useState("match");
+
   // --- FILTER ENGINE ---
   const filteredBrands = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
@@ -85,15 +89,34 @@ export default function DiscoverBrands() {
       return matchesSearch && matchesCategory && matchesBudget && matchesVerified;
     });
 
-    // Sort by match score descending so the best-fit brands land at
-    // the top of the grid for this creator. Same calculateBrandMatchScore
-    // that the BrandCard renders, so the % badge a user sees on a card
-    // matches the position it lands in. Ties keep their original order.
+    // User-selectable sort. "match" (default) keeps the best-fit brands on
+    // top using the SAME scorer the card badge renders, so position and %
+    // agree. Ties keep their original order.
+    if (sortBy === "az") {
+      return [...passed].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+    if (sortBy === "campaigns") {
+      return [...passed].sort((a, b) => (b.activeCampaigns || 0) - (a.activeCampaigns || 0));
+    }
     return passed
       .map((b) => ({ b, score: calculateBrandMatchScore(profile, b) }))
       .sort((a, c) => c.score - a.score)
       .map(({ b }) => b);
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile]);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile, sortBy]);
+
+  // Client-side pagination — 30 per page, reset on any filter change.
+  const PAGE_SIZE = 30;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, sortBy]);
+  const pageCount = Math.max(1, Math.ceil(filteredBrands.length / PAGE_SIZE));
+  const pagedBrands = filteredBrands.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const goToPage = (p) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -168,13 +191,34 @@ export default function DiscoverBrands() {
               </div>
             ) : (
               <>
+                {/* Count + sort control */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="text-sm font-bold text-slate-400">
+                    {t("countBrands", { count: filteredBrands.length })}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("sort.label")}</span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="h-9 px-3 pr-8 rounded-xl bg-white border border-slate-100 shadow-sm text-xs font-bold text-slate-600 outline-none cursor-pointer"
+                    >
+                      <option value="match">{t("sort.match")}</option>
+                      <option value="az">{t("sort.az")}</option>
+                      <option value="campaigns">{t("sort.campaigns")}</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <AnimatePresence>
-                    {filteredBrands.map((brand) => (
+                    {pagedBrands.map((brand) => (
                       <BrandCard key={brand.id} brand={brand} matchScore={calculateBrandMatchScore(profile, brand)} />
                     ))}
                   </AnimatePresence>
                 </div>
+
+                <ListPagination page={page} pageCount={pageCount} onPage={goToPage} />
 
                 {filteredBrands.length === 0 && (
                   <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">

@@ -9,6 +9,11 @@ const chipsData = [
 ];
 
 const scanSteps = ["Parsing your brief…", "Scanning 200,412 verified profiles…", "Auditing for fake followers…", "Ranking by audience fit…"];
+const heroStats = [
+  { value: "200K+", label: "Verified creators" },
+  { value: "₹10Cr+", label: "Paid to creators" },
+  { value: "98%", label: "On-time payouts" },
+];
 
 const resultsData = [
   { handle: "@glowbyaisha", niche: "Beauty · Mumbai", followers: "86K", er: "6.2%", score: 97 },
@@ -172,6 +177,7 @@ export default function AIPrompt() {
           }
         }
       `}</style>
+
       <div
         className="aip-panel"
         style={{

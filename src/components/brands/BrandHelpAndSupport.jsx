@@ -57,7 +57,7 @@ const FAQ_GROUPS = [
   },
 ];
 
-export default function BrandHelpAndSupport({ open, onClose }) {
+export default function BrandHelpAndSupport({ open, onClose, onOpenChat }) {
   const t = useTranslations("BrandsBrandHelpAndSupport");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
@@ -146,6 +146,24 @@ export default function BrandHelpAndSupport({ open, onClose }) {
               {t("contactUs")}
             </h3>
             <div className="grid grid-cols-1 gap-3">
+              {onOpenChat && (
+                <button
+                  type="button"
+                  onClick={onOpenChat}
+                  className="group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:border-purple-200 hover:shadow-sm transition-all text-left cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-[#5851DB] text-white flex items-center justify-center shadow-sm">
+                    <MessageCircle size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t("labels.liveChat")}</p>
+                    <p className="text-sm font-bold text-gray-800 group-hover:text-[#5851DB] transition-colors">
+                      {t("liveChatValue")}
+                    </p>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-300" />
+                </button>
+              )}
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
                 className="group flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-sm transition-all"

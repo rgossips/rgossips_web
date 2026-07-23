@@ -1,29 +1,15 @@
 "use client";
 
-const B = [
-  "Nykaa",
-  "boAt",
-  "Mamaearth",
-  "CRED",
-  "Swiggy",
-  "Lenskart",
-  "Wakefit",
-  "Plum",
-  "mCaffeine",
-  "Sugar Cosmetics",
-];
+const B = ["Nykaa", "boAt", "Mamaearth", "CRED", "Swiggy", "Lenskart", "Wakefit", "Plum", "mCaffeine", "Sugar Cosmetics"];
 const brands = [...B, ...B];
 
 export default function Brands() {
   return (
-    <section
-      data-screen-label="Brands"
-      className="brd-section"
-      style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 40px 0" }}
-    >
+    <section data-screen-label="Brands" className="brd-section" style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 40px 0" }}>
       <style>{`
         .brand-word:hover { color: #7C3AED; }
       `}</style>
+
       <div
         style={{
           textAlign: "center",
@@ -68,8 +54,7 @@ export default function Brands() {
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(90deg, #FFFFFF, transparent 12%, transparent 88%, #FFFFFF)",
+            background: "linear-gradient(90deg, #FFFFFF, transparent 12%, transparent 88%, #FFFFFF)",
             pointerEvents: "none",
           }}
         ></div>

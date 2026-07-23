@@ -22,6 +22,7 @@ import {
   UserMinus,
   Trash2,
   Info,
+  Globe,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -82,6 +83,9 @@ const BrandProfile = () => {
     if (label === "Contact email") setContactOpen(true);
     else if (label === "Categories") setCategoriesOpen(true);
     else if (label === "GST / PAN") setBrandInfoOpen(true);
+    else if (label === "About the brand") setBrandInfoOpen(true);
+    else if (label === "Website") setBrandInfoOpen(true);
+    else if (label === "Logo") fileInputRef.current?.click();
   };
 
   // Cropper state for new logo upload
@@ -518,9 +522,26 @@ const BrandProfile = () => {
                   `${profile.gstin_state || ""} ${profile.gstin_pincode || ""}`.trim()
                 }
                 sub={t("brandInfo.registeredAddress")}
-                last
               />
             )}
+            <InfoRow
+              icon={<Info />}
+              iconColor="text-indigo-500"
+              bgColor="bg-indigo-50"
+              label={profile.full_description || t("brandInfo.aboutEmpty")}
+              sub={t("brandInfo.about")}
+              muted={!profile.full_description}
+            />
+            <InfoRow
+              icon={<Globe />}
+              iconColor="text-emerald-500"
+              bgColor="bg-emerald-50"
+              label={profile.website_url || t("brandInfo.websiteEmpty")}
+              sub={t("brandInfo.website")}
+              muted={!profile.website_url}
+              href={profile.website_url ? (profile.website_url.startsWith("http") ? profile.website_url : `https://${profile.website_url}`) : undefined}
+              last
+            />
           </div>
         </Section>
 
@@ -742,9 +763,10 @@ const BrandProfile = () => {
         </div>
       </div>
 
-      {/* Crop logo modal */}
+      {/* Crop logo modal — z must beat the sticky BrandNavbar (z-[100]) or
+          the Cancel/Save header row renders underneath it. */}
       {imageSrc && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col">
+        <div className="fixed inset-0 z-[150] bg-black/85 backdrop-blur-sm flex flex-col">
           <div className="flex items-center justify-between px-5 py-4 bg-black/50">
             <button
               onClick={() => {
@@ -856,28 +878,36 @@ const Section = ({ title, children, action }) => (
   </div>
 );
 
-const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified, muted }) => (
-  <div
-    className={`flex items-center gap-4 p-5 ${!last ? "border-b border-gray-50" : ""}`}
-  >
-    <div className={`p-2.5 ${bgColor} ${iconColor} rounded-xl`}>
-      {React.cloneElement(icon, { size: 18 })}
-    </div>
-    <div className="flex-1 min-w-0">
-      <p
-        className={`text-[11px] font-bold leading-tight truncate ${
-          muted ? "text-gray-400 italic font-medium" : "text-gray-900"
-        }`}
-      >
-        {label}
-      </p>
-      <p className="text-[9px] text-gray-400 font-semibold mt-0.5">{sub}</p>
-    </div>
-    {isVerified && (
-      <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
-    )}
-  </div>
-);
+const InfoRow = ({ icon, iconColor, bgColor, label, sub, last, isVerified, muted, href }) => {
+  const body = (
+    <>
+      <div className={`p-2.5 ${bgColor} ${iconColor} rounded-xl`}>
+        {React.cloneElement(icon, { size: 18 })}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-[11px] font-bold leading-tight truncate ${
+            muted ? "text-gray-400 italic font-medium" : href ? "text-[#5851DB] underline decoration-dotted underline-offset-2" : "text-gray-900"
+          }`}
+        >
+          {label}
+        </p>
+        <p className="text-[9px] text-gray-400 font-semibold mt-0.5">{sub}</p>
+      </div>
+      {isVerified && (
+        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+      )}
+    </>
+  );
+  const cls = `flex items-center gap-4 p-5 ${!last ? "border-b border-gray-50" : ""}`;
+  return href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={`${cls} hover:bg-gray-50/60 transition-colors`}>
+      {body}
+    </a>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+};
 
 const Detail = ({ label, value }) => (
   <div>
@@ -990,7 +1020,9 @@ const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel, canS
   const t = useTranslations("BrandsProfile");
   const [saving, setSaving] = useState(false);
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center lg:justify-center bg-black/40">
+    // z beats the sticky BrandNavbar (z-[100]) so the modal never slides
+    // under the page header.
+    <div className="fixed inset-0 z-[150] flex items-end lg:items-center lg:justify-center bg-black/40">
       <div className="w-full lg:max-w-lg bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
@@ -1054,6 +1086,8 @@ const Field = ({ label, value, onChange, type = "text", placeholder, hint, ...pr
 const BrandInfoModal = ({ profile, onClose, onSave }) => {
   const t = useTranslations("BrandsProfile");
   const [brandName, setBrandName] = useState(profile.brand_name || "");
+  const [about, setAbout] = useState(profile.full_description || "");
+  const [website, setWebsite] = useState(profile.website_url || "");
   const [legalName, setLegalName] = useState(profile.gstin_legal_name || "");
   const [tradeName, setTradeName] = useState(profile.gstin_trade_name || "");
   const [businessType, setBusinessType] = useState(profile.gstin_business_type || "");
@@ -1069,6 +1103,8 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
       onSave={() =>
         onSave({
           brandName: brandName.trim(),
+          aboutBrand: about.trim(),
+          website: website.trim(),
           gstinLegalName: legalName.trim(),
           gstinTradeName: tradeName.trim(),
           gstinBusinessType: businessType.trim(),
@@ -1079,6 +1115,20 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
       }
     >
       <Field label={t("brandInfoModal.brandName")} value={brandName} onChange={setBrandName} placeholder={t("brandInfoModal.brandNamePlaceholder")} hint={t("brandInfoModal.brandNameHint")} />
+      <div>
+        <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
+          {t("brandInfoModal.about")}
+        </label>
+        <textarea
+          value={about}
+          onChange={(e) => setAbout(e.target.value.slice(0, 1000))}
+          placeholder={t("brandInfoModal.aboutPlaceholder")}
+          rows={4}
+          className="w-full p-3.5 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all resize-none"
+        />
+        <p className="text-[10px] text-gray-400 mt-1 ml-1">{t("brandInfoModal.aboutHint")}</p>
+      </div>
+      <Field label={t("brandInfoModal.website")} value={website} onChange={setWebsite} type="url" placeholder={t("brandInfoModal.websitePlaceholder")} />
       <Field label={t("brandInfoModal.legalName")} value={legalName} onChange={setLegalName} placeholder={t("brandInfoModal.legalNamePlaceholder")} />
       <Field label={t("brandInfoModal.tradeName")} value={tradeName} onChange={setTradeName} placeholder={t("brandInfoModal.tradeNamePlaceholder")} />
       <Field label={t("brandInfoModal.businessType")} value={businessType} onChange={setBusinessType} placeholder={t("brandInfoModal.businessTypePlaceholder")} />

@@ -177,58 +177,30 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           <div>
             <h4 className="text-sm font-black text-gray-900 mb-1">{isDelete ? t("reasonHeading.delete") : t("reasonHeading.deactivate")}</h4>
             <p className="text-[11px] text-gray-400 font-bold mb-3">{t("reasonSubtext")}</p>
-            <div className="space-y-2">
-              {reasons.map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setReason(r.value)}
-                  type="button"
-                  className={`w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    reason === r.value
-                      ? isDelete
-                        ? "border-red-400 bg-red-50/60"
-                        : "border-[#5851DB] bg-purple-50/60"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`text-[12px] font-bold ${
-                      reason === r.value ? (isDelete ? "text-red-700" : "text-[#5851DB]") : "text-gray-700"
-                    }`}
-                  >
+            <div className="relative">
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className={`w-full appearance-none p-3.5 pr-10 rounded-xl border text-[13px] font-bold outline-none cursor-pointer transition-all bg-white ${
+                  reason
+                    ? isDelete
+                      ? "border-red-400 text-red-700"
+                      : "border-[#5851DB] text-[#5851DB]"
+                    : "border-gray-200 text-gray-500"
+                }`}
+              >
+                <option value="" disabled>
+                  {t("reasonSelectPlaceholder")}
+                </option>
+                {reasons.map((r) => (
+                  <option key={r.key} value={r.value}>
                     {t(`${reasonsGroup}.${r.key}`)}
-                  </span>
-                  <span
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      reason === r.value
-                        ? isDelete
-                          ? "border-red-500"
-                          : "border-[#5851DB]"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    {reason === r.value && (
-                      <span className={`w-2 h-2 rounded-full ${isDelete ? "bg-red-500" : "bg-[#5851DB]"}`} />
-                    )}
-                  </span>
-                </button>
-              ))}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</span>
             </div>
           </div>
-
-          <label className="flex items-start gap-3 p-4 bg-white border border-gray-200 rounded-xl cursor-pointer">
-            <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 w-4 h-4 cursor-pointer"
-            />
-            <span className="text-[12px] font-bold text-gray-700 leading-snug">
-              {isDelete
-                ? t("confirmCheckbox.delete")
-                : t("confirmCheckbox.deactivate")}
-            </span>
-          </label>
 
           {isDelete && (
             <div>
@@ -250,7 +222,23 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100">
+        {/* Footer — the confirm checkbox lives HERE (not in the scroll body)
+            so it's always visible next to the action buttons. */}
+        <div className="p-4 border-t border-gray-100 space-y-3">
+          <label className="flex items-start gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 cursor-pointer"
+            />
+            <span className="text-[12px] font-bold text-gray-700 leading-snug">
+              {isDelete
+                ? t("confirmCheckbox.delete")
+                : t("confirmCheckbox.deactivate")}
+            </span>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
           <button
             onClick={onClose}
             disabled={submitting}
@@ -268,6 +256,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? t("actions.working") : isDelete ? t("actions.deleteAccount") : t("actions.deactivate")}
           </button>
+          </div>
         </div>
       </div>
     </div>
