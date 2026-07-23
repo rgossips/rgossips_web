@@ -157,9 +157,16 @@ Deno.serve(async (req) => {
     // Format campaigns for frontend. Campaigns of deactivated / pending-
     // deletion brands are dropped entirely (their brandMap entry was never
     // built, and keeping them would show "Unknown Brand" ghosts).
-    const visibleCampaigns = (campaigns || []).filter(
-      (c: any) => !c.brand_id || !inactiveBrandIds.has(c.brand_id)
-    );
+    const visibleCampaigns = (campaigns || []).filter((c: any) => {
+      if (c.brand_id && inactiveBrandIds.has(c.brand_id)) return false;
+      // A draft is unpublished — it must not appear in the creator feed.
+      // Previously drafts were listed AND mapped to "Active" below, so
+      // setting a campaign back to Draft (from the admin or the brand) had
+      // no visible effect. Keep it only for a creator who already applied,
+      // so an in-flight application never vanishes from their list.
+      if (c.status === "draft" && !applicationMap[c.campaign_id]) return false;
+      return true;
+    });
     const formatted = visibleCampaigns.map((c: any) => {
       const brand = brandMap[c.brand_invitation_id] || brandMap[c.brand_id] || { name: "Unknown Brand", logo: "", instagram: "" };
       const initials = brand.name
@@ -272,9 +279,10 @@ Deno.serve(async (req) => {
         status = "Active";
       } else if (c.status === "closed" || c.status === "completed") {
         status = "Completed";
-      } else if (c.status === "draft") {
-        status = "Active";
       } else {
+        // Anything else (draft/paused/…) reports its own name. Drafts used
+        // to be forced to "Active" here, which is why an admin moving a
+        // campaign to Draft appeared to do nothing.
         status = c.status.charAt(0).toUpperCase() + c.status.slice(1);
       }
 
