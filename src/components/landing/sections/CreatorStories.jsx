@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
-// Local reel videos in /public/creatorReels. Each autoplays muted + looping in
-// the grid; tapping enlarges it and plays with sound. The gradient is only a
-// backdrop shown while the video buffers (the clips have no poster image).
-const REELS = [
+// Fallback reels (local clips in /public/creatorReels), shown until the admin
+// publishes rows in public.creator_stories (managed at admin
+// /dashboard/creator-stories). Each autoplays muted + looping in the grid;
+// tapping enlarges it and plays with sound. `bg` is only a backdrop shown while
+// the clip buffers.
+const FALLBACK_REELS = [
   { handle: "@sahilanand", videoUrl: "/creatorReels/sahil.mp4", bg: "linear-gradient(160deg, #8B5CF6, #4C1D95)" },
   { handle: "@nonaberrry", videoUrl: "/creatorReels/nonaberry.mp4", bg: "linear-gradient(160deg, #EC4899, #831843)" },
   { handle: "@aditirajput", videoUrl: "/creatorReels/aditi.mp4", bg: "linear-gradient(160deg, #A855F7, #6D28D9)" },
@@ -15,6 +18,21 @@ const REELS = [
   { handle: "@vees_corner", videoUrl: "/creatorReels/veers.mp4", bg: "linear-gradient(160deg, #2D2350, #8B5CF6)" },
   { handle: "@nawab_adnan", videoUrl: "/creatorReels/nawab.mp4", bg: "linear-gradient(160deg, #DB2777, #7C3AED)" },
 ];
+
+// creator_stories has no colour column, so admin-published reels get a buffering
+// backdrop from this palette by position.
+const BG_PALETTE = [
+  "linear-gradient(160deg, #8B5CF6, #4C1D95)",
+  "linear-gradient(160deg, #EC4899, #831843)",
+  "linear-gradient(160deg, #A855F7, #6D28D9)",
+  "linear-gradient(160deg, #6366F1, #312E81)",
+  "linear-gradient(160deg, #F472B6, #9D174D)",
+  "linear-gradient(160deg, #7C3AED, #EC4899)",
+  "linear-gradient(160deg, #2D2350, #8B5CF6)",
+  "linear-gradient(160deg, #DB2777, #7C3AED)",
+];
+
+const DEFAULT_LABEL = "TOP CREATOR STORIES";
 
 // React sets the `muted` ATTRIBUTE but not the DOM `muted` PROPERTY, so
 // `<video muted autoPlay>` is treated as unmuted → the browser blocks autoplay
@@ -29,9 +47,61 @@ function autoplayMuted(el) {
   if (p && p.catch) p.catch(() => {});
 }
 
+// A backend video can fail to load (e.g. an Instagram reel *page* URL is
+// ORB-blocked, or a link rots). Swap that cell to a bundled static clip once so
+// it degrades to a real reel instead of a black tile. Guarded so a failing
+// fallback can't loop.
+function fallBackToStatic(el, fallbackUrl) {
+  if (!el || !fallbackUrl || el.dataset.fellBack === "1") return;
+  el.dataset.fellBack = "1";
+  el.src = fallbackUrl;
+  el.load();
+  autoplayMuted(el);
+}
+
 export default function CreatorStories() {
   const [playing, setPlaying] = useState(-1);
-  const stories = REELS;
+  const [stories, setStories] = useState(FALLBACK_REELS);
+  const [label, setLabel] = useState(DEFAULT_LABEL);
+
+  // Swap in admin-published reels + the editable section label. When
+  // creator_stories is empty we stay on FALLBACK_REELS so the section never
+  // renders blank. Both tables are public-read, so the anon client is fine here.
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+    (async () => {
+      const [reelsRes, titleRes] = await Promise.all([
+        supabase
+          .from("creator_stories")
+          .select("username, video_url, poster_url, avatar_url")
+          .eq("is_active", true)
+          .order("position", { ascending: true }),
+        supabase.from("homepage_settings").select("value").eq("key", "creator_stories_section_title").maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const rows = (reelsRes.data || []).filter((r) => r.video_url);
+      if (rows.length > 0) {
+        setStories(
+          rows.map((r, i) => {
+            const u = (r.username || "").trim();
+            return {
+              handle: u ? (u.startsWith("@") ? u : `@${u}`) : "@creator",
+              videoUrl: r.video_url,
+              poster: r.poster_url || r.avatar_url || "",
+              bg: BG_PALETTE[i % BG_PALETTE.length],
+              // Static clip to fall back to if this backend video won't load.
+              fallbackUrl: FALLBACK_REELS[i % FALLBACK_REELS.length].videoUrl,
+            };
+          }),
+        );
+      }
+      if (titleRes.data?.value) setLabel(titleRes.data.value);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const closeReel = () => setPlaying(-1);
   const eatClick = (e) => e.stopPropagation();
@@ -95,7 +165,7 @@ export default function CreatorStories() {
         <h2 className="cst-title" style={{ fontSize: "42px", fontWeight: 800, letterSpacing: "-0.025em", margin: 0 }}>
           Reels people couldn&apos;t scroll past.
         </h2>
-        <span style={{ fontSize: "12.5px", fontWeight: 800, letterSpacing: "0.12em", color: "#9CA3AF" }}>TOP CREATOR STORIES · TAP TO EXPAND</span>
+        <span style={{ fontSize: "12.5px", fontWeight: 800, letterSpacing: "0.12em", color: "#9CA3AF" }}>{label} · TAP TO EXPAND</span>
       </div>
       <div className="cs-grid cst-track" style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: "14px", marginTop: "40px" }}>
         {stories.map((r, i) => {
@@ -121,12 +191,14 @@ export default function CreatorStories() {
               <video
                 ref={autoplayMuted}
                 src={r.videoUrl}
+                poster={r.poster || undefined}
                 muted
                 autoPlay
                 loop
                 playsInline
                 preload="auto"
                 tabIndex={-1}
+                onError={(e) => fallBackToStatic(e.currentTarget, r.fallbackUrl)}
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
               />
               <span style={{ position: "absolute", top: "10px", left: "10px", right: "10px", height: "3px", background: "rgba(255,255,255,0.25)", borderRadius: "2px", overflow: "hidden" }}>
@@ -203,7 +275,7 @@ export default function CreatorStories() {
               animation: "riseIn 0.3s ease both",
             }}
           >
-            <video ref={modalVideo} src={active.videoUrl} autoPlay loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
+            <video ref={modalVideo} src={active.videoUrl} poster={active.poster || undefined} autoPlay loop playsInline onError={(e) => fallBackToStatic(e.currentTarget, active.fallbackUrl)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
             <button
               className="cs-close"
               onClick={closeReel}

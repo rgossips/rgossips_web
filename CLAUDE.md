@@ -473,6 +473,57 @@ Mobile — add `src/i18n/<code>.json`, register in `resources` + `SUPPORTED_LOCA
 `en.json` under a namespace, replace with `t(...)`. Keep brand names ("RGossips")
 and data (hrefs, enum values) untranslated.
 
+## Landing-page AI matcher (2026-07)
+
+The landing "ASK THE MATCHING ENGINE" section
+(`src/components/landing/sections/AIPrompt.jsx`) used to be a pure mock — a
+scripted scan animation over three hard-coded creators. Now wired to real AI +
+real creators for **unauthenticated** visitors:
+
+- **`landing-match` edge fn** (public, deploy `--no-verify-jwt`): LLM parses the
+  free-text brief into structured filters `{categories, locations,
+  followerBuckets, query, summary}` (via `_shared/ai.ts` `aiGenerate`, taskClass
+  `cheap`, JSON-only prompt; `CATEGORIES` array must mirror
+  `src/utils/categories.js` and `FOLLOWER_BUCKETS` must mirror
+  list-influencers' `FOLLOWER_RANGES` keys). It then fetches REAL creators by
+  invoking `list-influencers` internally (service-key Bearer) so privacy toggles
+  + invite merge stay honoured, with progressive fallback (drop follower band →
+  drop query → top creators) so the grid never dead-ends. Returns shaped rows +
+  a heuristic `fit` score (no real ER on this path).
+- **Per-session limit** (the ask): `SESSION_MAX=5` runs/session +
+  `IP_MAX=25`/hr hashed-IP backstop, both via **migration 054**'s
+  `bump_landing_match(p_key, p_max, p_window_secs)` RPC (race-safe fixed-window,
+  SECURITY DEFINER, service-role only — same pattern as `consume_otp_attempt`).
+  Client tracks a `rg_landing_session` id in sessionStorage; server is the real
+  gate. On `rate_limited` the section shows a "Sign up to keep matching" CTA →
+  `/login`; `remaining` surfaces a "N free searches left" note at ≤3.
+- ⚠️ **Won't generate until an AI key is set** (admin AI Settings or
+  `ANTHROPIC_API_KEY` secret), same as the rest of the AI layer. If the LLM is
+  down/misconfigured it degrades to a raw keyword search (results still show).
+- **To ship**: `npx supabase db push` (migration 054) + `npx supabase functions
+  deploy landing-match --no-verify-jwt`.
+
+## Homepage reels — admin-controlled (2026-07)
+
+The landing "Reels people couldn't scroll past." section
+(`src/components/landing/sections/CreatorStories.jsx`) was a hard-coded
+`REELS` array of local `/public/creatorReels/*.mp4`. Now it fetches from the
+existing **`creator_stories`** table (public-read; migration 017) — same source
+the `/brands` `src/components/CreatorStories.jsx` already used — with the local
+clips kept as `FALLBACK_REELS` so the grid never renders blank when the table is
+empty. Also reads `homepage_settings.creator_stories_section_title` for the
+small label. Admin manages rows at **`/dashboard/creator-stories`** (CRUD +
+section-title editor); the form takes a pasted `video_url` OR an mp4 upload
+(→ `campaign-images/creator-stories/…` storage), plus poster/avatar/position/
+active + an influencer picker. Client-only change — no migration/deploy.
+
+Note on "auto-fetch a reel by ID from the IG API": only works for media owned by
+an account you hold a token for (a connected creator's `instagram_access_token`,
+or the app-level `INSTA_TOKEN` account) — arbitrary public reels can't be
+fetched, and IG `media_url` is short-lived. `resolve-reel-thumbnails` (edge fn)
+already does the connected-creator resolve-by-permalink path if ever needed.
+Chosen approach here was upload/URL (durable, works for any reel).
+
 ## Migrations register
 
 | # | Name | Notes |
@@ -488,6 +539,7 @@ and data (hrefs, enum values) untranslated.
 | 049 | ai_config | `ai_config` singleton (provider + model-per-task-class + admin-editable API keys). RLS enabled, **NO policies** (keys readable by service role only) |
 | 050 | ai_usage | `ai_generation_usage(user_id, period, tool)` + `bump_ai_usage` RPC (metered AI quota) |
 | 051 | application_pitch | `campaign_applications.pitch` — the creator's "why choose you", AI-draftable |
+| 054 | landing_match_usage | Rate-limit table + `bump_landing_match` RPC for the public landing AI matcher |
 
 ## Feature: AI layer (2026-07)
 
