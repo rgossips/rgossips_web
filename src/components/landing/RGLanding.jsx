@@ -78,16 +78,30 @@ export default function RGLanding() {
       <style>{KEYFRAMES}</style>
       <Hero />
       <AIPrompt />
-      <Brands />
-      <CreatorStories />
+      <p
+        className="hero-subtitle"
+        style={{
+          fontSize: "17.5px",
+          color: "#6B7280",
+          lineHeight: 1.7,
+          maxWidth: "670px",
+          margin: "20px auto 0",
+          animation: "riseIn 0.6s ease 0.16s both",
+          textAlign: "center",
+        }}
+      >
+        Describe your campaign in a sentence — our AI matches you with verified creators who actually fit. Escrow-protected payments, no agencies, no guesswork.
+      </p>
       <div
         className="hero-stats"
         style={{
           display: "flex",
           justifyContent: "center",
           gap: "100px",
-          marginTop: "60px",
+          marginTop: "30px",
           animation: "riseIn 0.6s ease 0.32s both",
+          marginBottom: "60px",
+          padding: 10,
         }}
       >
         {heroStats.map((st, i) => (
@@ -107,6 +121,7 @@ export default function RGLanding() {
               {st.value}
             </div>
             <div
+              className="hero-stat-text"
               style={{
                 fontSize: "20px",
                 fontWeight: 600,
@@ -117,9 +132,33 @@ export default function RGLanding() {
             >
               {st.label}
             </div>
+            <style>
+              {`
+        @media (max-width: 767px) {
+         .hero-stat-value {
+            font-size: 18px !important;
+          }
+            .hero-stat-text {
+            font-size: 14px !important;
+          }
+              .hero-stats {
+            flex-wrap: wrap !important;
+            gap: 10px !important;
+            margin-top: 28px !important;
+            margin-bottom: 20px !important;
+          }
+            .hero-subtitle{
+            padding-top: 20px !important;
+            }
+             }
+              `}{" "}
+            </style>
           </div>
         ))}
       </div>
+      <Brands />
+      <CreatorStories />
+
       <Audiences />
       <PainPoints />
       <Platform />

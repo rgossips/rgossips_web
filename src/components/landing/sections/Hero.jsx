@@ -105,25 +105,12 @@ export default function Hero() {
               The Right Creators.
             </span>
           </h1>
-          <p
-            className="hero-subtitle"
-            style={{
-              fontSize: "17.5px",
-              color: "#6B7280",
-              lineHeight: 1.7,
-              maxWidth: "560px",
-              margin: "20px auto 0",
-              animation: "riseIn 0.6s ease 0.16s both",
-            }}
-          >
-            Describe your campaign in a sentence — our AI matches you with verified creators who actually fit. Escrow-protected payments, no agencies, no guesswork.
-          </p>
         </div>
       </div>
       <style>{`
         @media (max-width: 767px) {
           .hero-container {
-            padding: 44px 20px 64px !important;
+            padding: 44px 20px 40px !important;
           }
           .hero-badge {
             font-size: 11.5px !important;
@@ -143,14 +130,8 @@ export default function Hero() {
             margin-top: 16px !important;
             max-width: 100% !important;
           }
-          .hero-stats {
-            flex-wrap: wrap !important;
-            gap: 18px 24px !important;
-            margin-top: 28px !important;
-          }
-          .hero-stat-value {
-            font-size: 22px !important;
-          }
+        
+          
         }
       `}</style>
     </section>
