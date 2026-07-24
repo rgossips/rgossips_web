@@ -149,6 +149,8 @@ export default function RGLanding() {
           }
             .hero-subtitle{
             padding-top: 20px !important;
+            padding-left:20px;
+            padding-right:20px;
             }
              }
               `}{" "}
