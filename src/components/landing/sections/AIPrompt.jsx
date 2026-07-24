@@ -1,37 +1,66 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 const chipsData = [
   { label: "Skincare launch in Mumbai", dot: "#F9A8D4" },
-  { label: "Tech unboxing, 100K+", dot: "#C4B5FD" },
-  { label: "Fitness creators, barter", dot: "#6EE7B7" },
+  { label: "Tech unboxing creators, 100K+", dot: "#C4B5FD" },
+  { label: "Fitness creators for a barter deal", dot: "#6EE7B7" },
 ];
 
-const scanSteps = ["Parsing your brief…", "Scanning 200,412 verified profiles…", "Auditing for fake followers…", "Ranking by audience fit…"];
+// Honest, generic progress copy — the real work (LLM parse + creator scan)
+// happens behind this while the request is in flight.
+const scanSteps = ["Reading your brief…", "Scanning verified creators…", "Matching niche & audience…", "Ranking best fits…"];
 const heroStats = [
   { value: "200K+", label: "Verified creators" },
   { value: "₹10Cr+", label: "Paid to creators" },
   { value: "98%", label: "On-time payouts" },
 ];
 
-const resultsData = [
-  { handle: "@glowbyaisha", niche: "Beauty · Mumbai", followers: "86K", er: "6.2%", score: 97 },
-  { handle: "@skinwithsana", niche: "Skincare · Delhi", followers: "42K", er: "7.8%", score: 94 },
-  { handle: "@dermadiaries.in", niche: "Beauty · Bengaluru", followers: "128K", er: "4.9%", score: 91 },
-];
-
 const AVATAR_BG = ["linear-gradient(135deg, #8B5CF6, #A855F7)", "linear-gradient(135deg, #EC4899, #F472B6)", "linear-gradient(135deg, #7C3AED, #EC4899)"];
 
 const liveCount = "200,412";
-const resultsHeader = "TOP MATCHES — 200,412 PROFILES SCANNED IN 0.4s";
+
+// Free runs a visitor gets in one browser session before we nudge to sign up.
+// Mirrors SESSION_MAX in the landing-match edge function (server is the real gate).
+const SESSION_LIMIT = 5;
+
+function fmtFollowers(n) {
+  const num = Number(n) || 0;
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (num >= 1_000) return Math.round(num / 1_000) + "K";
+  return String(num);
+}
+
+function getSessionId() {
+  try {
+    let id = window.sessionStorage.getItem("rg_landing_session");
+    if (!id) {
+      id = (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(
+        /[^a-zA-Z0-9_-]/g,
+        "",
+      );
+      window.sessionStorage.setItem("rg_landing_session", id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
 
 export default function AIPrompt() {
-  const [phase, setPhase] = useState("idle");
+  const [phase, setPhase] = useState("idle"); // idle | matching | done
   const [scanStep, setScanStep] = useState(0);
   const [shortlist, setShortlist] = useState({});
   const [prompt, setPrompt] = useState("");
   const [focused, setFocused] = useState(false);
+  const [results, setResults] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState("");
+  const [remaining, setRemaining] = useState(null);
+  const [exhausted, setExhausted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const promptRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -45,28 +74,70 @@ export default function AIPrompt() {
     el.style.height = el.scrollHeight + "px";
   }, [prompt]);
 
+  useEffect(() => () => timerRef.current && clearInterval(timerRef.current), []);
+
   const isScanning = phase === "matching";
   const showResults = phase === "done";
   const scanStepText = scanSteps[scanStep];
-  const scanPct = Math.round(((scanStep + 1) / 4) * 100 - 8) + "%";
-  const matchLabel = phase === "matching" ? "Matching" : "Find creators";
+  const scanPct = Math.round(((scanStep + 1) / scanSteps.length) * 100 - 8) + "%";
+  const matchLabel = isScanning ? "Matching" : "Find creators";
   const inputBorder = focused || isScanning ? "#F9A8D4" : "rgba(255,255,255,0.14)";
 
-  function runMatch() {
-    if (timerRef.current) clearTimeout(timerRef.current);
+  async function runMatch() {
+    const text = prompt.trim();
+    if (!text) {
+      promptRef.current?.focus();
+      return;
+    }
+    if (exhausted || isScanning) return;
+    setErrorMsg("");
+    if (timerRef.current) clearInterval(timerRef.current);
     setPhase("matching");
     setScanStep(0);
     let step = 0;
-    const advance = () => {
-      step += 1;
-      if (step < scanSteps.length) {
-        setScanStep(step);
-        timerRef.current = setTimeout(advance, 450);
-      } else {
-        setPhase("done");
+    timerRef.current = setInterval(() => {
+      step = (step + 1) % scanSteps.length;
+      setScanStep(step);
+    }, 550);
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.functions.invoke("landing-match", {
+        body: { prompt: text, sessionId: getSessionId() },
+      });
+      if (error) throw error;
+
+      if (data?.error === "rate_limited") {
+        setExhausted(true);
+        setRemaining(0);
+        setPhase(results.length ? "done" : "idle");
+        return;
       }
-    };
-    timerRef.current = setTimeout(advance, 450);
+      if (data?.error) {
+        setErrorMsg(data.error === "empty_prompt" ? "Add a few words about who you're looking for." : "Couldn't run the match right now. Please try again.");
+        setPhase(results.length ? "done" : "idle");
+        return;
+      }
+
+      const rows = Array.isArray(data?.influencers) ? data.influencers : [];
+      setResults(rows);
+      setTotal(Math.max(Number(data?.total || 0), rows.length));
+      setSummary(data?.summary || "");
+      setShortlist({});
+      if (typeof data?.remaining === "number") {
+        setRemaining(data.remaining);
+        if (data.remaining <= 0) setExhausted(true);
+      }
+      setPhase("done");
+    } catch {
+      setErrorMsg("Couldn't reach the matching engine. Please try again.");
+      setPhase(results.length ? "done" : "idle");
+    } finally {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
   }
 
   function onPromptKey(e) {
@@ -76,13 +147,19 @@ export default function AIPrompt() {
     }
   }
 
-  function toggleShortlist(handle) {
-    setShortlist((prev) => ({ ...prev, [handle]: !prev[handle] }));
+  function toggleShortlist(id) {
+    setShortlist((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
   const shortlistCount = Object.values(shortlist).filter(Boolean).length;
   const hasShortlist = shortlistCount >= 1;
   const shortlistLabel = `${shortlistCount} creator${shortlistCount === 1 ? "" : "s"} shortlisted`;
+  const resultsHeader =
+    total > results.length
+      ? `TOP ${results.length} OF ${total.toLocaleString()} MATCHES`
+      : `${results.length} MATCH${results.length === 1 ? "" : "ES"}`;
+  const showRemainingNote = !exhausted && typeof remaining === "number" && remaining <= 3 && remaining > 0;
+  const remainingUrgent = showRemainingNote && remaining <= 2;
 
   return (
     <section data-screen-label="AI Prompt" className="aip-section" style={{ maxWidth: "1080px", margin: "0 auto", padding: "8px 40px 48px" }}>
@@ -332,6 +409,7 @@ export default function AIPrompt() {
           <button
             className="aip-match-btn"
             onClick={runMatch}
+            disabled={isScanning || exhausted}
             style={{
               flexShrink: 0,
               display: "inline-flex",
@@ -345,7 +423,8 @@ export default function AIPrompt() {
               fontFamily: "'Manrope', sans-serif",
               fontWeight: 800,
               fontSize: "14px",
-              cursor: "pointer",
+              cursor: isScanning || exhausted ? "not-allowed" : "pointer",
+              opacity: isScanning || exhausted ? 0.6 : 1,
               boxShadow: "0 8px 20px rgba(139,92,246,0.4)",
             }}
           >
@@ -399,6 +478,79 @@ export default function AIPrompt() {
           ))}
         </div>
 
+        {/* Error / session-limit notices */}
+        {errorMsg && (
+          <div style={{ position: "relative", marginTop: "14px", fontSize: "13px", fontWeight: 600, color: "#FCA5A5" }}>{errorMsg}</div>
+        )}
+        {exhausted && (
+          <div
+            style={{
+              position: "relative",
+              marginTop: "14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+              background: "rgba(249,168,212,0.08)",
+              border: "1px solid rgba(249,168,212,0.3)",
+              borderRadius: "16px",
+              padding: "13px 18px",
+            }}
+          >
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#F9A8D4" }}>
+              You&rsquo;ve used your free searches for this session.
+            </span>
+            <a
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                fontSize: "13px",
+                fontWeight: 800,
+                color: "#FFFFFF",
+                background: "linear-gradient(95deg, #8B5CF6, #EC4899)",
+                borderRadius: "999px",
+                padding: "9px 20px",
+              }}
+            >
+              Sign up to keep matching
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
+              </svg>
+            </a>
+          </div>
+        )}
+        {showRemainingNote &&
+          (remainingUrgent ? (
+            <div
+              style={{
+                position: "relative",
+                marginTop: "14px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "9px",
+                fontSize: "13px",
+                fontWeight: 800,
+                color: "#FDE68A",
+                background: "rgba(245,158,11,0.12)",
+                border: "1px solid rgba(245,158,11,0.4)",
+                borderRadius: "999px",
+                padding: "8px 16px",
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z" fill="#FBBF24" />
+              </svg>
+              Only {remaining} free {remaining === 1 ? "search" : "searches"} left this session
+            </div>
+          ) : (
+            <div style={{ position: "relative", marginTop: "12px", fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+              {remaining} free searches left this session
+            </div>
+          ))}
+
         {/* SCANNING STATE */}
         {isScanning && (
           <div
@@ -446,7 +598,7 @@ export default function AIPrompt() {
         )}
 
         {/* RESULTS */}
-        {showResults && (
+        {showResults && results.length > 0 && (
           <div
             style={{
               position: "relative",
@@ -486,6 +638,7 @@ export default function AIPrompt() {
               <button
                 className="aip-rerun"
                 onClick={runMatch}
+                disabled={isScanning || exhausted}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -498,7 +651,8 @@ export default function AIPrompt() {
                   border: "1px solid rgba(255,255,255,0.18)",
                   borderRadius: "999px",
                   padding: "5px 13px",
-                  cursor: "pointer",
+                  cursor: isScanning || exhausted ? "not-allowed" : "pointer",
+                  opacity: isScanning || exhausted ? 0.5 : 1,
                 }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -507,6 +661,9 @@ export default function AIPrompt() {
                 Re-run
               </button>
             </div>
+            {summary && (
+              <div style={{ fontSize: "13.5px", fontWeight: 600, color: "rgba(255,255,255,0.72)", marginBottom: "14px" }}>{summary}</div>
+            )}
             <div
               className="aip-results-grid"
               style={{
@@ -515,19 +672,22 @@ export default function AIPrompt() {
                 gap: "12px",
               }}
             >
-              {resultsData.map((r, i) => {
-                const picked = !!shortlist[r.handle];
-                const initial = r.handle[1].toUpperCase();
+              {results.map((r, i) => {
+                const picked = !!shortlist[r.id];
+                const displayName = r.name || r.handle || "Creator";
+                const initial = (displayName.replace(/^@/, "")[0] || "?").toUpperCase();
                 const bg = AVATAR_BG[i % 3];
                 const border = picked ? "rgba(52,211,153,0.6)" : "rgba(255,255,255,0.14)";
                 const pickGlyph = picked ? "✓" : "+";
                 const pickBg = picked ? "linear-gradient(95deg, #10B981, #34D399)" : "rgba(255,255,255,0.08)";
                 const pickFg = picked ? "#FFFFFF" : "rgba(255,255,255,0.7)";
+                const subtitle = [r.category, r.city].filter(Boolean).join(" · ");
+                const atHandle = r.handle ? (r.handle.startsWith("@") ? r.handle : "@" + r.handle) : "";
                 return (
                   <div
-                    key={r.handle}
+                    key={r.id}
                     className="aip-card"
-                    onClick={() => toggleShortlist(r.handle)}
+                    onClick={() => toggleShortlist(r.id)}
                     style={{
                       background: "rgba(255,255,255,0.07)",
                       border: `1px solid ${border}`,
@@ -558,10 +718,24 @@ export default function AIPrompt() {
                           fontWeight: 800,
                           fontSize: "16px",
                           color: "#FFFFFF",
+                          overflow: "hidden",
+                          flexShrink: 0,
                           boxShadow: "0 0 0 2px rgba(255,255,255,0.18)",
                         }}
                       >
-                        {initial}
+                        {r.photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={r.photo}
+                            alt={displayName}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          initial
+                        )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
@@ -573,22 +747,23 @@ export default function AIPrompt() {
                             fontSize: "14px",
                             fontWeight: 800,
                             whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
-                          {r.handle}
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                            <path d="M12 2l2.4 2.4H18v3.6L20.4 12 18 14.4V18h-3.6L12 20.4 9.6 18H6v-3.6L3.6 12 6 9.6V6h3.6L12 2z" fill="#60A5FA"></path>
-                            <path d="M9.2 12.2l2 2 3.8-4" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"></path>
-                          </svg>
+                          {displayName}
                         </div>
                         <div
                           style={{
                             fontSize: "11.5px",
                             color: "rgba(255,255,255,0.5)",
                             marginTop: "1px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
-                          {r.niche}
+                          {atHandle || subtitle || "Creator"}
                         </div>
                       </div>
                       <div
@@ -618,6 +793,7 @@ export default function AIPrompt() {
                         fontSize: "12px",
                         color: "rgba(255,255,255,0.65)",
                         fontWeight: 600,
+                        flexWrap: "wrap",
                       }}
                     >
                       <span
@@ -631,25 +807,23 @@ export default function AIPrompt() {
                           <circle cx="12" cy="8" r="4" stroke="#C4B5FD" strokeWidth="2"></circle>
                           <path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5" stroke="#C4B5FD" strokeWidth="2" strokeLinecap="round"></path>
                         </svg>
-                        {r.followers}
+                        {fmtFollowers(r.followers)} followers
                       </span>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                        }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <path
-                            d="M12 21C7 16.5 3 13.2 3 9.3 3 6.4 5.2 4 8 4c1.6 0 3.1.8 4 2 .9-1.2 2.4-2 4-2 2.8 0 5 2.4 5 5.3 0 3.9-4 7.2-9 11.7z"
-                            stroke="#F9A8D4"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          ></path>
-                        </svg>
-                        {r.er} ER
-                      </span>
+                      {r.city && (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 21c4-4 7-7.2 7-11a7 7 0 10-14 0c0 3.8 3 7 7 11z" stroke="#F9A8D4" strokeWidth="2" strokeLinejoin="round"></path>
+                            <circle cx="12" cy="10" r="2.4" stroke="#F9A8D4" strokeWidth="2"></circle>
+                          </svg>
+                          {r.city}
+                        </span>
+                      )}
                     </div>
                     <div style={{ marginTop: "12px" }}>
                       <div
@@ -670,7 +844,7 @@ export default function AIPrompt() {
                             color: "transparent",
                           }}
                         >
-                          {r.score}%
+                          {r.fit}%
                         </span>
                       </div>
                       <div
@@ -684,7 +858,7 @@ export default function AIPrompt() {
                         <div
                           style={{
                             height: "100%",
-                            width: `${r.score}%`,
+                            width: `${r.fit}%`,
                             background: "linear-gradient(90deg, #8B5CF6, #EC4899)",
                             borderRadius: "3px",
                             transition: "width 0.8s ease",
