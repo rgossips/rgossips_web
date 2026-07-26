@@ -338,10 +338,16 @@ Deno.serve(async (req) => {
     // Sort the filtered set. followers_desc is the default; alpha and
     // followers_asc are the FilterDrawer's other two options.
     if (sort === "followers_asc") {
-      // 0-follower rows (mostly un-enriched invitations) sink to the
-      // bottom instead of dominating the low-to-high top.
-      const key = (n: number) => (n && n > 0 ? n : Number.POSITIVE_INFINITY);
-      filtered.sort((a: any, b: any) => key(a.followers_count) - key(b.followers_count));
+      // True low-to-high on follower count. Only un-enriched INVITATION stubs
+      // (inv_* ids, no synced IG data) sink to the bottom so they don't dominate
+      // the top — a REGISTERED creator who genuinely has 0 followers sorts
+      // normally (at the top), which is what low-to-high should show.
+      const key = (r: any) => {
+        const n = Number(r.followers_count) || 0;
+        if (n > 0) return n;
+        return String(r.influencer_id || "").startsWith("inv_") ? Number.POSITIVE_INFINITY : 0;
+      };
+      filtered.sort((a: any, b: any) => key(a) - key(b));
     } else if (sort === "alpha") {
       filtered.sort((a: any, b: any) =>
         (a.full_name || a.username || "").localeCompare(b.full_name || b.username || ""),
