@@ -11,6 +11,31 @@ const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 const ok = (body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status: 200, headers: jsonHeaders });
 
+// Gate for admin-only actions (adminApprove/adminReject). This function is
+// deployed public (no gateway JWT verification), so possession of a valid
+// service-role key IS the authorization. We used to require the bearer to be
+// byte-equal to this function's injected SUPABASE_SERVICE_ROLE_KEY — but after
+// a key rotation the admin app and this function ended up holding DIFFERENT
+// (both valid) service keys, so every approve returned "Not authorized".
+//
+// Instead, accept the caller if their bearer is a REAL service-role key for
+// this project: use it to perform a service-role-only operation (listUsers).
+// A forged/anon/expired token can't pass GoTrue here, so this is the same
+// trust level (must possess a working service key) without the brittleness.
+async function isServiceRoleCaller(bearer: string): Promise<boolean> {
+  if (!bearer) return false;
+  if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+  try {
+    const probe = createClient(Deno.env.get("SUPABASE_URL")!, bearer, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 // Merge metadata (banner/gallery/engagement) into description like the admin app.
 // The separator is ALWAYS included when meta exists — an empty-description
 // campaign used to store the bare JSON blob as the whole description, and
@@ -301,6 +326,50 @@ async function notifyMatchingInfluencers(
   }
 }
 
+// ─── Brand-invite tracking ──────────────────────────────────────
+// Load a campaign's invitation rows + a per-status summary for the
+// campaign-detail "Invites" panel. campaign_invitations has no hard FK
+// to influencer_profiles (the codebase joins in code), so we resolve the
+// invitee profiles in a second query rather than a PostgREST embed.
+async function loadInviteTracking(
+  supabase: any,
+  campaignId: string,
+): Promise<{ inviteStats: { sent: number; responded: number; total: number }; invitees: any[] }> {
+  const { data: invs } = await supabase
+    .from("campaign_invitations")
+    .select("influencer_id, status, created_at, responded_at")
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: false });
+  const rows = invs || [];
+  const inviteStats = { sent: 0, responded: 0, total: rows.length };
+  for (const r of rows) {
+    if (r.status === "responded") inviteStats.responded++;
+    else inviteStats.sent++; // sent/viewed both read as "awaiting response"
+  }
+  const ids = [...new Set(rows.map((r: any) => String(r.influencer_id)).filter(Boolean))];
+  const profById: Record<string, any> = {};
+  if (ids.length > 0) {
+    const { data: profs } = await supabase
+      .from("influencer_profiles")
+      .select("influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count")
+      .in("influencer_id", ids);
+    for (const p of profs || []) profById[String(p.influencer_id)] = p;
+  }
+  const invitees = rows.map((r: any) => {
+    const p = profById[String(r.influencer_id)] || {};
+    return {
+      influencerId: r.influencer_id,
+      name: p.full_name || p.username || (p.instagram_handle ? `@${p.instagram_handle}` : "Creator"),
+      handle: p.instagram_handle || p.username || "",
+      photo: p.custom_profile_photo_url || p.profile_photo_url || "",
+      followers: p.followers_count || 0,
+      status: r.status,
+      respondedAt: r.responded_at || null,
+    };
+  });
+  return { inviteStats, invitees };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -491,8 +560,22 @@ Deno.serve(async (req) => {
         console.error("matching count on get failed:", (e as any)?.message || e);
       }
 
+      // Brand-invite tracking for the "Invites" panel. Best-effort — an
+      // empty/failed load just renders the panel with zero counts.
+      let inviteStats = { sent: 0, responded: 0, total: 0 };
+      let invitees: any[] = [];
+      try {
+        const tracking = await loadInviteTracking(supabase, campaignId);
+        inviteStats = tracking.inviteStats;
+        invitees = tracking.invitees;
+      } catch (e) {
+        console.error("invite tracking on get failed:", (e as any)?.message || e);
+      }
+
       return ok({
         matchingCount,
+        inviteStats,
+        invitees,
         campaign: {
           id: c.campaign_id,
           title: c.title,
@@ -910,7 +993,7 @@ Deno.serve(async (req) => {
     // sends the campaign back to draft for the brand to fix and resubmit.
     if (action === "adminApprove" || action === "adminReject") {
       const bearer = (req.headers.get("authorization") || "").replace("Bearer ", "");
-      if (bearer !== Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+      if (!(await isServiceRoleCaller(bearer))) {
         return ok({ error: "Not authorized" });
       }
       const { campaignId } = payload;
@@ -966,6 +1049,175 @@ Deno.serve(async (req) => {
         console.error("match+notify on adminApprove failed:", (e as any)?.message || e);
       }
       return ok({ success: true, matchingCount });
+    }
+
+    // ── INVITE INFLUENCERS ───────────────────────────────────────────
+    // Brand hand-picks creators (from Find Creators, the campaign page, or
+    // the AI matcher) and invites them to a specific ACTIVE campaign. Each
+    // gets a `campaign_invite` notification; the campaign_invitations row is
+    // the tracking spine (flipped to 'responded' by apply-campaign when the
+    // creator applies). Idempotent + guarded like create/publish.
+    if (action === "inviteInfluencers") {
+      const { brandId, campaignId } = payload;
+      const rawIds: unknown[] = Array.isArray(payload.influencerIds) ? payload.influencerIds : [];
+      if (!brandId) return ok({ error: "brandId is required" });
+      if (!campaignId) return ok({ error: "campaignId is required" });
+
+      // Drop pre-launch stubs (inv_* have no auth user) + blanks + dupes; cap 200.
+      const seen = new Set<string>();
+      const cleaned: string[] = [];
+      for (const raw of rawIds) {
+        const id = String(raw || "").trim();
+        if (!id || id.startsWith("inv_") || seen.has(id)) continue;
+        seen.add(id);
+        cleaned.push(id);
+      }
+      const CAP = 200;
+      let skipped = rawIds.length - cleaned.length;
+      let ids = cleaned;
+      if (ids.length > CAP) {
+        skipped += ids.length - CAP;
+        ids = ids.slice(0, CAP);
+      }
+      if (ids.length === 0) {
+        return ok({ success: true, invited: 0, alreadyInvited: 0, alreadyResponded: 0, skipped });
+      }
+
+      // Ownership + campaign state.
+      const { data: c, error: findErr } = await supabase
+        .from("campaigns")
+        .select("campaign_id, brand_id, title, status, application_deadline, campaign_end_date")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (findErr || !c) return ok({ error: "Campaign not found" });
+      if (c.brand_id !== brandId) return ok({ error: "Not authorized" });
+
+      // Verified-brand gate (same UX as publish).
+      const { data: bp } = await supabase
+        .from("brand_profiles")
+        .select("verification_status, brand_name")
+        .eq("brand_id", brandId)
+        .maybeSingle();
+      if (bp?.verification_status !== "verified") {
+        return ok({
+          error: "brand_not_verified",
+          message: "Your brand is still under review. You can invite creators once our team verifies your account.",
+        });
+      }
+      // Only live campaigns can be invited to.
+      if (c.status !== "active") {
+        return ok({ error: "campaign_not_active", message: "You can only invite creators to a live (active) campaign." });
+      }
+      // …and only while it's still LIVE (not past its end date). A direct invite
+      // is a private channel, so it's NOT bound by the public application
+      // deadline — invited creators can still apply (list-campaigns keeps an
+      // invited campaign visible to them). Only a genuinely ended campaign blocks.
+      const endPassed = c.campaign_end_date && new Date(c.campaign_end_date as string).getTime() < Date.now();
+      if (endPassed) {
+        return ok({ error: "campaign_expired", message: "This campaign has ended — you can only invite creators to a live campaign." });
+      }
+      const brandName = bp?.brand_name || "A brand";
+
+      // Exclude creators who already applied (they've effectively responded).
+      const { data: apps } = await supabase
+        .from("campaign_applications")
+        .select("influencer_id")
+        .eq("campaign_id", campaignId)
+        .in("influencer_id", ids);
+      const appliedIds = new Set((apps || []).map((a: any) => String(a.influencer_id)));
+      const alreadyResponded = ids.filter((id) => appliedIds.has(id)).length;
+      const targetIds = ids.filter((id) => !appliedIds.has(id));
+
+      // Existing invitations → idempotent re-invite.
+      let alreadyInvited = 0;
+      let newIds = targetIds;
+      if (targetIds.length > 0) {
+        const { data: existingInv } = await supabase
+          .from("campaign_invitations")
+          .select("influencer_id")
+          .eq("campaign_id", campaignId)
+          .in("influencer_id", targetIds);
+        const existingIds = new Set((existingInv || []).map((r: any) => String(r.influencer_id)));
+        alreadyInvited = targetIds.filter((id) => existingIds.has(id)).length;
+        newIds = targetIds.filter((id) => !existingIds.has(id));
+      }
+      if (newIds.length === 0) {
+        return ok({ success: true, invited: 0, alreadyInvited, alreadyResponded, skipped });
+      }
+
+      // Skip private profiles (publicProfile=false) from BOTH the row and the
+      // notification. campaignUpdates gating is handled by the DB trigger
+      // (check_notification_pref) — it drops the notification but keeps the
+      // invitation row, so brand tracking stays complete.
+      const privateSet = new Set<string>();
+      {
+        const { data: prefs } = await supabase
+          .from("user_preferences")
+          .select("user_id, privacy_prefs")
+          .in("user_id", newIds);
+        for (const p of prefs || []) {
+          if (p?.privacy_prefs?.publicProfile === false) privateSet.add(String(p.user_id));
+        }
+      }
+      const insertIds = newIds.filter((id) => !privateSet.has(id));
+      skipped += newIds.length - insertIds.length;
+      if (insertIds.length === 0) {
+        return ok({ success: true, invited: 0, alreadyInvited, alreadyResponded, skipped });
+      }
+
+      // Idempotent insert of the tracking rows.
+      const rows = insertIds.map((id) => ({
+        campaign_id: campaignId,
+        brand_id: brandId,
+        influencer_id: id,
+        status: "sent",
+      }));
+      const { error: insErr } = await supabase
+        .from("campaign_invitations")
+        .upsert(rows, { onConflict: "campaign_id,influencer_id", ignoreDuplicates: true });
+      if (insErr) return ok({ error: insErr.message });
+
+      // Notification fan-out — chunked, best-effort (mirrors
+      // notifyMatchingInfluencers). The pref trigger silently drops rows for
+      // creators who turned campaign updates off.
+      const notifRows = insertIds.map((id) => ({
+        user_id: id,
+        type: "campaign_invite",
+        title: "A brand invited you to a campaign",
+        body: JSON.stringify({
+          text: `${brandName} invited you to "${c.title}". Apply before it closes.`,
+          link: `/influencer/offers/${campaignId}`,
+          campaignId,
+        }),
+        is_read: false,
+      }));
+      const CHUNK = 500;
+      for (let i = 0; i < notifRows.length; i += CHUNK) {
+        try {
+          await supabase.from("notifications").insert(notifRows.slice(i, i + CHUNK));
+        } catch (e) {
+          console.error("inviteInfluencers notif chunk failed:", (e as any)?.message);
+        }
+      }
+
+      return ok({ success: true, invited: insertIds.length, alreadyInvited, alreadyResponded, skipped });
+    }
+
+    // ── INVITE STATS (thin) ──────────────────────────────────────────
+    // Counts + invitee list for a campaign, for pickers/summaries that don't
+    // need the full `get` payload. Ownership-checked.
+    if (action === "inviteStats") {
+      const { brandId, campaignId } = payload;
+      if (!brandId || !campaignId) return ok({ error: "brandId and campaignId are required" });
+      const { data: c } = await supabase
+        .from("campaigns")
+        .select("brand_id")
+        .eq("campaign_id", campaignId)
+        .single();
+      if (!c) return ok({ error: "Campaign not found" });
+      if (c.brand_id !== brandId) return ok({ error: "Not authorized" });
+      const { inviteStats, invitees } = await loadInviteTracking(supabase, campaignId);
+      return ok({ inviteStats, invitees });
     }
 
     return ok({ error: "Unknown action" });
