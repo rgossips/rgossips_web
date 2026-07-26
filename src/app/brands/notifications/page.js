@@ -109,6 +109,20 @@ export default function BrandNotificationsPage() {
     } catch {}
   };
 
+  // Mark one read (optimistic) when opened. markRead keys on created_at.
+  const markOneRead = (item) => {
+    if (!item || item.is_read || !user?.id) return;
+    setNotifications((prev) => prev.map((n) => (n.created_at === item.created_at ? { ...n, is_read: true } : n)));
+    supabase.functions
+      .invoke("notifications", { body: { action: "markRead", userId: user.id, notificationIds: [item.created_at] } })
+      .catch(() => {});
+  };
+
+  const handleOpenNotif = (item) => {
+    markOneRead(item);
+    navigateOrRefresh(router, pathname, getLink(item));
+  };
+
   const formatTime = (dateStr) => {
     const date = parseUtc(dateStr);
     if (!date) return "";
@@ -169,7 +183,7 @@ export default function BrandNotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04 }}
-              onClick={() => navigateOrRefresh(router, pathname, getLink(item))}
+              onClick={() => handleOpenNotif(item)}
               className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"

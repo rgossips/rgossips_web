@@ -17,7 +17,7 @@ const prefKeyForType = (type) => {
   if (type.startsWith("app_") || type === "new_application" || type === "application_status") return "applicationStatus";
   if (["service_advance_paid", "service_final_paid", "payment_released", "payment_received"].includes(type)) return "paymentAlerts";
   if (type.startsWith("deadline")) return "deadlineReminders";
-  if (["campaign_match", "new_campaign"].includes(type)) return "campaignUpdates";
+  if (["campaign_match", "new_campaign", "campaign_invite"].includes(type)) return "campaignUpdates";
   return null;
 };
 
@@ -26,6 +26,7 @@ const ICON_MAP = {
   profile_incomplete: <FileText className="w-5 h-5 text-amber-500" />,
   campaign_status: <Bell className="w-5 h-5 text-pink-500" />,
   campaign_approved: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+  campaign_invite: <UserPlus className="w-5 h-5 text-[#5851DB]" />,
 };
 
 // Same as the navbar popover — prefer body.link so service-marketplace
@@ -42,6 +43,10 @@ const getNotifLink = (notif) => {
     }
     if (notif.type === "campaign_status" || notif.type === "campaign_approved") {
       if (data?.campaignId) return `/influencer/offers/${data.campaignId}`;
+    }
+    // Brand-sent campaign invite → the campaign's apply view.
+    if (notif.type === "campaign_invite" && data?.campaignId) {
+      return `/influencer/offers/${data.campaignId}`;
     }
   } catch {}
   if (notif.type === "welcome") return "/influencer";
@@ -132,6 +137,27 @@ export default function NotificationsPage() {
     } catch {}
   };
 
+  // Mark a single notification read (optimistic) when the user opens it. The
+  // markRead action keys on created_at (see notifications edge fn).
+  const markOneRead = (item) => {
+    if (!item || item.is_read || !user?.id) return;
+    setNotifications((prev) => prev.map((n) => (n.created_at === item.created_at ? { ...n, is_read: true } : n)));
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+      fetch(`${supabaseUrl}/functions/v1/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ action: "markRead", userId: user.id, notificationIds: [item.created_at] }),
+      }).catch(() => {});
+    } catch {}
+  };
+
+  const handleOpenNotif = (item) => {
+    markOneRead(item);
+    navigateOrRefresh(router, pathname, getNotifLink(item));
+  };
+
   const formatTime = (dateStr) => {
     const date = parseUtc(dateStr);
     if (!date) return "";
@@ -190,7 +216,7 @@ export default function NotificationsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => navigateOrRefresh(router, pathname, getNotifLink(item))}
+              onClick={() => handleOpenNotif(item)}
               className={`relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
                 item.is_read
                   ? "bg-white/60 border-transparent"
