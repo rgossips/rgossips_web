@@ -524,6 +524,55 @@ fetched, and IG `media_url` is short-lived. `resolve-reel-thumbnails` (edge fn)
 already does the connected-creator resolve-by-permalink path if ever needed.
 Chosen approach here was upload/URL (durable, works for any reel).
 
+## Feature: Brand → influencer campaign invites (2026-07)
+
+Brands can proactively invite hand-picked creators to a campaign and track how
+many responded (= applied). Shipped web + mobile (`rgossips_app`).
+
+- **Migration `055_campaign_invitations.sql`**: new `campaign_invitations(id,
+  campaign_id, brand_id, influencer_id, status['sent'|'responded'], created_at,
+  responded_at, unique(campaign_id, influencer_id))` — a tracking spine kept
+  SEPARATE from `campaign_applications` (reusing applications would collide with
+  the unique index, burn the creator's monthly apply cap, and show phantom
+  applicants). Service-role writes, `auth.uid()`-scoped reads. Also extends the
+  `check_notification_pref` trigger (migration 014) so the new `campaign_invite`
+  notification type is gated by `campaignUpdates` — the invite ROW is always
+  recorded; only the notification is suppressed when that pref is off.
+- **`brand-campaigns` edge fn**: new `inviteInfluencers({brandId, campaignId,
+  influencerIds[]})` — verified-brand + active-campaign gates, drops `inv_*`
+  stubs, excludes already-applied (`alreadyResponded`), idempotent upsert
+  (`alreadyInvited`), skips private profiles, fans out `campaign_invite`
+  notifications (chunked, `link:/influencer/offers/<id>`), cap 200. Returns
+  `{invited, alreadyInvited, alreadyResponded, skipped}`. `get` now also returns
+  `inviteStats{sent,responded,total}` + `invitees[]`; thin `inviteStats` action too.
+- **`apply-campaign`**: on apply, flips a matching `sent` invitation → `responded`
+  (best-effort). **`list-campaigns`**: surfaces `invited` + `inviteBrandName` per
+  campaign for the influencer's "Invited by {brand}" banner. **`landing-match`**:
+  relaxes its rate limit for authenticated brand callers (per-user cap 100/day)
+  so the brand-home matcher isn't throttled by the 5/session guest limit.
+- **Three brand entry points (web + mobile)** share a `CampaignPickerModal`
+  (`components/brands/CampaignPickerModal.{jsx,tsx}`):
+  1. **Find Creators** — select mode (`InfluencerCard` gained additive
+     `selectable/selected/onToggleSelect`; mobile also `onQuickInvite`), sticky
+     "N selected → Invite" bar. Web reads `?invite=<id>`; mobile reads
+     `route.params.inviteCampaignId` (Flow B, pre-bound campaign).
+  2. **Campaign detail** — "Invite creators" button (routes to Find Creators
+     pre-bound) + new **Invites** panel (Sent / Responded + invitee list) from
+     the `get` response.
+  3. **Home AI prompt** — web landing `AIPrompt.jsx` shortlist bar sends real
+     invites for logged-in brands (guests → `/login`); plus a new
+     `BrandMatchPrompt` matcher on the brand home (web `/brands`, mobile
+     `BrandHome`) reusing `landing-match`.
+- **Influencer side**: `campaign_invite` notification → campaign apply view with
+  an "Invited by {brand}" banner; applying marks the invite responded. Web
+  `getNotifLink`/`prefKeyForType` + mobile `NotificationsList` `TYPE_STYLES`/
+  `routeFromType` updated for the new type.
+- **"Responded" = applied only** (no decline/viewed tracking — `viewed`/`declined`
+  reserved in the check constraint for a later pass). New client components use
+  hardcoded English (not yet in the i18n catalogs) — a follow-up if a 2nd locale
+  ships. Deployed: migration 055 + `brand-campaigns`/`apply-campaign`/
+  `list-campaigns`/`landing-match`. Web `next build` green; mobile `tsc` clean.
+
 ## Migrations register
 
 | # | Name | Notes |
@@ -540,6 +589,7 @@ Chosen approach here was upload/URL (durable, works for any reel).
 | 050 | ai_usage | `ai_generation_usage(user_id, period, tool)` + `bump_ai_usage` RPC (metered AI quota) |
 | 051 | application_pitch | `campaign_applications.pitch` — the creator's "why choose you", AI-draftable |
 | 054 | landing_match_usage | Rate-limit table + `bump_landing_match` RPC for the public landing AI matcher |
+| 055 | campaign_invitations | Brand→influencer invite tracking table + `campaign_invite` added to the notification-pref trigger |
 
 ## Feature: AI layer (2026-07)
 

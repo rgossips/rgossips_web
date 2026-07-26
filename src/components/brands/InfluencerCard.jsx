@@ -1,4 +1,4 @@
-import { Instagram, Users, FileText, Languages } from "lucide-react";
+import { Instagram, Users, FileText, Languages, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 const formatCount = (n) => {
@@ -17,6 +17,11 @@ export const InfluencerCard = ({
   categories,
   languages,
   media_kit_published,
+  // Selection mode (additive — off by default). When `selectable`, the whole
+  // row toggles selection instead of the action buttons being the only affordance.
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }) => {
   const t = useTranslations("BrandsInfluencerCard");
   const handle = instagram_handle || username || "";
@@ -35,7 +40,22 @@ export const InfluencerCard = ({
   const mediaKitUrl = handle && media_kit_published ? `/kit/${handle}` : null;
 
   return (
-    <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-100 last:border-0">
+    <div
+      onClick={selectable ? onToggleSelect : undefined}
+      className={`flex items-center gap-4 px-6 py-4 border-b border-gray-100 last:border-0 ${
+        selectable ? "cursor-pointer" : ""
+      } ${selectable && selected ? "bg-indigo-50/60" : ""}`}
+    >
+      {/* Selection checkbox */}
+      {selectable && (
+        <div
+          className={`w-5 h-5 rounded-md grid place-items-center shrink-0 border ${
+            selected ? "bg-[#5851DB] border-[#5851DB]" : "border-gray-300 bg-white"
+          }`}
+        >
+          {selected && <Check size={13} className="text-white" />}
+        </div>
+      )}
       {/* Avatar */}
       <div className="relative w-14 h-14 shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
         {profile_photo_url ? (
@@ -83,7 +103,7 @@ export const InfluencerCard = ({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
         {instagramUrl && (
           <a
             href={instagramUrl}

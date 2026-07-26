@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import CampaignPickerModal from "@/components/brands/CampaignPickerModal";
 
 const chipsData = [
   { label: "Skincare launch in Mumbai", dot: "#F9A8D4" },
@@ -151,9 +152,37 @@ export default function AIPrompt() {
     setShortlist((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
+  // Detect a logged-in BRAND so the shortlist "Invite to campaign" bar can send
+  // real invites (guests still route to /login). A user with a brand_profiles
+  // row is a brand; influencers don't invite.
+  const [brandUser, setBrandUser] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [inviteToast, setInviteToast] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+        const { data: bp } = await supabase.from("brand_profiles").select("brand_id").eq("brand_id", user.id).maybeSingle();
+        if (!cancelled && bp) setBrandUser({ id: user.id });
+      } catch {
+        /* guest — keep the /login CTA */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const shortlistCount = Object.values(shortlist).filter(Boolean).length;
   const hasShortlist = shortlistCount >= 1;
   const shortlistLabel = `${shortlistCount} creator${shortlistCount === 1 ? "" : "s"} shortlisted`;
+  // Real creators only (drop pre-launch inv_* stubs, which can't be invited).
+  const invitableIds = Object.keys(shortlist).filter((id) => shortlist[id] && !String(id).startsWith("inv_"));
   const resultsHeader =
     total > results.length
       ? `TOP ${results.length} OF ${total.toLocaleString()} MATCHES`
@@ -893,30 +922,90 @@ export default function AIPrompt() {
                   }}
                 >
                   {shortlistLabel}
+                  {brandUser && invitableIds.length < shortlistCount && (
+                    <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 600 }}> · {invitableIds.length} invitable</span>
+                  )}
                 </span>
-                <a
-                  href="/login"
-                  className="aip-invite"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "7px",
-                    fontSize: "13px",
-                    fontWeight: 800,
-                    color: "#FFFFFF",
-                    background: "linear-gradient(95deg, #10B981, #34D399)",
-                    borderRadius: "999px",
-                    padding: "9px 20px",
-                  }}
-                >
-                  Invite to campaign
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
-                  </svg>
-                </a>
+                {brandUser ? (
+                  <button
+                    onClick={() => setPickerOpen(true)}
+                    disabled={invitableIds.length === 0}
+                    className="aip-invite"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: "#FFFFFF",
+                      background: "linear-gradient(95deg, #10B981, #34D399)",
+                      border: "none",
+                      borderRadius: "999px",
+                      padding: "9px 20px",
+                      cursor: invitableIds.length === 0 ? "not-allowed" : "pointer",
+                      opacity: invitableIds.length === 0 ? 0.6 : 1,
+                    }}
+                  >
+                    Invite to campaign
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
+                    </svg>
+                  </button>
+                ) : (
+                  <a
+                    href="/login"
+                    className="aip-invite"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: "#FFFFFF",
+                      background: "linear-gradient(95deg, #10B981, #34D399)",
+                      borderRadius: "999px",
+                      padding: "9px 20px",
+                    }}
+                  >
+                    Invite to campaign
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 12h16m0 0l-6-6m6 6l-6 6" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"></path>
+                    </svg>
+                  </a>
+                )}
               </div>
             )}
           </div>
+        )}
+
+        {inviteToast && (
+          <div
+            style={{
+              position: "relative",
+              marginTop: "14px",
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "#A7F3D0",
+              textAlign: "center",
+            }}
+          >
+            {inviteToast}
+          </div>
+        )}
+
+        {brandUser && (
+          <CampaignPickerModal
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            brandId={brandUser.id}
+            influencerIds={invitableIds}
+            onDone={(result) => {
+              const invited = result?.invited || 0;
+              setInviteToast(`Invited ${invited} creator${invited === 1 ? "" : "s"} to your campaign.`);
+              setShortlist({});
+              setTimeout(() => setInviteToast(""), 4000);
+            }}
+          />
         )}
       </div>
     </section>

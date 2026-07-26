@@ -29,6 +29,7 @@ import {
   Trash2,
   TrendingUp,
   Users,
+  UserPlus,
   AlertCircle,
   X,
 } from "lucide-react";
@@ -155,6 +156,10 @@ const CampaignDetailPage = () => {
   // categories + follower band + cities. Server computes on get; also
   // returned by create so we can update from a stale-cached value.
   const [matchingCount, setMatchingCount] = useState(0);
+  // Brand-sent invites tracking ("Invites" panel). responded = the invitee
+  // applied to the campaign.
+  const [inviteStats, setInviteStats] = useState({ sent: 0, responded: 0, total: 0 });
+  const [invitees, setInvitees] = useState([]);
   // B15f — which application's journey modal is open. The aside shows
   // compact cards only; the full review panel + timeline lives in the
   // modal keyed by this id.
@@ -189,6 +194,8 @@ const CampaignDetailPage = () => {
     const apps = data.applications || [];
     setApplications(apps);
     setMatchingCount(Number(data.matchingCount || 0));
+    setInviteStats(data.inviteStats || { sent: 0, responded: 0, total: 0 });
+    setInvitees(Array.isArray(data.invitees) ? data.invitees : []);
     setLoading(false);
 
     // Pull existing brand-side ratings for all applications in this campaign
@@ -253,6 +260,26 @@ const CampaignDetailPage = () => {
     if (campaign.targetFollowerMax) p.set("followerMax", String(campaign.targetFollowerMax));
     const qs = p.toString();
     router.push(qs ? `/brands/search?${qs}` : "/brands/search");
+  };
+
+  // "Invite creators" — same as the match click but lands Find Creators in
+  // select-mode pre-bound to this campaign (Flow B). Only meaningful for a
+  // live campaign; the search page + edge fn both re-check that.
+  const inviteCreators = () => {
+    if (!campaign) return;
+    const p = new URLSearchParams();
+    const cats = Array.isArray(campaign.categories) ? campaign.categories.filter(Boolean) : [];
+    if (cats.length > 0 && !(cats.length === 1 && cats[0] === "General")) {
+      p.set("categories", cats.map((c) => encodeURIComponent(c)).join(","));
+    }
+    const cities = Array.isArray(campaign.targetCities) ? campaign.targetCities.filter(Boolean) : [];
+    if (cities.length > 0 && !(cities.length === 1 && cities[0] === "All India")) {
+      p.set("cities", cities.map((c) => encodeURIComponent(c)).join(","));
+    }
+    if (campaign.targetFollowerMin) p.set("followerMin", String(campaign.targetFollowerMin));
+    if (campaign.targetFollowerMax) p.set("followerMax", String(campaign.targetFollowerMax));
+    p.set("invite", campaign.id);
+    router.push(`/brands/search?${p.toString()}`);
   };
 
   // Edit gate — click Edit. Client-side we already know how many apps
@@ -514,7 +541,62 @@ const CampaignDetailPage = () => {
         {/* ─── RIGHT: Applications — compact cards (B15f). Each card is
             just DP + name + status; clicking opens the full journey
             modal with the timeline + all review actions. ─── */}
-        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+        <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start space-y-5">
+          {/* Invite creators — brand-initiated targeted invite, right above
+              the invites tracker. Only a live campaign can be invited to
+              (server re-checks). */}
+          {campaign.status === "active" && (
+            <button
+              onClick={inviteCreators}
+              type="button"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#5851DB] text-white px-4 py-3 text-[13px] font-extrabold cursor-pointer hover:brightness-110"
+            >
+              <UserPlus size={16} />
+              Invite creators to this campaign
+            </button>
+          )}
+
+          {/* Invites tracking — brand-sent invites + how many responded
+              (applied). Only rendered once at least one invite exists. */}
+          {inviteStats.total > 0 && (
+            <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Invites</h3>
+                <UserPlus size={14} className="text-[#5851DB]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-[#F8F9FE] rounded-xl p-3 text-center">
+                  <p className="text-xl font-extrabold text-gray-900">{inviteStats.total}</p>
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mt-1">Invited</p>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                  <p className="text-xl font-extrabold text-emerald-600">{inviteStats.responded}</p>
+                  <p className="text-[10px] text-emerald-500/80 uppercase font-bold mt-1">Responded</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {invitees.map((iv) => (
+                  <div key={iv.influencerId} className="flex items-center gap-3 p-2 rounded-xl">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {iv.photo ? <img src={iv.photo} alt={iv.name} className="w-full h-full object-cover" /> : (iv.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-gray-900 truncate">{iv.name}</p>
+                      {iv.handle && <p className="text-[10px] text-gray-400 truncate">@{iv.handle}</p>}
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                        iv.status === "responded" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {iv.status === "responded" ? "Applied" : "Invited"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">{t("applications.heading")}</h3>

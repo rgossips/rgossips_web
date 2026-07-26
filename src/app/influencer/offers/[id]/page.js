@@ -923,6 +923,14 @@ export default function CampaignDetailsPage() {
       {/* Mobile floating bar */}
       {isActive && !hasLiveApplication && (
         <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
+          {campaign.invited && (
+            <div className="mb-2 flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white px-3 py-2">
+              <Sparkles size={14} className="shrink-0" />
+              <p className="text-[11px] font-bold leading-tight">
+                {campaign.inviteBrandName || campaign.brandName} invited you — apply below
+              </p>
+            </div>
+          )}
           <button
             onClick={() => setIsApplyOpen(true)}
             className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-[#9810FA] to-[#E60076] flex items-center justify-center gap-2"
@@ -1160,6 +1168,24 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
       {/* Apply button or Status tracker */}
       {onApply ? (
         <>
+          {/* Brand-sent invite — highlighted, right above the Apply button.
+              onApply is only set while the creator can still apply, so this
+              vanishes automatically once they've applied. */}
+          {campaign.invited && (
+            <div className="hidden lg:block rounded-2xl p-4 bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white shadow-lg shadow-pink-200/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 grid place-items-center shrink-0">
+                  <Sparkles size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-black leading-tight">
+                    {campaign.inviteBrandName || campaign.brandName} invited you 🎉
+                  </p>
+                  <p className="text-[11px] text-white/85 mt-0.5">Apply below to let them know you&apos;re interested.</p>
+                </div>
+              </div>
+            </div>
+          )}
           <button
             onClick={onApply}
             className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"

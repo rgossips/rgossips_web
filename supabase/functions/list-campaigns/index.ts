@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
 
     // Fetch applications for this influencer (if provided)
     let applicationMap: Record<string, any> = {};
+    // Campaigns this influencer was invited to by the brand — powers the
+    // "Invited by {brand}" banner on the campaign apply view.
+    const invitedCampaignIds = new Set<string>();
     if (influencerId) {
       // Try with submission_links first, fall back without it
       let applications: any[] = [];
@@ -98,6 +101,13 @@ Deno.serve(async (req) => {
             (app.escrow_amount ? Number(app.escrow_amount) / 100 : 0),
         };
       }
+
+      // Brand-sent invitations for this creator (best-effort).
+      const { data: invites } = await supabaseAdmin
+        .from("campaign_invitations")
+        .select("campaign_id")
+        .eq("influencer_id", influencerId);
+      for (const inv of invites || []) invitedCampaignIds.add(String(inv.campaign_id));
     }
 
     if (campError) {
@@ -366,6 +376,9 @@ Deno.serve(async (req) => {
         minEngagementRate: m.min_engagement_rate || 0,
         rawPlatforms,
         applicationDeadlinePassed,
+        // Brand-sent invite (the invite is from this campaign's brand).
+        invited: invitedCampaignIds.has(String(c.campaign_id)),
+        inviteBrandName: invitedCampaignIds.has(String(c.campaign_id)) ? brand.name : "",
       };
     });
 
@@ -374,8 +387,15 @@ Deno.serve(async (req) => {
     // (applicationDeadlinePassed), UNLESS the influencer already applied
     // — in that case keep the row so they can still see status, submit
     // deliverables, etc.
+    // A creator DIRECTLY INVITED by the brand keeps seeing the campaign even
+    // past its public application deadline (the invite is a private channel) —
+    // as long as the campaign itself hasn't ended (isExpired). Otherwise the
+    // usual open-window + already-applied rules apply.
     const visible = formatted.filter(
-      (c: any) => (!c.isExpired && !c.applicationDeadlinePassed) || c.applicationStatus,
+      (c: any) =>
+        (!c.isExpired && !c.applicationDeadlinePassed) ||
+        c.applicationStatus ||
+        (c.invited && !c.isExpired),
     );
 
     return new Response(

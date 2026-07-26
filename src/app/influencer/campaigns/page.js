@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Loader2,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -87,11 +88,16 @@ export default function CampaignsPage() {
   }, [campaigns]);
 
   // Which tab a campaign belongs to. "Completed" surfaces only campaigns
-  // the user applied to AND finished — not any brand-side-closed campaign.
-  const tabMatches = (campaign, tab) =>
-    tab === "Completed"
-      ? campaign.applicationStatus === "completed"
-      : campaign.status === tab;
+  // the user applied to AND finished. "Invites" holds campaigns the brand
+  // personally invited the creator to but they HAVEN'T applied yet — once
+  // applied, the campaign's status becomes "Applied" and it moves there.
+  // Invited campaigns are pulled OUT of the Active tab so they don't double up.
+  const tabMatches = (campaign, tab) => {
+    if (tab === "Completed") return campaign.applicationStatus === "completed";
+    if (tab === "Invites") return !!campaign.invited && campaign.status === "Active";
+    if (tab === "Active") return campaign.status === "Active" && !campaign.invited;
+    return campaign.status === tab; // Applied
+  };
 
   // Non-tab filters (search / category / brand / budget). Extracted so the
   // tab COUNT badges and the rendered LIST use the SAME predicate — otherwise
@@ -114,6 +120,22 @@ export default function CampaignsPage() {
   // Count for a tab that respects the same active filters as the list.
   const tabCount = (tab) =>
     campaigns.filter((c) => tabMatches(c, tab) && passesFilters(c)).length;
+
+  // "Invites" tab only exists when the brand has personally invited the creator
+  // to at least one campaign they haven't applied to yet.
+  const hasInvites = useMemo(
+    () => campaigns.some((c) => c.invited && c.status === "Active"),
+    [campaigns],
+  );
+  const TABS = hasInvites ? ["Invites", "Active", "Applied", "Completed"] : ["Active", "Applied", "Completed"];
+  const tabLabel = (tab) => (tab === "Invites" ? "Invites" : t(`tabs.${tab}`));
+  const tabLabelLower = (tab) => (tab === "Invites" ? "invites" : t(`tabsLower.${tab}`));
+
+  // If the last invite gets applied while the user is on the Invites tab, move
+  // them to Applied (where that campaign just went) instead of an empty view.
+  useEffect(() => {
+    if (!hasInvites && activeTab === "Invites") setActiveTab("Applied");
+  }, [hasInvites, activeTab]);
 
   const filteredCampaigns = useMemo(() => {
     const passed = campaigns.filter(
@@ -204,7 +226,7 @@ export default function CampaignsPage() {
 
         {/* Mobile Tab Switcher */}
         <div className="lg:hidden bg-white p-1.5 rounded-2xl flex gap-1 shadow-sm border border-slate-50">
-          {["Active", "Applied", "Completed"].map((tab) => (
+          {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -214,7 +236,7 @@ export default function CampaignsPage() {
                   : "text-slate-400"
               }`}
             >
-              {t(`tabs.${tab}`)}
+              {tabLabel(tab)}
             </button>
           ))}
         </div>
@@ -244,9 +266,10 @@ export default function CampaignsPage() {
             <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50">
               <h2 className="font-black text-slate-800 text-lg mb-4">{t("statusHeading")}</h2>
               <div className="space-y-1">
-                {["Active", "Applied", "Completed"].map((tab) => {
+                {TABS.map((tab) => {
                   const count = tabCount(tab);
                   const isActive = activeTab === tab;
+                  const isInvites = tab === "Invites";
                   return (
                     <button
                       key={tab}
@@ -254,10 +277,15 @@ export default function CampaignsPage() {
                       className={`w-full cursor-pointer flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                         isActive
                           ? "bg-gradient-to-r from-[#E60076] to-[#D500F9] text-white shadow-md shadow-pink-100"
-                          : "text-slate-500 hover:bg-slate-50"
+                          : isInvites
+                            ? "text-[#5851DB] bg-indigo-50 hover:bg-indigo-100"
+                            : "text-slate-500 hover:bg-slate-50"
                       }`}
                     >
-                      <span>{t(`tabs.${tab}`)}</span>
+                      <span className="flex items-center gap-1.5">
+                        {isInvites && !isActive && <Sparkles size={13} />}
+                        {tabLabel(tab)}
+                      </span>
                       <span
                         className={`text-[11px] font-black px-2 py-0.5 rounded-md min-w-6 text-center ${
                           isActive
@@ -292,7 +320,7 @@ export default function CampaignsPage() {
             <div className="hidden lg:flex items-center justify-between">
               <div className="flex items-baseline gap-3">
                 <h2 className="text-xl font-bold text-slate-800">
-                  {t("headerCampaigns", { tab: t(`tabs.${activeTab}`) })}
+                  {t("headerCampaigns", { tab: tabLabel(activeTab) })}
                 </h2>
                 {hasActiveFilters && (
                   <span className="text-sm font-bold text-[#E60076]">
@@ -383,7 +411,7 @@ export default function CampaignsPage() {
 
                 {filteredCampaigns.length === 0 && (
                   <div className="text-center py-20 bg-white rounded-[32px] text-slate-400 font-bold">
-                    {t("empty", { tab: t(`tabsLower.${activeTab}`) })}
+                    {t("empty", { tab: tabLabelLower(activeTab) })}
                   </div>
                 )}
               </>

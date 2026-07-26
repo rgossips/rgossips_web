@@ -9,11 +9,13 @@ import { TrustSection } from "@/components/brands/TrustSection";
 import React from "react";
 import PocketFriendlyCreators from "@/components/brands/PocketFriendlyCreators";
 import { CreatorCTASection } from "@/components/brands/CreatorCTASection";
+import BrandMatchPrompt from "@/components/brands/BrandMatchPrompt";
 
 const page = () => {
   return (
     <div className="flex items-center flex-col gap-8 lg:gap-10 lg:px-10 overflow-x-hidden bg-white">
       <BrandHero />
+      <BrandMatchPrompt />
       <div className="block lg:hidden">
         <TrustSection />
       </div>

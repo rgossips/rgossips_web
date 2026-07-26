@@ -166,6 +166,20 @@ Deno.serve(async (req) => {
       console.error("status-history seed insert failed:", e);
     }
 
+    // If this creator was invited to the campaign by the brand, flip that
+    // invitation to 'responded' — applying is the positive response the brand
+    // tracks. Idempotent + best-effort; never fail the apply on it.
+    try {
+      await supabaseAdmin
+        .from("campaign_invitations")
+        .update({ status: "responded", responded_at: new Date().toISOString() })
+        .eq("campaign_id", campaignId)
+        .eq("influencer_id", influencerId)
+        .eq("status", "sent");
+    } catch (e) {
+      console.error("invite responded-flip failed:", e);
+    }
+
     // Notify the brand owning this campaign (best-effort — never fail the apply)
     try {
       const { data: campaign } = await supabaseAdmin

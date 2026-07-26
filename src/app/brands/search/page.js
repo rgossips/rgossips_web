@@ -7,6 +7,9 @@ import {
   Search,
   ChevronDown,
   Loader2,
+  UserPlus,
+  X,
+  Send,
 } from "lucide-react";
 import {
   Popover,
@@ -16,7 +19,9 @@ import {
 import { ProfileCompletionSection } from "@/components/brands/ProfileCompletionSection";
 import { InfluencerCard } from "@/components/brands/InfluencerCard";
 import { FilterDrawer, filterData, sortOptions } from "@/components/brands/FilterDrawer";
+import CampaignPickerModal from "@/components/brands/CampaignPickerModal";
 import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const emptyFilters = Object.fromEntries(Object.keys(filterData).map((k) => [k, []]));
 
@@ -125,7 +130,11 @@ function bucketsForRange(followerMin, followerMax) {
 const InfluencerDirectory = () => {
   const t = useTranslations("BrandsSearch");
   const supabase = createClient();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
+  // ?invite=<campaignId> — the campaign-detail "Invite creators" flow lands
+  // here in select-mode pre-bound to that campaign (Flow B).
+  const inviteCampaignId = searchParams.get("invite") || null;
   const initialCategory = searchParams.get("category");
   const initialQuery = searchParams.get("q") || "";
   const initialCity = searchParams.get("city");
@@ -318,6 +327,37 @@ const InfluencerDirectory = () => {
   const filteredInfluencers = influencers;
   const hasMore = filteredInfluencers.length < total;
 
+  // ── Selection / invite ───────────────────────────────────────────
+  // Auto-enter select mode when arriving via the campaign "Invite creators"
+  // flow (?invite=<id>).
+  const [selectMode, setSelectMode] = useState(!!inviteCampaignId);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const onInviteDone = (result) => {
+    const invited = result?.invited || 0;
+    const already = (result?.alreadyInvited || 0) + (result?.alreadyResponded || 0);
+    const parts = [`Invited ${invited} creator${invited === 1 ? "" : "s"}`];
+    if (already) parts.push(`${already} already invited/applied`);
+    setToast(parts.join(" · "));
+    setSelectedIds(new Set());
+    setTimeout(() => setToast(""), 4000);
+  };
+
   const FilterBar = () => (
     <div className="flex items-center gap-2 flex-wrap">
       <FilterDrawer
@@ -327,6 +367,15 @@ const InfluencerDirectory = () => {
         countForDraft={countForDraft}
       />
       <SortPopover value={sort} onChange={setSort} />
+      <button
+        onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+        className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-semibold cursor-pointer whitespace-nowrap ${
+          selectMode ? "border-[#5851DB] bg-purple-50/40 text-[#5851DB]" : "border-gray-200 text-gray-700"
+        }`}
+      >
+        <UserPlus size={13} />
+        {selectMode ? "Done" : "Select creators"}
+      </button>
     </div>
   );
 
@@ -403,7 +452,13 @@ const InfluencerDirectory = () => {
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {filteredInfluencers.map((inf) => (
-                <InfluencerCard key={inf.influencer_id} {...inf} />
+                <InfluencerCard
+                  key={inf.influencer_id}
+                  {...inf}
+                  selectable={selectMode}
+                  selected={selectedIds.has(inf.influencer_id)}
+                  onToggleSelect={() => toggleSelect(inf.influencer_id)}
+                />
               ))}
             </div>
             {hasMore && (
@@ -421,6 +476,43 @@ const InfluencerDirectory = () => {
           </>
         )}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-8 z-[95] px-4 py-2.5 rounded-full bg-gray-900 text-white text-[12px] font-semibold shadow-xl">
+          {toast}
+        </div>
+      )}
+
+      {/* Sticky invite bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div className="fixed left-0 right-0 bottom-16 lg:bottom-0 z-[80] px-4 pb-3 lg:pb-4">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-3 bg-[#5851DB] text-white rounded-2xl shadow-2xl px-4 py-3">
+            <button onClick={exitSelectMode} className="p-1 rounded-full hover:bg-white/15 cursor-pointer">
+              <X size={16} />
+            </button>
+            <span className="text-[13px] font-bold flex-1">
+              {selectedIds.size} creator{selectedIds.size === 1 ? "" : "s"} selected
+            </span>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="inline-flex items-center gap-1.5 bg-white text-[#5851DB] rounded-full px-4 py-2 text-[12px] font-extrabold cursor-pointer"
+            >
+              <Send size={13} />
+              Invite to campaign
+            </button>
+          </div>
+        </div>
+      )}
+
+      <CampaignPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        brandId={user?.id}
+        influencerIds={[...selectedIds]}
+        campaignId={inviteCampaignId}
+        onDone={onInviteDone}
+      />
     </div>
   );
 };

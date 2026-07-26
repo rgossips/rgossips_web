@@ -82,29 +82,54 @@ Deno.serve(async (req) => {
     if (prompt.length < 2) return json({ error: "empty_prompt" });
 
     // ── Rate limit ───────────────────────────────────────────────────
-    const ipRaw = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "0.0.0.0";
-    const ipHash = await sha256Hex(ipRaw + "|landing-match");
-    const sessKey = sessionId ? `s:${sessionId}` : `ip:${ipHash}`;
+    // Authenticated callers (a logged-in brand using the brand-home matcher)
+    // get a much higher, per-user cap — the 5/session guest limit is only to
+    // stop anonymous abuse of the public landing prompt. functions.invoke
+    // sends the user's access_token as Bearer when signed in; the publishable
+    // key resolves to no user.
+    const token = (req.headers.get("authorization") || "").replace("Bearer ", "");
+    let authedUserId: string | null = null;
+    if (token) {
+      const { data: userRes } = await admin.auth.getUser(token);
+      authedUserId = userRes?.user?.id || null;
+    }
 
-    const { data: sessRes } = await admin.rpc("bump_landing_match", {
-      p_key: sessKey,
-      p_max: SESSION_MAX,
-      p_window_secs: SESSION_WINDOW,
-    });
-    const sess = Array.isArray(sessRes) ? sessRes[0] : sessRes;
+    let remaining = SESSION_MAX;
+    if (authedUserId) {
+      const BRAND_MAX = 100; // per rolling day, keyed by user id
+      const { data: uRes } = await admin.rpc("bump_landing_match", {
+        p_key: `u:${authedUserId}`,
+        p_max: BRAND_MAX,
+        p_window_secs: SESSION_WINDOW,
+      });
+      const u = Array.isArray(uRes) ? uRes[0] : uRes;
+      if (!(u?.allowed ?? true)) return json({ error: "rate_limited", remaining: 0 });
+      remaining = Math.max(0, u?.remaining ?? BRAND_MAX);
+    } else {
+      const ipRaw = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "0.0.0.0";
+      const ipHash = await sha256Hex(ipRaw + "|landing-match");
+      const sessKey = sessionId ? `s:${sessionId}` : `ip:${ipHash}`;
 
-    const { data: ipRes } = await admin.rpc("bump_landing_match", {
-      p_key: `ip:${ipHash}`,
-      p_max: IP_MAX,
-      p_window_secs: IP_WINDOW,
-    });
-    const ip = Array.isArray(ipRes) ? ipRes[0] : ipRes;
+      const { data: sessRes } = await admin.rpc("bump_landing_match", {
+        p_key: sessKey,
+        p_max: SESSION_MAX,
+        p_window_secs: SESSION_WINDOW,
+      });
+      const sess = Array.isArray(sessRes) ? sessRes[0] : sessRes;
 
-    const sessAllowed = sess?.allowed ?? true;
-    const ipAllowed = ip?.allowed ?? true;
-    const remaining = Math.max(0, Math.min(sess?.remaining ?? SESSION_MAX, SESSION_MAX));
-    if (!sessAllowed || !ipAllowed) {
-      return json({ error: "rate_limited", remaining: 0 });
+      const { data: ipRes } = await admin.rpc("bump_landing_match", {
+        p_key: `ip:${ipHash}`,
+        p_max: IP_MAX,
+        p_window_secs: IP_WINDOW,
+      });
+      const ip = Array.isArray(ipRes) ? ipRes[0] : ipRes;
+
+      const sessAllowed = sess?.allowed ?? true;
+      const ipAllowed = ip?.allowed ?? true;
+      remaining = Math.max(0, Math.min(sess?.remaining ?? SESSION_MAX, SESSION_MAX));
+      if (!sessAllowed || !ipAllowed) {
+        return json({ error: "rate_limited", remaining: 0 });
+      }
     }
 
     // ── LLM: brief → structured filters ──────────────────────────────
