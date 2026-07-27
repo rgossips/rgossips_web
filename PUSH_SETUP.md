@@ -58,34 +58,30 @@ The JS deps (`@react-native-firebase/app`, `/messaging`) are installed and the
 client is wired (`src/lib/push.ts`, `App.tsx`). Native Firebase config is still
 needed — the app runs fine without it (push just stays off).
 
-### Firebase project
-- Create a Firebase project; add an **Android app** (your `applicationId`) and an
-  **iOS app** (your bundle id).
+App ids are `com.rgossips` on both platforms.
 
-### Android
-1. Download **google-services.json** → `android/app/google-services.json`.
-2. `android/build.gradle` (project) — add to `dependencies`:
-   ```gradle
-   classpath 'com.google.gms:google-services:4.4.2'
-   ```
-3. `android/app/build.gradle` — at the top, after the other `apply plugin` lines:
-   ```gradle
-   apply plugin: 'com.google.gms.google-services'
-   ```
-4. `android/app/src/main/AndroidManifest.xml` — for Android 13+ permission:
-   ```xml
-   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-   ```
-5. Rebuild.
+### Android — DONE (wired in the repo)
+`android/app/google-services.json` is in place; the google-services classpath
+(`android/build.gradle`), the `apply plugin` (`android/app/build.gradle`), and the
+`POST_NOTIFICATIONS` permission (AndroidManifest) are committed. Just:
+```bash
+cd rsgossips_app && npm install      # pulls the Firebase JS packages
+# then a normal Android build
+```
 
-### iOS
-1. Download **GoogleService-Info.plist** → `ios/<App>/GoogleService-Info.plist`
-   (add to the Xcode target).
-2. In Xcode → target → **Signing & Capabilities**: add **Push Notifications** and
-   **Background Modes → Remote notifications**.
-3. Firebase console → Project settings → **Cloud Messaging** → upload your **APNs
-   auth key** (.p8) with Key ID + Team ID.
-4. `cd ios && pod install`, then rebuild.
+### iOS — file in place, Xcode steps remain
+`ios/RGossips/GoogleService-Info.plist` is placed and `remote-notification`
+background mode is in Info.plist. In **Xcode** (these touch entitlements /
+provisioning, so they can't be done from files):
+1. Add `GoogleService-Info.plist` to the **RGossips** target (drag it in → check
+   the target, or File → Add Files).
+2. Target → **Signing & Capabilities** → **+ Capability** → add **Push
+   Notifications** (and **Background Modes → Remote notifications**).
+3. `cd ios && pod install`.
+
+### APNs (iOS delivery) — Firebase console
+Project settings → **Cloud Messaging** → **APNs authentication key**: upload your
+`.p8` with its Key ID + your Team ID.
 
 ### FCM server credential (for send-push)
 Firebase console → Project settings → **Service accounts** → **Generate new
