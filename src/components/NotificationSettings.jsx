@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, TrendingUp, Bell, Loader2, RotateCcw } from "lucide-react";
+import { ArrowLeft, TrendingUp, Bell, Loader2, RotateCcw, MonitorSmartphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useWebPush } from "@/hooks/useWebPush";
 
 const DEFAULT_PREFS = {
   campaignUpdates: true,
@@ -130,8 +131,46 @@ const NotificationSettings = ({ onBack }) => {
 
 const NotificationSections = ({ settings, toggleSetting }) => {
   const t = useTranslations("NotificationSettings");
+  const { supported, permission, subscribed, busy, enable, disable } = useWebPush();
+
+  const deviceDesc = !supported
+    ? "This browser doesn't support push notifications."
+    : permission === "denied"
+      ? "Blocked — enable notifications for this site in your browser settings."
+      : subscribed
+        ? "You'll get alerts on this browser even when the tab is closed."
+        : "Turn on to get alerts on this browser even when the tab is closed.";
+
   return (
     <>
+      {/* Browser / device push */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-3 px-1">
+          <div className="p-2 bg-indigo-500 text-white rounded-xl">
+            <MonitorSmartphone size={18} />
+          </div>
+          <h3 className="font-black text-xs uppercase tracking-wider text-gray-900">This device</h3>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-md">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-[13px] font-black text-gray-900">Browser notifications</h4>
+              <p className="text-[10px] font-bold text-gray-400">{deviceDesc}</p>
+            </div>
+            <button
+              onClick={() => (subscribed ? disable() : enable())}
+              disabled={busy || !supported || permission === "denied"}
+              className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 outline-none border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                subscribed ? "bg-pink-500 border-pink-500" : "bg-gray-100 border-gray-200"
+              }`}
+              aria-pressed={subscribed}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform duration-200 ${subscribed ? "translate-x-5" : "translate-x-1"}`} />
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Campaign Notifications Section */}
       <section className="space-y-3">
         <div className="flex items-center gap-3 px-1">

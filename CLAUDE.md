@@ -573,6 +573,36 @@ many responded (= applied). Shipped web + mobile (`rgossips_app`).
   ships. Deployed: migration 055 + `brand-campaigns`/`apply-campaign`/
   `list-campaigns`/`landing-match`. Web `next build` green; mobile `tsc` clean.
 
+## Push notifications — web + mobile (2026-07)
+
+Generic push system shared by web (Web Push/VAPID) and mobile (FCM, Android +
+iOS via Firebase). One registry + one trigger; the sender branches per platform.
+**Code shipped + deployed; needs credentials + native config — see `PUSH_SETUP.md`.**
+
+- **Migration `056_push_subscriptions.sql`**: `push_subscriptions(user_id,
+  platform['web'|'fcm'], endpoint/p256dh/auth for web, token for fcm)` (RLS: own
+  read/delete; service-role writes). Plus an AFTER INSERT trigger on
+  `notifications` (`tg_notifications_push`) that pg_net-POSTs the row to the
+  `send-push` edge fn. The trigger reads `app.push_endpoint` + `app.push_secret`
+  GUCs (set by the operator, out of git) — absent = silent no-op, so it's safe
+  pre-config.
+- **`_shared/push.ts`**: `sendWebPush` (npm:web-push + VAPID) and `sendFcm`
+  (Firebase HTTP v1 — service-account JWT → OAuth token, covers Android + iOS).
+- **`register-push`** (caller-JWT): subscribe/unsubscribe a device (upsert by
+  endpoint/token). **`send-push`** (`x-push-secret` gate): fetch a user's devices,
+  branch web/fcm, prune dead ones. Both deploy `--no-verify-jwt`.
+- **Web**: `public/sw.js` (push + notificationclick deep-link), `useWebPush` hook
+  (register SW → permission → subscribe → register-push), a "Browser
+  notifications" toggle in `NotificationSettings.jsx`. Needs
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
+- **Mobile** (`rgossips_app`): `@react-native-firebase/app`+`/messaging`,
+  `src/lib/push.ts` (permission → FCM token → register-push; tap → deep-link via
+  `navigationRef`), wired in `App.tsx` on login. Native Firebase config
+  (google-services.json / GoogleService-Info.plist / APNs key) still required.
+- **Secrets**: `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`,
+  `FCM_SERVICE_ACCOUNT`, `PUSH_SECRET` (function secrets) + the two `app.push_*`
+  DB GUCs. Foreground mobile banners need notifee (not added; in-app poll covers).
+
 ## Migrations register
 
 | # | Name | Notes |
@@ -590,6 +620,7 @@ many responded (= applied). Shipped web + mobile (`rgossips_app`).
 | 051 | application_pitch | `campaign_applications.pitch` — the creator's "why choose you", AI-draftable |
 | 054 | landing_match_usage | Rate-limit table + `bump_landing_match` RPC for the public landing AI matcher |
 | 055 | campaign_invitations | Brand→influencer invite tracking table + `campaign_invite` added to the notification-pref trigger |
+| 056 | push_subscriptions | Web+mobile push registry + notifications AFTER INSERT trigger (pg_net → send-push) |
 
 ## Feature: AI layer (2026-07)
 
