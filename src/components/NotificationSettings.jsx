@@ -131,11 +131,26 @@ const NotificationSettings = ({ onBack }) => {
 
 const NotificationSections = ({ settings, toggleSetting }) => {
   const t = useTranslations("NotificationSettings");
-  const { supported, permission, subscribed, busy, enable, disable } = useWebPush();
+  const { supported, browserSupported, configured, permission, subscribed, busy, enable, disable } = useWebPush();
+  const [pushError, setPushError] = useState("");
 
-  const deviceDesc = !supported
+  const onTogglePush = async () => {
+    setPushError("");
+    const res = subscribed ? await disable() : await enable();
+    if (res && res.ok === false) {
+      setPushError(
+        res.error === "denied"
+          ? "Permission was blocked. Allow notifications for this site in your browser settings."
+          : `Couldn't enable: ${res.error || "unknown error"}`,
+      );
+    }
+  };
+
+  const deviceDesc = !browserSupported
     ? "This browser doesn't support push notifications."
-    : permission === "denied"
+    : !configured
+      ? "Push notifications aren't configured on this build yet."
+      : permission === "denied"
       ? "Blocked — enable notifications for this site in your browser settings."
       : subscribed
         ? "You'll get alerts on this browser even when the tab is closed."
@@ -156,9 +171,10 @@ const NotificationSections = ({ settings, toggleSetting }) => {
             <div className="space-y-1">
               <h4 className="text-[13px] font-black text-gray-900">Browser notifications</h4>
               <p className="text-[10px] font-bold text-gray-400">{deviceDesc}</p>
+              {pushError && <p className="text-[10px] font-bold text-red-500">{pushError}</p>}
             </div>
             <button
-              onClick={() => (subscribed ? disable() : enable())}
+              onClick={onTogglePush}
               disabled={busy || !supported || permission === "denied"}
               className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 outline-none border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                 subscribed ? "bg-pink-500 border-pink-500" : "bg-gray-100 border-gray-200"

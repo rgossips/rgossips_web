@@ -19,20 +19,26 @@ function urlBase64ToUint8Array(base64String) {
 
 export function useWebPush() {
   const supabase = createClient();
-  const [supported, setSupported] = useState(false);
+  // `browserSupported` = the browser has the push APIs. `configured` = a VAPID
+  // public key is present in this build. `supported` = both (can actually
+  // subscribe). Splitting them lets the UI show an accurate reason.
+  const [browserSupported, setBrowserSupported] = useState(false);
+  const [configured, setConfigured] = useState(false);
   const [permission, setPermission] = useState("default");
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const supported = browserSupported && configured;
 
   useEffect(() => {
-    const ok =
+    const browserOk =
       typeof window !== "undefined" &&
       "serviceWorker" in navigator &&
       "PushManager" in window &&
-      "Notification" in window &&
-      !!VAPID_PUBLIC;
-    setSupported(ok);
-    if (!ok) return;
+      "Notification" in window;
+    const cfg = !!VAPID_PUBLIC;
+    setBrowserSupported(browserOk);
+    setConfigured(cfg);
+    if (!browserOk || !cfg) return;
     setPermission(Notification.permission);
     navigator.serviceWorker
       .getRegistration()
@@ -94,5 +100,5 @@ export function useWebPush() {
     }
   }, [supabase]);
 
-  return { supported, permission, subscribed, busy, enable, disable };
+  return { supported, browserSupported, configured, permission, subscribed, busy, enable, disable };
 }
