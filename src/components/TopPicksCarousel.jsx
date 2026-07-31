@@ -7,7 +7,7 @@ import { MapPin, DollarSign, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { scoreCampaignForUser } from "@/utils/matchScore";
+import { scoreCampaignForUser, calculateCampaignMatchScore } from "@/utils/matchScore";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const PLACEHOLDER_IMAGES = [
@@ -72,7 +72,11 @@ export default function RecommendedCampaigns() {
     );
 
     const scored = eligible.map((c) => {
-      const { score, categoryTier } = scoreCampaignForUser(profile, c);
+      // Rank by category tier (exact → indirect), but DISPLAY the same match %
+      // the campaigns list, card badge and AI coach use (calculateCampaignMatchScore)
+      // so the score never differs between the home carousel and those pages.
+      const { categoryTier } = scoreCampaignForUser(profile, c);
+      const score = calculateCampaignMatchScore(profile, c);
       return { c, score, categoryTier };
     });
 

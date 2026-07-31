@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
+import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import {
   Drawer,
   DrawerClose,
@@ -145,7 +146,7 @@ const SORT_OPTIONS = [
 export default function RecommendedCampaigns() {
   const t = useTranslations("InfluencerRecommendedCampaigns");
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSort, setSelectedSort] = useState("Recommended");
 
@@ -392,6 +393,8 @@ export default function RecommendedCampaigns() {
               const targetFollowers = c.targetFollowerMin
                 ? t("card.followers", { count: (c.targetFollowerMin / 1000).toFixed(0) })
                 : t("card.openToAll");
+              // Same match % the home carousel + campaigns list + AI coach use.
+              const match = calculateCampaignMatchScore(profile, c);
               return (
                 <motion.div
                   key={c.id}
@@ -427,6 +430,17 @@ export default function RecommendedCampaigns() {
                           <span className="bg-slate-900/70 backdrop-blur-sm text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-amber-300 rounded-full" />
                             {t("card.daysLeft", { days: c.daysLeft })}
+                          </span>
+                        </div>
+                      )}
+                      {match > 0 && (
+                        <div className="absolute bottom-3 left-3">
+                          <span
+                            className={`text-white text-[10px] font-black px-3 py-1 rounded-lg shadow-lg ${
+                              match >= 75 ? "bg-[#22C55E]" : match >= 50 ? "bg-amber-500" : "bg-slate-500"
+                            }`}
+                          >
+                            {match}% Match
                           </span>
                         </div>
                       )}
