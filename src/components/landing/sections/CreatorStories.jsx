@@ -47,22 +47,14 @@ function autoplayMuted(el) {
   if (p && p.catch) p.catch(() => {});
 }
 
-// A backend video can fail to load (e.g. an Instagram reel *page* URL is
-// ORB-blocked, or a link rots). Swap that cell to a bundled static clip once so
-// it degrades to a real reel instead of a black tile. Guarded so a failing
-// fallback can't loop.
-function fallBackToStatic(el, fallbackUrl) {
-  if (!el || !fallbackUrl || el.dataset.fellBack === "1") return;
-  el.dataset.fellBack = "1";
-  el.src = fallbackUrl;
-  el.load();
-  autoplayMuted(el);
-}
-
 export default function CreatorStories() {
   const [playing, setPlaying] = useState(-1);
   const [stories, setStories] = useState(FALLBACK_REELS);
   const [label, setLabel] = useState(DEFAULT_LABEL);
+  // Whether the grid is currently rendering admin-published reels. Used to
+  // degrade the WHOLE grid to the fallback set the moment any admin video can't
+  // load — never mix a fallback clip under an admin handle (or vice-versa).
+  const [usingAdmin, setUsingAdmin] = useState(false);
 
   // Swap in admin-published reels + the editable section label. When
   // creator_stories is empty we stay on FALLBACK_REELS so the section never
@@ -90,11 +82,10 @@ export default function CreatorStories() {
               videoUrl: r.video_url,
               poster: r.poster_url || r.avatar_url || "",
               bg: BG_PALETTE[i % BG_PALETTE.length],
-              // Static clip to fall back to if this backend video won't load.
-              fallbackUrl: FALLBACK_REELS[i % FALLBACK_REELS.length].videoUrl,
             };
           }),
         );
+        setUsingAdmin(true);
       }
       if (titleRes.data?.value) setLabel(titleRes.data.value);
     })();
@@ -105,6 +96,19 @@ export default function CreatorStories() {
 
   const closeReel = () => setPlaying(-1);
   const eatClick = (e) => e.stopPropagation();
+
+  // A backend video can fail to load (Instagram reel *page* URLs are
+  // ORB-blocked, links rot, etc.). When that happens while showing admin
+  // reels, drop the ENTIRE grid to the bundled fallback set — handle + clip
+  // stay from one coherent source. Fallback clips are local, so they don't
+  // re-trigger this. Closing any open modal avoids a stale index after the
+  // swap. No-op once we're already on the fallback set.
+  const degradeToFallback = () => {
+    if (!usingAdmin) return;
+    setUsingAdmin(false);
+    setPlaying(-1);
+    setStories(FALLBACK_REELS);
+  };
   const active = playing >= 0 ? stories[playing] : null;
   const cols = Math.min(stories.length || 1, 8);
 
@@ -198,7 +202,7 @@ export default function CreatorStories() {
                 playsInline
                 preload="auto"
                 tabIndex={-1}
-                onError={(e) => fallBackToStatic(e.currentTarget, r.fallbackUrl)}
+                onError={degradeToFallback}
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
               />
               <span style={{ position: "absolute", top: "10px", left: "10px", right: "10px", height: "3px", background: "rgba(255,255,255,0.25)", borderRadius: "2px", overflow: "hidden" }}>
@@ -275,7 +279,7 @@ export default function CreatorStories() {
               animation: "riseIn 0.3s ease both",
             }}
           >
-            <video ref={modalVideo} src={active.videoUrl} poster={active.poster || undefined} autoPlay loop playsInline onError={(e) => fallBackToStatic(e.currentTarget, active.fallbackUrl)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
+            <video ref={modalVideo} src={active.videoUrl} poster={active.poster || undefined} autoPlay loop playsInline onError={degradeToFallback} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
             <button
               className="cs-close"
               onClick={closeReel}
