@@ -25,13 +25,66 @@ app. All three share one Supabase project (`hlfevcdtbehukxrrgykv`).
 - **Supabase**: Postgres 15, Storage (photos + campaign banners), Edge
   Functions (Deno), Auth. RLS on user-scoped tables (`referrals`,
   `reward_credits_ledger`, `notifications`, etc.).
-- **Stripe** — subscription billing (INR-priced Products, monthly + annual).
-- **Razorpay** — subscription billing (parallel path to Stripe, brand
-  escrow funding, service marketplace payments).
-- **Meta Graph API** — Instagram Business Login OAuth + insights.
-- **WhatsApp Cloud API** — OTP delivery for signup/login (60s cooldown,
-  5/hr per phone, 20/hr per IP).
-- **Resend** (or equivalent, via `send-email` edge fn) — transactional email.
+
+See **§1A** for the complete third-party integration inventory across all
+three apps.
+
+---
+
+## 1A. Third-party integrations (complete inventory)
+
+Verified 2026-08 by scanning all three repos (dependencies, edge-function
+REST hosts, native config). "Used by" columns: **W** = web (`RS_Gossips`),
+**A** = admin (`rgossips-admin`), **M** = mobile (`rsgossips_app`). Most
+integrations live **server-side in the web repo's edge functions**; the
+admin and mobile clients mostly call those functions rather than the
+third party directly.
+
+| Service | Category | W | A | M | What it does | How it's integrated |
+|---|---|:-:|:-:|:-:|---|---|
+| **Supabase** | BaaS (Postgres, Auth, Storage, Edge Functions) | ✅ | ✅ | ✅ | The whole backend | `@supabase/supabase-js` + `@supabase/ssr` (web/admin); `supabase-js` + `AsyncStorage` store + hand-rolled `invokeFn` REST wrapper (mobile). Edge fns import `esm.sh/@supabase/supabase-js@2`. |
+| **Razorpay** | Payments (primary, India) | ✅ | – | ✅ | Subscriptions, brand escrow funding, service-order payments | Edge fns: raw REST `api.razorpay.com`. Web client: `checkout.razorpay.com/v1/checkout.js` (`window.Razorpay`). Mobile: **native SDK** `react-native-razorpay@2.3.1` (iOS pins `razorpay-pod@1.5.5`). |
+| **RazorpayX** | Payouts / escrow release | ✅ | – | – | Fund transfers, balance check, payout-method registration | Raw REST `api.razorpay.com` (X endpoints) in `payouts-cron`, `register-payout-method`, `razorpayx-test-balance`, `escrow-release`. **Policy drift:** payouts are "manual only" per §10, but these X endpoints are still wired in code. |
+| **Stripe** | Payments (secondary, intl.) | ✅ | – | ✅ | Subscriptions + service payments | Edge fns: `esm.sh` Stripe SDK + REST `api.stripe.com`. **UI-gated OFF** (`SHOW_STRIPE = false` in `GatewayPickerModal`) but fully wired server-side. No Stripe.js/RN SDK on clients — web redirects to hosted checkout; mobile opens the hosted page in `react-native-inappbrowser-reborn` and returns via the `com.rgossips://stripe-return/…` deep link. |
+| **Meta — Instagram Graph / Business Login** | Social OAuth + insights | ✅ | – | ✅ | Creator IG connect, token exchange/refresh, followers/media/reach, reel thumbnails, business-discovery | OAuth (`api.instagram.com/oauth`) + REST `graph.instagram.com` / `graph.facebook.com`. Web: edge fns (`instagram-connect`, `refresh-instagram`, …) + Next API routes under `/api/instagram/*`. Mobile: in-app `WebView` (signup) **and** `InAppBrowser.openAuth` (reconnect), code exchanged server-side. |
+| **Meta — WhatsApp Cloud API** | Messaging (OTP) | ✅ | – | – | OTP delivery + welcome messages | Raw REST `graph.facebook.com/v22.0/{phone-id}/messages` (AUTHENTICATION template). Direct Meta — **not** a BSP (no Twilio/AiSensy/Gupshup/Interakt). Mobile only does a `whatsapp://send` referral share, not the API. |
+| **HikerAPI** | Instagram scraping | – | ✅ | – | Backfill photo / followers / bio / verified onto pending influencer invitations | **Admin-only.** Raw REST `api.hikerapi.com/v1/user/by/username`, header `x-access-key`. Re-hosts IG photos to Supabase Storage. |
+| **Anthropic / OpenAI / Google Gemini** | AI / LLM | ✅ | ⚙️ | ✅ | Content Studio, pitch, match-coach, media-kit, compliance | Provider-swappable via `ai_config` DB row. `_shared/ai.ts` adapters: `api.anthropic.com/v1/messages`, `api.openai.com/v1/chat/completions`, `generativelanguage.googleapis.com`. **Admin only *manages the API keys*** (`/dashboard/ai-settings`) — it never calls the LLMs. Mobile calls the `ai-generate` edge fn. |
+| **Hostinger SMTP** | Email (ESP) | ✅ | → | → | All transactional email | **SMTP, not a REST ESP.** `send-email` edge fn uses `denomailer` → `smtp.hostinger.com:465` (implicit TLS). Admin + mobile route mail through `send-email`. (Corrects earlier "Resend" note — there is no Resend/SendGrid/Mailgun.) |
+| **gstincheck.co.in** | GSTIN verification | ✅ | – | – | Verify brand GSTIN + pull legal/trade name at signup | Raw REST `sheet.gstincheck.co.in/check/{key}/{gstin}` in `verify-gstin`. ⚠️ **Key is hard-coded in source**, not a secret (see gotcha 12). No PAN-verification provider exists. |
+| **Web Push (VAPID)** | Push (browsers) | ✅ | – | – | Browser push even when tab closed | `web-push@3.6.7` in `_shared/push.ts`; client `useWebPush` hook + `public/sw.js`. |
+| **Firebase Cloud Messaging (FCM v1)** | Push (mobile) | ✅ | – | ✅ | Android + iOS/APNs push | Server: `_shared/push.ts` mints a service-account JWT → `oauth2.googleapis.com/token` → `fcm.googleapis.com/v1/projects/{p}/messages:send`. Mobile: **native** `@react-native-firebase/app` + `/messaging@25.1.0` + `google-services.json` / `GoogleService-Info.plist` (project `rgossips-app`, pkg `com.rgossips`). **FCM only** — Analytics/Ads/Crashlytics off. |
+| **Firebase (client SDK)** | App / Firestore | ✅ | – | – | Web: `firebase@12` App/Auth/**Firestore** used for pre-login lead capture in `ApplyCampaignNotLoggedIn.jsx` | Distinct from the mobile RN-Firebase push SDK above. |
+| **Google Fonts** | Fonts / CDN | ✅ | ✅ | – | Typography | `next/font/google` (Geist/Geist_Mono) self-hosted at build. A few media-kit HTML templates + `(home)/layout` still hit `fonts.googleapis.com` / `fonts.gstatic.com` at runtime. |
+| **Netlify** | Hosting | ✅ | (Vercel?) | – | Web deploy target (referenced in code comments) | Admin has a `VERCEL_URL` fallback in `site-url.ts`; no host SDK either way. |
+
+Local libraries that render/aggregate **without any external call** (listed
+for completeness, not integrations): `@react-pdf/renderer` (web media kit),
+`recharts` + `xlsx` (admin), `react-native-chart-kit` / `-vlc-media-player`
+(mobile).
+
+**Explicitly absent** (searched all three repos, 2026-08): no Sentry,
+PostHog, Google Analytics/`gtag`, Mixpanel, Datadog, Crashlytics, or
+Firebase Analytics (disabled in native config); no WhatsApp BSP; no
+Resend/SendGrid/Mailgun/Postmark; no PAN-verification provider; no maps
+provider; no `@react-native-google-signin`; no `@stripe/stripe-react-native`;
+no NetInfo (offline detection is a custom `NETWORK_ERROR_EVENT` probe).
+
+### Config / secret names by service (names only)
+
+- **Supabase** — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` (web/mobile client) · `NEXT_PUBLIC_SUPABASE_ANON_KEY` (admin client) · `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` (functions/admin).
+- **Razorpay** — `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_VPA_VALIDATION` · client `NEXT_PUBLIC_RAZORPAY_KEY_ID` + `NEXT_PUBLIC_RAZORPAY_PLAN_{TIER}_{CYCLE}`.
+- **RazorpayX** — `RAZORPAYX_KEY_ID`, `RAZORPAYX_KEY_SECRET`, `RAZORPAYX_ACCOUNT_NUMBER`, `CRON_SECRET` (payouts-cron auth).
+- **Stripe** — `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` · client `NEXT_PUBLIC_STRIPE_PRICE_{TIER}_{CYCLE}`.
+- **Instagram/Meta** — `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_REDIRECT_URI` · client `NEXT_PUBLIC_INSTAGRAM_APP_ID`, `INSTA_OAUTH_TOKEN` (server-only; the `NEXT_PUBLIC_` variant is the legacy leak fixed in the 2026-07 audit).
+- **WhatsApp** — `WHATSAPP_PHONE_ID`, `META_ACCESS_TOKEN`, `WHATSAPP_TEMPLATE`, `WHATSAPP_USE_TEMPLATE`.
+- **HikerAPI** — `HIKER_API_KEY` (admin).
+- **AI** — `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` (env fallbacks; primary keys live in the `ai_config` DB row).
+- **Email** — `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`, `SMTP_TLS`.
+- **GSTIN** — `GSTIN_API_KEY` (⚠️ currently a literal in `verify-gstin/index.ts`).
+- **Push** — `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `PUSH_SECRET`, `FCM_SERVICE_ACCOUNT` (service-account JSON).
+- **Firebase (web client)** — `NEXT_PUBLIC_FIREBASE_{API_KEY,AUTH_DOMAIN,PROJECT_ID,STORAGE_BUCKET,MESSAGING_SENDER_ID,APP_ID}`.
+- **Redirect base** — `APP_URL` (checkout redirects); canonical domain `https://rgossips.com`.
 
 ### Auth session model
 
@@ -653,9 +706,12 @@ either raw text or the CTA button.
 
 ### Email
 
-`send-email` edge fn wraps whatever ESP is configured. `_shared/email.ts`
+`send-email` edge fn sends over **Hostinger SMTP** via `denomailer`
+(`smtp.hostinger.com:465`, implicit TLS) — configured by the `SMTP_*`
+secrets, not a REST ESP (there is no Resend/SendGrid). `_shared/email.ts`
 provides a branded template (`renderEmailHtml` + `sendBrandedEmail`)
-used by every referral event + admin manual-approve + welcome flow.
+used by every referral event + admin manual-approve + welcome flow. Admin
+and mobile both route their mail through this same edge function.
 
 ---
 
@@ -991,6 +1047,15 @@ curl -sS "$SUPA_URL/rest/v1/rpc/get_referral_leaderboard?top_n=1" \
     masks this (missing key just reads `undefined`), which is how it
     went unnoticed — Content Language data only exists in invitation
     notes; profile city lives in `location`.
+
+12. **Hard-coded GSTIN API key** — `verify-gstin/index.ts` embeds the
+    gstincheck.co.in key as a source literal instead of reading a
+    `GSTIN_API_KEY` secret. It's checked into git; rotate it and move it
+    behind `Deno.env.get("GSTIN_API_KEY")` before this repo is shared.
+    (Native Firebase config files `google-services.json` /
+    `GoogleService-Info.plist` also carry live Firebase keys in git — those
+    are lower-risk client keys, but worth locking down with FCM API
+    restrictions.)
 
 ---
 
