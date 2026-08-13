@@ -1,5 +1,5 @@
 "use client";
-import React, { Suspense, useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -50,6 +50,33 @@ const LoginInner = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Where to send the user after auth. Honors a ?redirect= target (or the
+  // copy stashed in localStorage across the Instagram OAuth round-trip, which
+  // drops the query string) when it's a safe same-origin path inside the
+  // user's own role area; otherwise the role dashboard. This is what lets the
+  // mobile "Manage plan" hand-off (/influencer/pricing) land on pricing after
+  // sign-in instead of the dashboard. The relative-path checks block
+  // open-redirects (protocol-relative "//evil.com", absolute URLs).
+  const resolvePostAuthTarget = useCallback(
+    (roleForRedirect) => {
+      let target = (searchParams?.get("redirect") || "").trim();
+      if (!target && typeof window !== "undefined") {
+        try {
+          target = (localStorage.getItem("rg_post_login_redirect") || "").trim();
+        } catch { /* storage unavailable */ }
+      }
+      try {
+        localStorage.removeItem("rg_post_login_redirect");
+      } catch { /* storage unavailable */ }
+      const fallback = roleForRedirect === "brand" ? "/brands" : "/influencer";
+      if (!target.startsWith("/") || target.startsWith("//")) return fallback;
+      if (roleForRedirect === "brand" && !target.startsWith("/brands")) return fallback;
+      if (roleForRedirect === "influencer" && !target.startsWith("/influencer")) return fallback;
+      return target;
+    },
+    [searchParams],
+  );
   const { setType } = useGlobal();
   const { user, role, loading: authLoading } = useAuth();
   const t = useTranslations("Auth");
@@ -70,8 +97,8 @@ const LoginInner = () => {
       const oauthInProgress = localStorage.getItem("instagram_oauth_code") || localStorage.getItem("instagram_oauth_error");
       if (oauthInProgress) return;
     }
-    router.replace(role === "brand" ? "/brands" : "/influencer");
-  }, [authLoading, user, role, router]);
+    router.replace(resolvePostAuthTarget(role));
+  }, [authLoading, user, role, router, resolvePostAuthTarget]);
 
   // A /login?ref=CODE referral link (influencer-only) drops the visitor
   // straight into the influencer sign-up flow with the code prefilled. We
@@ -211,6 +238,24 @@ const LoginInner = () => {
     try {
       if (ref) localStorage.setItem("rg_signup_ref", ref);
       else if (!oauthInFlight) localStorage.removeItem("rg_signup_ref");
+    } catch { /* storage unavailable */ }
+  }, [searchParams]);
+
+  // Persist ?redirect= across the Instagram OAuth round-trip (the callback
+  // returns to /login without the query string), same lifecycle as the
+  // referral code above. Cleared on a fresh non-OAuth visit so a stale target
+  // can't hijack a later unrelated login, and consumed in resolvePostAuthTarget.
+  useEffect(() => {
+    const redirect = (searchParams?.get("redirect") || "").trim();
+    const oauthInFlight =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("instagram_oauth_code") || localStorage.getItem("instagram_oauth_error"));
+    try {
+      if (redirect.startsWith("/") && !redirect.startsWith("//")) {
+        localStorage.setItem("rg_post_login_redirect", redirect);
+      } else if (!oauthInFlight) {
+        localStorage.removeItem("rg_post_login_redirect");
+      }
     } catch { /* storage unavailable */ }
   }, [searchParams]);
 
@@ -408,8 +453,7 @@ const LoginInner = () => {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
       });
-      const target = (detectedRole || requestedRole) === "brand" ? "/brands" : "/influencer";
-      router.push(target);
+      router.push(resolvePostAuthTarget(detectedRole || requestedRole));
     } catch (err) {
       if (err.code === "no_user") {
         // Not registered — switch to sign-up flow with phone pre-filled.
@@ -706,7 +750,7 @@ const LoginInner = () => {
         });
       }
       setLoadingMsg(t("loading.redirecting"));
-      router.push(data.role === "brand" ? "/brands" : "/influencer");
+      router.push(resolvePostAuthTarget(data.role));
     } catch (err) {
       setError(err.message || t("errors.finishSignupFailed"));
       setLoading(false);

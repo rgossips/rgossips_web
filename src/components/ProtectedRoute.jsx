@@ -35,6 +35,15 @@ const publicPrefixes = [
 
 const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions
 
+// When we bounce a logged-out visitor to /login, remember where they were
+// headed so login can return them there (e.g. a mobile-app "Manage plan"
+// hand-off to /influencer/pricing lands on pricing after sign-in, not the
+// dashboard). Only a real in-app destination is preserved.
+function loginUrlFor(pathname) {
+  if (!pathname || pathname === "/login" || pathname === "/") return "/login";
+  return `/login?redirect=${encodeURIComponent(pathname)}`;
+}
+
 function BrandedLoader() {
   const t = useTranslations("ProtectedRoute");
   return (
@@ -79,18 +88,18 @@ export default function ProtectedRoute({ children }) {
     const timer = setTimeout(async () => {
       // Still no profile after timeout — stale session, sign out and redirect
       await signOut();
-      router.replace("/login");
+      router.replace(loginUrlFor(pathname));
     }, PROFILE_TIMEOUT);
 
     return () => clearTimeout(timer);
-  }, [user, profile, loading, isPublic, signOut, router]);
+  }, [user, profile, loading, isPublic, signOut, router, pathname]);
 
   useEffect(() => {
     if (loading || isPublic) return;
 
-    // No session at all — go to login
+    // No session at all — go to login, preserving the intended destination.
     if (!user) {
-      router.replace("/login");
+      router.replace(loginUrlFor(pathname));
       return;
     }
 
