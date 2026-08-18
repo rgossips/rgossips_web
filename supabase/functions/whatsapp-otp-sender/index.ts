@@ -60,8 +60,28 @@ Deno.serve(async (req) => {
     // Test-phone bypass — seeded QA logins skip the rate limits entirely so
     // they can be exercised repeatedly. Phone is normalised (+91…) on the
     // client; compare against the bare-digits form.
-    const TEST_PHONES = new Set(["919999999990", "919999999991"]);
-    const TEST_OTP = "123456";
+    //
+    // REVIEW_TEST_PHONES adds numbers at runtime (comma-separated, any
+    // format) so an App Store / Play review account can be designated
+    // without committing a real user's number to git. REVIEW_TEST_OTP
+    // overrides the fixed code. Both are Supabase secrets; unset means
+    // the original seeded-QA behaviour, unchanged.
+    //
+    // SECURITY: any number listed here accepts a static code forever.
+    // Point it at a dedicated review account, and clear the secret once
+    // review is done — a real user's number here is a standing takeover
+    // risk for anyone who learns the number and the code.
+    const envTestPhones = (Deno.env.get("REVIEW_TEST_PHONES") || "")
+      .split(",")
+      .map((p) => p.replace(/\D/g, ""))
+      .filter((p) => p.length >= 10)
+      .map((p) => `91${p.slice(-10)}`);
+    const TEST_PHONES = new Set([
+      "919999999990",
+      "919999999991",
+      ...envTestPhones,
+    ]);
+    const TEST_OTP = Deno.env.get("REVIEW_TEST_OTP") || "123456";
     const isTestPhone = TEST_PHONES.has(canonicalPhone);
 
     // 30s cooldown is just double-tap protection; the 5/phone/hr cap below is
