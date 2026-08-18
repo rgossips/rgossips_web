@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getBlockedIds,
+  resolveViewerId,
+  filterBlocked,
+} from "../_shared/blocks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -420,8 +425,16 @@ Deno.serve(async (req) => {
       brand.trustBand = band;
     }
 
-    const total = brands.length;
-    const page = brands.slice(offset, offset + limit);
+    // Hide brands this creator has blocked (or who blocked them). Filtered
+    // before the count so `total` matches what the user can actually page
+    // through. Required by Play's UGC policy / Apple 1.2 — a block has to
+    // remove content from view, not merely record a preference.
+    const viewerId = await resolveViewerId(supabaseAdmin, req, null);
+    const blockedIds = await getBlockedIds(supabaseAdmin, viewerId);
+    const visibleBrands = filterBlocked(brands, blockedIds, "brand_id");
+
+    const total = visibleBrands.length;
+    const page = visibleBrands.slice(offset, offset + limit);
 
     return new Response(
       JSON.stringify({

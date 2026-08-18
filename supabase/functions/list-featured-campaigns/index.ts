@@ -8,6 +8,11 @@
 // past their deadline.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getBlockedIds,
+  resolveViewerId,
+  filterBlocked,
+} from "../_shared/blocks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -143,6 +148,14 @@ Deno.serve(async (req) => {
       }
       (featured || []).forEach((r: any) => orderMap.set(r.campaign_id, r.position));
     }
+
+    // Both branches above converge on `campaigns`, so this is the one place a
+    // block needs applying. Curated placement does not exempt it: a blocked
+    // brand surfacing in the home carousel is exactly the visible failure the
+    // policy is about.
+    const viewerId = await resolveViewerId(supabaseAdmin, req, null);
+    const blockedIds = await getBlockedIds(supabaseAdmin, viewerId);
+    campaigns = filterBlocked(campaigns, blockedIds, "brand_id");
 
     if (campaigns.length === 0) {
       return new Response(JSON.stringify({ campaigns: [], sectionTitle }), {

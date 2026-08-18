@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getBlockedIds,
+  resolveViewerId,
+  filterBlocked,
+} from "../_shared/blocks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,10 +55,18 @@ Deno.serve(async (req) => {
     );
 
     // Fetch all campaigns
-    const { data: campaigns, error: campError } = await supabaseAdmin
+    const { data: campaignRows, error: campError } = await supabaseAdmin
       .from("campaigns")
       .select("*")
       .order("created_at", { ascending: false });
+    let campaigns = campaignRows;
+
+    // Hide campaigns from brands this creator has blocked (or who blocked
+    // them). Required by Play's UGC policy / Apple 1.2 — a block has to
+    // actually remove content from view, not just record a preference.
+    const viewerId = await resolveViewerId(supabaseAdmin, req, influencerId);
+    const blockedIds = await getBlockedIds(supabaseAdmin, viewerId);
+    campaigns = filterBlocked(campaigns || [], blockedIds, "brand_id");
 
     // Fetch applications for this influencer (if provided)
     let applicationMap: Record<string, any> = {};

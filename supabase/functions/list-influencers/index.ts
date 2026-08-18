@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  getBlockedIds,
+  resolveViewerId,
+  filterBlocked,
+} from "../_shared/blocks.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -152,6 +157,19 @@ Deno.serve(async (req) => {
       // profilesRes was built before the filter ran, so its `.data`
       // reference still pointed at the unfiltered array. Re-sync it so the
       // .map below sees the filtered list.
+      profilesRes.data = profilesData;
+    }
+
+    // Hide creators this viewer has blocked (or who blocked them). Runs
+    // outside the privateIds branch above because a block applies whether or
+    // not anyone has a private profile. Required by Play's UGC policy /
+    // Apple 1.2 — a block must remove content from view, not just record a
+    // preference. There is no viewer id in the body, so this relies on the
+    // caller sending its bearer token; an anonymous call filters nothing.
+    const viewerId = await resolveViewerId(supabase, req, null);
+    const blockedIds = await getBlockedIds(supabase, viewerId);
+    if (blockedIds.size > 0) {
+      profilesData = filterBlocked(profilesData, blockedIds, "influencer_id");
       profilesRes.data = profilesData;
     }
 
