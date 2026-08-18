@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Smartphone, Globe } from "lucide-react";
+import { cameFromApp } from "@/lib/app-handoff";
 
 // Shown once per session when the web portal's login/signup page is opened
 // on a phone: nudge toward the mobile app, with a graceful "continue on
@@ -36,6 +37,9 @@ export default function OpenInAppGate() {
   useEffect(() => {
     const detected = getMobileOS();
     if (!detected) return;
+    // Arrived here from the mobile app (e.g. "Manage plan" hand-off) — they
+    // already have the app, so nudging them to install it is just confusing.
+    if (cameFromApp()) return;
     if (sessionStorage.getItem(DISMISS_KEY)) return;
     setOs(detected);
     setOpen(true);

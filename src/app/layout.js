@@ -10,6 +10,7 @@ import OfflineGate from "@/components/OfflineGate";
 import Script from "next/script";
 import NavigationLoader from "@/components/NavigationLoader";
 import ScrollReset from "@/components/ScrollReset";
+import AppHandoffMarker from "@/components/AppHandoffMarker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -177,6 +178,7 @@ export default async function RootLayout({ children }) {
 
         <NavigationLoader />
         <ScrollReset />
+        <AppHandoffMarker />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <LoadingProvider>
             <GlobalProvider>
