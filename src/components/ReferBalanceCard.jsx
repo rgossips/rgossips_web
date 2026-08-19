@@ -3,13 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Sparkles, ChevronRight } from "lucide-react";
+import { Coins } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-// Compact wallet strip on the influencer home. Renders only when the user
-// has at least some RC (available or locked) so a fresh account without
-// signups sees the same clean home as before. Tap → /influencer/refer.
+// Reward-credits cell for the influencer home. This used to be its own white
+// strip floating under ProStatusCard; it now renders INSIDE that card as a
+// fourth stat, so the account summary reads as one object instead of a card
+// plus an orphan bar. Mounted by ProStatusCard, not by the page.
+//
+// It still self-hides at zero available RC, so the card collapses back to its
+// original three sections for anyone who has never earned any. The divider
+// ships with the cell for that reason — rendering it from the parent would
+// leave a stray rule when the cell hides.
+//
+// Layout deliberately mirrors the plan/trial cell beside it: label + caption
+// on the left, big gradient number on the right, mobile-only card chrome that
+// flattens on desktop. Tap → /influencer/refer.
 export default function ReferBalanceCard() {
   const router = useRouter();
   const t = useTranslations("ReferBalanceCard");
@@ -38,34 +48,42 @@ export default function ReferBalanceCard() {
 
   // Only show once there's spendable RC. A brand-new signup whose only RC is
   // the still-locked 50 welcome bonus is greeted by WelcomeRewardModal
-  // instead of a "0 available / +50 locked" strip.
+  // instead of a "0 available / +50 locked" cell.
   if (avail <= 0) return null;
 
   return (
-    <button
-      onClick={() => router.push("/influencer/refer")}
-      className="w-full text-left flex items-center gap-3 rounded-2xl p-3 lg:p-4 my-2 border border-slate-100 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-    >
-      <div
-        className="w-10 h-10 rounded-2xl flex items-center justify-center text-white"
-        style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+    <>
+      {/* Vertical Divider - Desktop Only */}
+      <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />
+
+      <button
+        type="button"
+        onClick={() => router.push("/influencer/refer")}
+        className="group cursor-pointer text-left lg:shrink-0"
       >
-        <Sparkles size={18} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("rewardCredits")}</p>
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <p className="text-lg font-black text-slate-900">
-            {avail} <span className="text-xs text-slate-400 font-bold">{t("available")}</span>
-          </p>
-          {locked > 0 && (
-            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-              {t("locked", { count: locked })}
+        <div className="flex items-center justify-between lg:gap-6 p-4 lg:p-0 lg:px-3 lg:py-2 bg-white border border-slate-100 rounded-2xl shadow-sm lg:shadow-lg hover:bg-slate-50 lg:hover:bg-transparent transition-all">
+          <div className="flex-1 lg:w-28">
+            <div className="flex items-center gap-2 mb-1">
+              <Coins size={14} className="text-purple-600" />
+              <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
+                {t("rewardCredits")}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+              {locked > 0 ? t("locked", { count: locked }) : t("available")}
+            </p>
+          </div>
+
+          <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
+            <span className="text-3xl lg:text-3xl font-black leading-none bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text">
+              {avail}
             </span>
-          )}
+            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+              {t("available")}
+            </p>
+          </div>
         </div>
-      </div>
-      <ChevronRight size={18} className="text-slate-300" />
-    </button>
+      </button>
+    </>
   );
 }

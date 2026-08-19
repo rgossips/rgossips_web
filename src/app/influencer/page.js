@@ -20,7 +20,6 @@ import { AiMediaKitCard } from "@/components/AMediaKitCard";
 import { AiToolsGrid } from "@/components/AiToolsGrid";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
-import ReferBalanceCard from "@/components/ReferBalanceCard";
 import WelcomeRewardModal from "@/components/WelcomeRewardModal";
 
 // `labelKey` maps to InfluencerHome.nav.<key>.
@@ -138,10 +137,8 @@ export default function HomePage() {
           {/* First-time welcome-reward celebration for new signups. */}
           <WelcomeRewardModal />
 
-          {/* Refer & Earn wallet strip — self-hides for users with no RC. */}
-          <div className="w-full px-4 lg:px-10">
-            <ReferBalanceCard />
-          </div>
+          {/* Refer & Earn balance now renders inside ProStatusCard above, as a
+              cell in the account summary rather than a strip under it. */}
 
           {/* Desktop Two-Column Layout */}
           <div className="hidden lg:flex gap-8 w-full pl-10">

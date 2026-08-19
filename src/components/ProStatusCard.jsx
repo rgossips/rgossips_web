@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
+import ReferBalanceCard from "@/components/ReferBalanceCard";
 
 function getTrialInfo(profile) {
   const createdAt = profile?.created_at || profile?.updated_at;
@@ -215,10 +216,14 @@ export function ProStatusCard() {
             </div>
           </button>
 
+          {/* Section 3: Reward Credits — ships its own leading divider and
+              removes itself entirely at zero RC. */}
+          <ReferBalanceCard />
+
           {/* Vertical Divider - Desktop Only */}
           <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />
 
-          {/* Section 3: Trial Status + Upgrade */}
+          {/* Section 4: Trial Status + Upgrade */}
           <div className="flex items-center gap-3">
             {hasPaidPlan ? (
               <div className="p-4 lg:p-0 lg:px-3 lg:py-2 bg-white border border-slate-100 rounded-2xl shadow-sm lg:shadow-lg flex-1">
