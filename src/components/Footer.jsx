@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { FaTwitter, FaInstagram, FaLinkedinIn, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { useGlobal } from "@/context/GlobalContext";
@@ -10,15 +10,31 @@ import { useGlobal } from "@/context/GlobalContext";
 const Footer = () => {
   const t = useTranslations("Footer");
   const router = useRouter();
+  const pathname = usePathname();
   const { setScrollTo, setType } = useGlobal();
   const currentYear = new Date().getFullYear();
 
-  // Route to the landing and scroll to the For Brands / For Influencers tab,
-  // switching the Audiences tab via GlobalContext (same as the header nav).
+  // Switch the Audiences tab via GlobalContext (same as the header nav) and
+  // scroll to it.
+  //
+  // The push and the scroll used to race. A push — even to the URL you are
+  // already on — makes the App Router scroll the window to top on commit, and
+  // that landed on top of (and cancelled) the smooth scroll RGLanding starts
+  // 120ms later. From the landing itself, where this footer is most often
+  // clicked, the result was a link that visibly did nothing.
+  //
+  // So: on "/" skip the router entirely and scroll here, and from another page
+  // push with `scroll: false` and let RGLanding's effect do it on mount.
   const scrollToAudience = (audienceType) => {
     setType(audienceType);
+    if (pathname === "/") {
+      document
+        .getElementById("brands-influencers-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     setScrollTo("brands-influencers-section");
-    router.push("/");
+    router.push("/", { scroll: false });
   };
 
   // Only links that point at a real route or external resource. Dead links
