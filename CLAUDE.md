@@ -621,6 +621,10 @@ iOS via Firebase). One registry + one trigger; the sender branches per platform.
 | 054 | landing_match_usage | Rate-limit table + `bump_landing_match` RPC for the public landing AI matcher |
 | 055 | campaign_invitations | Brand→influencer invite tracking table + `campaign_invite` added to the notification-pref trigger |
 | 056 | push_subscriptions | Web+mobile push registry + notifications AFTER INSERT trigger (pg_net → send-push) |
+| 057 | push_runtime_config | Push trigger endpoint+secret moved from DB GUCs to a service-role-only config table |
+| 058 | push_subscriptions_conflict_fix | 056 PARTIAL unique indexes broke register-push ON CONFLICT; replaced with plain unique indexes |
+| 059 | content_reports_and_blocks | `content_reports` + `user_blocks` + `blocked_user_ids()` — the in-app report/block Play UGC + Apple 1.2 require |
+| 060 | blocked_user_ids_revoke_anon | Completes 059 revoke. **`REVOKE … FROM PUBLIC` does NOT remove anon grant** — Supabase ALTER DEFAULT PRIVILEGES grants EXECUTE on new public-schema functions to anon *directly*. 059 read as locked down but answered anon 200; now service_role only. Verify by calling the RPC with the publishable key: locked = `42501`/401, open = 200. |
 
 ## Feature: AI layer (2026-07)
 
