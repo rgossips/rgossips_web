@@ -92,11 +92,20 @@ export default function CampaignsPage() {
   // personally invited the creator to but they HAVEN'T applied yet — once
   // applied, the campaign's status becomes "Applied" and it moves there.
   // Invited campaigns are pulled OUT of the Active tab so they don't double up.
+  // "Approved" splits the won deals out of Applied. list-campaigns collapses
+  // every live application state (pending → offer_sent → offer_accepted →
+  // approved → submitted → … → payment) into a single "Applied" campaign
+  // status, which buried the moment that actually matters to a creator: the
+  // brand funded escrow. Applied therefore has to EXCLUDE these, or the same
+  // campaign would count and render under both tabs.
+  const isApproved = (campaign) => campaign.applicationStatus === "approved";
+
   const tabMatches = (campaign, tab) => {
     if (tab === "Completed") return campaign.applicationStatus === "completed";
     if (tab === "Invites") return !!campaign.invited && campaign.status === "Active";
     if (tab === "Active") return campaign.status === "Active" && !campaign.invited;
-    return campaign.status === tab; // Applied
+    if (tab === "Approved") return isApproved(campaign);
+    return campaign.status === tab && !isApproved(campaign); // Applied
   };
 
   // Non-tab filters (search / category / brand / budget). Extracted so the
@@ -127,7 +136,11 @@ export default function CampaignsPage() {
     () => campaigns.some((c) => c.invited && c.status === "Active"),
     [campaigns],
   );
-  const TABS = hasInvites ? ["Invites", "Active", "Applied", "Completed"] : ["Active", "Applied", "Completed"];
+  // Lifecycle order. Approved sits between Applied and Completed because that
+  // is where it falls in the application state machine.
+  const TABS = hasInvites
+    ? ["Invites", "Active", "Applied", "Approved", "Completed"]
+    : ["Active", "Applied", "Approved", "Completed"];
   const tabLabel = (tab) => (tab === "Invites" ? "Invites" : t(`tabs.${tab}`));
   const tabLabelLower = (tab) => (tab === "Invites" ? "invites" : t(`tabsLower.${tab}`));
 

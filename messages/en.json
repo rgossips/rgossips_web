@@ -2625,11 +2625,13 @@
     "tabs": {
       "Active": "Active",
       "Applied": "Applied",
+      "Approved": "Approved",
       "Completed": "Completed"
     },
     "tabsLower": {
       "Active": "active",
       "Applied": "applied",
+      "Approved": "approved",
       "Completed": "completed"
     },
     "headerCampaigns": "{tab} Campaigns",
