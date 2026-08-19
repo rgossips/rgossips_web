@@ -19,6 +19,10 @@ const publicPaths = [
   // they get added as prefixes below.
   "/consent/influencer",
   "/consent/brand",
+  // Support page — both app stores require a publicly reachable Support URL,
+  // and a reviewer opens it while signed out. Removing this entry silently
+  // breaks the support link on both store listings.
+  "/support",
 ];
 const publicPrefixes = [
   "/kit/",

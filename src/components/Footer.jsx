@@ -31,12 +31,19 @@ const Footer = () => {
       // Landing-page pricing section (public) — /influencer/pricing is
       // behind auth and dead-ends logged-out visitors.
       { name: "pricing", href: "/#pricing" },
+      // Public support page. Also the Support URL on both store listings, so
+      // it has to stay reachable and linked from somewhere obvious.
+      { name: "support", href: "/support" },
     ],
     legal: [
       { name: "privacy", href: "/consent/privacy" },
       { name: "refund", href: "/consent/refund" },
       { name: "influencerConsent", href: "/consent/influencer" },
       { name: "brandConsent", href: "/consent/brand" },
+      // Google Play requires the account-deletion route to be discoverable
+      // without installing the app; a footer link is the plainest way to
+      // satisfy "readily discoverable".
+      { name: "deleteAccount", href: "/consent/delete-account" },
     ],
     social: [
       { Icon: FaInstagram, href: "https://www.instagram.com/rgossips.agency/" },

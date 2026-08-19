@@ -28,7 +28,9 @@
       "privacy": "Privacy & Cookie Policy",
       "refund": "Payment & Refund Policy",
       "influencerConsent": "Influencer Consent Policy",
-      "brandConsent": "Brand Consent Policy"
+      "brandConsent": "Brand Consent Policy",
+      "support": "Support",
+      "deleteAccount": "Delete Your Account Policy"
     },
     "copyright": "© {year} RGossips. All rights reserved.",
     "stats": {
