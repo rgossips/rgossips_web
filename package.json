@@ -14,7 +14,7 @@
     "test:findings": "jest --config jest.findings.config.mjs",
     "test:mutation": "stryker run",
     "lint:security": "eslint --config eslint.security.config.mjs",
-    "qa:checks": "node qa/checks/rls-on-new-tables.mjs && node qa/checks/bundle-secrets.mjs",
+    "qa:checks": "node qa/checks/rls-on-new-tables.mjs && node qa/checks/explicit-columns.mjs && node qa/checks/bundle-secrets.mjs",
     "qa:gate": "npm run test && npm run test:deno && npm run qa:checks",
     "qa:report": "npm run test:int && npm run test:findings"
   },

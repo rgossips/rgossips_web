@@ -38,6 +38,26 @@ Deno.serve(async (req) => {
     // Expose a derived `instagram_connected` boolean + expiry timestamp
     // so the dashboard gate / banner can render correctly without ever
     // seeing the raw token. Token + raw expiry stay server-side only.
+    //
+    // F-03, and why the select("*") calls below were left alone. The finding is
+    // that select-star pulls instagram_access_token into function memory. Here
+    // the token is genuinely REQUIRED — `instagram_connected` is derived from
+    // it, and that boolean gates the Instagram connection flow on all three
+    // surfaces. An explicit column list would therefore have to include the
+    // token, making it all 64 columns and identical in effect to select("*"):
+    // it would satisfy the finding's wording while changing nothing.
+    //
+    // The response is already safe — that is what sanitize() below is for, and
+    // assertion A-34 ("no response from any surface contains the access token")
+    // passes against it. The residual risk is the token sitting in function
+    // memory and potentially in a log line, not leaking to a caller.
+    //
+    // Closing that properly means deriving the boolean in the database — a
+    // generated column or a safe view — so the token never crosses the
+    // boundary. That is a design change, and one that re-enters the same
+    // security_invoker trap as F-17, so it is tracked as a decision rather than
+    // done inline. F-03 is recorded as PARTIALLY closed in
+    // qa/registers/findings.md; list-brands, which had no such need, is fixed.
     const sanitize = (data: Record<string, unknown> | null) => {
       if (!data) return data;
       const { instagram_access_token, instagram_token_expires_at, ...safe } = data;

@@ -4,8 +4,21 @@ Every row maps to a test. A **RED** row is an open finding whose assertion fails
 today; it goes green the day the fix ships. That is the whole mechanism — the
 suite is the register, so it cannot drift from reality.
 
-Run: `npm run test:findings` (expected red) — 16 assertions, **13 failing** as of
-2026-08-20.
+Run: `npm run test:findings` (expected red) — 17 assertions, **12 failing** as of
+2026-08-24.
+
+| Date | Red | Change |
+|---|---:|---|
+| 2026-08-20 | 13 / 16 | Initial |
+| 2026-08-24 | 12 / 17 | **F-03 closed for `list-brands`**; exemption + stale-exemption guard added |
+
+**F-17 remains red and its migration is written but NOT applied** —
+`061_reward_credit_views_security_invoker.sql` is committed and ready, but
+`supabase db push` returns 403: the CLI's token now belongs to a different
+Supabase account (`Levitatepeoplesoft LMS Project`), which has no privileges on
+`hlfevcdtbehukxrrgykv`. The local link still points at the right project, so
+nothing can go astray — it simply cannot be applied until the CLI is logged back
+in to the RGossips account.
 
 ## Verified open
 
@@ -14,7 +27,43 @@ Run: `npm run test:findings` (expected red) — 16 assertions, **13 failing** as
 | **F-17** | **S1** | **Reward-credit balance views readable by anon.** `v_reward_credits_available_balance` and `v_reward_credits_balance` return every user's balance keyed by `user_id` to the publishable key that ships in every browser bundle. The underlying `reward_credits_ledger` correctly denies anon — the **views bypass its RLS**, because a Postgres view runs with its owner's privileges unless `security_invoker = on`. Created by migrations 036/038. | `__findings__/f17-reward-credit-views.test.js` | **RED (3)** |
 | **F-18** | S3 | **Role-check RPCs executable by anon.** `is_admin`, `is_super_admin`, `is_influencer`, `is_brand` accept an *arbitrary* uuid, so anon can ask whether any given user is an admin. Plus `is_app_admin` and `get_my_referral_rank`. | `__findings__/f18-anon-executable-rpcs.test.js` | **RED (7)** |
 | **F-19** | S3→S2 | **Enumeration oracles.** `check_phone_exists(phone_number)` answers whether any number is registered; `check_brand_invitation(ig_username)` does the same for handles. Account enumeration and membership disclosure — and the strategy makes A-25 ("identical response for registered and unregistered numbers") an explicit requirement. | same file | **RED (2)** |
-| **F-03** | S1 | **Select-star pulls the Instagram access token into function memory.** Confirmed at `supabase/functions/check-profile/index.ts:88` (`influencer_profiles`), `:93` (`brand_profiles`), `:62` (dynamic table) and `list-brands/index.ts:206`. | `__findings__/f01-f03-money-and-token-exposure.test.js` | **RED (1)** |
+| **F-03** | S1 | **Select-star pulls the Instagram access token into function memory.** | `__findings__/f01-f03-money-and-token-exposure.test.js` | **PARTIALLY CLOSED — assertion green** |
+
+### F-03 status, 2026-08-24
+
+**Fixed:** `list-brands/index.ts` now selects ten named columns instead of `*`.
+A directory endpoint serving influencer-facing surfaces was loading every
+brand's `instagram_access_token` for no reason.
+
+Two things that fix taught, both recorded in the code:
+
+- The select spec must be **one unbroken string literal**. supabase-js parses it
+  at the type level; a `.join(",")` array — and even `"a," + "b"` — widens every
+  row to `GenericStringError` and produced 15 downstream type errors.
+- `list-brands` reads `p.instagram_followers_count`, which is **not a column on
+  `brand_profiles`** (it is `followers_count`). It has been returning `undefined`
+  all along, masked by `select("*")`. Left as-is deliberately — behaviour is
+  identical either way and a latent display bug does not belong in a security
+  change. **Tracked as a separate bug.**
+
+**Deliberately not fixed:** `check-profile`. It derives `instagram_connected`
+from the token itself, and that boolean gates the Instagram connection flow on
+all three surfaces. An explicit list would have to include the token — all 64
+columns, identical in effect to `select("*")` — satisfying the finding's wording
+while changing nothing. The response is already safe (`sanitize()` strips it;
+A-34 passes). Residual risk is the token in function memory and possibly in a log
+line. Fully closing it needs a DB-derived boolean so the token never crosses the
+boundary — a design change that re-enters the same `security_invoker` trap as
+F-17, so it is a decision, not an inline edit.
+
+The red test carries a documented exemption for `check-profile` plus a
+stale-exemption guard, so the excuse cannot outlive the reason for it.
+
+**New guard:** `qa/checks/explicit-columns.mjs` verifies every explicit column
+list against the deployed schema (assertion **A-35**, previously BLOCKED). This
+matters because the explicit list trades schema-drift resilience for secret
+hygiene: a renamed column now 42703s the whole query, and this check catches it
+before deploy rather than at runtime.
 
 ### On F-17's fix
 

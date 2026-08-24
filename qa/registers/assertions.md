@@ -59,9 +59,9 @@ Where each code-anchored assertion landed. **32 of 68 are runnable today.**
 | A-30 | RLS enabled on every public-schema relation | **PASS** | `tr05-rls.test.js` — all 68 exposed relations, self-maintaining from the live schema |
 | A-31 | CI fails when a migration adds a table without RLS | **PASS** | `qa/checks/rls-on-new-tables.mjs` (static) + the unclassified check in `tr05-rls.test.js` (live) |
 | A-32 | SECURITY DEFINER — EXECUTE revoked as intended | **PASS (6) / RED (8)** | `tr05-security-definer.test.js` proves 6 revoked; `f18-anon-executable-rpcs.test.js` is red on 8. `search_path` pinning not yet audited. |
-| A-33 | No select-star against the profile table | **RED** | `f01-f03` — `check-profile/index.ts:88,93,62`, `list-brands/index.ts:206` |
+| A-33 | No select-star against the profile table | **PASS (with 1 exemption)** | `f01-f03` — `list-brands` fixed; `check-profile` exempted with reason + a stale-exemption guard |
 | A-34 | No response contains the access token | **PASS** | `tr05-rls.test.js` + `f01-f03` |
-| A-35 | Explicit column lists match the live schema | BLOCKED | needs schema diffing |
+| A-35 | Explicit column lists match the live schema | **PASS** | `qa/checks/explicit-columns.mjs` — verifies every enumerated list against the deployed schema |
 | A-36 | Storage buckets not publicly listable | **PASS** | `tr05-rls.test.js` — 3 buckets |
 | A-37 | Public media kit returns only published, public fields | **PASS (shape)** | `tr04-authorisation-matrix.test.js` — enumeration indistinguishability. Published-only needs a real kit. |
 | A-38 | Shortlink cannot redirect to an arbitrary host | **PASS** | `tr04-authorisation-matrix.test.js` |

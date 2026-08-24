@@ -625,6 +625,7 @@ iOS via Firebase). One registry + one trigger; the sender branches per platform.
 | 058 | push_subscriptions_conflict_fix | 056 PARTIAL unique indexes broke register-push ON CONFLICT; replaced with plain unique indexes |
 | 059 | content_reports_and_blocks | `content_reports` + `user_blocks` + `blocked_user_ids()` — the in-app report/block Play UGC + Apple 1.2 require |
 | 060 | blocked_user_ids_revoke_anon | Completes 059 revoke. **`REVOKE … FROM PUBLIC` does NOT remove anon grant** — Supabase ALTER DEFAULT PRIVILEGES grants EXECUTE on new public-schema functions to anon *directly*. 059 read as locked down but answered anon 200; now service_role only. Verify by calling the RPC with the publishable key: locked = `42501`/401, open = 200. |
+| 061 | reward_credit_views_security_invoker | **Views bypass RLS too.** `v_reward_credits_balance` + `v_reward_credits_available_balance` aggregate a table whose RLS is correct, but a Postgres view runs with its OWNER’s privileges unless `security_invoker = on` — so anon read every user’s RC balance. Same lesson as 060 at the view layer, and the same revoke-from-`anon`-by-name requirement. Found by the TR-05 suite. |
 
 ## Feature: AI layer (2026-07)
 

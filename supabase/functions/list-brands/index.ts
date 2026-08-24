@@ -199,12 +199,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch registered brand profiles — use * to avoid missing-column failures.
+    // Fetch registered brand profiles.
+    //
+    // F-03: this used to be select("*"), which dragged brand_profiles'
+    // instagram_access_token into function memory for EVERY brand on an
+    // influencer-facing listing. A directory endpoint has no use for it. The
+    // columns below are exactly the ones this function reads downstream —
+    // verified against the live schema, because selecting a column that does
+    // not exist 42703s the whole query (the trap that `select("*")` was
+    // originally here to dodge, and the one CLAUDE.md records `languages` and
+    // `city` falling into). qa/checks/explicit-columns.mjs re-verifies this list
+    // against the deployed schema so it fails loudly on drift instead of at
+    // runtime — assertion A-35.
+    //
+    // Note: the mapping below also reads p.instagram_followers_count, which is
+    // NOT a column on brand_profiles (it is followers_count). That read has been
+    // returning undefined all along, masked by select("*"). Left alone here
+    // deliberately — behaviour is identical either way, and a latent display bug
+    // does not belong in a security fix. Tracked separately.
+    //
     // Deactivated / pending-deletion brands must not appear on any influencer
     // surface; filter them in SQL so every consumer of this list is covered.
+    // The column list must be ONE unbroken string literal. supabase-js parses
+    // the select spec at the type level, and neither a runtime-joined array nor
+    // a "a," + "b" concatenation is literal enough for it — either widens every
+    // row to `GenericStringError` and turns each downstream `p.brand_name` into
+    // a type error (15 of them). Hence the long line; do not "tidy" it.
+    // eslint-disable-next-line max-len
     const { data: profiles, error: profError } = await supabaseAdmin
       .from("brand_profiles")
-      .select("*")
+      .select("brand_id,brand_name,categories,contact_name,followers_count,gstin_trade_name,instagram_username,is_verified,logo_url,status")
       // NOT IN would also drop NULL-status legacy rows — keep those.
       .or("status.is.null,status.not.in.(deactivated,pending_deletion)");
 

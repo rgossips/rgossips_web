@@ -29,8 +29,17 @@ const FORBIDDEN = [
   { name: "Stripe secret key", re: /sk_(live|test)_[A-Za-z0-9]{16,}/ },
   { name: "Razorpay secret", re: /rzp_(live|test)_[A-Za-z0-9]{10,}:[A-Za-z0-9]{10,}/ },
   { name: "Anthropic key", re: /sk-ant-[A-Za-z0-9_-]{20,}/ },
-  { name: "OpenAI key", re: /sk-proj-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{40,}/ },
-  { name: "Instagram long-lived token", re: /IGQ[A-Za-z0-9_-]{40,}/ },
+  // Quote-delimited, because a bare `sk-[A-Za-z0-9]{40,}` also matches the
+  // middle of base64 blobs.
+  { name: "OpenAI key", re: /sk-proj-[A-Za-z0-9_-]{20,}|["'`]sk-[A-Za-z0-9]{40,}["'`]/ },
+  // MUST be quote-delimited and long. The first version of this rule was
+  // /IGQ[A-Za-z0-9_-]{40,}/ and it fired twice on a clean bundle: base64-inlined
+  // SVG decodes to ` d="M123.` -> "IGQ9Ik0xMjMu", and an embedded binary asset
+  // gave "IGQwAAAABgIA". Both start with IGQ purely by coincidence of the
+  // base64 alphabet. A real long-lived token is ~150-200 chars and appears as a
+  // bare quoted string, never mid-blob. A secrets check that cries wolf gets
+  // muted, and a muted check is worse than none.
+  { name: "Instagram long-lived token", re: /["'`]IGQ[A-Za-z0-9_-]{100,}["'`]/ },
   { name: "Google/Firebase private key", re: /-----BEGIN PRIVATE KEY-----/ },
   { name: "Generic service-account JSON", re: /"type":\s*"service_account"/ },
 ];
