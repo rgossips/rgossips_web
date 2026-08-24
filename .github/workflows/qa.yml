@@ -1,0 +1,137 @@
+# QA programme — Master Test Strategy (TR-01, TR-02, TR-05, TR-09, TR-14)
+#
+# Three tiers, deliberately separated so the blocking gate stays trustworthy:
+#
+#   gate       — must pass. Offline, no credentials, fast.
+#   report     — runs against the LIVE project. Needs secrets. Non-blocking.
+#   findings   — EXPECTED RED. Never blocks; publishes the open-finding count.
+#
+# A permanently-red suite inside a blocking gate trains everyone to ignore the
+# gate, which is why `findings` is continue-on-error and reported separately.
+#
+# NOT YET RUNNABLE END TO END: the `report` and `findings` jobs need three repo
+# secrets that are not configured — SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and
+# SUPABASE_SERVICE_ROLE_KEY. Until they are set, those jobs skip cleanly rather
+# than fail. The `gate` job runs today with no setup.
+name: QA
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+  schedule:
+    - cron: "0 2 * * *" # nightly regression + findings report
+
+jobs:
+  gate:
+    name: Blocking gate (offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # TR-09 — unit suite + the coverage floor already enforced in jest.config.mjs
+      - name: Unit suite (TR-09)
+        run: npm run test:cov -- --runInBand
+
+      # TR-14 — ledger/referral guards, offline against a stubbed client
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Edge-function logic (TR-14)
+        run: npm run test:deno
+
+      # TR-02 / TR-05 — static checks that need no credentials
+      - name: Static checks (TR-02, TR-05/A-31)
+        run: node qa/checks/rls-on-new-tables.mjs
+
+      - name: Security lint (TR-02)
+        run: npm run lint:security
+
+      # TR-34 / A-51 — no secret may reach a client bundle
+      - name: Build and scan the bundle (TR-34/A-51)
+        run: |
+          npm run build
+          node qa/checks/bundle-secrets.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
+  mutation:
+    name: Mutation score (TR-01)
+    runs-on: ubuntu-latest
+    # Non-blocking until the baseline is raised to the strategy's >=70% gate.
+    # Current score: 62.30% (2026-08-20). Set `break` in stryker.config.mjs and
+    # remove this line once the assertion gaps in plans.js and matchScore.js close.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:mutation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: test-results/mutation/
+
+  report:
+    name: Live guard contracts (TR-04, TR-05, TR-12)
+    runs-on: ubuntu-latest
+    # Hits the live project. Read-only and guard-only, enforced by the denylist
+    # in __integration__/safety.js — but still gated on secrets existing.
+    if: ${{ github.event_name == 'schedule' || github.ref == 'refs/heads/main' }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Skip if secrets are absent
+        id: guard
+        run: echo "ready=${{ secrets.SUPABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.ready == 'true'
+        run: npm run test:int
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-report
+          path: test-results/
+
+  findings:
+    name: Open findings (EXPECTED RED)
+    runs-on: ubuntu-latest
+    continue-on-error: true # red here means a finding is open, not a broken build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Skip if secrets are absent
+        id: guard
+        run: echo "ready=${{ secrets.SUPABASE_URL != '' }}" >> "$GITHUB_OUTPUT"
+      - if: steps.guard.outputs.ready == 'true'
+        run: npm run test:findings
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: findings-report
+          path: test-results/findings-report.html

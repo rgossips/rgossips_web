@@ -13,8 +13,12 @@ const config = {
   testTimeout: 30000,
   // next/jest skips .env.local under NODE_ENV=test — load it ourselves.
   setupFiles: ["<rootDir>/__integration__/setup-env.js"],
-  // setup-env.js is a helper, not a test file.
-  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/__integration__/setup-env.js"],
+  // setup-env.js and safety.js are helpers, not test files.
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "<rootDir>/__integration__/setup-env.js",
+    "<rootDir>/__integration__/safety.js",
+  ],
   reporters: [
     "default",
     ["jest-html-reporters", { publicPath: "./test-results", filename: "integration-report.html", pageTitle: "RGossips integration (safe guard suite)", expand: true }],

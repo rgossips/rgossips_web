@@ -9,7 +9,14 @@
     "lint": "eslint",
     "test": "jest",
     "test:cov": "jest --coverage",
-    "test:int": "jest --config jest.integration.config.mjs"
+    "test:int": "jest --config jest.integration.config.mjs",
+    "test:deno": "deno test --allow-net --no-check __deno__/",
+    "test:findings": "jest --config jest.findings.config.mjs",
+    "test:mutation": "stryker run",
+    "lint:security": "eslint --config eslint.security.config.mjs",
+    "qa:checks": "node qa/checks/rls-on-new-tables.mjs && node qa/checks/bundle-secrets.mjs",
+    "qa:gate": "npm run test && npm run test:deno && npm run qa:checks",
+    "qa:report": "npm run test:int && npm run test:findings"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -48,9 +55,12 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/jest-runner": "^10.0.0",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
+    "eslint-plugin-security": "^4.0.1",
     "jest": "^30.4.2",
     "jest-html-reporters": "^3.1.7",
     "jest-junit": "^17.0.0",
