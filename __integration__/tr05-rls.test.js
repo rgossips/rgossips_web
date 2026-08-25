@@ -58,12 +58,13 @@ const ANON_READABLE = {
  * registered finding; the red assertion lives in __findings__/. Listed here so
  * this suite reports the boundary honestly without double-failing.
  *
- * F-17: reward-credit balance views expose every user's balance to anon.
+ * EMPTY as of 2026-08-25. F-17 (the two reward-credit balance views) was closed
+ * by migration 061, so both moved back under the enforced leak-scan below —
+ * leaving them exempted would have meant this suite never looked at them again,
+ * which is how an exemption quietly becomes a blind spot. Any entry added here
+ * must name its finding and must leave when the finding does.
  */
-const KNOWN_OPEN = {
-  v_reward_credits_available_balance: "F-17",
-  v_reward_credits_balance: "F-17",
-};
+const KNOWN_OPEN = {};
 
 /** Snapshot fallback when the service key is absent (CI without secrets). */
 const SNAPSHOT = [
@@ -80,6 +81,8 @@ const SNAPSHOT = [
   "push_subscriptions", "referrals", "reviews", "reward_credits_ledger", "search_logs",
   "service_order_events", "service_order_messages", "service_orders", "service_reviews",
   "support_callbacks", "user_blocks", "user_preferences", "v_referral_leaderboard_monthly",
+  // Closed by migration 061 — previously in KNOWN_OPEN as F-17.
+  "v_reward_credits_available_balance", "v_reward_credits_balance",
 ];
 
 let exposed = [];

@@ -4,27 +4,31 @@ Every row maps to a test. A **RED** row is an open finding whose assertion fails
 today; it goes green the day the fix ships. That is the whole mechanism — the
 suite is the register, so it cannot drift from reality.
 
-Run: `npm run test:findings` (expected red) — 17 assertions, **12 failing** as of
-2026-08-24.
+Run: `npm run test:findings` (expected red) — 17 assertions, **9 failing** as of
+2026-08-25.
 
 | Date | Red | Change |
 |---|---:|---|
 | 2026-08-20 | 13 / 16 | Initial |
 | 2026-08-24 | 12 / 17 | **F-03 closed for `list-brands`**; exemption + stale-exemption guard added |
+| 2026-08-25 | 9 / 17 | **F-17 CLOSED** — migration 061 applied; views moved out of KNOWN_OPEN into the enforced leak-scan |
 
-**F-17 remains red and its migration is written but NOT applied** —
-`061_reward_credit_views_security_invoker.sql` is committed and ready, but
-`supabase db push` returns 403: the CLI's token now belongs to a different
-Supabase account (`Levitatepeoplesoft LMS Project`), which has no privileges on
-`hlfevcdtbehukxrrgykv`. The local link still points at the right project, so
-nothing can go astray — it simply cannot be applied until the CLI is logged back
-in to the RGossips account.
+**F-17 is closed.** Migration 061 is applied (`migration list` shows
+`local:061 / remote:061`) and both views now answer anon with `42501`. The
+service-role consumer path still returns data, so the aggregation survived
+`security_invoker`.
+
+**One check still outstanding**, and it is the one no test covers: log in as a
+real user and confirm `ReferBalanceCard` shows a balance. `security_invoker`
+changes *who the view runs as* — if the `authenticated` grant or the ledger
+policy is not what it appears to be, every user's balance silently reads 0 and
+nothing fails loudly. Rollback is `alter view … set (security_invoker = off)`.
 
 ## Verified open
 
 | # | Sev | Finding | Test | State |
 |---|---|---|---|---|
-| **F-17** | **S1** | **Reward-credit balance views readable by anon.** `v_reward_credits_available_balance` and `v_reward_credits_balance` return every user's balance keyed by `user_id` to the publishable key that ships in every browser bundle. The underlying `reward_credits_ledger` correctly denies anon — the **views bypass its RLS**, because a Postgres view runs with its owner's privileges unless `security_invoker = on`. Created by migrations 036/038. | `__findings__/f17-reward-credit-views.test.js` | **RED (3)** |
+| ~~F-17~~ | ~~S1~~ | **CLOSED 2026-08-25 by migration 061.** Was: `v_reward_credits_available_balance` and `v_reward_credits_balance` returned every user's balance keyed by `user_id` to the publishable key that ships in every browser bundle. The underlying `reward_credits_ledger` denied anon correctly — the **views bypassed its RLS**, because a Postgres view runs with its owner's privileges unless `security_invoker = on`. Created by migrations 036/038. | `__findings__/f17-reward-credit-views.test.js` | **GREEN (3)** — now a regression guard |
 | **F-18** | S3 | **Role-check RPCs executable by anon.** `is_admin`, `is_super_admin`, `is_influencer`, `is_brand` accept an *arbitrary* uuid, so anon can ask whether any given user is an admin. Plus `is_app_admin` and `get_my_referral_rank`. | `__findings__/f18-anon-executable-rpcs.test.js` | **RED (7)** |
 | **F-19** | S3→S2 | **Enumeration oracles.** `check_phone_exists(phone_number)` answers whether any number is registered; `check_brand_invitation(ig_username)` does the same for handles. Account enumeration and membership disclosure — and the strategy makes A-25 ("identical response for registered and unregistered numbers") an explicit requirement. | same file | **RED (2)** |
 | **F-03** | S1 | **Select-star pulls the Instagram access token into function memory.** | `__findings__/f01-f03-money-and-token-exposure.test.js` | **PARTIALLY CLOSED — assertion green** |
@@ -65,10 +69,10 @@ matters because the explicit list trades schema-drift resilience for secret
 hygiene: a renamed column now 42703s the whole query, and this check catches it
 before deploy rather than at runtime.
 
-### On F-17's fix
+### How F-17 was fixed (migration 061, applied 2026-08-25)
 
-The obvious migration is not quite enough, and migration 060 already taught this
-lesson on this codebase:
+The obvious migration was not quite enough, and migration 060 had already taught
+this lesson on this codebase:
 
 ```sql
 alter view public.v_reward_credits_balance set (security_invoker = on);
@@ -78,8 +82,9 @@ revoke all on public.v_reward_credits_available_balance from anon;
 ```
 
 `REVOKE … FROM PUBLIC` does **not** remove anon's grant — Supabase's
-`ALTER DEFAULT PRIVILEGES` grants it to anon *directly*. Revoke from `anon` by
-name, then re-run the red test to confirm it flips green.
+`ALTER DEFAULT PRIVILEGES` grants it to anon *directly*. Revoking from `anon` by
+name is what made it stick; the shipped migration also grants `select` to
+`authenticated, service_role` so the real consumers keep working.
 
 ### On F-19's fix
 
