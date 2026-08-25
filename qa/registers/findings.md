@@ -4,14 +4,16 @@ Every row maps to a test. A **RED** row is an open finding whose assertion fails
 today; it goes green the day the fix ships. That is the whole mechanism — the
 suite is the register, so it cannot drift from reality.
 
-Run: `npm run test:findings` (expected red) — 17 assertions, **9 failing** as of
-2026-08-25.
+Run: `npm run test:findings` — 16 assertions, **0 failing** as of 2026-08-25.
+Every Appendix A finding this suite can reach is now closed; the suite has become
+a pure regression guard.
 
 | Date | Red | Change |
 |---|---:|---|
 | 2026-08-20 | 13 / 16 | Initial |
 | 2026-08-24 | 12 / 17 | **F-03 closed for `list-brands`**; exemption + stale-exemption guard added |
 | 2026-08-25 | 9 / 17 | **F-17 CLOSED** — migration 061 applied; views moved out of KNOWN_OPEN into the enforced leak-scan |
+| 2026-08-25 | **0 / 16** | **F-18 + F-19 CLOSED** — migrations 062 + 063. `is_app_admin` reclassified as not-a-finding |
 
 **F-17 is closed.** Migration 061 is applied (`migration list` shows
 `local:061 / remote:061`) and both views now answer anon with `42501`. The
@@ -24,13 +26,13 @@ changes *who the view runs as* — if the `authenticated` grant or the ledger
 policy is not what it appears to be, every user's balance silently reads 0 and
 nothing fails loudly. Rollback is `alter view … set (security_invoker = off)`.
 
-## Verified open
+## Found by this programme (all closed)
 
 | # | Sev | Finding | Test | State |
 |---|---|---|---|---|
 | ~~F-17~~ | ~~S1~~ | **CLOSED 2026-08-25 by migration 061.** Was: `v_reward_credits_available_balance` and `v_reward_credits_balance` returned every user's balance keyed by `user_id` to the publishable key that ships in every browser bundle. The underlying `reward_credits_ledger` denied anon correctly — the **views bypassed its RLS**, because a Postgres view runs with its owner's privileges unless `security_invoker = on`. Created by migrations 036/038. | `__findings__/f17-reward-credit-views.test.js` | **GREEN (3)** — now a regression guard |
-| **F-18** | S3 | **Role-check RPCs executable by anon.** `is_admin`, `is_super_admin`, `is_influencer`, `is_brand` accept an *arbitrary* uuid, so anon can ask whether any given user is an admin. Plus `is_app_admin` and `get_my_referral_rank`. | `__findings__/f18-anon-executable-rpcs.test.js` | **RED (7)** |
-| **F-19** | S3→S2 | **Enumeration oracles.** `check_phone_exists(phone_number)` answers whether any number is registered; `check_brand_invitation(ig_username)` does the same for handles. Account enumeration and membership disclosure — and the strategy makes A-25 ("identical response for registered and unregistered numbers") an explicit requirement. | same file | **RED (2)** |
+| ~~F-18~~ | ~~S3~~ | **CLOSED 2026-08-25 by migrations 062+063.** Was: `is_admin`, `is_super_admin`, `is_influencer`, `is_brand` accepted an *arbitrary* uuid, so anon could ask whether any given user was an admin. `is_app_admin` and `get_my_referral_rank` were originally grouped here in error — both take no arguments and answer only about the caller, so neither ever leaked. `get_my_referral_rank` was revoked anyway; `is_app_admin` deliberately was not. | `__findings__/f18-anon-executable-rpcs.test.js` | **GREEN** |
+| ~~F-19~~ | ~~S3→S2~~ | **CLOSED 2026-08-25 by migrations 062+063.** Was: `check_phone_exists(phone_number)` and `check_brand_invitation(ig_username)` answered whether an identity was registered, to anyone holding the publishable key. The RPCs are revoked; the `check-phone-exists` **edge function** is untouched, so signup still routes between sign-in and sign-up. | same file | **GREEN** |
 | **F-03** | S1 | **Select-star pulls the Instagram access token into function memory.** | `__findings__/f01-f03-money-and-token-exposure.test.js` | **PARTIALLY CLOSED — assertion green** |
 
 ### F-03 status, 2026-08-24
@@ -86,13 +88,46 @@ revoke all on public.v_reward_credits_available_balance from anon;
 name is what made it stick; the shipped migration also grants `select` to
 `authenticated, service_role` so the real consumers keep working.
 
-### On F-19's fix
+### How F-18 and F-19 were fixed (migrations 062 + 063, applied 2026-08-25)
 
-There is a real product tension here, so the fix is narrower than "remove it".
-Signup genuinely needs a pre-auth "is this number known?" check to route between
-sign-in and sign-up, and the `check-phone-exists` **edge function** exists for
-that — it can carry a rate limit. The raw PostgREST RPC cannot. Revoke the RPC
-from anon and leave the product path alone.
+**It took two migrations, and the reason is worth keeping.** 062 revoked EXECUTE
+from `anon` by name — following migration 060's lesson — applied cleanly, and
+changed nothing: the audit still reported all eight RPCs answering `200`. The
+missing half is the mirror image of that lesson:
+
+> 060: `REVOKE … FROM PUBLIC` does not remove anon's grant, because Supabase
+> grants to anon **directly**.
+> 062: `REVOKE … FROM anon` does not remove PUBLIC's grant, and anon
+> **inherits** whatever PUBLIC holds.
+
+Both are true at once. A function is closed to anon only when the grant is gone
+from **both** PUBLIC and anon by name. 063 did that and the assertions flipped.
+
+Worth noting the failure mode: 062 applied without error and looked like a fix.
+Only the audit re-run caught that it had done nothing.
+
+**F-19's fix is narrower than "remove it", deliberately.** Signup genuinely needs
+a pre-auth "is this number known?" check to route between sign-in and sign-up,
+and the `check-phone-exists` **edge function** provides it — and can carry a rate
+limit, which the raw PostgREST endpoint cannot. Only the RPC was revoked;
+`check-uniqueness` (its service-role caller) was re-verified working afterwards.
+
+**Collateral, checked rather than assumed.** Revoking from PUBLIC changed anon's
+result on two relations — `influencer_profiles` and `brand_profiles` went from
+`200 []` to `401 42501`, because their RLS policies evaluate one of the revoked
+functions. No new exposure: both already denied anon, and the change is
+fail-closed-loudly rather than fail-open. All seven client-side readers of those
+tables are either service-role or behind auth; the one on the public landing page
+(`AIPrompt.jsx:170`) is guarded by `if (!user) return`. A before/after diff across
+all 68 relations found no other change.
+
+**`is_app_admin()` was deliberately left granted to anon.** It takes no arguments
+and answers only about the caller, so for anon it is always `false` — there is no
+oracle, because you cannot ask it about anyone else. It is also evaluated inside
+the `ash_admin_read` RLS policy (migration 028:62), which has no `TO` clause and
+so applies to anon; revoking it would turn an anon SELECT on
+`application_status_history` into a hard permission error. Grouping it with the
+real oracles was over-scoping in the original finding.
 
 ## Verified NOT reproducible — the strategy may be out of date here
 

@@ -45,6 +45,21 @@ const MUST_BE_REVOKED = {
   // AI spend per user — cost and usage data.
   ai_usage_by_user: { p_from: "2026-01-01", p_to: "2026-01-02", p_limit: 1 },
   ai_usage_rollup: { p_from: "2026-01-01", p_to: "2026-01-02" },
+
+  // Closed by migrations 062 + 063 (F-18 / F-19). These four take an ARBITRARY
+  // uuid, which is what made them oracles — anon supplied someone else's id and
+  // learned a fact about them.
+  is_admin: { uid: NIL },
+  is_super_admin: { uid: NIL },
+  is_influencer: { uid: NIL },
+  is_brand: { uid: NIL },
+  // Same shape against a different identifier: hand it a phone number or an
+  // Instagram handle and it answers whether that identity is registered.
+  check_phone_exists: { phone_number: "+19999999999" },
+  check_brand_invitation: { ig_username: "__nonexistent__" },
+  // No arguments and auth.uid()-scoped, so it never leaked; revoked anyway
+  // because it has no anonymous use case.
+  get_my_referral_rank: {},
 };
 
 /**
@@ -53,14 +68,14 @@ const MUST_BE_REVOKED = {
  * Listed here so this suite documents the real boundary without double-failing.
  */
 const KNOWN_OPEN = {
-  is_admin: "F-18 — role oracle for an arbitrary uuid",
-  is_super_admin: "F-18 — role oracle for an arbitrary uuid",
-  is_influencer: "F-18 — role oracle for an arbitrary uuid",
-  is_brand: "F-18 — role oracle for an arbitrary uuid",
-  is_app_admin: "F-18 — role oracle",
-  get_my_referral_rank: "F-18 — auth.uid()-scoped, returns [] to anon; revoke anyway",
-  check_phone_exists: "F-19 — phone-number enumeration oracle",
-  check_brand_invitation: "F-19 — Instagram-handle enumeration oracle",
+  // Anon-executable BY DESIGN, and not a finding. It takes no arguments and
+  // answers only about the caller, so for anon it is always false — there is no
+  // oracle, because you cannot ask it about anyone else. It is also evaluated
+  // inside the ash_admin_read RLS policy (migration 028:62), which has no TO
+  // clause and therefore applies to anon; revoking EXECUTE would turn an anon
+  // SELECT on application_status_history from an empty result into a hard
+  // "permission denied for function". See migration 062's header.
+  is_app_admin: "by design — self-scoped, and used inside an anon-reachable RLS policy",
 };
 
 beforeAll(() => requireEnv());

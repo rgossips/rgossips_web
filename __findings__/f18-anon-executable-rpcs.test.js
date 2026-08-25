@@ -47,12 +47,21 @@ const NIL = "00000000-0000-0000-0000-000000000000";
 beforeAll(() => requireEnv());
 
 describe("F-18 — role-check RPCs must be revoked from anon", () => {
+  // CLOSED by migration 062 — these are now regression guards.
+  //
+  // is_app_admin() is deliberately absent. It takes no arguments and answers
+  // only about the caller, so for anon it is always false: there is no oracle,
+  // because you cannot ask it about anyone else. It is also called from inside
+  // the ash_admin_read RLS policy (migration 028:62), which has no TO clause and
+  // so applies to anon — revoking EXECUTE there would turn an anon SELECT on
+  // application_status_history from an empty result into a hard "permission
+  // denied for function". Grouping it with the real oracles was over-scoping on
+  // my part; see 062's header for the full reasoning.
   const ROLE_ORACLES = {
     is_admin: { uid: NIL },
     is_super_admin: { uid: NIL },
     is_influencer: { uid: NIL },
     is_brand: { uid: NIL },
-    is_app_admin: {},
     get_my_referral_rank: {},
   };
 
