@@ -212,11 +212,6 @@ Deno.serve(async (req) => {
     // against the deployed schema so it fails loudly on drift instead of at
     // runtime — assertion A-35.
     //
-    // Note: the mapping below also reads p.instagram_followers_count, which is
-    // NOT a column on brand_profiles (it is followers_count). That read has been
-    // returning undefined all along, masked by select("*"). Left alone here
-    // deliberately — behaviour is identical either way, and a latent display bug
-    // does not belong in a security fix. Tracked separately.
     //
     // Deactivated / pending-deletion brands must not appear on any influencer
     // surface; filter them in SQL so every consumer of this list is covered.
@@ -262,8 +257,12 @@ Deno.serve(async (req) => {
         isRegistered: true,
         activeCampaigns: 0,
         rating: 0,
-        // followers_count column may not exist yet — fall back to 0
-        followers: Number(p.followers_count || p.instagram_followers_count || 0),
+        // `instagram_followers_count` used to sit in this fallback chain. It is
+        // not a column on brand_profiles — the column is `followers_count`,
+        // which is tried first and works — so the second term was unreachable
+        // dead code that read as a real fallback. select("*") hid that; the
+        // explicit column list surfaced it.
+        followers: Number(p.followers_count || 0),
         trustScore: 0,
         trustBand: "Poor",
         minBudget: 0,
