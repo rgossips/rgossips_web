@@ -62,7 +62,53 @@ Deno.serve(async (req) => {
           { status: 200, headers: jsonHeaders }
         );
       }
-      return new Response(JSON.stringify({ success: true, blocks: data || [] }), {
+
+      // Resolve display names here rather than in the client. The raw table
+      // holds only ids, and an unblock screen listing UUIDs is unusable — but
+      // the client cannot look them up itself either, because RLS rightly
+      // stops one user reading another's profile. This function holds service
+      // role and returns only the name, handle and photo of people the caller
+      // has already blocked, which they demonstrably know about.
+      const ids = (data || []).map((r: { blocked_id: string }) => r.blocked_id);
+      const names = new Map<string, { name: string; handle: string | null; photo: string | null }>();
+
+      if (ids.length) {
+        const [inf, brand] = await Promise.all([
+          supabaseAdmin
+            .from("influencer_profiles")
+            .select("influencer_id, full_name, username, instagram_handle, profile_photo_url")
+            .in("influencer_id", ids),
+          supabaseAdmin
+            .from("brand_profiles")
+            .select("brand_id, brand_name, contact_name")
+            .in("brand_id", ids),
+        ]);
+
+        for (const r of inf.data || []) {
+          names.set(r.influencer_id, {
+            name: r.full_name || r.username || r.instagram_handle || "Creator",
+            handle: r.instagram_handle || r.username || null,
+            photo: r.profile_photo_url || null,
+          });
+        }
+        for (const r of brand.data || []) {
+          names.set(r.brand_id, {
+            name: r.brand_name || r.contact_name || "Brand",
+            handle: null,
+            photo: null,
+          });
+        }
+      }
+
+      const blocks = (data || []).map((r: { blocked_id: string; created_at: string }) => ({
+        userId: r.blocked_id,
+        blockedAt: r.created_at,
+        // A deleted account leaves the block row behind with nothing to
+        // resolve. Still list it so the user can clear it.
+        ...(names.get(r.blocked_id) || { name: "Removed account", handle: null, photo: null }),
+      }));
+
+      return new Response(JSON.stringify({ success: true, blocks }), {
         status: 200,
         headers: jsonHeaders,
       });
