@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SharedGatewayPickerModal from "@/components/GatewayPickerModal";
 import { useAuth } from "@/context/AuthContext";
+import { REWARDS_ENABLED } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
@@ -325,8 +326,12 @@ export default function PricingPage() {
   // lets the user read only their own row.
   useEffect(() => {
     let cancelled = false;
-    if (!user?.id) {
+    // Rewards programme off → never fetch or show a balance or referral perk.
+    // Checkout no longer applies either, so displaying them would quote a
+    // discount the payment flow will not honour. See lib/features.js.
+    if (!REWARDS_ENABLED || !user?.id) {
       setAvailableRc(0);
+      setReferralDiscount(null);
       return;
     }
     (async () => {

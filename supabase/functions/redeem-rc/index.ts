@@ -20,6 +20,7 @@
 // (e.g. one-off service purchases) and for `dryRun` price previews.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rewardsEnabled } from "../_shared/rewards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,6 +32,24 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // Rewards programme is off while store billing ships (see
+    // _shared/rewards.ts). Answer with a zero quote rather than an error:
+    // callers use this for price previews, and a nil discount is the correct
+    // preview — an error would surface as a broken checkout instead of a
+    // simply-undiscounted one.
+    if (!rewardsEnabled()) {
+      return new Response(
+        JSON.stringify({
+          applied: 0,
+          availableBefore: 0,
+          balanceAfter: 0,
+          invoiceDiscountPaise: 0,
+          reason: "rewards_disabled",
+        }),
+        { status: 200, headers: jsonHeaders },
+      );
+    }
+
     // Auth — service-role callers (checkout functions) pass the
     // service key so this returns their claim intact. Direct client
     // callers pass their user JWT.

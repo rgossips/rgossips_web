@@ -21,6 +21,7 @@ import { AiToolsGrid } from "@/components/AiToolsGrid";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 import WelcomeRewardModal from "@/components/WelcomeRewardModal";
+import { REWARDS_ENABLED } from "@/lib/features";
 
 // `labelKey` maps to InfluencerHome.nav.<key>.
 const CATEGORIES = [
@@ -134,8 +135,11 @@ export default function HomePage() {
             <InstagramReconnectBanner />
           </div>
 
-          {/* First-time welcome-reward celebration for new signups. */}
-          <WelcomeRewardModal />
+          {/* First-time welcome-reward celebration for new signups. Suppressed
+              while the rewards programme is off — create-profile no longer
+              grants the 50 RC it celebrates, so it would announce a bonus that
+              was never issued. See lib/features.js. */}
+          {REWARDS_ENABLED && <WelcomeRewardModal />}
 
           {/* Refer & Earn balance now renders inside ProStatusCard above, as a
               cell in the account summary rather than a strip under it. */}

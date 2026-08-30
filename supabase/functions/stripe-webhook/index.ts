@@ -15,6 +15,7 @@
 // can post here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rewardsEnabled } from "../_shared/rewards.ts";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
 import {
   ensureReferralCode,
@@ -609,8 +610,12 @@ Deno.serve(async (req) => {
           // row now (post-payment, never before). Idempotent via a
           // note-based lookup keyed on subscription id so a re-delivered
           // webhook event can't debit twice.
+          // Gated with the rest of the rewards programme while store billing
+          // ships (see _shared/rewards.ts). Checkout no longer attaches an RC
+          // coupon, so this should always be 0 — the guard covers sessions
+          // created before the switch-off.
           try {
-            const rcApplied = Number(session.metadata?.rc_applied || 0);
+            const rcApplied = rewardsEnabled() ? Number(session.metadata?.rc_applied || 0) : 0;
             const subId = String(session.subscription || "");
             if (rcApplied > 0 && subId) {
               const supaAdmin = createClient(

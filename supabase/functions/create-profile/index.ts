@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rewardsEnabled } from "../_shared/rewards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -485,7 +486,12 @@ Deno.serve(async (req) => {
       // — the lock discourages create-account/redeem/delete abuse. We
       // skip this if a WELCOME_BONUS row already exists for this user
       // (idempotent on retries / re-invocations of create-profile).
-      try {
+      //
+      // Gated off while store billing ships. RC is spent as a per-user
+      // discount, which neither App Store nor Play Billing can express — see
+      // _shared/rewards.ts. Granting credits nobody can redeem is worse than
+      // granting none.
+      if (rewardsEnabled()) try {
         const { data: existingBonus } = await supabaseAdmin
           .from("reward_credits_ledger")
           .select("id")

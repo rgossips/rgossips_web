@@ -19,6 +19,7 @@
 // can post here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rewardsEnabled } from "../_shared/rewards.ts";
 import {
   ensureReferralCode,
   qualifyReferralIfEligible,
@@ -747,8 +748,12 @@ Deno.serve(async (req) => {
           // REDEMPTION ledger row. Idempotent via note lookup on the
           // sub id — subscription.activated + subscription.charged
           // fire together on first payment; only the first one wins.
+          // Gated with the rest of the rewards programme while store billing
+          // ships (see _shared/rewards.ts). Checkout no longer attaches an RC
+          // redemption, so rc_applied should always be 0 — the guard is belt
+          // and braces for a subscription created before the switch-off.
           try {
-            const rcApplied = Number(notes.rc_applied || 0);
+            const rcApplied = rewardsEnabled() ? Number(notes.rc_applied || 0) : 0;
             if (rcApplied > 0 && subscriptionId) {
               const { data: existing } = await supabase
                 .from("reward_credits_ledger")

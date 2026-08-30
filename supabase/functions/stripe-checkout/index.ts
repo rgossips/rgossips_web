@@ -1,3 +1,5 @@
+import { rewardsEnabled } from "../_shared/rewards.ts";
+
 // Creates a Stripe Checkout Session for an influencer subscribing to a paid plan.
 // Required env (Supabase secrets):
 //   STRIPE_SECRET_KEY     — sk_live_… or sk_test_…
@@ -46,8 +48,13 @@ Deno.serve(async (req) => {
     // on this invoice (Stripe allows only one coupon per Checkout Session); the
     // RC stays in the wallet for a later invoice. One-shot by nature: once they
     // subscribe, subscription_plan flips and they no longer qualify.
+    //
+    // DISABLED while store billing ships — see _shared/rewards.ts. Store
+    // pricing comes from a fixed price point per SKU, so a per-user coupon
+    // cannot be mirrored on mobile, and a web-only discount would mean
+    // steering users off-app for a better price (Apple 3.1.1).
     let referralCouponId: string | null = null;
-    try {
+    if (rewardsEnabled()) try {
       const [refRes, profRes] = await Promise.all([
         fetch(
           `${supaUrl0}/rest/v1/referrals?referee_id=eq.${encodeURIComponent(userId)}&status=in.(SIGNED_UP,QUALIFIED,REWARDED)&select=id&limit=1`,
@@ -93,7 +100,7 @@ Deno.serve(async (req) => {
     // referral 50%-off is active (one coupon per session; referral wins).
     let rcCouponId: string | null = null;
     let rcAppliedRupees = 0;
-    if (!referralCouponId && applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
+    if (rewardsEnabled() && !referralCouponId && applyRc && Number.isFinite(Number(planPriceRupees)) && Number(planPriceRupees) >= 1) {
       try {
         const supaUrl = Deno.env.get("SUPABASE_URL")!;
         const supaKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

@@ -28,6 +28,7 @@ import { HubCard } from "./HubCard";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { REWARDS_ENABLED } from "@/lib/features";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -608,13 +609,18 @@ const DashboardView = ({
                   self-hides at 0 RC, so without this row a fresh
                   subscriber had no way to find the page. Mirrors the
                   mobile app's DashboardView row. */}
-              <SettingsItem
-                icon={Gift}
-                onClick={() => router.push("/influencer/refer")}
-                title={t("settings.refer.title")}
-                sub={t("settings.refer.sub")}
-                color="bg-[#E60076]"
-              />
+              {/* Hidden while the rewards programme is off — its subtitle
+                  promises Reward Credits that no checkout can honour.
+                  See lib/features.js. */}
+              {REWARDS_ENABLED && (
+                <SettingsItem
+                  icon={Gift}
+                  onClick={() => router.push("/influencer/refer")}
+                  title={t("settings.refer.title")}
+                  sub={t("settings.refer.sub")}
+                  color="bg-[#E60076]"
+                />
+              )}
             </div>
           </section>
 
@@ -881,13 +887,16 @@ const DashboardView = ({
               sub={t("settings.payment.sub")}
               color="bg-[#F97316]"
             />
-            <SettingsItem
-              icon={Gift}
-              onClick={() => router.push("/influencer/refer")}
-              title={t("settings.refer.title")}
-              sub={t("settings.refer.sub")}
-              color="bg-[#E60076]"
-            />
+            {/* Hidden while the rewards programme is off — see lib/features.js. */}
+            {REWARDS_ENABLED && (
+              <SettingsItem
+                icon={Gift}
+                onClick={() => router.push("/influencer/refer")}
+                title={t("settings.refer.title")}
+                sub={t("settings.refer.sub")}
+                color="bg-[#E60076]"
+              />
+            )}
           </div>
         </section>
 
@@ -1139,7 +1148,10 @@ function RewardCreditsCard() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user?.id) return;
+    // Rewards programme off → don't even query the balance. Gating both here
+    // and at the render below covers the two places this card is mounted.
+    // See lib/features.js.
+    if (!REWARDS_ENABLED || !user?.id) return;
     let cancelled = false;
     (async () => {
       try {
@@ -1160,6 +1172,7 @@ function RewardCreditsCard() {
 
   // Nothing to show until we know the balance, and skip entirely if the user
   // genuinely has zero RC (no bonus, no earnings).
+  if (!REWARDS_ENABLED) return null;
   if (!loaded || (avail <= 0 && locked <= 0)) return null;
 
   return (

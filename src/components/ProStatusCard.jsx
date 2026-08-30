@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
 import ReferBalanceCard from "@/components/ReferBalanceCard";
+import { REWARDS_ENABLED } from "@/lib/features";
 
 function getTrialInfo(profile) {
   const createdAt = profile?.created_at || profile?.updated_at;
@@ -217,8 +218,11 @@ export function ProStatusCard() {
           </button>
 
           {/* Section 3: Reward Credits — ships its own leading divider and
-              removes itself entirely at zero RC. */}
-          <ReferBalanceCard />
+              removes itself entirely at zero RC. Hidden outright while the
+              rewards programme is off: checkout no longer accepts RC, so a
+              visible balance would promise a discount nothing can honour.
+              See lib/features.js. */}
+          {REWARDS_ENABLED && <ReferBalanceCard />}
 
           {/* Vertical Divider - Desktop Only */}
           <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />

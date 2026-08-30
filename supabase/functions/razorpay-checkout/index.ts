@@ -12,6 +12,8 @@
 // Body:
 //   { userId: string, planId: string, plan: "starter"|"pro"|"elite", cycle: "monthly"|"annual", email?: string, name?: string, contact?: string }
 
+import { rewardsEnabled } from "../_shared/rewards.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -139,11 +141,20 @@ Deno.serve(async (req) => {
     // and the discount is visible at checkout — all with the public Plans +
     // Subscriptions APIs (no Offers feature required). Referral takes
     // precedence over RC (one discount per first cycle); RC stays in the wallet.
+    //
+    // DISABLED while store billing ships. Everything below computes a
+    // per-user first-cycle price, which is precisely what Apple IAP and Play
+    // Billing cannot express — their prices come from a fixed price point
+    // chosen when the SKU is created. Leaving it on for web only would mean
+    // the app either advertises a discount it cannot honour, or points users
+    // at the website for a better price, and the latter is the steering
+    // Apple 3.1.1 prohibits. Re-enable with REWARDS_ENABLED=true once there
+    // is a store-compatible design. See _shared/rewards.ts.
     let discountPaise = 0;
     let isReferralDiscount = false;
     let rcAppliedRupees = 0;
     const planPaise = Math.round(Number(planPriceRupees) * 100);
-    if (Number.isFinite(planPaise) && planPaise >= 100) {
+    if (rewardsEnabled() && Number.isFinite(planPaise) && planPaise >= 100) {
       // Referral eligibility: referee on an active referral AND not yet subscribed.
       try {
         const [refRes, profRes] = await Promise.all([
