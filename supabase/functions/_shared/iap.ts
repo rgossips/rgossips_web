@@ -32,6 +32,20 @@ export type VerifiedSubscription = {
   autoRenewing: boolean;
   environment: "production" | "sandbox";
   status: "active" | "grace" | "on_hold" | "paused" | "cancelled" | "expired" | "refunded";
+  /**
+   * Our own user id, echoed back by the store because the client attached it
+   * at purchase time (obfuscatedAccountIdAndroid / appAccountToken).
+   *
+   * This is what lets a notification stand on its own. Google publishes
+   * SUBSCRIPTION_PURCHASED the instant payment completes — before the client
+   * has called verify-iap-purchase — so the webhook routinely sees a token it
+   * has no row for. Usually harmless, because the client's call lands a moment
+   * later. But if the client never completes (app killed mid-payment, network
+   * dropped), the purchase exists at the store and nowhere else, and the one
+   * message that could have repaired it carried no way to identify the buyer.
+   * With this, the webhook can create the row itself.
+   */
+  externalAccountId: string | null;
   raw: unknown;
 };
 
@@ -160,6 +174,10 @@ export async function verifyApple(transactionId: string): Promise<VerifiedSubscr
       autoRenewing: renewal?.autoRenewStatus === 1,
       environment: tx.environment === "Sandbox" ? "sandbox" : "production",
       status: statusMap[Number(item.status)] ?? "expired",
+      // Apple's equivalent of Google's obfuscated account id. Set by the
+      // client as appAccountToken; Apple requires it to be a UUID, which our
+      // auth user ids already are.
+      externalAccountId: tx.appAccountToken ? String(tx.appAccountToken) : null,
       raw: { transaction: tx, renewal },
     };
   }
@@ -250,6 +268,10 @@ export async function verifyGoogle(purchaseToken: string): Promise<VerifiedSubsc
     autoRenewing: !!line?.autoRenewingPlan?.autoRenewEnabled,
     environment: body?.testPurchase ? "sandbox" : "production",
     status: statusMap[state] ?? "expired",
+    externalAccountId:
+      body?.externalAccountIdentifiers?.obfuscatedExternalAccountId
+        ? String(body.externalAccountIdentifiers.obfuscatedExternalAccountId)
+        : null,
     raw: body,
   };
 }

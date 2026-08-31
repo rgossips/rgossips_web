@@ -68,9 +68,18 @@ Deno.serve(async (req) => {
           : await verifyGoogle(String(purchaseToken || ""));
     } catch (e) {
       console.error("store verification failed:", e);
+      // Surface the store's own reason alongside the user-facing message.
+      // Every error thrown by verifyApple/verifyGoogle is a configuration or
+      // HTTP-status string — "GOOGLE_SERVICE_ACCOUNT is not configured",
+      // "Google verification failed: 401" — with no key material in it, so
+      // returning it leaks nothing while turning a blind failure into a
+      // one-line diagnosis. Without this the only route to the cause is the
+      // dashboard log, which is a slow loop when a real purchase is pending.
+      const detail = e instanceof Error ? e.message : String(e);
       return new Response(
         JSON.stringify({
           error: "We couldn't verify that purchase. If you were charged, contact support.",
+          detail,
         }),
         { status: 200, headers: jsonHeaders },
       );

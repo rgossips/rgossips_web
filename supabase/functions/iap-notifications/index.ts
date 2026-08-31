@@ -121,13 +121,9 @@ Deno.serve(async (req) => {
       .eq("store_subscription_id", storeId)
       .maybeSingle();
 
-    if (!row?.user_id) {
-      console.log("notification for unknown subscription", platform, storeId, eventLabel);
-      return ok();
-    }
-    const userId = row.user_id as string;
-
     // ── ask the store for current truth ──
+    // Done BEFORE resolving the user, because the store's answer carries the
+    // buyer's id when the row is missing.
     let verified: VerifiedSubscription;
     try {
       verified =
@@ -135,6 +131,53 @@ Deno.serve(async (req) => {
     } catch (e) {
       console.error("re-verification failed for", platform, storeId, e);
       return ok();
+    }
+
+    // Google publishes SUBSCRIPTION_PURCHASED the moment payment completes —
+    // usually before the client's verify-iap-purchase call has landed — so an
+    // unknown token here is normal and self-corrects. It is NOT harmless when
+    // the client never completes at all (killed mid-payment, connection lost):
+    // the store then holds a paid subscription that exists nowhere else, and
+    // the user is charged with no plan until they happen to tap Restore.
+    //
+    // externalAccountId is the client-supplied user id echoed back by the
+    // store, which lets this repair itself rather than waiting on the app.
+    let userId = row?.user_id as string | undefined;
+    if (!userId) {
+      if (!verified.externalAccountId) {
+        // Pre-dates the client attaching an account id, or a purchase made
+        // outside our flow. Nothing safe to do — guessing an owner would be
+        // worse than dropping it.
+        console.log("notification for unknown subscription", platform, storeId, eventLabel);
+        return ok();
+      }
+      userId = verified.externalAccountId;
+      const mappedNew = PRODUCT_MAP[verified.productId];
+      if (!mappedNew) {
+        console.error("unknown product on orphan notification:", verified.productId);
+        return ok();
+      }
+      const { error: insErr } = await supabase.from("iap_subscriptions").insert({
+        user_id: userId,
+        platform,
+        product_id: verified.productId,
+        plan_id: mappedNew.plan,
+        billing_cycle: mappedNew.cycle,
+        store_subscription_id: storeId,
+        latest_transaction_id: verified.latestTransactionId,
+        status: verified.status,
+        expires_at: verified.expiresAt,
+        auto_renewing: verified.autoRenewing,
+        environment: verified.environment,
+        raw: verified.raw,
+      });
+      // A duplicate here means the client's verify call won the race between
+      // our lookup and this insert — which is fine, the row exists either way.
+      if (insErr && insErr.code !== "23505") {
+        console.error("orphan subscription insert failed:", insErr.message);
+        return ok();
+      }
+      console.log("recovered orphan subscription for", userId, platform, storeId);
     }
 
     const mapped = PRODUCT_MAP[verified.productId];
