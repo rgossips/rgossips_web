@@ -65,4 +65,35 @@ export default defineConfig([
       "security/detect-new-buffer": "error",
     },
   },
+  // scripts/ — developer-run maintenance tools, not request-handling code.
+  //
+  // Every one of these opens the repo's own .env.local to pick up service
+  // credentials:
+  //
+  //   const envPath = path.join(__dirname, "..", ".env.local");
+  //   fs.readFileSync(envPath, "utf8")
+  //
+  // detect-non-literal-fs-filename fires on all 13 purely because the argument
+  // is a variable rather than a string literal. The path is assembled from
+  // __dirname and literals, is fixed at author time, and no caller can steer
+  // it — the process.argv these scripts do read supplies handles and --commit
+  // flags, never a path. There is no untrusted input in the set, so the risk
+  // class the rule exists for is absent.
+  //
+  // Scoped off here rather than 13 inline disables, which drift and get
+  // copy-pasted into the next script without the reasoning. src/ and the rest
+  // of the tree keep the rule at error, which is where request-handling code
+  // lives and where a non-literal path would matter.
+  //
+  // The tidier long-term fix is to extract the .env.local parsing into one
+  // shared helper: the duplication is the actual smell, and it would reduce
+  // this to a single justified suppression. Not done here because it means
+  // editing 13 working scripts for a lint result.
+  {
+    files: ["scripts/**/*.js"],
+    plugins: { security },
+    rules: {
+      "security/detect-non-literal-fs-filename": "off",
+    },
+  },
 ]);
