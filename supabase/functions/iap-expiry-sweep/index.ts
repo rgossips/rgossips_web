@@ -49,19 +49,32 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Service-role only. This mutates entitlements for arbitrary users, so it
-    // must never be callable with a user's own token.
-    const auth = (req.headers.get("authorization") || "").replace("Bearer ", "");
+    // Privileged: this mutates entitlements for arbitrary users, so it must
+    // never be callable with an ordinary user's token.
+    //
+    // Two accepted callers, matching how payouts-cron is driven:
+    //   - pg_cron, via the x-cron-secret shared secret. Postgres cannot
+    //     conveniently hold a service-role JWT, and inlining one in cron.job
+    //     would put the platform's highest-privilege credential in a table.
+    //   - a service-role JWT, for manual runs and debugging.
+    const cronSecret = req.headers.get("x-cron-secret");
+    const expectedSecret = Deno.env.get("CRON_SECRET");
+    const viaCron = !!expectedSecret && cronSecret === expectedSecret;
+
     let isServiceRole = false;
-    try {
-      const claims = JSON.parse(
-        atob(auth.split(".")[1].replace(/-/g, "+").replace(/_/g, "/") + "=="),
-      );
-      isServiceRole = claims?.role === "service_role";
-    } catch {
-      isServiceRole = false;
+    if (!viaCron) {
+      const auth = (req.headers.get("authorization") || "").replace("Bearer ", "");
+      try {
+        const claims = JSON.parse(
+          atob(auth.split(".")[1].replace(/-/g, "+").replace(/_/g, "/") + "=="),
+        );
+        isServiceRole = claims?.role === "service_role";
+      } catch {
+        isServiceRole = false;
+      }
     }
-    if (!isServiceRole) {
+
+    if (!viaCron && !isServiceRole) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
         headers: jsonHeaders,
