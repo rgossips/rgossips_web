@@ -89,7 +89,7 @@ export const CategorySection = () => {
         <div className="flex-1 space-y-8">
           {/* Top Header */}
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
+            <h2 className="bx-h2">
               Creator Categories
             </h2>
             <button

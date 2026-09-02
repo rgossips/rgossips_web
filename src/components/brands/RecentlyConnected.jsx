@@ -58,7 +58,7 @@ export const RecentlyConnected = () => {
   return (
     <section className="w-full px-4 lg:px-6 overflow-hidden">
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
+        <h2 className="bx-h2">
           Influencers Recently Connected
         </h2>
         <p className="text-slate-500 text-sm">

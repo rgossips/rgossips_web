@@ -1,0 +1,94 @@
+/* Brands-surface design tokens, from "RGossips Explore.dc.html".
+ *
+ * SCOPED to .brands-surface on purpose. This palette (navy on a cool grey
+ * ground, purple->blue gradient, Poppins) is deliberately different from the
+ * influencer and landing surfaces, which still run #9810FA -> #E60076 on
+ * Geist. A brand and a creator can be signed in on the same browser, so the
+ * two identities have to be able to coexist without one bleeding into the
+ * other. Nothing here is global.
+ */
+
+.brands-surface {
+  /* Ground + ink */
+  --bx-ground: #F3F5FA;
+  --bx-surface: #FFFFFF;
+  --bx-surface-soft: #FCFAFE;
+  --bx-ink: #16224E;
+  --bx-ink-2: #4A4568;
+  --bx-muted: #6B6785;
+  --bx-faint: #9C97B8;
+  --bx-rule: #E4E9F4;
+  --bx-rule-2: #E2E9F6;
+
+  /* The accent is a four-stop ramp, not a two-stop fade — keep all four or it
+     loses the blue shoulder that stops it reading as generic purple. */
+  --bx-grad: linear-gradient(96deg, #9B5FC4 0%, #8460CB 26%, #6A66C9 58%, #4F79C6 100%);
+  --bx-grad-soft: linear-gradient(96deg, #F3ECFB, #E9EDF9);
+  --bx-accent: #6A66C9;
+  --bx-accent-deep: #6A4FB8;
+
+  /* Hero / CTA band run on the navy ramp rather than the accent. */
+  --bx-navy-grad: linear-gradient(120deg, #16224E 0%, #22376F 40%, #31508F 72%, #1B2B5C 100%);
+  --bx-navy-flat: #131E45;
+
+  --bx-shadow-accent: 0 10px 24px rgba(106, 102, 201, .32);
+  --bx-shadow-navy: 0 30px 70px rgba(14, 24, 58, .4);
+
+  background: var(--bx-ground);
+  color: var(--bx-ink);
+}
+
+/* Utility classes — the gradient has four stops and appears on a dozen
+   elements, so it earns a class rather than being retyped inline each time. */
+.bx-grad { background: var(--bx-grad); }
+.bx-grad-text {
+  background: linear-gradient(96deg, #9B5FC4, #4F79C6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bx-navy { background: var(--bx-navy-grad); }
+
+/* The 4px rule that heads every section in the design. */
+.bx-rule-mark {
+  width: 4px;
+  border-radius: 99px;
+  background: var(--bx-grad);
+  flex: 0 0 4px;
+  align-self: stretch;
+}
+
+.brands-surface .hidescroll::-webkit-scrollbar { height: 6px; }
+.brands-surface .hidescroll::-webkit-scrollbar-thumb { background: #DCD8EC; border-radius: 99px; }
+
+@keyframes bx-sheen { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@media (prefers-reduced-motion: reduce) {
+  .brands-surface *, .brands-surface *::before, .brands-surface *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* Section heading. Every section in the design is headed by a 4px gradient
+   rule and a 23px navy title, so it is a class rather than repeated markup —
+   the rule is a ::before, which means existing <h2>s only need their classes
+   swapped, not their structure rewritten. */
+.brands-surface .bx-h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  color: var(--bx-ink);
+  text-wrap: balance;
+}
+.brands-surface .bx-h2::before {
+  content: "";
+  flex: 0 0 4px;
+  width: 4px;
+  height: 20px;
+  border-radius: 99px;
+  background: var(--bx-grad);
+}

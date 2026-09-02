@@ -1741,8 +1741,20 @@
       "helpSupport": "Help & Support",
       "chatSupport": "Chat with support"
     },
-    "accountLabel": "Account",
-    "postRequirement": "Post Requirement"
+    "accountLabel": "Support",
+    "postRequirement": "Post Requirement",
+    "completion": {
+      "title": "Profile completion",
+      "finish": "Finish {count} steps"
+    },
+    "defaultBrandName": "Your brand",
+    "notifications": {
+      "title": "Notifications"
+    },
+    "actions": {
+      "viewProfile": "View profile",
+      "logout": "Log out"
+    }
   },
   "BrandsTopCreatorCarousel": {
     "title": "Top Creators",

@@ -68,7 +68,7 @@ export const CreatorsByLocation = () => {
   return (
     <section className="w-full px-4 md:px-6 py-8 bg-white mt-8 mb-10 overflow-hidden">
       <div className="mb-6">
-        <h2 className="text-2xl font-black text-[#1C115A] tracking-tight">
+        <h2 className="bx-h2">
           Creators by Location
         </h2>
         <p className="text-slate-500 text-sm">

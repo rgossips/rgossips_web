@@ -174,7 +174,7 @@ export const TopCreatorsCarousel = () => {
     <section className="w-full px-4 lg:px-6 bg-white py-8 lg:py-10">
       {/* Header Section */}
       <div className="px-6 mb-6">
-        <h2 className="text-2xl font-black text-[#1C115A]">{t("title")}</h2>
+        <h2 className="bx-h2">{t("title")}</h2>
         <p className="text-slate-500 font-medium text-sm">
           {t("subtitle")}
         </p>
