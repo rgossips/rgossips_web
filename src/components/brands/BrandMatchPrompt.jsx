@@ -61,28 +61,28 @@ export default function BrandMatchPrompt() {
     <section className="w-full max-w-6xl mx-auto px-4 lg:px-8">
       <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-5 lg:p-7 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-[#5851DB]">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold tracking-widest text-[#6A66C9]">
             <Sparkles size={15} /> AI MATCHING ENGINE
           </span>
         </div>
-        <h2 className="text-lg lg:text-xl font-extrabold text-gray-900">Describe your ideal creator</h2>
-        <p className="text-[12px] text-gray-500 mt-1">Tell us what you&apos;re looking for and we&apos;ll surface real creators you can invite.</p>
+        <h2 className="text-lg lg:text-xl font-extrabold text-[#16224E]">Describe your ideal creator</h2>
+        <p className="text-[12px] text-[#6B6785] mt-1">Tell us what you&apos;re looking for and we&apos;ll surface real creators you can invite.</p>
 
         <div className="mt-4 flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9C97B8]" />
             <input
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && run()}
               placeholder="e.g. Launch our serum with beauty creators in Mumbai…"
-              className="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#5851DB]"
+              className="w-full pl-9 pr-3 py-3 rounded-xl border border-[#E4E9F4] bg-white text-sm outline-none focus:border-[#6A66C9]"
             />
           </div>
           <button
             onClick={run}
             disabled={loading || !prompt.trim()}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#5851DB] text-white text-sm font-bold disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#6A66C9] text-white text-sm font-bold disabled:opacity-50 cursor-pointer"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
             Find creators
@@ -94,7 +94,7 @@ export default function BrandMatchPrompt() {
             <button
               key={c}
               onClick={() => setPrompt(c)}
-              className="text-[11px] font-semibold text-gray-600 border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#5851DB] hover:text-[#5851DB] cursor-pointer"
+              className="text-[11px] font-semibold text-gray-600 border border-[#E4E9F4] rounded-full px-3 py-1.5 hover:border-[#6A66C9] hover:text-[#6A66C9] cursor-pointer"
             >
               {c}
             </button>
@@ -115,7 +115,7 @@ export default function BrandMatchPrompt() {
                     key={r.id}
                     onClick={() => toggle(r.id)}
                     className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-colors cursor-pointer ${
-                      picked ? "border-emerald-300 bg-emerald-50/50" : "border-gray-200 bg-white hover:bg-gray-50"
+                      picked ? "border-emerald-300 bg-emerald-50/50" : "border-[#E4E9F4] bg-white hover:bg-gray-50"
                     }`}
                   >
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-purple-500 grid place-items-center text-white font-bold shrink-0">
@@ -127,14 +127,14 @@ export default function BrandMatchPrompt() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-gray-900 truncate">{r.name}</p>
-                      <p className="text-[11px] text-gray-500 truncate">
+                      <p className="text-[13px] font-bold text-[#16224E] truncate">{r.name}</p>
+                      <p className="text-[11px] text-[#6B6785] truncate">
                         {[r.category, `${fmt(r.followers)} followers`].filter(Boolean).join(" · ")}
                       </p>
                     </div>
                     <div
                       className={`w-6 h-6 rounded-full grid place-items-center shrink-0 border ${
-                        picked ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300 text-gray-400"
+                        picked ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300 text-[#9C97B8]"
                       }`}
                     >
                       {picked ? <Check size={13} /> : "+"}
@@ -145,7 +145,7 @@ export default function BrandMatchPrompt() {
             </div>
 
             {shortlistCount > 0 && (
-              <div className="mt-4 flex items-center justify-between gap-3 bg-[#5851DB] text-white rounded-2xl px-4 py-3">
+              <div className="mt-4 flex items-center justify-between gap-3 bg-[#6A66C9] text-white rounded-2xl px-4 py-3">
                 <span className="text-[13px] font-bold flex items-center gap-2">
                   <Users size={15} /> {shortlistCount} shortlisted
                   {invitableIds.length < shortlistCount && (
@@ -155,7 +155,7 @@ export default function BrandMatchPrompt() {
                 <button
                   onClick={() => setPickerOpen(true)}
                   disabled={invitableIds.length === 0}
-                  className="inline-flex items-center gap-1.5 bg-white text-[#5851DB] rounded-full px-4 py-2 text-[12px] font-extrabold disabled:opacity-60 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 bg-white text-[#6A66C9] rounded-full px-4 py-2 text-[12px] font-extrabold disabled:opacity-60 cursor-pointer"
                 >
                   <Send size={13} /> Invite to campaign
                 </button>

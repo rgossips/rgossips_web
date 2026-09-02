@@ -45,7 +45,7 @@ const BrandHero = () => {
             : "border-slate-400";
 
   return (
-    <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#4A3996] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
+    <section className="w-full bg-linear-to-b from-[#4C75BE] to-[#31508F] px-6 pt-12 pb-10 rounded-b-[40px] md:rounded-b-[60px] text-white">
       <div className="max-w-7xl mx-auto">
         {/* TOP ROW */}
         <div className="flex justify-between items-center mb-2">
@@ -64,7 +64,7 @@ const BrandHero = () => {
           <button className="flex lg:hidden items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 py-2 px-4 rounded-full text-xs font-bold">
             {t("inviteEarn")}
             <div className="bg-white rounded-full p-0.5">
-              <Plus size={14} className="text-[#1C115A]" />
+              <Plus size={14} className="text-[#16224E]" />
             </div>
           </button>
         </div>
@@ -92,7 +92,7 @@ const BrandHero = () => {
             <div className="flex items-center gap-5">
               <div className="flex lg:hidden -space-x-3">
                 {baseBrands.map((i, index) => (
-                  <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#2A1885]" />
+                  <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#22376F]" />
                 ))}
               </div>
               <div className="text-slate-100 opacity-90 font-light">{t("agenciesCount")}</div>
@@ -113,7 +113,7 @@ const BrandHero = () => {
                 onClick={() => {
                   router.push("/brands/campaigns");
                 }}
-                className="bg-[#5B3DF5] cursor-pointer px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#5B3DF5]/30 hover:brightness-110 transition"
+                className="bg-[#6A66C9] cursor-pointer px-8 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-[#6A66C9]/30 hover:brightness-110 transition"
               >
                 {t("postRequirements")}
               </button>
@@ -129,11 +129,11 @@ const BrandHero = () => {
               <div className="flex items-center">
                 <div className="flex -space-x-3">
                   {baseBrands.map((i, index) => (
-                    <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#2A1885]" />
+                    <Image key={index} src={i} width={36} height={36} alt="agency" className="rounded-full border-2 border-[#22376F]" />
                   ))}
                 </div>
 
-                <div className="ml-3 bg-[#2A1885] text-xs px-3 py-1 rounded-full">+2k</div>
+                <div className="ml-3 bg-[#22376F] text-xs px-3 py-1 rounded-full">+2k</div>
               </div>
             </div>
 
@@ -141,7 +141,7 @@ const BrandHero = () => {
             <div className="bg-black/80 border border-white/10 p-5 rounded-2xl w-[400px] flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-gray-400 uppercase">{t("trustScoreLabel")}</p>
+                  <p className="text-xs text-[#9C97B8] uppercase">{t("trustScoreLabel")}</p>
                   <button
                     onClick={() => setTrustInfoOpen(true)}
                     className="cursor-pointer hover:scale-110 transition-transform inline-flex"
@@ -154,7 +154,7 @@ const BrandHero = () => {
 
                 <div className="flex items-end gap-2 mt-1">
                   <span className="text-2xl font-bold">{trustScore}</span>
-                  <span className="text-gray-400 text-xs font-semibold">/{trustMax}</span>
+                  <span className="text-[#9C97B8] text-xs font-semibold">/{trustMax}</span>
                 </div>
                 {trust?.coldStart && <p className="text-amber-400 text-[9px] font-bold mt-1 uppercase tracking-wider">{t("coldStartNote", { cap: trust.coldStartCap })}</p>}
               </div>

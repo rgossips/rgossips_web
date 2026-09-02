@@ -412,17 +412,17 @@ export default function BrandSupportChat({ open, onClose }) {
         className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:w-[420px] h-[85vh] sm:h-[640px] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#E4E9F4] shrink-0">
           {path.length > 0 && !callbackOpen && (
             <button
               onClick={handleBack}
-              className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-slate-500"
+              className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-[#6B6785]"
               aria-label={t("header.backAria")}
             >
               <ChevronLeft size={18} />
             </button>
           )}
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#5851DB] to-[#4A3996] flex items-center justify-center text-white shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#6A66C9] to-[#31508F] flex items-center justify-center text-white shrink-0">
             <HeadphonesIcon size={18} />
           </div>
           <div className="flex-1 min-w-0">
@@ -434,7 +434,7 @@ export default function BrandSupportChat({ open, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-slate-400"
+            className="p-1.5 rounded-full hover:bg-slate-100 cursor-pointer text-[#9C97B8]"
             aria-label={t("header.closeAria")}
           >
             <X size={18} />
@@ -494,7 +494,7 @@ export default function BrandSupportChat({ open, onClose }) {
           </AnimatePresence>
 
           {campaignsLoading && (
-            <div className="flex items-center gap-2 text-xs text-slate-400 px-2">
+            <div className="flex items-center gap-2 text-xs text-[#9C97B8] px-2">
               <Loader2 size={12} className="animate-spin" />
               {t("loadingCampaigns")}
             </div>
@@ -503,7 +503,7 @@ export default function BrandSupportChat({ open, onClose }) {
 
         {/* Sticky footer — always-on callback shortcut */}
         {!callbackOpen && (
-          <div className="px-5 py-3 border-t border-slate-100 shrink-0">
+          <div className="px-5 py-3 border-t border-[#E4E9F4] shrink-0">
             <button
               onClick={() => {
                 setMessages((prev) => [
@@ -551,8 +551,8 @@ function Bubble({
         <div
           className={`rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed ${
             isBot
-              ? "bg-white border border-slate-100 text-slate-700"
-              : "bg-gradient-to-r from-[#5851DB] to-[#4A3996] text-white shadow-sm"
+              ? "bg-white border border-[#E4E9F4] text-slate-700"
+              : "bg-gradient-to-r from-[#6A66C9] to-[#31508F] text-white shadow-sm"
           }`}
         >
           {message.typing ? (
@@ -570,7 +570,7 @@ function Bubble({
         {message.link && isBot && (
           <button
             onClick={() => onLink(message.link.href)}
-            className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#5851DB] hover:underline cursor-pointer"
+            className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#6A66C9] hover:underline cursor-pointer"
           >
             {message.link.label} →
           </button>
@@ -596,14 +596,14 @@ function Bubble({
                   show: { opacity: 1, y: 0 },
                 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-white hover:border-[#5851DB]/40 hover:shadow-sm transition cursor-pointer flex items-center gap-3"
+                className="w-full text-left p-2.5 rounded-xl border border-[#E4E9F4] bg-white hover:border-[#6A66C9]/40 hover:shadow-sm transition cursor-pointer flex items-center gap-3"
               >
                 <CampaignAvatar c={c} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-black text-slate-900 truncate">
                     {c.title}
                   </p>
-                  <p className="text-[10px] text-slate-500 truncate flex items-center gap-1.5">
+                  <p className="text-[10px] text-[#6B6785] truncate flex items-center gap-1.5">
                     <span className="truncate">
                       {t("campaigns.applicationsCount", { count: c.applicationsTotal ?? 0 })}
                     </span>
@@ -641,7 +641,7 @@ function Bubble({
                   show: { opacity: 1, y: 0 },
                 }}
                 whileTap={{ scale: 0.97 }}
-                className="text-left px-3 py-2 rounded-xl border border-slate-200 bg-white text-[12px] font-semibold text-slate-700 hover:border-[#5851DB]/40 hover:bg-[#5851DB]/5 transition cursor-pointer"
+                className="text-left px-3 py-2 rounded-xl border border-[#E4E9F4] bg-white text-[12px] font-semibold text-slate-700 hover:border-[#6A66C9]/40 hover:bg-[#6A66C9]/5 transition cursor-pointer"
               >
                 {t(`labels.${opt.id}`)}
               </motion.button>
@@ -654,13 +654,13 @@ function Bubble({
           <div className="mt-3 flex flex-wrap gap-1.5">
             <button
               onClick={onStartOver}
-              className="text-[11px] font-bold text-slate-500 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 cursor-pointer"
+              className="text-[11px] font-bold text-[#6B6785] px-2.5 py-1 rounded-lg bg-white border border-[#E4E9F4] hover:bg-slate-50 cursor-pointer"
             >
               {t("actions.askAnother")}
             </button>
             <button
               onClick={onRequestCallback}
-              className="text-[11px] font-bold text-[#5851DB] px-2.5 py-1 rounded-lg bg-[#5851DB]/5 border border-[#5851DB]/15 hover:bg-[#5851DB]/10 cursor-pointer"
+              className="text-[11px] font-bold text-[#6A66C9] px-2.5 py-1 rounded-lg bg-[#6A66C9]/5 border border-[#6A66C9]/15 hover:bg-[#6A66C9]/10 cursor-pointer"
             >
               {t("actions.talkToHuman")}
             </button>
@@ -683,7 +683,7 @@ function CampaignAvatar({ c }) {
     );
   }
   return (
-    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5851DB] to-[#4A3996] text-white flex items-center justify-center text-[11px] font-black shrink-0">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6A66C9] to-[#31508F] text-white flex items-center justify-center text-[11px] font-black shrink-0">
       {(c.title || "?").charAt(0).toUpperCase()}
     </div>
   );
@@ -798,14 +798,14 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-[#E4E9F4] rounded-2xl p-4 space-y-3">
       {context && (
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#5851DB]/10 text-[#5851DB] text-[10px] font-bold">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#6A66C9]/10 text-[#6A66C9] text-[10px] font-bold">
           <Sparkles size={10} /> {context}
         </div>
       )}
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+        <p className="text-[10px] font-black text-[#9C97B8] uppercase tracking-wider mb-1">
           {t("callback.phoneLabel")}
         </p>
         <input
@@ -813,13 +813,13 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, "").slice(0, 20))}
           placeholder={t("callback.phonePlaceholder")}
-          className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#5851DB]/40"
+          className="w-full h-10 px-3 rounded-xl border border-[#E4E9F4] text-sm focus:outline-none focus:ring-2 focus:ring-[#6A66C9]/40"
         />
-        <p className="text-[10px] text-slate-400 mt-1">{t("callback.phoneHint")}</p>
+        <p className="text-[10px] text-[#9C97B8] mt-1">{t("callback.phoneHint")}</p>
       </div>
 
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+        <p className="text-[10px] font-black text-[#9C97B8] uppercase tracking-wider mb-1">
           {t("callback.bestTime")}
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -829,8 +829,8 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
               onClick={() => setTime(opt.value)}
               className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer ${
                 time === opt.value
-                  ? "bg-[#5851DB] text-white border-[#5851DB]"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-[#5851DB]/40"
+                  ? "bg-[#6A66C9] text-white border-[#6A66C9]"
+                  : "bg-white text-slate-600 border-[#E4E9F4] hover:border-[#6A66C9]/40"
               }`}
             >
               {t(`times.${opt.key}`)}
@@ -840,7 +840,7 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
       </div>
 
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+        <p className="text-[10px] font-black text-[#9C97B8] uppercase tracking-wider mb-1">
           {t("callback.notesLabel")}
         </p>
         <textarea
@@ -848,7 +848,7 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={t("callback.notesPlaceholder")}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#5851DB]/40 resize-none"
+          className="w-full px-3 py-2 rounded-xl border border-[#E4E9F4] text-sm focus:outline-none focus:ring-2 focus:ring-[#6A66C9]/40 resize-none"
         />
       </div>
 
@@ -858,14 +858,14 @@ function CallbackForm({ user, profile, path, context, onSubmitted, onCancel }) {
         <button
           onClick={onCancel}
           disabled={submitting}
-          className="flex-1 h-10 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 cursor-pointer disabled:opacity-50"
+          className="flex-1 h-10 rounded-xl border border-[#E4E9F4] text-sm font-bold text-slate-600 cursor-pointer disabled:opacity-50"
         >
           {t("callback.cancel")}
         </button>
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-[#5851DB] to-[#4A3996] text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          className="flex-1 h-10 rounded-xl bg-gradient-to-r from-[#6A66C9] to-[#31508F] text-white text-sm font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
         >
           {submitting && <Loader2 size={14} className="animate-spin" />}
           {submitting ? t("callback.sending") : t("callback.submit")}

@@ -20,7 +20,7 @@ function Avatar({ photo, displayName }) {
           className="w-full h-full rounded-full object-cover"
         />
       ) : (
-        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#5B3DF5] to-[#FF4E8E] text-white flex items-center justify-center text-xl font-bold">
+        <div className="w-full h-full rounded-full bg-gradient-to-br from-[#6A66C9] to-[#9B5FC4] text-white flex items-center justify-center text-xl font-bold">
           {displayName.charAt(0).toUpperCase()}
         </div>
       )}
@@ -61,7 +61,7 @@ export const RecentlyConnected = () => {
         <h2 className="bx-h2">
           Influencers Recently Connected
         </h2>
-        <p className="text-slate-500 text-sm">
+        <p className="text-[#6B6785] text-sm">
           Direct connects happening right now
         </p>
       </div>
@@ -69,10 +69,10 @@ export const RecentlyConnected = () => {
       <div className="relative w-full">
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={20} className="animate-spin text-[#5B3DF5]" />
+            <Loader2 size={20} className="animate-spin text-[#6A66C9]" />
           </div>
         ) : influencers.length === 0 ? (
-          <div className="text-center py-10 text-sm font-bold text-slate-400">
+          <div className="text-center py-10 text-sm font-bold text-[#9C97B8]">
             No creators have joined yet.
           </div>
         ) : (
@@ -87,18 +87,18 @@ export const RecentlyConnected = () => {
               return (
                 <div
                   key={i.influencer_id}
-                  className="flex-none basis-[160px] md:basis-[180px] snap-start bg-white border border-slate-100 rounded-3xl p-5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow"
+                  className="flex-none basis-[160px] md:basis-[180px] snap-start bg-white border border-[#E4E9F4] rounded-3xl p-5 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="relative w-20 h-20 mb-4">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#5B3DF5] to-[#FF4E8E] p-[2px]">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#6A66C9] to-[#9B5FC4] p-[2px]">
                       <Avatar photo={photo} displayName={displayName} />
                     </div>
                   </div>
 
-                  <h3 className="font-bold text-[#1C115A] text-sm mb-1 truncate w-full px-1">
+                  <h3 className="font-bold text-[#16224E] text-sm mb-1 truncate w-full px-1">
                     {displayName}
                   </h3>
-                  <p className="text-slate-400 text-[10px] uppercase tracking-wider mb-1 truncate w-full">
+                  <p className="text-[#9C97B8] text-[10px] uppercase tracking-wider mb-1 truncate w-full">
                     {handle ? `@${handle}` : "Creator"}
                   </p>
 
@@ -107,7 +107,7 @@ export const RecentlyConnected = () => {
                       href={kitUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#5B3DF5]/10 text-[#5B3DF5] text-xs font-bold hover:bg-[#5B3DF5] hover:text-white transition-colors cursor-pointer"
+                      className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#6A66C9]/10 text-[#6A66C9] text-xs font-bold hover:bg-[#6A66C9] hover:text-white transition-colors cursor-pointer"
                     >
                       <FileText size={13} />
                       Media Kit

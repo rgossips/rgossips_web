@@ -175,7 +175,7 @@ export const TopCreatorsCarousel = () => {
       {/* Header Section */}
       <div className="px-6 mb-6">
         <h2 className="bx-h2">{t("title")}</h2>
-        <p className="text-slate-500 font-medium text-sm">
+        <p className="text-[#6B6785] font-medium text-sm">
           {t("subtitle")}
         </p>
       </div>
@@ -195,7 +195,7 @@ export const TopCreatorsCarousel = () => {
                 key={index}
                 className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/3"
               >
-                <div className="bg-white rounded-4xl border border-slate-100 shadow-sm overflow-hidden group">
+                <div className="bg-white rounded-4xl border border-[#E4E9F4] shadow-sm overflow-hidden group">
                   {/* Image Container */}
                   <div className="relative h-64 w-full">
                     <Image
@@ -210,7 +210,7 @@ export const TopCreatorsCarousel = () => {
                         size={14}
                         className="fill-orange-400 text-orange-400"
                       />
-                      <span className="text-xs font-black text-slate-800">
+                      <span className="text-xs font-black text-[#16224E]">
                         {creator.rating}
                       </span>
                     </div>
@@ -220,10 +220,10 @@ export const TopCreatorsCarousel = () => {
                   <div className="p-5 space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
-                        <h3 className="font-black text-[#1C115A] text-lg leading-tight">
+                        <h3 className="font-black text-[#16224E] text-lg leading-tight">
                           {creator.name}
                         </h3>
-                        <div className="flex items-center gap-1 text-slate-400 text-xs font-bold">
+                        <div className="flex items-center gap-1 text-[#9C97B8] text-xs font-bold">
                           <MapPin size={12} />
                           <span>
                             {t("followersLine", {
@@ -233,7 +233,7 @@ export const TopCreatorsCarousel = () => {
                           </span>
                         </div>
                       </div>
-                      <span className="text-[#5B3DF5] font-black text-sm">
+                      <span className="text-[#6A66C9] font-black text-sm">
                         {creator.priceRange}
                       </span>
                     </div>

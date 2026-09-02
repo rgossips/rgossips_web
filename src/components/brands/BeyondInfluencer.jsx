@@ -14,28 +14,28 @@ export const BeyondInfluencers = () => {
   const categories = [
     {
       label: "Celebs & Actors",
-      icon: <Film className="text-slate-800" size={24} />,
+      icon: <Film className="text-[#16224E]" size={24} />,
       bgColor: "bg-[#FFF9F1]", // Light orange
       textColor: "text-[#D97706]",
       href: "/brands/search?profileType=celebrity",
     },
     {
       label: "Publishers & Media",
-      icon: <Newspaper className="text-slate-800" size={24} />,
+      icon: <Newspaper className="text-[#16224E]" size={24} />,
       bgColor: "bg-[#F1F7FF]", // Light blue
       textColor: "text-[#2563EB]",
       href: "/brands/search",
     },
     {
       label: "Talent Agencies",
-      icon: <Handshake className="text-slate-800" size={24} />,
+      icon: <Handshake className="text-[#16224E]" size={24} />,
       bgColor: "bg-[#F9F5FF]", // Light purple
       textColor: "text-[#9333EA]",
       href: "/brands/search",
     },
     {
       label: "Meme Pages & More",
-      icon: <FaFrog className="text-slate-800" size={24} />,
+      icon: <FaFrog className="text-[#16224E]" size={24} />,
       bgColor: "bg-[#F0FDF4]", // Light green
       textColor: "text-[#16A34A]",
       href: "/brands/search?profileType=meme_page",
@@ -54,7 +54,7 @@ export const BeyondInfluencers = () => {
             key={index}
             type="button"
             onClick={() => router.push(item.href)}
-            className={`rounded-4xl ${item.bgColor} flex flex-col justify-center gap-4 py-8 px-5 border border-transparent hover:border-slate-200 transition-all cursor-pointer shadow-sm text-left`}
+            className={`rounded-4xl ${item.bgColor} flex flex-col justify-center gap-4 py-8 px-5 border border-transparent hover:border-[#E4E9F4] transition-all cursor-pointer shadow-sm text-left`}
           >
             {/* Icon Wrapper */}
             <div className="w-10 h-10 flex items-center justify-start">

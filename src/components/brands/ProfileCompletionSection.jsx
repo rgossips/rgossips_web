@@ -20,11 +20,11 @@ export const ProfileCompletionSection = () => {
   return (
     <div className="flex items-center flex-col lg:flex-row w-full px-3 lg:px-0 gap-3 lg:gap-5">
       {/* Floating Search (mobile) */}
-      <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-slate-100">
-        <p className="text-slate-400 text-sm font-medium pl-2">
+      <div className="bg-white flex-1 w-full lg:w-auto rounded-3xl p-4 flex lg:hidden items-center justify-between shadow-xl shadow-slate-200/50 border border-[#E4E9F4]">
+        <p className="text-[#9C97B8] text-sm font-medium pl-2">
           Looking for 10 nano creators, 15L...
         </p>
-        <button className="bg-[#5B3DF5] p-2.5 rounded-2xl text-white cursor-pointer">
+        <button className="bg-[#6A66C9] p-2.5 rounded-2xl text-white cursor-pointer">
           <Plus size={24} />
         </button>
       </div>
@@ -35,7 +35,7 @@ export const ProfileCompletionSection = () => {
         className="bg-[#1F1F1F] w-full lg:min-w-[280px] rounded-4xl p-6 flex justify-between items-center text-white cursor-pointer hover:bg-[#2A2A2A] transition-colors"
       >
         <div>
-          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">
+          <p className="text-[#6B6785] text-[10px] font-bold uppercase tracking-wider mb-1">
             Profile Completion
           </p>
           <div className="flex items-baseline gap-2">
@@ -53,7 +53,7 @@ export const ProfileCompletionSection = () => {
           <div className="w-full bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                complete ? "bg-emerald-400" : "bg-[#5B3DF5]"
+                complete ? "bg-emerald-400" : "bg-[#6A66C9]"
               }`}
               style={{ width: `${pct}%` }}
             />
@@ -64,7 +64,7 @@ export const ProfileCompletionSection = () => {
             feedback; the linear bar already shows completion. */}
         <span
           className={`text-[10px] font-black italic px-3 py-1.5 rounded-full border shrink-0 ${
-            complete ? "text-emerald-400 border-emerald-400" : "text-[#8B7BF7] border-[#5B3DF5]"
+            complete ? "text-emerald-400 border-emerald-400" : "text-[#8B7BF7] border-[#6A66C9]"
           }`}
         >
           {complete ? "DONE" : `${filled.length}/${total || 3}`}

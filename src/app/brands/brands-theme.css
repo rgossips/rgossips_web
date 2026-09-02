@@ -92,3 +92,17 @@
   border-radius: 99px;
   background: var(--bx-grad);
 }
+
+/* Hero ambience from the reference. Both are decorative, so both stop under
+   the reduced-motion rule at the top of this file. */
+@keyframes bx-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(3%, -4%, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes bx-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.8); }
+}
+.brands-surface .bx-hero-drift { animation: bx-drift 16s ease-in-out infinite; }
+.brands-surface .bx-pulse-dot  { animation: bx-pulse-dot 1.6s ease-in-out infinite; }

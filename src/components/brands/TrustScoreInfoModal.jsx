@@ -60,23 +60,23 @@ export default function TrustScoreInfoModal({ open, onClose }) {
         <div className="overflow-y-auto px-6 py-5 space-y-6 bg-white">
           {/* Scale */}
           <section>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            <p className="text-[10px] font-bold text-[#9C97B8] uppercase tracking-widest mb-3">
               {t("scale.heading")}
             </p>
             <div className="h-3 rounded-full bg-gradient-to-r from-rose-500 via-amber-400 via-emerald-400 to-violet-500 mb-2" />
-            <div className="flex justify-between text-[10px] font-bold text-slate-500">
+            <div className="flex justify-between text-[10px] font-bold text-[#6B6785]">
               <span>{t("scale.low")}</span>
               <span>{t("scale.mid")}</span>
               <span>{t("scale.high")}</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed mt-3">
+            <p className="text-[11px] text-[#6B6785] leading-relaxed mt-3">
               {t("scale.description")}
             </p>
           </section>
 
           {/* Pillars */}
           <section className="space-y-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-[#9C97B8] uppercase tracking-widest">
               {t("pillars.heading")}
             </p>
             {PILLARS.map((p) => (
@@ -88,20 +88,20 @@ export default function TrustScoreInfoModal({ open, onClose }) {
                   </span>
                 </div>
                 <div className="h-[2px] rounded-full bg-gradient-to-r from-purple-400/60 via-pink-400/60 to-rose-400/60 mb-2" />
-                <p className="text-[11px] text-slate-500 leading-relaxed">{t(`pillars.items.${p.key}.desc`)}</p>
+                <p className="text-[11px] text-[#6B6785] leading-relaxed">{t(`pillars.items.${p.key}.desc`)}</p>
               </div>
             ))}
           </section>
 
           {/* Good to know */}
           <section className="space-y-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-[#9C97B8] uppercase tracking-widest">
               {t("highlights.heading")}
             </p>
             {HIGHLIGHTS.map(({ key, Icon, iconBg }) => (
               <div
                 key={key}
-                className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100"
+                className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 border border-[#E4E9F4]"
               >
                 <div
                   className={`w-9 h-9 rounded-xl bg-gradient-to-br ${iconBg} flex items-center justify-center text-white shrink-0 shadow-md`}
@@ -116,7 +116,7 @@ export default function TrustScoreInfoModal({ open, onClose }) {
             ))}
           </section>
 
-          <p className="text-[10px] text-slate-400 leading-relaxed text-center pt-2">
+          <p className="text-[10px] text-[#9C97B8] leading-relaxed text-center pt-2">
             {t("footer")}
           </p>
         </div>

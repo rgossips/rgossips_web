@@ -112,7 +112,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
   return createPortal((
     <div className="fixed inset-0 z-[9999] flex items-end lg:items-center lg:justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full lg:max-w-lg bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[90vh] flex flex-col">
-        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-[#E4E9F4]">
           <div className="flex items-start gap-3">
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
@@ -122,10 +122,10 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
               {isDelete ? <Trash2 size={18} /> : <UserMinus size={18} />}
             </div>
             <div>
-              <h3 className="text-lg font-black text-gray-900">
+              <h3 className="text-lg font-black text-[#16224E]">
                 {isDelete ? t("title.delete") : t("title.deactivate")}
               </h3>
-              <p className="text-[11px] text-gray-400 font-semibold">
+              <p className="text-[11px] text-[#9C97B8] font-semibold">
                 {isDelete
                   ? t("subtitle.delete")
                   : t("subtitle.deactivate")}
@@ -138,7 +138,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
             className="p-2 -mr-2 cursor-pointer disabled:opacity-50"
             aria-label={t("close")}
           >
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-[#9C97B8]" />
           </button>
         </div>
 
@@ -175,8 +175,8 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           )}
 
           <div>
-            <h4 className="text-sm font-black text-gray-900 mb-1">{isDelete ? t("reasonHeading.delete") : t("reasonHeading.deactivate")}</h4>
-            <p className="text-[11px] text-gray-400 font-bold mb-3">{t("reasonSubtext")}</p>
+            <h4 className="text-sm font-black text-[#16224E] mb-1">{isDelete ? t("reasonHeading.delete") : t("reasonHeading.deactivate")}</h4>
+            <p className="text-[11px] text-[#9C97B8] font-bold mb-3">{t("reasonSubtext")}</p>
             <div className="relative">
               <select
                 value={reason}
@@ -185,8 +185,8 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
                   reason
                     ? isDelete
                       ? "border-red-400 text-red-700"
-                      : "border-[#5851DB] text-[#5851DB]"
-                    : "border-gray-200 text-gray-500"
+                      : "border-[#6A66C9] text-[#6A66C9]"
+                    : "border-[#E4E9F4] text-[#6B6785]"
                 }`}
               >
                 <option value="" disabled>
@@ -198,13 +198,13 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</span>
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#9C97B8] text-xs">▾</span>
             </div>
           </div>
 
           {isDelete && (
             <div>
-              <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest ml-1 mb-1.5 block">
+              <label className="text-[10px] font-extrabold text-[#9C97B8] uppercase tracking-widest ml-1 mb-1.5 block">
                 {t.rich("typeToConfirm", { hl: (c) => <span className="text-red-600">{c}</span> })}
               </label>
               <input
@@ -212,7 +212,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="w-full p-3.5 bg-gray-50 border border-gray-200 focus:border-red-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none uppercase tracking-wider"
+                className="w-full p-3.5 bg-gray-50 border border-[#E4E9F4] focus:border-red-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none uppercase tracking-wider"
               />
             </div>
           )}
@@ -224,8 +224,8 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
 
         {/* Footer — the confirm checkbox lives HERE (not in the scroll body)
             so it's always visible next to the action buttons. */}
-        <div className="p-4 border-t border-gray-100 space-y-3">
-          <label className="flex items-start gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+        <div className="p-4 border-t border-[#E4E9F4] space-y-3">
+          <label className="flex items-start gap-3 p-3.5 bg-gray-50 border border-[#E4E9F4] rounded-xl cursor-pointer">
             <input
               type="checkbox"
               checked={confirmed}
@@ -242,7 +242,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           <button
             onClick={onClose}
             disabled={submitting}
-            className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-gray-200 cursor-pointer disabled:opacity-50"
+            className="py-3.5 rounded-2xl font-bold text-sm text-gray-700 border border-[#E4E9F4] cursor-pointer disabled:opacity-50"
           >
             {t("actions.cancel")}
           </button>

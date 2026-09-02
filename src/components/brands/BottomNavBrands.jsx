@@ -18,7 +18,7 @@ const BottomNavBrands = () => {
 
   return (
     <nav
-      className="fixed lg:hidden bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-100 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+      className="fixed lg:hidden bottom-0 left-0 right-0 z-[150] bg-white border-t border-[#E4E9F4] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex justify-around items-center h-16 max-w-md mx-auto relative">
@@ -37,7 +37,7 @@ const BottomNavBrands = () => {
               className="flex flex-col items-center justify-center flex-1 relative group active:scale-95 transition-transform"
             >
               {isActive && (
-                <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-linear-to-b from-[#4C75BE] to-[#4A3996]" />
+                <div className="absolute top-0 w-12 h-[3px] rounded-b-full bg-linear-to-b from-[#4C75BE] to-[#31508F]" />
               )}
 
               <Icon
@@ -45,14 +45,14 @@ const BottomNavBrands = () => {
                 strokeWidth={isActive ? 2.5 : 2}
                 className={`transition-all duration-300 pt-1 ${
                   isActive
-                    ? "text-[#4A3996] scale-110"
+                    ? "text-[#31508F] scale-110"
                     : "text-[#64748B]"
                 }`}
               />
 
               <span
                 className={`text-[10px] mt-1 font-semibold transition-colors duration-300 ${
-                  isActive ? "text-[#4A3996]" : "text-[#94A3B8]"
+                  isActive ? "text-[#31508F]" : "text-[#94A3B8]"
                 }`}
               >
                 {item.label}

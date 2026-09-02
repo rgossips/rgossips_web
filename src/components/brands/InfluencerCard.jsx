@@ -42,7 +42,7 @@ export const InfluencerCard = ({
   return (
     <div
       onClick={selectable ? onToggleSelect : undefined}
-      className={`flex items-center gap-4 px-6 py-4 border-b border-gray-100 last:border-0 ${
+      className={`flex items-center gap-4 px-6 py-4 border-b border-[#E4E9F4] last:border-0 ${
         selectable ? "cursor-pointer" : ""
       } ${selectable && selected ? "bg-indigo-50/60" : ""}`}
     >
@@ -50,7 +50,7 @@ export const InfluencerCard = ({
       {selectable && (
         <div
           className={`w-5 h-5 rounded-md grid place-items-center shrink-0 border ${
-            selected ? "bg-[#5851DB] border-[#5851DB]" : "border-gray-300 bg-white"
+            selected ? "bg-[#6A66C9] border-[#6A66C9]" : "border-gray-300 bg-white"
           }`}
         >
           {selected && <Check size={13} className="text-white" />}
@@ -71,9 +71,9 @@ export const InfluencerCard = ({
 
       {/* Details */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 truncate">{displayName}</h3>
+        <h3 className="text-sm font-bold text-[#16224E] truncate">{displayName}</h3>
         {categoryLabel && (
-          <p className="text-[11px] text-gray-500 mb-2 truncate">{categoryLabel}</p>
+          <p className="text-[11px] text-[#6B6785] mb-2 truncate">{categoryLabel}</p>
         )}
 
         <div className="flex items-center gap-3">
@@ -86,14 +86,14 @@ export const InfluencerCard = ({
             </div>
           )}
           <div className="flex items-center gap-1">
-            <Users size={12} className="text-gray-500" />
+            <Users size={12} className="text-[#6B6785]" />
             <span className="text-[10px] font-bold text-gray-700">
               {formatCount(followers_count)}
             </span>
           </div>
           {languageLabel && (
             <div className="flex items-center gap-1 min-w-0">
-              <Languages size={12} className="text-gray-500 shrink-0" />
+              <Languages size={12} className="text-[#6B6785] shrink-0" />
               <span className="text-[10px] font-bold text-gray-700 truncate">
                 {languageLabel}
               </span>
@@ -120,7 +120,7 @@ export const InfluencerCard = ({
             href={mediaKitUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 text-[#5851DB] bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-[#6A66C9] bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
             title={t("openMediaKit")}
           >
             <FileText size={18} strokeWidth={1.75} />

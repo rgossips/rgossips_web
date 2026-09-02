@@ -10,11 +10,11 @@ export function CreatorCTASection() {
   return (
     <>
       <section className="w-full px-4 lg:px-6 text-center lg:hidden pb-20">
-        <h2 className="text-xl font-black bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
+        <h2 className="text-xl font-black bg-gradient-to-r from-[#6A66C9] to-[#9B5FC4] bg-clip-text text-transparent">
           {t("heading")}
         </h2>
 
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-[#6B6785] mt-2">
           {t("subheading")}
         </p>
 
@@ -40,7 +40,7 @@ export function CreatorCTASection() {
           </a>
         </div>
 
-        <div className="mt-10 flex flex-col items-center text-gray-400 text-xs gap-2">
+        <div className="mt-10 flex flex-col items-center text-[#9C97B8] text-xs gap-2">
           <div className="flex items-center gap-2">
             <Hash size={14} />
             <span>Recentgossips</span>
@@ -52,34 +52,39 @@ export function CreatorCTASection() {
 
       <div className="w-full max-w-5xl mx-auto p-4 pb-20 hidden lg:block">
         {/* Main Container */}
-        <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-100 rounded-[32px] p-6 md:p-10 shadow-sm">
-          {/* Left Section: Icon and Text */}
-          <div className="flex items-center gap-6 mb-6 md:mb-0">
-            {/* Brand-gradient tile + heading — matches the header's
-                purple (#5B3DF5) so the page reads as one system. */}
-            <div className="w-16 h-16 bg-gradient-to-br from-[#5B3DF5] to-[#FF4E8E] rounded-2xl flex items-center justify-center shadow-lg shadow-purple-200">
-              <span className="text-white text-3xl font-bold">#</span>
-            </div>
+        {/* Closing band — the reference: navy #131E45, a gradient hairline along
+            the top, a soft radial wash, heading left and two buttons right. */}
+        <div className="relative flex flex-wrap items-center justify-between gap-8 overflow-hidden rounded-[26px] bg-[#131E45] px-6 py-9 text-white lg:px-[42px]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-[30%]"
+            style={{
+              background:
+                "radial-gradient(40% 70% at 88% 20%, rgba(70,103,174,.75), transparent 70%), radial-gradient(40% 70% at 12% 90%, rgba(31,80,143,.6), transparent 70%)",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+            style={{ background: "var(--bx-grad)" }}
+          />
 
-            <div>
-              <h2 className="text-2xl md:text-3xl font-black leading-tight bg-gradient-to-r from-[#5B3DF5] to-[#FF4E8E] bg-clip-text text-transparent">
-                {t("heading")}
-              </h2>
-              <p className="text-slate-500 text-sm md:text-base mt-1 font-medium">
-                {t("subheading")}
-              </p>
-            </div>
+          <div className="relative min-w-0">
+            <h2 className="m-0 text-[29px] font-bold leading-tight tracking-[-0.9px]">
+              {t("heading")}
+            </h2>
+            <p className="mt-[7px] text-[13.5px] text-white/[.72]">{t("subheading")}</p>
           </div>
 
-          {/* Right Section: Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+          <div className="relative flex flex-wrap items-center gap-3">
             <a
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-8 py-4 rounded-2xl font-bold text-sm transition-all w-full sm:w-auto cursor-pointer"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl px-[22px] py-3.5 text-[13.5px] font-semibold text-white shadow-[0_10px_24px_rgba(79,121,198,.4)] transition hover:brightness-110"
+              style={{ background: "var(--bx-grad)" }}
             >
-              <MessageCircle size={20} fill="white" />
+              <MessageCircle size={17} />
               {t("whatsappUs")}
             </a>
 
@@ -87,9 +92,9 @@ export function CreatorCTASection() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-8 py-4 rounded-2xl font-bold text-sm transition-all w-full sm:w-auto shadow-sm cursor-pointer"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-white/35 bg-transparent px-[22px] py-3.5 text-[13.5px] font-semibold text-white transition hover:bg-white/[.12]"
             >
-              <Instagram size={20} className="text-slate-600" />
+              <Instagram size={17} />
               {t("followUsButton")}
             </a>
           </div>

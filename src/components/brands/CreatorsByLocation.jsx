@@ -71,7 +71,7 @@ export const CreatorsByLocation = () => {
         <h2 className="bx-h2">
           Creators by Location
         </h2>
-        <p className="text-slate-500 text-sm">
+        <p className="text-[#6B6785] text-sm">
           Discover local talent right now
         </p>
       </div>

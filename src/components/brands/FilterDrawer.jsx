@@ -127,7 +127,7 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
   );
 
   const triggerButton = (
-    <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-full text-[11px] font-semibold cursor-pointer whitespace-nowrap">
+    <button className="flex items-center gap-2 px-3 py-1.5 border border-[#E4E9F4] rounded-full text-[11px] font-semibold cursor-pointer whitespace-nowrap">
       {t("filterButton")} {activeCount > 0 && `(${activeCount})`}
       <SlidersHorizontal size={12} />
     </button>
@@ -140,22 +140,22 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     <div className="flex flex-row items-center justify-between border-b px-6 py-4 shrink-0">
       <div className="flex flex-col text-left">
         {variant === "dialog" ? (
-          <DialogTitle className="text-xl font-bold text-gray-900">{t("title")}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#16224E]">{t("title")}</DialogTitle>
         ) : (
-          <DrawerTitle className="text-xl font-bold text-gray-900">{t("title")}</DrawerTitle>
+          <DrawerTitle className="text-xl font-bold text-[#16224E]">{t("title")}</DrawerTitle>
         )}
-        <p className="text-[10px] text-gray-400">{t("subtitle")}</p>
+        <p className="text-[10px] text-[#9C97B8]">{t("subtitle")}</p>
       </div>
       {variant === "dialog" ? (
         <DialogClose asChild>
           <button className="p-2 -mr-2 outline-hidden cursor-pointer">
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-[#9C97B8]" />
           </button>
         </DialogClose>
       ) : (
         <DrawerClose asChild>
           <button className="p-2 -mr-2 outline-hidden cursor-pointer">
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-[#9C97B8]" />
           </button>
         </DrawerClose>
       )}
@@ -184,13 +184,13 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     <div className="grid grid-cols-2 gap-4 p-6 border-t bg-white shrink-0">
       <button
         onClick={handleClear}
-        className="py-4 bg-gray-50 text-gray-900 font-bold rounded-2xl cursor-pointer"
+        className="py-4 bg-gray-50 text-[#16224E] font-bold rounded-2xl cursor-pointer"
       >
         {t("clearFilters")}
       </button>
       <button
         onClick={handleApply}
-        className="py-4 bg-[#5851DB] text-white font-bold rounded-2xl shadow-lg shadow-purple-200 cursor-pointer"
+        className="py-4 bg-[#6A66C9] text-white font-bold rounded-2xl shadow-lg shadow-purple-200 cursor-pointer"
       >
         {draftCount != null ? t("applyFiltersCount", { count: draftCount }) : t("applyFilters")}
       </button>
@@ -252,7 +252,7 @@ const FilterContent = ({ draft, toggleOption }) => {
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <div className="w-1/3 bg-[#F8F9FE] overflow-y-auto border-r">
+      <div className="w-1/3 bg-[#F3F5FA] overflow-y-auto border-r">
         {sidebarItems.map((item) => {
           const count = draft?.[item]?.length || 0;
           return (
@@ -262,11 +262,11 @@ const FilterContent = ({ draft, toggleOption }) => {
               className={`w-full text-left px-6 py-5 text-[11px] font-semibold transition-all cursor-pointer
                 ${
                   activeTab === item
-                    ? "bg-[#EBE9FE] text-[#5851DB] border-l-4 border-[#5851DB]"
-                    : "text-gray-500 hover:bg-gray-100 border-l-4 border-transparent"
+                    ? "bg-[#F3ECFB] text-[#6A66C9] border-l-4 border-[#6A66C9]"
+                    : "text-[#6B6785] hover:bg-gray-100 border-l-4 border-transparent"
                 }`}
             >
-              {item} {count > 0 && <span className="text-[#5851DB]">({count})</span>}
+              {item} {count > 0 && <span className="text-[#6A66C9]">({count})</span>}
             </button>
           );
         })}
@@ -277,10 +277,10 @@ const FilterContent = ({ draft, toggleOption }) => {
             scrolls (Location has ~600 entries). */}
         <div className="p-4 pb-2 shrink-0">
           <div className="flex justify-between items-center mb-3 px-2">
-            <h4 className="text-[13px] font-bold text-gray-900">
+            <h4 className="text-[13px] font-bold text-[#16224E]">
               {t("filterBy", { field: activeTab })}
             </h4>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[10px] text-[#9C97B8]">
               {q
                 ? t("optionsFiltered", {
                     shown: currentOptions.length,
@@ -296,7 +296,7 @@ const FilterContent = ({ draft, toggleOption }) => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("searchPlaceholder", { field: activeTab.toLowerCase() })}
-              className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 focus:border-[#5851DB] focus:bg-white text-[12px] font-medium outline-none transition-colors"
+              className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-[#E4E9F4] focus:border-[#6A66C9] focus:bg-white text-[12px] font-medium outline-none transition-colors"
             />
           )}
         </div>
@@ -311,9 +311,9 @@ const FilterContent = ({ draft, toggleOption }) => {
                 type="checkbox"
                 checked={selectedInGroup.includes(option)}
                 onChange={() => toggleOption(activeTab, option)}
-                className="w-5 h-5 rounded-md border-gray-300 text-[#5851DB] focus:ring-[#5851DB] cursor-pointer"
+                className="w-5 h-5 rounded-md border-gray-300 text-[#6A66C9] focus:ring-[#6A66C9] cursor-pointer"
               />
-              <span className="text-[11px] font-medium text-gray-700 group-hover:text-gray-900">
+              <span className="text-[11px] font-medium text-gray-700 group-hover:text-[#16224E]">
                 {option}
               </span>
             </label>

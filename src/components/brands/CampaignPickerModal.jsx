@@ -114,15 +114,15 @@ export default function CampaignPickerModal({
         className="w-full sm:w-[440px] max-h-[85vh] flex flex-col bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E9F4]">
           <div>
-            <h3 className="text-sm font-extrabold text-gray-900">Invite to campaign</h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <h3 className="text-sm font-extrabold text-[#16224E]">Invite to campaign</h3>
+            <p className="text-[11px] text-[#6B6785] mt-0.5">
               {count} creator{count === 1 ? "" : "s"} selected
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 cursor-pointer">
-            <X size={18} className="text-gray-500" />
+            <X size={18} className="text-[#6B6785]" />
           </button>
         </div>
 
@@ -138,20 +138,20 @@ export default function CampaignPickerModal({
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-bold text-gray-900 truncate">
+                <p className="text-[13px] font-bold text-[#16224E] truncate">
                   {boundCampaign?.title || campaignTitle || (loading ? "Loading…" : "This campaign")}
                 </p>
-                <p className="text-[11px] text-gray-500">Selected creators will be invited here.</p>
+                <p className="text-[11px] text-[#6B6785]">Selected creators will be invited here.</p>
               </div>
             </div>
           ) : loading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 size={24} className="animate-spin text-[#5851DB]" />
+              <Loader2 size={24} className="animate-spin text-[#6A66C9]" />
             </div>
           ) : invitableCampaigns.length === 0 ? (
             <div className="text-center py-10 px-4">
               <p className="text-sm font-semibold text-gray-700">No live campaigns</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-[#9C97B8] mt-1">
                 Publish and get a campaign approved (live) before inviting creators to it.
               </p>
             </div>
@@ -165,7 +165,7 @@ export default function CampaignPickerModal({
                     type="button"
                     onClick={() => setPicked(c.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors cursor-pointer ${
-                      active ? "border-[#5851DB] bg-indigo-50/60" : "border-gray-200 hover:bg-gray-50"
+                      active ? "border-[#6A66C9] bg-indigo-50/60" : "border-[#E4E9F4] hover:bg-gray-50"
                     }`}
                   >
                     <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 grid place-items-center shrink-0 overflow-hidden">
@@ -177,14 +177,14 @@ export default function CampaignPickerModal({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-gray-900 truncate">{c.title || "Untitled campaign"}</p>
-                      <p className="text-[11px] text-gray-500 truncate">
+                      <p className="text-[13px] font-bold text-[#16224E] truncate">{c.title || "Untitled campaign"}</p>
+                      <p className="text-[11px] text-[#6B6785] truncate">
                         {c.applicationsTotal || 0} application{(c.applicationsTotal || 0) === 1 ? "" : "s"}
                       </p>
                     </div>
                     <div
                       className={`w-5 h-5 rounded-full grid place-items-center shrink-0 border ${
-                        active ? "bg-[#5851DB] border-[#5851DB]" : "border-gray-300"
+                        active ? "bg-[#6A66C9] border-[#6A66C9]" : "border-gray-300"
                       }`}
                     >
                       {active && <Check size={12} className="text-white" />}
@@ -198,11 +198,11 @@ export default function CampaignPickerModal({
 
         {error && <p className="px-5 text-[12px] text-red-600 pb-2">{error}</p>}
 
-        <div className="px-5 py-4 border-t border-gray-100">
+        <div className="px-5 py-4 border-t border-[#E4E9F4]">
           <button
             onClick={send}
             disabled={sending || count === 0 || (!campaignId && !picked)}
-            className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#5851DB] text-white text-sm font-bold disabled:opacity-50 cursor-pointer"
+            className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#6A66C9] text-white text-sm font-bold disabled:opacity-50 cursor-pointer"
           >
             {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {sending ? "Sending…" : `Send ${count} invite${count === 1 ? "" : "s"}`}

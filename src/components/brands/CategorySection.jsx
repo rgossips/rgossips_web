@@ -42,12 +42,12 @@ const CategoryIcon = ({ label, emoji, index, onClick }) => (
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: index * 0.05 }}
-    className="flex flex-col items-center group cursor-pointer bg-white p-4 justify-center gap-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-[#5B3DF5]/30 hover:shadow-md w-full"
+    className="flex flex-col items-center group cursor-pointer bg-white p-4 justify-center gap-3 rounded-2xl border border-[#E4E9F4] shadow-sm transition-all hover:border-[#6A66C9]/30 hover:shadow-md w-full"
   >
     <div className="text-2xl transition-transform group-hover:-translate-y-1">
       {emoji}
     </div>
-    <span className="text-[10px] lg:text-xs font-bold text-slate-500 group-hover:text-[#5B3DF5] transition-colors text-center leading-tight">
+    <span className="text-[10px] lg:text-xs font-bold text-[#6B6785] group-hover:text-[#6A66C9] transition-colors text-center leading-tight">
       {label}
     </span>
   </motion.button>
@@ -94,7 +94,7 @@ export const CategorySection = () => {
             </h2>
             <button
               onClick={() => router.push("/brands/search")}
-              className="text-sm font-bold text-[#5B3DF5] flex items-center gap-1 hover:opacity-70 cursor-pointer"
+              className="text-sm font-bold text-[#6A66C9] flex items-center gap-1 hover:opacity-70 cursor-pointer"
             >
               View All <ChevronRight size={14} />
             </button>
@@ -173,7 +173,7 @@ export const CategorySection = () => {
 
         {/* RIGHT: Profile completion sidebar */}
         <aside className="hidden lg:block w-[380px]">
-          <div className="bg-white rounded-[40px] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 sticky top-24">
+          <div className="bg-white rounded-[40px] p-8 shadow-xl shadow-slate-200/50 border border-[#E4E9F4] sticky top-24">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-xl font-bold text-slate-900">
                 Profile completion
@@ -182,7 +182,7 @@ export const CategorySection = () => {
                 {completionPct}%
               </span>
             </div>
-            <p className="text-slate-400 text-sm mb-6 font-medium">
+            <p className="text-[#9C97B8] text-sm mb-6 font-medium">
               {completionPct >= 100
                 ? "All set — your profile is fully complete."
                 : "Complete these to unlock the most trust"}
@@ -201,18 +201,18 @@ export const CategorySection = () => {
               {allFields.map((f) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50/60 border border-slate-100"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-slate-50/60 border border-[#E4E9F4]"
                 >
                   <div
                     className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                      f.done ? "bg-emerald-100 text-emerald-600" : "bg-white border border-slate-200 text-slate-300"
+                      f.done ? "bg-emerald-100 text-emerald-600" : "bg-white border border-[#E4E9F4] text-slate-300"
                     }`}
                   >
                     {f.done ? <Check size={14} /> : <Sparkles size={14} />}
                   </div>
                   <span
                     className={`text-sm font-semibold ${
-                      f.done ? "text-slate-700" : "text-slate-500"
+                      f.done ? "text-slate-700" : "text-[#6B6785]"
                     }`}
                   >
                     {f.label}

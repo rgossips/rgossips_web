@@ -101,7 +101,7 @@ export default function PocketFriendlyCreators() {
         <h2 className="bx-h2">
           Pocket Friendly Creators
         </h2>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[#6B6785]">
           High engagement creators within your budget
         </p>
       </div>
@@ -113,20 +113,20 @@ export default function PocketFriendlyCreators() {
             type="button"
             onClick={() => setDropdownOpen((o) => !o)}
             onBlur={() => setTimeout(() => setDropdownOpen(false), 120)}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border-2 border-[#5B3DF5]/20 bg-white shadow-sm text-sm font-bold text-[#1C115A] hover:border-[#5B3DF5]/40 transition-all cursor-pointer min-w-[220px] justify-between"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-2xl border-2 border-[#6A66C9]/20 bg-white shadow-sm text-sm font-bold text-[#16224E] hover:border-[#6A66C9]/40 transition-all cursor-pointer min-w-[220px] justify-between"
           >
             <span className="flex items-center gap-2">
-              <IndianRupee size={14} className="text-[#5B3DF5]" />
+              <IndianRupee size={14} className="text-[#6A66C9]" />
               <span>Reel rate · {range.label}</span>
             </span>
             <ChevronDown
               size={16}
-              className={`text-[#5B3DF5] transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+              className={`text-[#6A66C9] transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute top-full mt-2 left-0 z-30 w-[280px] bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden">
+            <div className="absolute top-full mt-2 left-0 z-30 w-[280px] bg-white border border-[#E4E9F4] rounded-2xl shadow-xl overflow-hidden">
               {PRICE_RANGES.map((r) => (
                 <button
                   key={r.id}
@@ -137,7 +137,7 @@ export default function PocketFriendlyCreators() {
                   }}
                   className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold transition-colors cursor-pointer ${
                     r.id === range.id
-                      ? "bg-[#5B3DF5]/10 text-[#5B3DF5]"
+                      ? "bg-[#6A66C9]/10 text-[#6A66C9]"
                       : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
@@ -149,7 +149,7 @@ export default function PocketFriendlyCreators() {
           )}
         </div>
 
-        <p className="text-[12px] text-slate-400 font-medium">
+        <p className="text-[12px] text-[#9C97B8] font-medium">
           {loading
             ? "Loading creators…"
             : matches.length === 0
@@ -160,19 +160,19 @@ export default function PocketFriendlyCreators() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={24} className="animate-spin text-[#5B3DF5]" />
+          <Loader2 size={24} className="animate-spin text-[#6A66C9]" />
         </div>
       ) : matches.length === 0 ? (
-        <div className="bg-white border border-dashed border-slate-200 rounded-3xl py-12 px-6 text-center">
-          <p className="text-sm font-bold text-slate-500">
+        <div className="bg-white border border-dashed border-[#E4E9F4] rounded-3xl py-12 px-6 text-center">
+          <p className="text-sm font-bold text-[#6B6785]">
             No creators have set a reel rate in this bucket yet.
           </p>
-          <p className="text-[12px] text-slate-400 mt-1">
+          <p className="text-[12px] text-[#9C97B8] mt-1">
             Try a wider range, or browse the full directory.
           </p>
           <Link
             href="/brands/search"
-            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#5B3DF5] text-white text-sm font-bold hover:bg-[#4d31d8] cursor-pointer"
+            className="inline-block mt-4 px-5 py-2.5 rounded-xl bg-[#6A66C9] text-white text-sm font-bold hover:bg-[#4d31d8] cursor-pointer"
           >
             Open Find Creators
           </Link>
@@ -189,7 +189,7 @@ export default function PocketFriendlyCreators() {
                   key={inf.influencer_id}
                   className="pl-4 basis-[85%] sm:basis-1/2 lg:basis-1/4"
                 >
-                  <div className="group bg-white rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 flex flex-col items-center text-center h-full">
+                  <div className="group bg-white rounded-[32px] border border-[#E4E9F4] shadow-sm hover:shadow-md transition-all p-6 flex flex-col items-center text-center h-full">
                     <div className="relative w-24 h-24 mb-4">
                       <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-400 p-[3px]">
                         <div className="bg-white rounded-full p-1 h-full w-full">
@@ -209,7 +209,7 @@ export default function PocketFriendlyCreators() {
                       </div>
                     </div>
 
-                    <h3 className="font-bold text-[#1C115A] text-lg leading-tight truncate w-full">
+                    <h3 className="font-bold text-[#16224E] text-lg leading-tight truncate w-full">
                       {display}
                     </h3>
 
@@ -217,7 +217,7 @@ export default function PocketFriendlyCreators() {
                       {category}
                     </span>
 
-                    <p className="text-xs text-slate-400 mt-2 font-medium">
+                    <p className="text-xs text-[#9C97B8] mt-2 font-medium">
                       {formatFollowers(inf.followers_count)} followers
                     </p>
 

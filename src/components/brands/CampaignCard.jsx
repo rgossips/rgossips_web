@@ -47,7 +47,7 @@ export const CampaignCard = ({
   return (
     <Link
       href={`/brands/campaign/${id}`}
-      className="block bg-white rounded-[28px] p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+      className="block bg-white rounded-[28px] p-5 shadow-sm border border-[#E4E9F4] hover:shadow-md transition-shadow"
     >
       {bannerImage && (
         <div className="relative w-full h-32 rounded-2xl overflow-hidden mb-4 bg-gray-100">
@@ -77,21 +77,21 @@ export const CampaignCard = ({
               </span>
             )}
             {campaignType && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-[#5851DB] capitalize">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-[#6A66C9] capitalize">
                 {campaignType}
               </span>
             )}
           </div>
-          <h3 className="text-[15px] font-extrabold text-gray-900 leading-tight line-clamp-2">
+          <h3 className="text-[15px] font-extrabold text-[#16224E] leading-tight line-clamp-2">
             {title || "Untitled Campaign"}
           </h3>
           {description && (
-            <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
+            <p className="text-[11px] text-[#6B6785] mt-1 line-clamp-2">
               {description}
             </p>
           )}
         </div>
-        <button className="p-2 bg-[#F1F0FF] rounded-full text-[#5851DB] shrink-0">
+        <button className="p-2 bg-[#F1F0FF] rounded-full text-[#6A66C9] shrink-0">
           <ArrowUpRight size={16} />
         </button>
       </div>
@@ -101,7 +101,7 @@ export const CampaignCard = ({
           {categories.slice(0, 3).map((c) => (
             <span
               key={c}
-              className="px-2.5 py-1 bg-[#F8F9FE] text-gray-600 rounded-lg text-[10px] font-semibold border border-gray-100"
+              className="px-2.5 py-1 bg-[#F3F5FA] text-gray-600 rounded-lg text-[10px] font-semibold border border-[#E4E9F4]"
             >
               {c}
             </span>
@@ -111,19 +111,19 @@ export const CampaignCard = ({
 
       <div className="grid grid-cols-2 gap-2 pt-3 border-t border-gray-50">
         <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-          <IndianRupee size={12} className="text-gray-400" />
+          <IndianRupee size={12} className="text-[#9C97B8]" />
           <span className="font-semibold">
             {formatBudget(budgetPerInfluencer || budgetTotal)}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-          <Users size={12} className="text-gray-400" />
+          <Users size={12} className="text-[#9C97B8]" />
           <span className="font-semibold">
             {applicationsTotal}/{maxInfluencers} applied
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
-          <Calendar size={12} className="text-gray-400" />
+          <Calendar size={12} className="text-[#9C97B8]" />
           <span className="font-semibold">{formatDate(applicationDeadline)}</span>
         </div>
         {applicationsPending > 0 && (

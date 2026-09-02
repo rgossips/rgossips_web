@@ -631,7 +631,7 @@ export function CreateCampaignDialog({
                 type="button"
                 onClick={() => update("offering_type", "product")}
                 className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
-                  form.offering_type === "product" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  form.offering_type === "product" ? "bg-[#F3ECFB] border-[#6A66C9] text-[#6A66C9]" : "bg-gray-50 border-[#E4E9F4] text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 {t("offeringOptions.product")}
@@ -640,7 +640,7 @@ export function CreateCampaignDialog({
                 type="button"
                 onClick={() => update("offering_type", "service")}
                 className={`py-2 rounded-xl text-[12px] font-bold border transition-colors cursor-pointer ${
-                  form.offering_type === "service" ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                  form.offering_type === "service" ? "bg-[#F3ECFB] border-[#6A66C9] text-[#6A66C9]" : "bg-gray-50 border-[#E4E9F4] text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 {t("offeringOptions.service")}
@@ -710,7 +710,7 @@ export function CreateCampaignDialog({
               <button
                 type="button"
                 onClick={() => bannerInputRef.current?.click()}
-                className="absolute bottom-2 left-2 px-3 py-1.5 bg-white/90 rounded-full text-xs font-bold text-[#5851DB] cursor-pointer shadow"
+                className="absolute bottom-2 left-2 px-3 py-1.5 bg-white/90 rounded-full text-xs font-bold text-[#6A66C9] cursor-pointer shadow"
               >
                 {t("banner.replace")}
               </button>
@@ -722,7 +722,7 @@ export function CreateCampaignDialog({
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="w-full h-40 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-[#5851DB] hover:text-[#5851DB] cursor-pointer transition-colors"
+              className="w-full h-40 border-2 border-dashed border-[#E4E9F4] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#9C97B8] hover:border-[#6A66C9] hover:text-[#6A66C9] cursor-pointer transition-colors"
             >
               <Upload size={24} />
               <span className="text-xs font-semibold">{t("banner.clickToUpload")}</span>
@@ -762,7 +762,7 @@ export function CreateCampaignDialog({
                   <h3 className="text-white text-sm font-bold">{t("bannerCrop.title")}</h3>
                   <p className="text-white/50 text-[10px] font-semibold">{t("bannerCrop.subtitle")}</p>
                 </div>
-                <button type="button" onClick={applyBannerCrop} disabled={!bPixels} className="text-sm font-bold px-5 py-2 rounded-xl bg-[#5851DB] text-white disabled:opacity-50">
+                <button type="button" onClick={applyBannerCrop} disabled={!bPixels} className="text-sm font-bold px-5 py-2 rounded-xl bg-[#6A66C9] text-white disabled:opacity-50">
                   {t("bannerCrop.apply")}
                 </button>
               </div>
@@ -791,7 +791,7 @@ export function CreateCampaignDialog({
           title={t("sections.gallery")}
           right={
             (existingGalleryUrls.length + galleryFiles.length) > 0 && (
-              <span className="text-[10px] text-gray-400">
+              <span className="text-[10px] text-[#9C97B8]">
                 {t("galleryUi.count", { count: existingGalleryUrls.length + galleryFiles.length })}
               </span>
             )
@@ -828,11 +828,11 @@ export function CreateCampaignDialog({
           <button
             type="button"
             onClick={() => galleryInputRef.current?.click()}
-            className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:border-[#5851DB] hover:text-[#5851DB] cursor-pointer text-xs font-semibold transition-colors"
+            className="w-full py-4 border-2 border-dashed border-[#E4E9F4] rounded-2xl flex items-center justify-center gap-2 text-[#9C97B8] hover:border-[#6A66C9] hover:text-[#6A66C9] cursor-pointer text-xs font-semibold transition-colors"
           >
             <ImageIcon size={16} /> {t("galleryUi.addImages")}
           </button>
-          <p className="text-[10px] text-gray-400 mt-1.5 ml-1">{t("galleryUi.fileHint")}</p>
+          <p className="text-[10px] text-[#9C97B8] mt-1.5 ml-1">{t("galleryUi.fileHint")}</p>
           <input
             ref={galleryInputRef}
             type="file"
@@ -851,7 +851,7 @@ export function CreateCampaignDialog({
         </Section>
 
         {/* Platforms */}
-        <Section title={t("sections.platforms")} required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-gray-400">{t("platformsSelected", { count: platforms.length })}</span>}>
+        <Section title={t("sections.platforms")} required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-[#9C97B8]">{t("platformsSelected", { count: platforms.length })}</span>}>
           <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
         </Section>
 
@@ -862,7 +862,7 @@ export function CreateCampaignDialog({
           fieldKey="deliverables"
           error={fieldErrors.deliverables}
           right={
-            <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
+            <span className={`text-[11px] font-bold ${totalDeliverables > 0 ? "text-[#6A66C9]" : "text-[#9C97B8]"}`}>
               {t("deliverablesCount", { count: totalDeliverables })}
             </span>
           }
@@ -889,7 +889,7 @@ export function CreateCampaignDialog({
           fieldKey="categories"
           error={fieldErrors.categories}
           right={
-            <span className={`text-[11px] font-bold ${categories.length > 0 ? "text-[#5851DB]" : "text-gray-400"}`}>
+            <span className={`text-[11px] font-bold ${categories.length > 0 ? "text-[#6A66C9]" : "text-[#9C97B8]"}`}>
               {t("categoriesSelected", { count: categories.length, total: CATEGORIES.length })}
             </span>
           }
@@ -928,13 +928,13 @@ export function CreateCampaignDialog({
           title={t("sections.locations")}
           right={
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={allIndia} onChange={(e) => setAllIndia(e.target.checked)} className="w-3.5 h-3.5 accent-[#5851DB]" />
+              <input type="checkbox" checked={allIndia} onChange={(e) => setAllIndia(e.target.checked)} className="w-3.5 h-3.5 accent-[#6A66C9]" />
               {t("allIndia")}
             </label>
           }
         >
           {!allIndia && <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />}
-          {allIndia && <p className="text-[11px] text-gray-500 italic">{t("allIndiaNote")}</p>}
+          {allIndia && <p className="text-[11px] text-[#6B6785] italic">{t("allIndiaNote")}</p>}
         </Section>
 
         {/* Audience preferences */}
@@ -1030,7 +1030,7 @@ export function CreateCampaignDialog({
               <input type="date" value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
             </Field>
           </div>
-          <p className="text-[10px] text-gray-400">{t("scheduleNote")}</p>
+          <p className="text-[10px] text-[#9C97B8]">{t("scheduleNote")}</p>
         </Section>
 
         <style jsx>{`
@@ -1038,26 +1038,26 @@ export function CreateCampaignDialog({
             width: 100%;
             padding: 10px 14px;
             border-radius: 12px;
-            background: #f8f9fe;
+            background: #F3F5FA;
             border: 1px solid transparent;
             font-size: 13px;
             outline: none;
             transition: border-color 0.15s;
           }
           .input:focus {
-            border-color: #5851db;
+            border-color: #6A66C9;
             background: #fff;
           }
         `}</style>
       </div>
 
       {/* Footer */}
-      <div className={`shrink-0 grid ${mode === "edit" ? "grid-cols-2" : "grid-cols-3"} gap-2 p-4 border-t border-gray-100 bg-white`}>
+      <div className={`shrink-0 grid ${mode === "edit" ? "grid-cols-2" : "grid-cols-3"} gap-2 p-4 border-t border-[#E4E9F4] bg-white`}>
         <button
           type="button"
           onClick={() => onOpenChange(false)}
           disabled={submitting}
-          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-gray-700 border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+          className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-gray-700 border border-[#E4E9F4] hover:bg-gray-50 cursor-pointer disabled:opacity-50"
         >
           {t("footer.cancel")}
         </button>
@@ -1069,7 +1069,7 @@ export function CreateCampaignDialog({
             type="button"
             onClick={() => submitForm(false)}
             disabled={submitting}
-            className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#6A66C9] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
             {submitting && stage ? stage.split(" ")[0] : t("footer.saveChanges")}
@@ -1080,7 +1080,7 @@ export function CreateCampaignDialog({
               type="button"
               onClick={() => submitForm(false)}
               disabled={submitting}
-              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#5851DB] bg-[#EBE9FE] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-[#6A66C9] bg-[#F3ECFB] hover:bg-[#e0ddfd] cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
               {t("footer.saveDraft")}
@@ -1089,7 +1089,7 @@ export function CreateCampaignDialog({
               type="button"
               onClick={() => submitForm(true)}
               disabled={submitting}
-              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#5851DB] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="py-3 rounded-2xl font-bold text-xs sm:text-sm text-white bg-[#6A66C9] hover:bg-[#4742c4] shadow-lg shadow-purple-200 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && !stage.startsWith("Saving draft") ? <Loader2 size={14} className="animate-spin" /> : null}
               {submitting && stage ? stage.split(" ")[0] : t("footer.publish")}
@@ -1111,30 +1111,30 @@ export function CreateCampaignDialog({
   // triggers the "DialogContent requires a DialogTitle" accessibility
   // warning on desktop.
   const renderHeader = (variant) => (
-    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0">
+    <div className="flex items-center justify-between border-b border-[#E4E9F4] px-6 py-4 shrink-0">
       <div>
         {variant === "dialog" ? (
           <>
-            <DialogTitle className="text-lg font-bold text-gray-900">{titleText}</DialogTitle>
-            <DialogDescription className="text-[11px] text-gray-400">{subheadText}</DialogDescription>
+            <DialogTitle className="text-lg font-bold text-[#16224E]">{titleText}</DialogTitle>
+            <DialogDescription className="text-[11px] text-[#9C97B8]">{subheadText}</DialogDescription>
           </>
         ) : (
           <>
-            <DrawerTitle className="text-lg font-bold text-gray-900">{titleText}</DrawerTitle>
-            <DrawerDescription className="text-[11px] text-gray-400">{subheadText}</DrawerDescription>
+            <DrawerTitle className="text-lg font-bold text-[#16224E]">{titleText}</DrawerTitle>
+            <DrawerDescription className="text-[11px] text-[#9C97B8]">{subheadText}</DrawerDescription>
           </>
         )}
       </div>
       {variant === "dialog" ? (
         <DialogClose asChild>
           <button type="button" className="p-2 -mr-2 cursor-pointer">
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-[#9C97B8]" />
           </button>
         </DialogClose>
       ) : (
         <DrawerClose asChild>
           <button type="button" className="p-2 -mr-2 cursor-pointer">
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-[#9C97B8]" />
           </button>
         </DrawerClose>
       )}
@@ -1169,7 +1169,7 @@ function Section({ title, required, right, children, error, fieldKey }) {
   return (
     <section className="space-y-3" data-field={fieldKey || undefined}>
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">
+        <h3 className="text-xs font-bold uppercase text-[#9C97B8] tracking-wider">
           {title}
           {required && <span className="text-red-400 ml-1">*</span>}
         </h3>
@@ -1191,7 +1191,7 @@ function Field({ label, required, hint, children, error, fieldKey }) {
       {/* Hint sits BELOW the control — when it sat between label and
           input, a hinted field's input dropped lower than its hint-less
           grid neighbours and rows looked misaligned. */}
-      {hint && <p className="text-[10px] font-medium text-gray-400 mt-1 leading-tight">{hint}</p>}
+      {hint && <p className="text-[10px] font-medium text-[#9C97B8] mt-1 leading-tight">{hint}</p>}
       {/* B2 — inline per-field validation error. Rendered under the
           control so the brand can see exactly what's blocking submit
           instead of a dead-looking button. */}
@@ -1211,7 +1211,7 @@ function ChipGroup({ options, selected, onToggle }) {
             type="button"
             onClick={() => onToggle(opt)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
-              on ? "bg-[#EBE9FE] border-[#5851DB] text-[#5851DB]" : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+              on ? "bg-[#F3ECFB] border-[#6A66C9] text-[#6A66C9]" : "bg-gray-50 border-[#E4E9F4] text-gray-600 hover:bg-gray-100"
             }`}
           >
             {on && <Check size={12} />}
