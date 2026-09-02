@@ -21,7 +21,7 @@ import { CreatorCTASection } from "@/components/brands/CreatorCTASection";
 const page = () => {
   return (
     <div className="w-full overflow-x-hidden">
-      <div className="mx-auto flex max-w-[1240px] flex-col gap-8 px-4 py-6 lg:gap-11 lg:px-8 lg:py-8">
+      <div className="mx-auto flex max-w-[1420px] flex-col gap-8 px-4 py-6 lg:gap-11 lg:px-8 lg:py-8">
         {/* One navy panel: badge, headline, AI brief box, chips, trust score,
             social proof and the live match strip. The reference merges what
             were BrandHero + BrandMatchPrompt + the mobile TrustSection. */}

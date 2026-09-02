@@ -57,16 +57,9 @@ export default function Sidebar() {
     url === "/brands" ? pathname === "/brands" : pathname.startsWith(url);
 
   return (
-    // Fills its fixed parent in the layout — no `fixed` and no `border-r` here
-    // or we'd get a double border. The right edge is a gradient hairline
-    // rather than a grey rule, per the design.
+    // Fills its fixed parent in the layout — no `fixed` here, and no border
+    // or rule on the right edge: the sidebar meets the page ground directly.
     <aside className="relative h-full w-full bg-white flex flex-col">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 right-0 w-[3px] h-full opacity-55"
-        style={{ background: "var(--bx-navy-grad)" }}
-      />
-
       <div className="flex-1 overflow-y-auto px-4 pt-6 flex flex-col gap-6">
         {/* Logo — the wordmark now lives here rather than in a top bar. */}
         <div className="px-2">
