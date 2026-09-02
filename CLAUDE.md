@@ -17,8 +17,10 @@ Migrations and edge functions live in the web repo only.
 
 ## Standing user preferences
 
-- **No auto-push**: commit only. The user pushes manually. Override only on
-  explicit "push and commit".
+- **No auto-commit, no auto-push**: make the change, verify it, and LEAVE IT
+  UNCOMMITTED. The user stages and commits themselves. Wait for an explicit
+  "commit" before touching git history, and an explicit "push" before pushing.
+  (Superseded the older "commit only" rule on 2026-08-26.)
 - **Allow all shell**: standing permission for Bash / PowerShell. No approval
   prompts.
 - **Windows / Git Bash**: primary shell is PowerShell but Bash is preferred
