@@ -74,6 +74,9 @@ export default function CreatorStories() {
   const [current, setCurrent] = useState(0);
   const [stories, setStories] = useState(fallbackStories);
   const [sectionTitle, setSectionTitle] = useState(DEFAULT_TITLE);
+  // Whether we're showing admin-published rows rather than the bundled set.
+  // Only admin rows can fail to load, so only they trigger the degrade below.
+  const [usingAdmin, setUsingAdmin] = useState(false);
 
   // Pull admin-published stories + the editable section title. When the
   // stories table is empty we stay on the hardcoded fallback so the
@@ -94,14 +97,18 @@ export default function CreatorStories() {
           .maybeSingle(),
       ]);
       if (cancelled) return;
-      if (storiesRes.data && storiesRes.data.length > 0) {
+      // Rows without a video_url would render an empty <video>, so drop them
+      // before they reach the carousel.
+      const rows = (storiesRes.data || []).filter((r) => r.video_url);
+      if (rows.length > 0) {
         setStories(
-          storiesRes.data.map((r) => ({
+          rows.map((r) => ({
             name: r.username,
             image: r.avatar_url || r.poster_url || "",
             link: r.video_url,
           }))
         );
+        setUsingAdmin(true);
       }
       if (titleRes.data?.value) setSectionTitle(titleRes.data.value);
     })();
@@ -109,6 +116,22 @@ export default function CreatorStories() {
       cancelled = true;
     };
   }, [supabase]);
+
+  // An admin-published video can fail to load. The common case on this table
+  // is that `video_url` holds an Instagram reel *page* link
+  // (instagram.com/reel/…) rather than a media file — a <video> element cannot
+  // play an HTML page, so the tile renders black and silent. Links also rot.
+  //
+  // When that happens, drop the ENTIRE carousel to the bundled set so the
+  // handle and the clip stay from one coherent source, rather than leaving a
+  // mix of working and dead tiles. The bundled clips are local files, so they
+  // cannot re-trigger this. Same behaviour as the landing-page section
+  // (src/components/landing/sections/CreatorStories.jsx), which hit this first.
+  const degradeToFallback = () => {
+    if (!usingAdmin) return;
+    setUsingAdmin(false);
+    setStories(fallbackStories);
+  };
 
   // Auto slide every 3 seconds
   useEffect(() => {
@@ -187,10 +210,12 @@ export default function CreatorStories() {
                       playsInline // Required for iOS/Mobile autoplay
                       preload="auto"
                       className="w-full h-full object-cover"
-                    >
-                      <source src={item.link} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
+                      // src rather than a <source> child: onError does not fire
+                      // for a failing <source>, only for a failing src on the
+                      // element itself, so the degrade below would never run.
+                      src={item.link}
+                      onError={degradeToFallback}
+                    />
 
                     {/* 3. CLICK SHIELD (Prevents clicking into the IG app, allows swiping) */}
                     <div

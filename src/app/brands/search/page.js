@@ -395,22 +395,18 @@ const InfluencerDirectory = () => {
         </div>
       </section>
 
-      {/* ── DESKTOP Header ── */}
-      <section className="hidden lg:block px-8 pt-8 pb-4">
-        <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-          <Search className="text-gray-400 absolute left-4" size={18} />
-          <input
-            type="text"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder={t("searchPlaceholder")}
-            className="w-full pl-8 text-sm text-gray-700 outline-none placeholder:text-gray-400 bg-transparent"
-          />
-        </div>
-      </section>
+      {/* No desktop search bar here on purpose — BrandNavbar already has one,
+          and it submits to /brands/search?q=… which this page reads into
+          searchText. A second field on the same screen meant two inputs that
+          looked independent but drove the same filter.
+
+          The MOBILE search above stays: BrandNavbar is `hidden lg:flex`, so
+          below lg there is no header search to fall back on. */}
 
       {/* ── DESKTOP: Profile Completion + Filter Bar ── */}
-      <div className="hidden w-full lg:flex justify-between items-center gap-4 px-8 py-3">
+      {/* pt-8 replaces the top spacing the removed search section used to
+          provide, so the page doesn't start flush against the navbar. */}
+      <div className="hidden w-full lg:flex justify-between items-center gap-4 px-8 pt-8 pb-3">
         <div className="flex-1 max-w-[50%]">
           <ProfileCompletionSection />
         </div>
