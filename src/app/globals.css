@@ -189,6 +189,32 @@
   background: linear-gradient(180deg, #7a0dd4 0%, #c20063 100%);
 }
 
+/* .scrollbar-hide, redeclared UNLAYERED and deliberately after the global
+ * scrollbar rules above. It is also declared in @layer utilities, and that
+ * copy never worked:
+ *
+ *   1. Unlayered declarations beat layered ones in the cascade regardless of
+ *      specificity, so `* { scrollbar-width: thin }` above overrode the
+ *      layered `.scrollbar-hide { scrollbar-width: none }`.
+ *   2. Chrome 121+ supports standard `scrollbar-width`. Once a page sets it,
+ *      the browser ignores ::-webkit-scrollbar styling entirely — so the
+ *      `.scrollbar-hide::-webkit-scrollbar { display: none }` fallback was
+ *      dead too.
+ *
+ * The result was that every one of the 13 components using this class still
+ * showed a scrollbar. Declaring it here, unlayered, lets class specificity
+ * (0,1,0) beat the universal selector (0,0,0) and it works again.
+ */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 html body {
   overflow-x: hidden;
 }
