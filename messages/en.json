@@ -1392,7 +1392,9 @@
       "saveChangesFailed": "Failed to save changes",
       "createFailed": "Failed to create campaign",
       "bannerTooLarge": "Banner image too large — please pick a file under 15MB.",
-      "gallerySkipped": "{count, plural, one {# image} other {# images}} skipped — each file must be under 15MB."
+      "gallerySkipped": "{count, plural, one {# image} other {# images}} skipped — each file must be under 15MB.",
+      "endBeforeDeadline": "Delivery End Date must be after the Application Deadline.",
+      "bannerNotImage": "That file is not an image. Please use a JPG or PNG."
     },
     "busy": {
       "saving": "Saving changes...",
@@ -1453,7 +1455,8 @@
       "paymentTimelineLabel": "Payment timeline",
       "startDate": "Start Date",
       "applicationDeadline": "Application Deadline",
-      "campaignEndDate": "Campaign End Date"
+      "campaignEndDate": "Delivery End Date",
+      "campaignEndDateHint": "Last date for the creator to deliver content. Must be after the application deadline."
     },
     "campaignTypeOptions": {
       "barter": "Barter",
@@ -1493,14 +1496,17 @@
       "contentDos": "e.g. \"Show product packaging, mention discount code SAVE20\"",
       "contentDonts": "e.g. \"Don't show competitor products, no copyrighted music\"",
       "requiredHashtags": "#RGossips #Ad #Paidpartnership",
-      "brandHandles": "@yourbrand"
+      "brandHandles": "@yourbrand",
+      "citySearch": "Search any other city…"
     },
     "banner": {
       "replace": "Replace",
       "clickToUpload": "Click to upload",
       "fileHint": "Recommended 1536×512 (3:1) · PNG, JPG, WebP up to 3MB",
       "previewAlt": "Banner preview",
-      "alt": "Banner"
+      "alt": "Banner",
+      "clickOrDrag": "Click to upload or drag an image here",
+      "dropHere": "Drop the image to upload"
     },
     "galleryUi": {
       "addImages": "Add gallery images",
@@ -2870,7 +2876,9 @@
       "paymentBenefits": "Payment & Benefits",
       "verified": "Verified",
       "exclusiveRights": "Exclusive Event/Rights",
-      "licensingNote": "Brand gets content + licensing for 6 months"
+      "licensingNote": "Brand gets content + licensing for 6 months",
+      "applyBy": "Apply by",
+      "deliverBy": "Deliver by"
     },
     "sidebar": {
       "applyViaAgent": "Or apply via an agent or partnership",
@@ -4349,7 +4357,9 @@
       "singleAt": "Must contain exactly one @ symbol.",
       "invalidUser": "The part before @ should start with a letter or digit and use only letters, digits, dot, underscore, or hyphen.",
       "invalidHandle": "The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl."
-    }
+    },
+    "pendingQueued": "Your payout is queued — we release it to your primary method.",
+    "pendingUnderReview": "Your payout method is pending review. We will release once it clears."
   },
   "PerformanceDashboard": {
     "planThisMonth": "PLAN THIS MONTH",

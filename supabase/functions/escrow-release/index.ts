@@ -95,16 +95,29 @@ Deno.serve(async (req) => {
     const plan = resolveEffectivePlan(profile?.subscription_plan, profile?.created_at);
     const delayDays = PAYOUT_DELAY_DAYS[plan] ?? 7;
 
-    // Does the creator have a verified primary payment method? If not,
-    // park the payout — register-payout-method auto-resumes when a
-    // method gets added.
+    // Does the creator have a usable payout method? If not, park the payout —
+    // register-payout-method auto-resumes when one gets added.
+    //
+    // "Usable" is validation_status === "success" and NOTHING ELSE. This used
+    // to also require `razorpay_fund_account_id`, which silently broke every
+    // payout after the manual-payouts switch: RazorpayX was removed, so
+    // register-payout-method now writes that column as NULL by design (see its
+    // lines 218/232). Verified against live data — 10 payout methods exist and
+    // 0 carry a fund account — so the old predicate could never be true, every
+    // release landed in `pending_creator_info`, the admin queue never saw it,
+    // and the creator got a permanent "add a UPI ID" banner no matter how many
+    // valid UPIs they added.
+    //
+    // `scheduled` here means "ready for the admin payouts queue", not "will be
+    // paid automatically" — payouts-cron has been unscheduled since migration
+    // 032 and is not coming back on its own.
     const { data: methods } = await supabase
       .from("payment_methods")
-      .select("id, validation_status, is_primary, razorpay_fund_account_id")
+      .select("id, validation_status, is_primary")
       .eq("user_id", app.influencer_id)
       .order("is_primary", { ascending: false });
     const verified = (methods || []).find(
-      (m: any) => m.razorpay_fund_account_id && m.validation_status === "success"
+      (m: any) => m.validation_status === "success"
     );
     const hasVerified = !!verified;
 

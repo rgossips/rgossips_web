@@ -195,12 +195,48 @@ Deno.serve(async (req) => {
       }
     }
 
-    // First method auto-primary.
-    const { count: existingCount } = await supabase
+    // Reject a duplicate before inserting. Re-submitting the same UPI (or the
+    // same account+IFSC) used to create a second row, so a creator who added
+    // rudanboss@ybl twice ended up with two identical entries in different
+    // validation states — confusing, and it makes "which one gets paid?"
+    // ambiguous. Matching is on the identifier, not the label.
+    const { data: existingRows } = await supabase
       .from("payment_methods")
-      .select("*", { count: "exact", head: true })
+      .select("id, type, upi_id, account_number, ifsc")
       .eq("user_id", userId);
-    const isPrimary = (existingCount ?? 0) === 0 || payload.is_primary === true;
+
+    const duplicate = (existingRows || []).find((m: any) => {
+      if (m.type !== payload.type) return false;
+      if (payload.type === "upi") {
+        return (
+          String(m.upi_id || "").trim().toLowerCase() ===
+          String((payload as UpiBody).upi_id).trim().toLowerCase()
+        );
+      }
+      return (
+        String(m.account_number || "").trim() === String(payload.account_number).trim() &&
+        String(m.ifsc || "").trim().toUpperCase() ===
+          String(payload.ifsc).trim().toUpperCase()
+      );
+    });
+
+    if (duplicate) {
+      return json(
+        {
+          error:
+            payload.type === "upi"
+              ? "That UPI ID is already saved to your account."
+              : "That bank account is already saved to your account.",
+          code: "duplicate_method",
+          payment_method_id: duplicate.id,
+        },
+        409,
+      );
+    }
+
+    // First method auto-primary.
+    const existingCount = (existingRows || []).length;
+    const isPrimary = existingCount === 0 || payload.is_primary === true;
 
     const insertRow =
       payload.type === "upi"

@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AddReelFlow from "@/components/AddReelFlow";
 import DashboardView from "@/components/DashboardView";
 import MyInformationDetail from "@/components/MyInformationDetail";
@@ -15,6 +15,19 @@ import HelpSupport from "@/components/HelpAndSupport";
 import PaymentMethods from "@/components/PaymentMethods";
 import InfluencerAccountActionsModal from "@/components/InfluencerAccountActionsModal";
 
+// useSearchParams forces a CSR bailout, so it is isolated in a child wrapped
+// in <Suspense> rather than being read in the page body.
+function ViewFromQuery({ onView }) {
+  const searchParams = useSearchParams();
+  const view = searchParams?.get("view");
+  useEffect(() => {
+    if (view) onView(view);
+    // onView is a stable setState updater from the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+  return null;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
@@ -26,6 +39,12 @@ export default function ProfilePage() {
 
   return (
     <div className="bg-[#F3F4F9] min-h-screen pb-20 lg:pb-0 font-sans text-slate-900 antialiased overflow-x-hidden">
+      {/* Lets /influencer/profile?view=payments deep-link straight to the
+          payouts screen — what every payout notification and email points at. */}
+      <Suspense fallback={null}>
+        <ViewFromQuery onView={setView} />
+      </Suspense>
+
       <AnimatePresence mode="wait">
         {view === "dashboard" && (
           <DashboardView

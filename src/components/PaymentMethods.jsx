@@ -282,25 +282,49 @@ const PaymentMethods = ({ onBack }) => {
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 lg:px-10 mt-6 space-y-6">
-        {pendingEarnings.length > 0 && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="w-full flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer text-left"
-          >
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-              <AlertTriangle size={18} />
+        {/* Pending-earnings banner.
+            It used to render a single "Add a UPI ID or bank account" CTA
+            whenever anything was pending, without ever checking whether the
+            creator already HAD a method — so someone with two saved UPIs was
+            still told to add one, and the button reopened the add-method modal
+            they had already used. Now the three real states are distinct. */}
+        {pendingEarnings.length > 0 &&
+          (methods.length === 0 ? (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer text-left"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-amber-900">
+                  {t("pendingWaiting", { amount: pendingTotalInr.toLocaleString("en-IN") })}
+                </p>
+                <p className="text-[11px] font-bold text-amber-700 mt-0.5">{t("pendingHint")}</p>
+              </div>
+              <Plus size={16} className="text-amber-700 shrink-0" />
+            </button>
+          ) : (
+            // A method exists, so there is nothing for the creator to do —
+            // this is informational, not a call to action, and deliberately
+            // not a button.
+            <div className="w-full flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-amber-900">
+                  {t("pendingWaiting", { amount: pendingTotalInr.toLocaleString("en-IN") })}
+                </p>
+                <p className="text-[11px] font-bold text-amber-700 mt-0.5">
+                  {methods.some((m) => m.validation_status === "success")
+                    ? t("pendingQueued")
+                    : t("pendingUnderReview")}
+                </p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-amber-900">
-                {t("pendingWaiting", { amount: pendingTotalInr.toLocaleString("en-IN") })}
-              </p>
-              <p className="text-[11px] font-bold text-amber-700 mt-0.5">
-                {t("pendingHint")}
-              </p>
-            </div>
-            <Plus size={16} className="text-amber-700 shrink-0" />
-          </button>
-        )}
+          ))}
 
         <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
