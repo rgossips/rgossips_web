@@ -470,6 +470,7 @@ Deno.serve(async (req) => {
 
       const formatted = (campaigns || []).map((c: any) => {
         const { body, meta } = unpackDescription(c.description);
+        const m = meta as any;
         return {
           id: c.campaign_id,
           title: c.title,
@@ -490,6 +491,32 @@ Deno.serve(async (req) => {
           createdAt: c.created_at,
           applicationsTotal: appCounts[c.campaign_id]?.total || 0,
           applicationsPending: appCounts[c.campaign_id]?.pending || 0,
+          // The same description-metadata extras `get` returns. The edit dialog
+          // can be opened straight from this list, and every field absent here
+          // came back into the form empty and was then written back as empty on
+          // save — silently destroying the brand's Product / Service, content
+          // rules, usage rights and targeting detail. Keep this block in step
+          // with the one in `get`.
+          platforms: m.platforms || [],
+          offeringType: m.offering_type || "",
+          serviceLocation: m.service_location || "",
+          productName: m.product_name || "",
+          productValue: m.product_value || 0,
+          shippingRequired: m.shipping_required || "no",
+          shippingTimelineDays: m.shipping_timeline_days || 0,
+          barterCompensation: m.barter_compensation || "",
+          contentDos: m.content_dos || "",
+          contentDonts: m.content_donts || "",
+          requiredHashtags: m.required_hashtags || "",
+          brandHandlesToTag: m.brand_handles_to_tag || "",
+          requiresApproval: !!m.requires_approval,
+          approvalTurnaroundHours: m.approval_turnaround_hours || "",
+          usageRights: m.usage_rights || "",
+          keepupDuration: m.keepup_duration || "",
+          exclusivityDays: m.exclusivity_days || "0",
+          paymentTimeline: m.payment_timeline || "",
+          targetGender: m.target_gender || [],
+          targetLanguages: m.target_languages || [],
         };
       });
 
@@ -600,6 +627,12 @@ Deno.serve(async (req) => {
           createdAt: c.created_at,
           // Extended audit fields from description metadata
           platforms: m.platforms || [],
+          // offeringType + serviceLocation were packed on save but never
+          // returned, so the edit form could not restore them — the Product /
+          // Service block came back blank and saving wrote the blanks over the
+          // real values.
+          offeringType: m.offering_type || "",
+          serviceLocation: m.service_location || "",
           productName: m.product_name || "",
           productValue: m.product_value || 0,
           shippingRequired: m.shipping_required || "no",
