@@ -122,12 +122,20 @@ function useCampaign(id, userId) {
             requirements,
             payments: [{ type: "base", label: t("basePayment"), val: found.budget, sub: t("perInfluencer") }],
             brandStats: { campaigns: brandCampaigns.length, success: t("brandStats.activeCount", { count: activeBrandCampaigns }), response: "24h" },
-            deliverableIcons: found.deliverables
-              ? found.deliverables.split(" + ").map((d) => {
-                  const parts = d.split(":");
-                  return { platform: "instagram", count: parts[1] || "1", label: parts[0] || d };
-                })
-              : [],
+            // Built from the RAW content_types_required array ("reels:3"), not
+            // from the `deliverables` display string. That string is already
+            // humanised server-side into "3 Reels" and carries no colon, so the
+            // old `d.split(":")` put the whole thing in the label and fell back
+            // to count "1" — the card read "1" above "3 Reels".
+            deliverableIcons: (found.contentTypesRequired || []).map((entry) => {
+              const [type, countRaw] = String(entry).split(":");
+              const n = Number(countRaw);
+              const base = (type || String(entry)).charAt(0).toUpperCase() + (type || "").slice(1);
+              const count = Number.isFinite(n) && n > 0 ? n : 1;
+              // "1 Reel", not "1 Reels" — mirrors list-campaigns' singularise.
+              const label = count === 1 && base.endsWith("s") ? base.slice(0, -1) : base;
+              return { platform: "instagram", count, label };
+            }),
           });
         }
       } catch (err) {
@@ -1006,22 +1014,50 @@ function ActiveContent({ campaign }) {
             <p className="text-[9px] text-slate-400">{t("active.budget")}</p>
           </div>
         </div>
+        {/* Two chips, because these are two different dates and pairing one
+            date's label with the other's countdown is exactly the bug this
+            replaces: the card showed the APPLY date beside a countdown to the
+            DELIVERY date ("30 Sept 2026 / 32d left" on 5 Sept, counting to
+            7 Oct). Creators quote against the delivery window, so both matter. */}
         <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-2xl">
           <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center text-red-500">
             <Calendar size={14} />
           </div>
           <div>
+            <p className="text-[9px] font-bold text-red-400 uppercase tracking-wide">
+              {t("active.applyBy")}
+            </p>
             <p className="text-xs font-black text-slate-800">{campaign.deadline}</p>
-            {campaign.daysLeft && (
+            {campaign.applyDaysLeft && (
               <p className="text-[9px] text-red-400">
                 {/* "Expired"/"Today" are status words; only counts get " left". */}
-                {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today"
-                  ? campaign.daysLeft
-                  : t("active.daysLeft", { value: campaign.daysLeft })}
+                {campaign.applyDaysLeft === "Expired" || campaign.applyDaysLeft === "Today"
+                  ? campaign.applyDaysLeft
+                  : t("active.daysLeft", { value: campaign.applyDaysLeft })}
               </p>
             )}
           </div>
         </div>
+        {campaign.deliveryDeadline && (
+          <div className="flex items-center gap-2 bg-amber-50 px-4 py-2.5 rounded-2xl">
+            <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+              <Calendar size={14} />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wide">
+                {t("active.deliverBy")}
+              </p>
+              <p className="text-xs font-black text-slate-800">{campaign.deliveryDeadline}</p>
+              {campaign.deliveryDaysLeft && (
+                <p className="text-[9px] text-amber-500">
+                  {campaign.deliveryDaysLeft === "Expired" || campaign.deliveryDaysLeft === "Today"
+                    ? campaign.deliveryDaysLeft
+                    : t("active.daysLeft", { value: campaign.deliveryDaysLeft })}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         {campaign.slots && (
           <div className="flex items-center gap-2 bg-purple-50 px-4 py-2.5 rounded-2xl">
             <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center text-purple-500">
@@ -2276,7 +2312,13 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             <div className="text-center py-8 text-sm text-slate-400">{t("modal.noDeliverables")}</div>
           )}
 
-          {/* AI Compliance Pre-Check — optional, catches missing #ad / brand tag / hashtags before the brand sees it */}
+          {/* AI Compliance Pre-Check — optional, catches missing #ad / brand tag
+              / hashtags before the brand sees it.
+              CONTENT PHASE ONLY. It was rendering in the live-links flow too,
+              where the creator is pasting URLs of posts that are ALREADY
+              published — asking them to paste a caption for a compliance check
+              at that point is both confusing and too late to act on. */}
+          {!isLiveLinksFlow && (
           <div className="mt-2 rounded-2xl border border-purple-100 bg-gradient-to-br from-[#9810FA]/[0.03] to-[#E60076]/[0.03] overflow-hidden">
             <button
               type="button"
@@ -2341,6 +2383,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Footer — shrink-0 so it stays anchored at the bottom */}

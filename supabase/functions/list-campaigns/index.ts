@@ -199,21 +199,33 @@ Deno.serve(async (req) => {
         .toUpperCase()
         .slice(0, 2) || "??";
 
-      // Calculate days left + expired flag (uses end_date with deadline fallback)
-      let daysLeft = "";
-      let isExpired = false;
-      const deadlineSource = c.campaign_end_date || c.application_deadline;
-      if (deadlineSource) {
+      // Two DIFFERENT dates, and they must not be mixed up:
+      //   application_deadline — last day to APPLY
+      //   campaign_end_date    — last day to DELIVER
+      //
+      // `deadline` below formats application_deadline, but `daysLeft` used to
+      // count down to campaign_end_date. The card therefore showed the apply
+      // date beside a countdown to the delivery date — campaign "Launda Naach"
+      // read "30 Sept 2026 / 32d left" on 5 Sept, because it was counting to
+      // 7 Oct. Each date now gets its own countdown and the client shows both.
+      const countdown = (src: string | null) => {
+        if (!src) return { label: "", days: null as number | null, past: false };
         const diff = Math.ceil(
-          (new Date(deadlineSource).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          (new Date(src).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         );
-        if (diff > 0) daysLeft = `${diff}d`;
-        else if (diff === 0) daysLeft = "Today";
-        else {
-          daysLeft = "Expired";
-          isExpired = true;
-        }
-      }
+        if (diff > 0) return { label: `${diff}d`, days: diff, past: false };
+        if (diff === 0) return { label: "Today", days: 0, past: false };
+        return { label: "Expired", days: diff, past: true };
+      };
+
+      const applyCd = countdown(c.application_deadline);
+      const deliverCd = countdown(c.campaign_end_date);
+
+      // isExpired still tracks the campaign as a whole (end date, falling back
+      // to the apply date when there is no end date) — unchanged behaviour.
+      const overallCd = countdown(c.campaign_end_date || c.application_deadline);
+      const daysLeft = overallCd.label;
+      const isExpired = overallCd.past;
 
       // Application-deadline check is separate. isExpired above prefers
       // campaign_end_date and only falls back to application_deadline —
@@ -228,15 +240,17 @@ Deno.serve(async (req) => {
           new Date(c.application_deadline).getTime() < Date.now();
       }
 
-      // Format deadline
-      let deadline = "No deadline";
-      if (c.application_deadline) {
-        deadline = new Date(c.application_deadline).toLocaleDateString("en-IN", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-      }
+      // Format both dates the same way.
+      const fmtDate = (v: string | null) =>
+        v
+          ? new Date(v).toLocaleDateString("en-IN", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "";
+      const deadline = fmtDate(c.application_deadline) || "No deadline";
+      const deliveryDeadline = fmtDate(c.campaign_end_date);
 
       // Format budget
       let budget = "On request";
@@ -341,6 +355,11 @@ Deno.serve(async (req) => {
         tags,
         budget,
         deadline,
+        // Apply-by vs deliver-by, each with its OWN countdown, so the client
+        // never pairs one date's label with the other's remaining days.
+        applyDaysLeft: applyCd.label,
+        deliveryDeadline,
+        deliveryDaysLeft: deliverCd.label,
         daysLeft,
         deliverables,
         location,
