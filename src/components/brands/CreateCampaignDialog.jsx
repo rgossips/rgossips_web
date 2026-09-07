@@ -12,6 +12,7 @@ import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "luc
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import { useTranslations } from "next-intl";
+import { INDIAN_CITIES_SORTED } from "@/utils/indianCities";
 
 const CATEGORIES = [
   "Beauty & Skincare",
@@ -27,13 +28,21 @@ const CATEGORIES = [
   "Gaming & Entertainment",
   "Automobile & Mobility",
   "Entrepreneurship & Business",
+  // Catch-all for local trades and professional services — shopkeepers,
+  // doctors, lawyers, salons. They technically fit "Entrepreneurship &
+  // Business", but nobody self-describes that way when posting a campaign.
+  "Services (Local & Professional)",
   "Sustainable & Eco-conscious Living",
   "Pet Care & Animals",
 ];
 
 const PLATFORMS = ["Instagram"];
 
-const CITIES = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore", "Bhopal", "Kochi", "Remote"];
+// Quick-pick row only — NOT the set of targetable cities. Every city in
+// INDIAN_CITIES is now reachable through the search box below the chips.
+// This list used to be the only option, which meant Dehradun — the launch
+// city — could not be targeted at all.
+const CITIES = ["Dehradun", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore", "Bhopal", "Kochi", "Remote"];
 
 const LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada", "Bengali", "Gujarati", "Punjabi", "Malayalam"];
 
@@ -153,6 +162,50 @@ const parseContentTypes = (arr) => {
   return out;
 };
 
+// Search across the full canonical city list. The quick-pick chips above
+// cover the usual suspects; this is how every OTHER city becomes targetable.
+// Before this, target_cities could only ever hold one of 15 hardcoded names.
+function CitySearch({ selected, onToggle }) {
+  const t = useTranslations("BrandsCreateCampaignDialog");
+  const [q, setQ] = useState("");
+  const matches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (needle.length < 2) return [];
+    return INDIAN_CITIES_SORTED.filter(
+      (c) => c.toLowerCase().includes(needle) && !selected.includes(c),
+    ).slice(0, 8);
+  }, [q, selected]);
+
+  return (
+    <div className="relative">
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={t("placeholders.citySearch")}
+        aria-label={t("placeholders.citySearch")}
+        className="input"
+      />
+      {matches.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {matches.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                onToggle(c);
+                setQ("");
+              }}
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-[#E4E9F4] text-[#4A4568] hover:border-[#6A66C9] hover:text-[#6A66C9] cursor-pointer"
+            >
+              + {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Map a server-returned campaign row (from brand-campaigns.get, all
 // camelCase + metadata already merged) back into the snake_case form
 // shape used by this dialog. Used only in edit mode.
@@ -167,7 +220,11 @@ function campaignToForm(c) {
       title: c.title || "",
       description: c.description || "",
       campaign_type: c.campaignType || "barter",
-      offering_type: c.offering_type || (c.productName ? "product" : c.service_location ? "service" : "product"),
+      // The server returns camelCase. This read `c.offering_type` and
+      // `c.service_location`, which are the DB/meta names and are never present
+      // on the payload — so the inference always fell through to "product".
+      offering_type:
+        c.offeringType || (c.productName ? "product" : c.serviceLocation ? "service" : "product"),
       max_influencers: c.maxInfluencers ? String(c.maxInfluencers) : "",
       budget_total: c.budgetTotal ? String(c.budgetTotal) : "",
       budget_per_influencer: c.budgetPerInfluencer ? String(c.budgetPerInfluencer) : "",
@@ -232,6 +289,7 @@ export function CreateCampaignDialog({
   const [categories, setCategories] = useState([]);
   const [platforms, setPlatforms] = useState(["Instagram"]);
   const [cities, setCities] = useState([]);
+  const [bannerDragOver, setBannerDragOver] = useState(false);
   const [allIndia, setAllIndia] = useState(false);
   const [genders, setGenders] = useState([]);
   const [languages, setLanguages] = useState([]);
@@ -337,6 +395,24 @@ export function CreateCampaignDialog({
   const toggleCategory = toggleSetItem(setCategories);
   const togglePlatform = toggleSetItem(setPlatforms);
   const toggleCity = toggleSetItem(setCities);
+
+  // Single entry point for a picked OR dropped banner, so the size guard and
+  // the 3:1 cropper apply identically to both. Non-images are ignored rather
+  // than handed to the cropper, since a dropped PDF would otherwise open it.
+  const acceptBannerFile = (f) => {
+    if (!f) return;
+    if (!String(f.type || "").startsWith("image/")) {
+      setError(t("errors.bannerNotImage"));
+      return;
+    }
+    if (f.size > MAX_SOURCE_IMAGE_BYTES) {
+      setError(t("errors.bannerTooLarge"));
+      return;
+    }
+    setBCrop({ x: 0, y: 0 });
+    setBZoom(1);
+    setBannerCropSrc(URL.createObjectURL(f));
+  };
   const toggleGender = toggleSetItem(setGenders);
   const toggleLanguage = toggleSetItem(setLanguages);
 
@@ -450,12 +526,16 @@ export function CreateCampaignDialog({
     if (!form.campaign_start_date) errs.campaign_start_date = t("errors.startDateRequired");
     if (!form.application_deadline) errs.application_deadline = t("errors.deadlineRequired");
     if (!form.campaign_end_date) errs.campaign_end_date = t("errors.endDateRequired");
+    // Strictly before, not "not after". This was `>`, so setting the
+    // application deadline EQUAL to the delivery end date passed validation —
+    // and that leaves a campaign where applications close on the same day the
+    // content is due, so an accepted creator has zero time to deliver.
     if (
       form.application_deadline &&
       form.campaign_end_date &&
-      new Date(form.application_deadline) > new Date(form.campaign_end_date)
+      new Date(form.application_deadline) >= new Date(form.campaign_end_date)
     ) {
-      errs.application_deadline = t("errors.deadlineBeforeEnd");
+      errs.application_deadline = t("errors.endBeforeDeadline");
     }
 
     if (Object.keys(errs).length > 0) {
@@ -722,10 +802,28 @@ export function CreateCampaignDialog({
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="w-full h-40 border-2 border-dashed border-[#E4E9F4] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#9C97B8] hover:border-[#6A66C9] hover:text-[#6A66C9] cursor-pointer transition-colors"
+              // Drag-and-drop. onDragOver must preventDefault or the browser
+              // treats the drop as a navigation and opens the image instead.
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!bannerDragOver) setBannerDragOver(true);
+              }}
+              onDragLeave={() => setBannerDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setBannerDragOver(false);
+                acceptBannerFile(e.dataTransfer?.files?.[0]);
+              }}
+              className={`w-full h-40 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+                bannerDragOver
+                  ? "border-[#6A66C9] text-[#6A66C9] bg-[#6A66C9]/5"
+                  : "border-[#E4E9F4] text-[#9C97B8] hover:border-[#6A66C9] hover:text-[#6A66C9]"
+              }`}
             >
               <Upload size={24} />
-              <span className="text-xs font-semibold">{t("banner.clickToUpload")}</span>
+              <span className="text-xs font-semibold">
+                {bannerDragOver ? t("banner.dropHere") : t("banner.clickOrDrag")}
+              </span>
               <span className="text-[10px]">{t("banner.fileHint")}</span>
             </button>
           )}
@@ -735,18 +833,7 @@ export function CreateCampaignDialog({
             accept="image/*"
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f && f.size > MAX_SOURCE_IMAGE_BYTES) {
-                setError(t("errors.bannerTooLarge"));
-                e.target.value = "";
-                return;
-              }
-              // Open the 3:1 cropper instead of accepting the raw file.
-              if (f) {
-                setBCrop({ x: 0, y: 0 });
-                setBZoom(1);
-                setBannerCropSrc(URL.createObjectURL(f));
-              }
+              acceptBannerFile(e.target.files?.[0]);
               e.target.value = "";
             }}
           />
@@ -933,7 +1020,21 @@ export function CreateCampaignDialog({
             </label>
           }
         >
-          {!allIndia && <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />}
+          {!allIndia && (
+            <div className="space-y-2">
+              <ChipGroup options={CITIES} selected={cities} onToggle={toggleCity} />
+              {/* Anything already selected that is not in the quick-pick row —
+                  otherwise a city chosen via search would vanish from view. */}
+              {cities.filter((c) => !CITIES.includes(c)).length > 0 && (
+                <ChipGroup
+                  options={cities.filter((c) => !CITIES.includes(c))}
+                  selected={cities}
+                  onToggle={toggleCity}
+                />
+              )}
+              <CitySearch selected={cities} onToggle={toggleCity} />
+            </div>
+          )}
           {allIndia && <p className="text-[11px] text-[#6B6785] italic">{t("allIndiaNote")}</p>}
         </Section>
 

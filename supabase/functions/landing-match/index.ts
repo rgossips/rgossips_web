@@ -37,6 +37,9 @@ const CATEGORIES = [
   "Gaming & Entertainment",
   "Automobile & Mobility",
   "Entrepreneurship & Business",
+  // Mirrors src/utils/categories.js — CLAUDE.md requires these stay in step,
+  // or the LLM can emit a category the filter will never match.
+  "Services (Local & Professional)",
   "Sustainable & Eco-conscious Living",
   "Pet Care & Animals",
 ];

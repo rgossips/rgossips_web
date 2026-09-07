@@ -153,6 +153,11 @@ export default function PricingPage() {
   const renewal = getPlanRenewalInfo(profile, realRenewalTs);
   const currentPlanRaw = (profile?.subscription_plan || "").toLowerCase();
   const hasPaidPlan = !!currentPlanRaw && currentPlanRaw !== "free" && currentPlanRaw !== "trial";
+  // The cycle the user is actually subscribed on. Anything that isn't
+  // explicitly "annual" is treated as monthly, so a null/legacy value can't
+  // accidentally mark the annual card as current.
+  const currentBillingCycle =
+    (profile?.billing_cycle || "").toLowerCase() === "annual" ? "annual" : "monthly";
   const showRenewal = !onTrial && hasPaidPlan && renewal.daysLeft != null;
 
   // After Stripe / Razorpay redirects back with a success flag, the
@@ -732,7 +737,13 @@ export default function PricingPage() {
             const pricing = PLAN_PRICING[planId];
             const price = billing === "annual" ? pricing.annual : pricing.monthly;
             const monthEquiv = billing === "annual" ? pricing.monthlyEquivalent : pricing.monthly;
-            const isCurrent = effectivePlan === planId && !onTrial;
+            // Must match the CYCLE as well as the tier. There are six plans
+            // (3 tiers x 2 cycles) but this only compared the tier, so someone
+            // on Starter monthly saw the Starter ANNUAL card marked "Current
+            // plan" with its button disabled — making a monthly->annual
+            // upgrade impossible from this page.
+            const isCurrent =
+              effectivePlan === planId && !onTrial && billing === currentBillingCycle;
             const isPopular = meta.popular;
 
             return (

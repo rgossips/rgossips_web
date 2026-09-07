@@ -58,9 +58,15 @@ describe("services helpers", () => {
 });
 
 describe("static data lists", () => {
-  it("CATEGORIES: 15 unique entries", () => {
-    expect(CATEGORIES).toHaveLength(15);
-    expect(new Set(CATEGORIES).size).toBe(15);
+  it("CATEGORIES: 16 unique entries", () => {
+    // 16 since "Services (Local & Professional)" was added — a catch-all for
+    // local trades and professionals (shopkeepers, doctors, lawyers) who do
+    // not recognise themselves in "Entrepreneurship & Business".
+    // This list is MIRRORED in two other places and they must not drift:
+    // supabase/functions/landing-match (or the LLM emits a category the
+    // filter can never match) and CreateCampaignDialog.
+    expect(CATEGORIES).toHaveLength(16);
+    expect(new Set(CATEGORIES).size).toBe(16);
   });
   it("CONTENT_LANGUAGES: non-empty + unique", () => {
     expect(CONTENT_LANGUAGES.length).toBeGreaterThan(0);
