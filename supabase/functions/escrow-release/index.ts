@@ -116,8 +116,26 @@ Deno.serve(async (req) => {
       .select("id, validation_status, is_primary")
       .eq("user_id", app.influencer_id)
       .order("is_primary", { ascending: false });
+    // Usable = the creator gave us details and they are not KNOWN BAD.
+    //
+    // Requiring `success` was still wrong. `success` only happens when
+    // Razorpay's /payments/validate/vpa confirms the VPA, and that endpoint is
+    // not available on this account (test-mode key), so validateVpa returns
+    // "unavailable" and every method saves as `manual`. Live data: 7 payout
+    // methods, and the ones added recently are all `manual`. So the previous
+    // predicate was as unreachable as the fund-account one it replaced.
+    //
+    // Under manual payouts that distinction does not carry any weight anyway —
+    // register-payout-method only format-checks the UPI/account and an ADMIN
+    // verifies at actual payout time. `scheduled` means "in the admin queue",
+    // not "auto-paid", so nothing leaves the account without a human.
+    //
+    // `pending_creator_info` must mean what it says: the creator has not given
+    // us payout details. It must not mean "our validation vendor is offline",
+    // because that shows the creator an "add a UPI ID" prompt they cannot act
+    // on — they already added one.
     const verified = (methods || []).find(
-      (m: any) => m.validation_status === "success"
+      (m: any) => m.validation_status !== "failed"
     );
     const hasVerified = !!verified;
 

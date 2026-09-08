@@ -291,8 +291,17 @@ Deno.serve(async (req) => {
     // Auto-resume any waiting payouts. UPI flips straight to `scheduled`
     // (admin queue). Bank stays pending_creator_info until admin marks
     // it verified — we don't auto-release funds to an unverified bank.
+    // Unconditional, matching escrow-release: reaching this line means a
+    // method was saved, and a saved method is enough to move waiting payouts
+    // into the admin queue. An invalid VPA never gets here — it returns 400
+    // above — so `validationStatus` is only ever "success" or "manual" and
+    // there is nothing left to gate on.
+    //
+    // This used to require `success && isPrimary` and therefore never fired:
+    // validateVpa is unavailable on this account, so every method saves as
+    // `manual`. Money stayed parked no matter how many UPIs the creator added.
     let resumedCount = 0;
-    if (validationStatus === "success" && isPrimary) {
+    {
       const { data: resumed, error: resumeErr } = await supabase
         .from("campaign_applications")
         .update({ payout_status: "scheduled" })
