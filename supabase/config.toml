@@ -1,0 +1,223 @@
+# Supabase CLI config.
+#
+# WHY THIS FILE EXISTS. Without it every `functions deploy` used the CLI
+# default (verify_jwt = true), so redeploying a PUBLIC function silently
+# re-gated it behind JWT auth and the app — which calls edge functions with the
+# publishable key, not a JWT — started getting {"error":"Authentication Error"}.
+# The workaround was to remember `--no-verify-jwt` on every deploy, which is
+# exactly the kind of thing that gets forgotten.
+#
+# It also fixes the opposite failure, which is worse: the flag is STICKY and
+# one-way. `--no-verify-jwt` turns the gate off and there is no
+# `--verify-jwt` to turn it back on — a multi-function deploy that includes
+# the flag strips the gate from every function in the list, permanently, from
+# the CLI's point of view. That is how escrow-release lost its gate while its
+# sibling escrow-fund kept one.
+#
+# The values below were generated from the LIVE deployed state, so declaring
+# them changes nothing on its own. Keep them true. If you make a function
+# public, flip it here rather than passing a flag.
+project_id = "hlfevcdtbehukxrrgykv"
+
+[functions.admin-escrow-resolve]
+verify_jwt = true
+
+[functions.ai-generate]
+verify_jwt = false
+
+[functions.apply-campaign]
+verify_jwt = false
+
+[functions.attribute-referral]
+verify_jwt = true
+
+[functions.block-user]
+verify_jwt = true
+
+[functions.brand-campaigns]
+verify_jwt = false
+
+[functions.bright-responder]
+verify_jwt = true
+
+[functions.chat]
+verify_jwt = false
+
+[functions.check-phone-exists]
+verify_jwt = false
+
+[functions.check-profile]
+verify_jwt = false
+
+[functions.check-uniqueness]
+verify_jwt = false
+
+[functions.create-profile]
+verify_jwt = true
+
+[functions.ensure-referral-code]
+verify_jwt = true
+
+[functions.escrow-fund]
+verify_jwt = true
+
+[functions.escrow-release]
+  # Money movement. Gated like escrow-fund; it also does its own inline
+  # auth check, so this is defence in depth rather than the only lock.
+verify_jwt = true
+
+[functions.iap-expiry-sweep]
+verify_jwt = false
+
+[functions.iap-notifications]
+verify_jwt = false
+
+[functions.instagram-connect]
+verify_jwt = false
+
+[functions.instagram-login]
+verify_jwt = false
+
+[functions.landing-match]
+verify_jwt = false
+
+[functions.list-brands]
+verify_jwt = false
+
+[functions.list-campaigns]
+verify_jwt = false
+
+[functions.list-featured-campaigns]
+verify_jwt = false
+
+[functions.list-influencers]
+verify_jwt = false
+
+[functions.list-services]
+verify_jwt = false
+
+[functions.lookup-invitation]
+verify_jwt = false
+
+[functions.notifications]
+verify_jwt = false
+
+[functions.payouts-cron]
+verify_jwt = true
+
+[functions.public-media-kit]
+verify_jwt = false
+
+[functions.razorpay-checkout]
+verify_jwt = true
+
+[functions.razorpay-create-test-plans]
+verify_jwt = false
+
+[functions.razorpay-service-checkout]
+verify_jwt = false
+
+[functions.razorpay-webhook]
+verify_jwt = true
+
+[functions.razorpayx-test-balance]
+verify_jwt = true
+
+[functions.reconcile-subscription]
+verify_jwt = false
+
+[functions.redeem-rc]
+verify_jwt = true
+
+[functions.refresh-application-metrics]
+verify_jwt = true
+
+[functions.refresh-instagram]
+verify_jwt = false
+
+[functions.register-payout-method]
+verify_jwt = false
+
+[functions.register-push]
+verify_jwt = false
+
+[functions.report-content]
+verify_jwt = false
+
+[functions.request-revision]
+verify_jwt = false
+
+[functions.resolve-reel-thumbnails]
+verify_jwt = false
+
+[functions.respond-to-quote]
+verify_jwt = false
+
+[functions.seed-test-users]
+verify_jwt = false
+
+[functions.send-account-event-email]
+verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.send-welcome-message]
+verify_jwt = false
+
+[functions.service-payment-checkout]
+verify_jwt = false
+
+[functions.stripe-checkout]
+verify_jwt = true
+
+[functions.stripe-create-test-prices]
+verify_jwt = false
+
+[functions.stripe-debug]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = true
+
+[functions.submit-deliverables]
+verify_jwt = true
+
+[functions.submit-quote-request]
+verify_jwt = false
+
+[functions.submit-service-review]
+verify_jwt = false
+
+[functions.subscription-history]
+verify_jwt = false
+
+[functions.update-application-status]
+verify_jwt = true
+
+[functions.update-profile]
+verify_jwt = false
+
+[functions.upload-campaign-image]
+verify_jwt = false
+
+[functions.upload-profile-photo]
+verify_jwt = false
+
+[functions.verify-gstin]
+verify_jwt = false
+
+[functions.verify-iap-purchase]
+verify_jwt = true
+
+[functions.verify-service-payment]
+verify_jwt = true
+
+[functions.whatsapp-otp-sender]
+verify_jwt = false
+
+[functions.whatsapp-otp-verifier]
+verify_jwt = false

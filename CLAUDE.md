@@ -194,6 +194,27 @@ silently regress.
   events + fund-account validation.
 - **RazorpayX removed 2026-07** in favour of manual payouts. Admin has
   `/dashboard/payouts` queue.
+- **Payout gating after the RazorpayX removal (fixed 2026-09).** `escrow-release`
+  decided whether a creator could be paid by looking for a payout method with
+  `razorpay_fund_account_id` — a column `register-payout-method` writes as
+  NULL by design since the manual switch, so it was never true. Every release
+  fell to `pending_creator_info`, the admin queue (which only reads
+  `scheduled`) never saw it, and creators got a permanent "add a UPI ID"
+  banner. The first fix — require `validation_status = "success"` — was ALSO
+  unreachable: `success` needs Razorpay's `/payments/validate/vpa`, which is
+  not available on the test-mode key, so every method saves as `manual`.
+  **A method is usable when it is not `failed`.** Under manual payouts
+  register-payout-method only format-checks and an admin verifies at payout
+  time, so `scheduled` means "in the admin queue", never "auto-paid".
+  `pending_creator_info` must mean the creator gave us nothing — not that a
+  validation vendor is offline. The same predicate governs the auto-resume in
+  register-payout-method, which previously required `success && isPrimary` and
+  so never fired either.
+- **`/influencer/profile/payments` is a redirect, not a page.** PaymentMethods
+  is a VIEW inside `/influencer/profile`; the route exists only because
+  escrow-release, razorpay-webhook and admin-escrow-resolve all link to it from
+  notifications and emails, and those links were 404ing. It forwards to
+  `?view=payments` and preserves `?add=1`.
 - **First-cycle discount on Razorpay = throwaway-plan + scheduled upgrade
   (2026-07).** Razorpay has **no programmatic create-offer API** — `POST
   /v1/offers` 404s ("no Route matched") and the Offers product isn't enabled
@@ -947,8 +968,23 @@ metrics under the Applied / Completed tabs.
 - Apply new migration: `npx supabase db push`
 - Deploy one edge function: `npx supabase functions deploy <name>`
 - Deploy multiple: same command, space-separated names
-- **⚠️ verify_jwt landmine (2026-07): there is NO `supabase/config.toml`**, so a
-  plain `functions deploy` uses the CLI default `verify_jwt = true` and
+- **verify_jwt is now declared in `supabase/config.toml` (2026-09).** Every
+  function has an explicit `[functions.<slug>] verify_jwt` entry, generated
+  from the live deployed state, so a plain `functions deploy` is now correct
+  by default and `--no-verify-jwt` should not be needed. **To change a
+  function's gate, edit config.toml — not the command line.**
+  Two failure modes this closes, both seen in practice:
+  1. Forgetting the flag on a public function re-gated it and the app started
+     returning `{"error":"Authentication Error"}` (the original landmine).
+  2. **The flag is sticky and one-way.** `--no-verify-jwt` turns the gate OFF
+     and there is no `--verify-jwt` to turn it back on. A multi-function
+     deploy carrying the flag strips the gate from every function in the list
+     and the CLI cannot restore it — only config.toml or the dashboard can.
+     This is how `escrow-release` lost its gate while `escrow-fund` kept one.
+  Historical note, kept because it explains the old advice:
+- **⚠️ verify_jwt landmine (2026-07, now solved by config.toml above)**: with no
+  `supabase/config.toml`, a plain `functions deploy` used the CLI default
+  `verify_jwt = true` and
   **re-gates the function behind JWT auth on every deploy**. The app calls edge
   functions with the **publishable key** (`sb_publishable_…`, NOT a JWT) and does
   its own in-function auth, so any PUBLIC function redeployed without the flag

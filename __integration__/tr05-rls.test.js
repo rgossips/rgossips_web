@@ -83,6 +83,9 @@ const SNAPSHOT = [
   "support_callbacks", "user_blocks", "user_preferences", "v_referral_leaderboard_monthly",
   // Closed by migration 061 — previously in KNOWN_OPEN as F-17.
   "v_reward_credits_available_balance", "v_reward_credits_balance",
+  // Added by the in-app-purchase work (migration 065 / verify-iap-purchase).
+  // Holds per-user store subscription state; verified denying anon.
+  "iap_subscriptions",
 ];
 
 let exposed = [];
