@@ -75,6 +75,82 @@ Deno.serve(async (req) => {
         already_held: true,
       });
     }
+
+    // RECOVERY. The check above only catches an escrow already recorded as
+    // held, which leaves a real hole: escrow_status is flipped to 'held' by
+    // update-application-status, from the CLIENT, after Razorpay Checkout
+    // succeeds. If that call never lands — tab closed, network drop, browser
+    // killed between payment and callback — Razorpay has captured the brand's
+    // money while this row still shows no escrow. Pressing Approve again then
+    // fell through to creating a SECOND order, so the brand could pay twice
+    // and the first payment stayed orphaned with no way back.
+    //
+    // So: if we already minted an order for this application, ask Razorpay
+    // whether it was paid before minting another. Same authoritative
+    // order-status check verify-service-payment uses for service orders,
+    // which exists for exactly this reason. Razorpay is the source of truth
+    // about whether money moved; our DB is not.
+    const existingOrderId = (app as any).escrow_order_id as string | null;
+    if (existingOrderId) {
+      const rkId = Deno.env.get("RAZORPAY_KEY_ID");
+      const rkSecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      if (rkId && rkSecret) {
+        try {
+          const auth = `Basic ${btoa(`${rkId}:${rkSecret}`)}`;
+          const res = await fetch(
+            `https://api.razorpay.com/v1/orders/${encodeURIComponent(existingOrderId)}`,
+            { headers: { Authorization: auth }, signal: AbortSignal.timeout(15000) },
+          );
+          const rzpOrder = await res.json().catch(() => ({}));
+          if (res.ok && String(rzpOrder?.status) === "paid") {
+            // Money is already with Razorpay for this application. Record it
+            // rather than charging again. Best-effort payment id for the
+            // audit trail; the status flip matters more than the stamp.
+            let paymentId: string | null = null;
+            try {
+              const pRes = await fetch(
+                `https://api.razorpay.com/v1/orders/${encodeURIComponent(existingOrderId)}/payments`,
+                { headers: { Authorization: auth }, signal: AbortSignal.timeout(15000) },
+              );
+              const pBody = await pRes.json().catch(() => ({}));
+              const captured = (pBody?.items || []).find(
+                (x: any) => x?.status === "captured",
+              );
+              paymentId = captured?.id || null;
+            } catch { /* stamp is optional */ }
+
+            await supabase
+              .from("campaign_applications")
+              .update({
+                status: "approved",
+                escrow_status: "held",
+                escrow_funded_at: new Date().toISOString(),
+                ...(paymentId ? { escrow_payment_id: paymentId } : {}),
+              })
+              .eq("id", applicationId)
+              // Only recover a row still waiting to be funded. Without the
+              // status guard a late recovery could drag an application that
+              // had already moved on (submitted, accepted, live) BACKWARDS to
+              // approved. The escrow guard is belt-and-braces on top.
+              .eq("status", "offer_accepted")
+              .neq("escrow_status", "held");
+
+            return json({
+              ok: true,
+              order_id: existingOrderId,
+              amount_paise: (app as any).escrow_amount,
+              already_held: true,
+              recovered: true,
+            });
+          }
+        } catch (e) {
+          // Razorpay unreachable. Fall through and mint a new order rather
+          // than blocking the brand — the worst case is an unused order,
+          // which costs nothing, whereas refusing to proceed strands them.
+          console.error("escrow order recovery check failed:", String(e));
+        }
+      }
+    }
     // B15 negotiation flow: escrow can only be funded once the creator
     // has accepted the brand's priced offer. Funding a merely-pending
     // application would skip the influencer's consent step.
