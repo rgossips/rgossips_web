@@ -26,7 +26,29 @@
       "Bash(mbt *)",
       "Bash(cf *)",
       "Bash(python *)",
-      "Bash"
+      "Bash",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npx --yes supabase@latest db push)",
+      "Bash(npx --yes supabase@latest projects list)",
+      "Bash(node -e ' *)",
+      "Bash(npx jest *)",
+      "Bash(/c/Users/rocko/AppData/Local/Microsoft/WinGet/Packages/DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe/deno.exe check *)",
+      "Bash(/c/Users/rocko/AppData/Local/Microsoft/WinGet/Packages/DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe/deno.exe test *)",
+      "Bash(npx --yes supabase@latest migration list --linked)",
+      "Bash(npm run *)",
+      "Bash(echo \"=== edge functions ===\"; grep -rn 'rpc\\(\"\\\\\\(is_admin\\\\|is_super_admin\\\\|is_influencer\\\\|is_brand\\\\|is_app_admin\\\\|get_my_referral_rank\\\\|check_phone_exists\\\\|check_brand_invitation\\\\\\)\"' supabase/functions/ | head *)",
+      "Read(//d/Development/React Native/rsgossips_app/src/**)",
+      "Read(//d/Development/React/rsgossips_admin/src/**)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\(\\(j.projects||[]\\).map\\(p=>p.ref+' '+p.name+' linked='+p.linked\\).join\\('\\\\n'\\)\\)}catch{console.log\\(s.slice\\(0,200\\)\\)}}\\)\")",
+      "Bash(npx --yes supabase@latest functions deploy list-brands --no-verify-jwt)",
+      "Bash(cd \"/d/Development/React Native/rsgossips_app\" && grep -rho \"invokeFn<\\\\?[^\\(]*\\(\\\\s*'[a-z-]*'\" src/ | grep -o \"'[a-z-]*'\" | tr -d \"'\" | sort -u | tr '\\\\n' ' ')",
+      "Read(//d/Development/React Native/rsgossips_app/**)",
+      "Bash(npx tsc *)",
+      "Bash(mkdir -p __mocks__)",
+      "Bash(printf '// Stub for CSS imports \\(NativeWind global.css\\). Jest cannot parse CSS.\\\\nmodule.exports = {};\\\\n')",
+      "Bash(npx --yes supabase@latest functions deploy list-brands --no-verify-jwt --project-ref hlfevcdtbehukxrrgykv)",
+      "Bash(echo \"EXIT=$?\")"
     ]
   }
 }
