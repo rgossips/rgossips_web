@@ -47,18 +47,29 @@ Deno.serve(async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { influencerId } = await req.json().catch(() => ({}));
+    const { influencerId, campaignId } = await req.json().catch(() => ({}));
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch all campaigns
-    const { data: campaignRows, error: campError } = await supabaseAdmin
+    // Fetch campaigns. `campaignId` narrows to a single row — used by the
+    // shared-link Open Graph layout, which runs once per social crawler hit
+    // and has no business pulling the whole marketplace to read one title.
+    // Every downstream filter still runs unchanged, so a narrowed fetch
+    // answers exactly what the full list would have answered for that row.
+    let campaignQuery = supabaseAdmin
       .from("campaigns")
       .select("*")
       .order("created_at", { ascending: false });
+    // NOTE the column name: the campaigns table's primary key is
+    // `campaign_id`. This function renames it to `id` in its RESPONSE
+    // (see the mapping below), so the shape the client sees is not the
+    // shape you filter on — `.eq("id", …)` fails with
+    // "column campaigns.id does not exist".
+    if (campaignId) campaignQuery = campaignQuery.eq("campaign_id", campaignId);
+    const { data: campaignRows, error: campError } = await campaignQuery;
     let campaigns = campaignRows;
 
     // Hide campaigns from brands this creator has blocked (or who blocked

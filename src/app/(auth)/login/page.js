@@ -106,12 +106,25 @@ const LoginInner = () => {
   const initialRefCode = (searchParams?.get("ref") || "").trim();
   const startWithReferralSignup = !!initialRefCode && !(searchParams?.get("invited") || "").trim();
 
+  // /login?signup=1&role=influencer — the hand-off from CreatorAuthModal when
+  // a logged-out visitor tries to apply to a campaign. Creator sign-up starts
+  // with an Instagram OAuth full-page redirect, which a popup cannot survive,
+  // so the modal sends them here with the role already chosen and a
+  // ?redirect= back to the campaign. Skipping the role picker matters: the
+  // visitor already told us what they are by pressing Apply on a campaign.
+  const requestedSignupRole = (searchParams?.get("role") || "").trim();
+  const startWithRoleSignup =
+    (searchParams?.get("signup") || "") === "1" &&
+    (requestedSignupRole === "influencer" || requestedSignupRole === "brand") &&
+    !(searchParams?.get("invited") || "").trim() &&
+    !startWithReferralSignup;
+
   // --- UI & FLOW STATE ---
   // flow: "onboarding" | "signin" | "signup"
   // signin steps: 1=role, 2=phone entry, 3=otp verify
   // signup steps: 1=role, 2=instagram connect, 3=profile form, 4=categories, 5=preferences, 6=notifications, 7=success
-  const [flow, setFlow] = useState(startWithReferralSignup ? "signup" : "onboarding");
-  const [step, setStep] = useState(startWithReferralSignup ? 2 : 1);
+  const [flow, setFlow] = useState(startWithReferralSignup || startWithRoleSignup ? "signup" : "onboarding");
+  const [step, setStep] = useState(startWithReferralSignup || startWithRoleSignup ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("");
   const [error, setError] = useState("");
@@ -140,7 +153,7 @@ const LoginInner = () => {
 
   // --- SIGNUP DATA ---
   const [signupData, setSignupData] = useState({
-    role: startWithReferralSignup ? "influencer" : null,
+    role: startWithReferralSignup ? "influencer" : startWithRoleSignup ? requestedSignupRole : null,
     name: "",
     username: "",
     categories: [],

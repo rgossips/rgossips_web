@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, Compass, Briefcase, Sparkles, User } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // Mirrors DeskTopNavbar's nav exactly (same 5 entries, same icons, same
 // order). Keeping them in sync means a user has the same mental model
@@ -18,6 +19,33 @@ const navItems = [
 
 const BottomNav = () => {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  // Logged out, this bar's five tabs all lead somewhere that would reject
+  // them. The desktop navbar's Log in / Join buttons are `hidden lg:grid`,
+  // so without this the mobile campaign list would have no way in at all —
+  // the bar becomes the entry point instead of five dead ends.
+  if (!user) {
+    return (
+      <div className="fixed lg:hidden bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center gap-2 p-3 max-w-md mx-auto">
+          <Link
+            href={`/login?redirect=${encodeURIComponent(pathname || "/influencer/campaigns")}`}
+            className="flex-1 text-center py-3 rounded-2xl bg-slate-50 text-slate-700 font-bold text-sm"
+          >
+            Log in
+          </Link>
+          <Link
+            href={`/login?role=influencer&signup=1&redirect=${encodeURIComponent(pathname || "/influencer/campaigns")}`}
+            className="flex-1 text-center py-3 rounded-2xl text-white font-black text-sm shadow-md shadow-pink-100"
+            style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+          >
+            Join as creator
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed lg:hidden bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-100 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">

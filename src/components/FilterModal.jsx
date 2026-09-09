@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Home,
   Leaf,
+  MapPin,
   Plane,
   Shirt,
   Smartphone,
@@ -40,8 +41,25 @@ export const FilterContent = ({
   brands,
   selectedBrands,
   setSelectedBrands,
+  locations,
+  selectedLocations,
+  setSelectedLocations,
 }) => {
   const t = useTranslations("FilterModal");
+  // Location list can run long (every city any live campaign targets), so it
+  // gets a narrow-down box rather than a wall of chips.
+  const [locationQuery, setLocationQuery] = useState("");
+  const visibleLocations = useMemo(() => {
+    const q = locationQuery.trim().toLowerCase();
+    if (!q) return locations || [];
+    return (locations || []).filter((l) => l.toLowerCase().includes(q));
+  }, [locations, locationQuery]);
+  const handleLocationToggle = (name) => {
+    if (!setSelectedLocations) return;
+    setSelectedLocations((prev) =>
+      prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
+    );
+  };
   const handleBrandToggle = (name) => {
     if (!setSelectedBrands) return;
     setSelectedBrands((prev) =>
@@ -176,6 +194,57 @@ export const FilterContent = ({
         </section>
       )}
 
+      {/* Location — only rendered when the parent page supplies a list, so
+          pages without a location dimension (e.g. /influencer/brands) are
+          unchanged. */}
+      {locations && setSelectedLocations && locations.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <MapPin size={14} className="text-orange-500" />
+              {t("location")}
+            </h3>
+            {selectedLocations?.length > 0 && (
+              <button
+                onClick={() => setSelectedLocations([])}
+                className="text-[11px] font-bold text-slate-400 hover:text-[#E60076] cursor-pointer"
+              >
+                {t("clear")}
+              </button>
+            )}
+          </div>
+          {locations.length > 8 && (
+            <Input
+              value={locationQuery}
+              onChange={(e) => setLocationQuery(e.target.value)}
+              placeholder={t("searchCity")}
+              className="h-11 bg-slate-50 border-none rounded-xl text-sm font-medium"
+            />
+          )}
+          <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+            {visibleLocations.map((name) => {
+              const isSelected = selectedLocations?.includes(name);
+              return (
+                <button
+                  key={name}
+                  onClick={() => handleLocationToggle(name)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#E60076] text-white border border-[#E60076]"
+                      : "border border-slate-100 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+            {visibleLocations.length === 0 && (
+              <p className="text-xs font-medium text-slate-400">{t("noCityMatch")}</p>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Brand */}
       {brands && setSelectedBrands && brands.length > 0 && (
         <section className="space-y-4">
@@ -241,12 +310,16 @@ export const FilterSidebar = ({
   brands,
   selectedBrands,
   setSelectedBrands,
+  locations,
+  selectedLocations,
+  setSelectedLocations,
 }) => {
   const t = useTranslations("FilterModal");
   const activeFiltersCount =
     selectedCategories.length +
     (selectedPlatforms?.length || 0) +
     (selectedBrands?.length || 0) +
+    (selectedLocations?.length || 0) +
     (isVerifiedOnly ? 1 : 0) +
     (budgetRange.min > 0 || budgetRange.max < 10000 ? 1 : 0);
 
@@ -255,6 +328,7 @@ export const FilterSidebar = ({
     setBudgetRange({ min: 0, max: 10000 });
     if (setSelectedPlatforms) setSelectedPlatforms([]);
     if (setSelectedBrands) setSelectedBrands([]);
+    if (setSelectedLocations) setSelectedLocations([]);
     setIsVerifiedOnly(false);
   };
 
@@ -359,6 +433,47 @@ export const FilterSidebar = ({
         </div>
       )}
 
+      {/* Location Group — first four cities, rest behind "+N more". */}
+      {locations && setSelectedLocations && locations.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">{t("location")}</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {locations.slice(0, 4).map((name) => {
+              const isSelected = selectedLocations?.includes(name);
+              return (
+                <button
+                  key={name}
+                  onClick={() =>
+                    setSelectedLocations((prev) =>
+                      prev.includes(name) ? prev.filter((l) => l !== name) : [...prev, name]
+                    )
+                  }
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-[#E60076] text-white"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+            {locations.length > 4 && (
+              <button
+                onClick={onExpand}
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                  (selectedLocations || []).some((l) => !locations.slice(0, 4).includes(l))
+                    ? "bg-[#E60076] text-white"
+                    : "bg-[#E60076]/10 text-[#E60076] hover:bg-[#E60076]/20"
+                }`}
+              >
+                {t("moreCount", { count: locations.length - 4 })}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Brand Group */}
       {brands && setSelectedBrands && brands.length > 0 && (
         <div className="space-y-2">
@@ -440,6 +555,9 @@ const FilterModal = ({
   brands,
   selectedBrands,
   setSelectedBrands,
+  locations,
+  selectedLocations,
+  setSelectedLocations,
   title,
 }) => {
   const t = useTranslations("FilterModal");
@@ -449,6 +567,7 @@ const FilterModal = ({
     setBudgetRange({ min: 0, max: 10000 });
     if (setSelectedPlatforms) setSelectedPlatforms([]);
     if (setSelectedBrands) setSelectedBrands([]);
+    if (setSelectedLocations) setSelectedLocations([]);
     setIsVerifiedOnly(false);
   };
 
@@ -501,6 +620,9 @@ const FilterModal = ({
               brands={brands}
               selectedBrands={selectedBrands}
               setSelectedBrands={setSelectedBrands}
+              locations={locations}
+              selectedLocations={selectedLocations}
+              setSelectedLocations={setSelectedLocations}
             />
           </div>
 
@@ -560,6 +682,9 @@ const FilterModal = ({
               brands={brands}
               selectedBrands={selectedBrands}
               setSelectedBrands={setSelectedBrands}
+              locations={locations}
+              selectedLocations={selectedLocations}
+              setSelectedLocations={setSelectedLocations}
             />
           </div>
 

@@ -2253,7 +2253,9 @@
       "minutes": "{n}m",
       "hours": "{n}h",
       "days": "{n}d"
-    }
+    },
+    "logIn": "Log in",
+    "joinAsCreator": "Join as creator"
   },
   "EditProfilePage": {
     "editProfile": "Edit Profile",
@@ -2373,7 +2375,10 @@
     "moreCount": "+{count} more",
     "allFilters": "All Filters",
     "apply": "Apply",
-    "applyFilters": "Apply Filters"
+    "applyFilters": "Apply Filters",
+    "location": "Location",
+    "searchCity": "Search a city",
+    "noCityMatch": "No matching city"
   },
   "GalleryCarousel": {
     "title": "Gallery",
@@ -3015,6 +3020,17 @@
       "copied": "Copied",
       "limit": "You’ve used your AI generations this month.",
       "upgrade": "Upgrade"
+    },
+    "auth": {
+      "headline": "Apply to this campaign",
+      "subline": "Sign in as a creator to send {brand} your pitch.",
+      "brandTitle": "Creator accounts only",
+      "brandMessage": "You are signed in as a brand. Applying to a campaign is something creators do — sign in with a creator account to apply."
+    },
+    "share": {
+      "title": "Share",
+      "copied": "Link copied",
+      "text": "Check out this campaign on RGossips: {title}"
     }
   },
   "InfluencerPricing": {
@@ -5057,5 +5073,25 @@
     "refresh": "Try again",
     "checking": "Checking…",
     "autoNote": "We reconnect automatically when your network returns."
+  },
+  "CreatorAuthModal": {
+    "title": "One step to apply",
+    "subtitle": "RGossips campaigns are open to verified creators.",
+    "signUpCta": "Join as a creator",
+    "logInCta": "I already have an account",
+    "signUpLink": "Sign up",
+    "noAccount": "New to RGossips?",
+    "creatorsOnly": "Creator accounts only. Brands post campaigns from the brand dashboard.",
+    "back": "Back",
+    "close": "Close",
+    "perks": {
+      "apply": "Apply to paid and barter campaigns",
+      "escrow": "Payments held in escrow until work is approved",
+      "matched": "Get matched to brands in your niche"
+    },
+    "errors": {
+      "notRegistered": "That number is not registered yet. Create a creator account to apply.",
+      "registeredAsBrand": "That number is registered as a brand. Campaigns are applied to from a creator account."
+    }
   }
 }

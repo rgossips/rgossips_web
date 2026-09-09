@@ -120,6 +120,9 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
   const [coachOpen, setCoachOpen] = useState(false);
   const match = profile ? explainCampaignMatch(profile, campaign) : { score: matchScore || 0, breakdown: [] };
 
+  // Countdown that belongs to the date this card prints (the apply-by date).
+  const applyLeft = campaign.applyDaysLeft ?? campaign.daysLeft;
+
   // Status Badge Colors
   const statusStyles = {
     Active: "bg-[#00BA88] text-white",
@@ -190,16 +193,23 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           </div>
           <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-50">
             <p className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-1">
-              <Calendar size={10} className="text-blue-500" /> Deadline
+              <Calendar size={10} className="text-blue-500" /> Apply By
             </p>
             <p className="text-xs font-bold text-slate-800">
               {campaign.deadline}
-              {campaign.daysLeft && (
+              {applyLeft && (
                 <span className="text-[9px] text-red-500 ml-1">
-                  {/* daysLeft is either a day count ("3d") or a status word
+                  {/* The countdown must belong to the date printed beside it.
+                      `deadline` is application_deadline, so it pairs with
+                      applyDaysLeft — `daysLeft` counts to campaign_end_date and
+                      showed e.g. "30 Sept 2026 / 52d left" on a card whose apply
+                      window closed in 21. Fall back to daysLeft only for cached
+                      rows served before list-campaigns started returning the
+                      split fields.
+                      The value is either a day count ("3d") or a status word
                       ("Expired" / "Today"). Only append " left" to counts,
                       so an expired campaign reads "Expired", not "Expired left". */}
-                  {campaign.daysLeft === "Expired" || campaign.daysLeft === "Today" ? campaign.daysLeft : `${campaign.daysLeft} left`}
+                  {applyLeft === "Expired" || applyLeft === "Today" ? applyLeft : `${applyLeft} left`}
                 </span>
               )}
             </p>
@@ -241,7 +251,11 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
               }}
               className="flex-1 cursor-pointer h-12 rounded-2xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white font-bold text-sm shadow-lg shadow-pink-100"
             >
-              Apply Now <ChevronRight size={16} className="ml-1" />
+              {/* The card never applies — it opens the campaign, where the
+                  brief lives and where Apply is gated on being a signed-in
+                  creator. Labelling it "Apply Now" promised a step this
+                  button doesn't take. */}
+              <Eye size={16} className="mr-2" /> View Campaign <ChevronRight size={16} className="ml-1" />
             </Button>
           )}
 

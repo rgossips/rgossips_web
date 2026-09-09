@@ -35,6 +35,12 @@ const DESKTOP_NAV_ITEMS = [
   { key: "profile", icon: <User size={20} />, href: "/influencer/profile" },
 ];
 
+// The subset a logged-out visitor can actually open. The campaign
+// marketplace is public (see ProtectedRoute); every other tab bounces to
+// /login, and offering someone a tab that only rejects them is worse than
+// not offering it.
+const PUBLIC_NAV_KEYS = new Set(["campaigns"]);
+
 const NOTIF_ICON = {
   welcome: <UserPlus size={16} className="text-purple-500" />,
   profile_incomplete: <FileText size={16} className="text-amber-500" />,
@@ -206,7 +212,10 @@ export const DesktopNavbar = () => {
         </Link>
       </div>
       <div className="flex items-center gap-2">
-        {DESKTOP_NAV_ITEMS.map((item) => {
+        {(user
+          ? DESKTOP_NAV_ITEMS
+          : DESKTOP_NAV_ITEMS.filter((i) => PUBLIC_NAV_KEYS.has(i.key))
+        ).map((item) => {
           const isActive =
             item.href === "/influencer"
               ? pathname === "/influencer"
@@ -224,6 +233,28 @@ export const DesktopNavbar = () => {
         })}
       </div>
       <div className="hidden lg:flex items-center justify-end gap-3 flex-1">
+        {/* Logged out — on the public campaign pages — the bell, support and
+            log-out controls are all meaningless. Offer the one thing that is:
+            a way in, carrying the current page as the return target so they
+            come back to the campaign they were reading. */}
+        {!user && (
+          <div className="flex gap-2">
+            <Link
+              href={`/login?redirect=${encodeURIComponent(pathname || "/influencer/campaigns")}`}
+              className="px-5 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
+            >
+              {t("logIn")}
+            </Link>
+            <Link
+              href={`/login?role=influencer&signup=1&redirect=${encodeURIComponent(pathname || "/influencer/campaigns")}`}
+              className="px-5 py-3 rounded-2xl text-white font-black text-sm shadow-md shadow-pink-100 hover:opacity-95 transition-opacity"
+              style={{ background: "linear-gradient(135deg, #9810FA 0%, #E60076 100%)" }}
+            >
+              {t("joinAsCreator")}
+            </Link>
+          </div>
+        )}
+        {user && (
         <div className="flex gap-2">
           {/* Notification Bell with Popover */}
           <div className="relative" ref={popoverRef}>
@@ -309,6 +340,7 @@ export const DesktopNavbar = () => {
             <LogOut size={22} />
           </button>
         </div>
+        )}
       </div>
       <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
       <SupportChat open={supportOpen} onClose={() => setSupportOpen(false)} />

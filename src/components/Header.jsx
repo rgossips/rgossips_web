@@ -25,7 +25,11 @@ const Header = () => {
   // avoids a duplicate fetch.
 
   // Navigation items based on your reference images
+  // `link` entries navigate; the rest scroll to a section on the landing
+  // page. Campaigns is the only nav item that leaves the marketing site —
+  // it's the public campaign marketplace, browsable without an account.
   const navItems = [
+    { name: "Campaigns", id: "", link: "/influencer/campaigns" },
     { name: "Features", id: "features" },
     { name: "For Brands", id: "brands-influencers-section", type: "brands" },
     {
@@ -53,11 +57,14 @@ const Header = () => {
               <button
                 key={item.name}
                 onClick={() => {
-                  setScrollTo(item.id);
+                  // Navigate before touching scrollTo — a link item has no
+                  // section to scroll to, and seeding an empty target would
+                  // leave stale state behind on the landing page.
                   if (item?.link) {
                     router.push(item.link);
                     return;
                   }
+                  setScrollTo(item.id);
                   if (item.name == "For Brands") {
                     setType("brands");
                   } else if (item.name == "For Influencers") {
@@ -110,6 +117,13 @@ const Header = () => {
                 key={item.name}
                 onClick={() => {
                   setMenuOpen(false);
+                  // Same link handling as the desktop nav above. Without
+                  // this branch a `link` item was a dead tap on mobile —
+                  // it only ever set a scroll target that doesn't exist.
+                  if (item?.link) {
+                    router.push(item.link);
+                    return;
+                  }
                   setScrollTo(item.id);
 
                   if (item.name == "For Brands") {

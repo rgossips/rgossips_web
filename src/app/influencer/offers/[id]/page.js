@@ -51,6 +51,7 @@ import { useAiTool } from "@/hooks/useAiTool";
 import { AiMarkdown } from "@/components/AiMarkdown";
 import RatingModal from "@/components/RatingModal";
 import AlertPopup from "@/components/AlertPopup";
+import CreatorAuthModal from "@/components/auth/CreatorAuthModal";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
@@ -683,9 +684,63 @@ export default function CampaignDetailsPage() {
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
-  const { user } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [wrongRoleOpen, setWrongRoleOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const { user, role } = useAuth();
 
   const { campaign, loading, refetch } = useCampaign(id, user?.id);
+
+  // This page is public — it is the shareable unit, and a logged-out visitor
+  // has to be able to read the brief before deciding to sign up. Applying is
+  // where the wall goes, and it goes here on the FRONT end only for the
+  // experience; apply-campaign enforces the same thing server-side, which is
+  // the boundary that actually matters.
+  const requestApply = () => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    // Signed in, but as a brand. Brands don't apply to campaigns; say so
+    // rather than opening a form that would be rejected on submit.
+    if (role && role !== "influencer") {
+      setWrongRoleOpen(true);
+      return;
+    }
+    setIsApplyOpen(true);
+  };
+
+  // "Back to Campaigns" has to actually go to campaigns. router.back() is
+  // right for someone who arrived from the list, but a visitor landing here
+  // from a shared WhatsApp/Instagram link has no in-app history — back()
+  // would throw them off the site entirely, out of a button labelled
+  // "Back to Campaigns". Fall back to the list when the referrer isn't ours.
+  const goBack = () => {
+    const ref = typeof document !== "undefined" ? document.referrer : "";
+    const sameOrigin =
+      ref && typeof window !== "undefined" && ref.startsWith(window.location.origin);
+    if (sameOrigin) router.back();
+    else router.push("/influencer/campaigns");
+  };
+
+  // Copy/share the canonical campaign URL. Native share sheet where the
+  // browser offers one (mobile), clipboard everywhere else.
+  const shareCampaign = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const title = campaign?.title ? `${campaign.title} · ${campaign.brandName}` : "RGossips campaign";
+    try {
+      if (navigator?.share) {
+        await navigator.share({ title, text: t("share.text", { title }), url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // AbortError when the user dismisses the native sheet, or clipboard
+      // denied. Neither is worth an error toast.
+    }
+  };
 
   // Auto-prompt for rating once per session when an influencer lands on a
   // completed campaign they haven't rated yet. RLS scopes the row to the
@@ -744,7 +799,7 @@ export default function CampaignDetailsPage() {
       <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-lg font-bold text-slate-600">{t("campaignNotFound")}</p>
-          <button onClick={() => router.back()} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
+          <button onClick={goBack} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
             {t("goBack")}
           </button>
         </div>
@@ -779,20 +834,63 @@ export default function CampaignDetailsPage() {
         )}
       </AnimatePresence>
 
-      {/* Back link + manual refresh — status updates (brand approval,
+      <AnimatePresence>
+        {authOpen && (
+          <CreatorAuthModal
+            open
+            onClose={() => setAuthOpen(false)}
+            redirectTo={`/influencer/offers/${id}`}
+            headline={t("auth.headline")}
+            subline={t("auth.subline", { brand: campaign.brandName })}
+            onSuccess={() => {
+              // Stay put. Re-read the campaign so it comes back carrying this
+              // creator's application state, then open the form they were
+              // reaching for in the first place.
+              setAuthOpen(false);
+              refetch();
+              setIsApplyOpen(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AlertPopup
+        popup={
+          wrongRoleOpen
+            ? { title: t("auth.brandTitle"), message: t("auth.brandMessage"), tone: "info" }
+            : null
+        }
+        onClose={() => setWrongRoleOpen(false)}
+      />
+
+      {/* Back link + share + manual refresh — status updates (brand approval,
           revision requests, payment release) lag the polling, so a quick
           refresh button keeps the page honest. */}
       <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8 flex items-center justify-between mb-4 lg:mb-6">
-        <button onClick={() => router.back()} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+        <button onClick={goBack} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
           <ChevronLeft size={16} /> {t("backToCampaigns")}
         </button>
-        <button
-          onClick={() => refetch?.()}
-          title={t("refreshStatus")}
-          className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
-        >
-          <RefreshCw size={14} /> {t("refresh")}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={shareCampaign}
+            title={t("share.title")}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+          >
+            {shareCopied ? <Check size={14} className="text-emerald-500" /> : <Share2 size={14} />}
+            {shareCopied ? t("share.copied") : t("share.title")}
+          </button>
+          {/* Refresh only means something once there's an application to
+              track — a logged-out visitor has no status that can change. */}
+          {user && (
+            <button
+              onClick={() => refetch?.()}
+              title={t("refreshStatus")}
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-pink-500 px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+            >
+              <RefreshCw size={14} /> {t("refresh")}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 lg:px-8 pb-32 lg:pb-16">
@@ -916,7 +1014,7 @@ export default function CampaignDetailsPage() {
             <div className="lg:sticky lg:top-8 space-y-5">
               <ActiveSidebar
                 campaign={campaign}
-                onApply={isActive && !hasLiveApplication ? () => setIsApplyOpen(true) : null}
+                onApply={isActive && !hasLiveApplication ? requestApply : null}
                 appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
               />
@@ -940,7 +1038,7 @@ export default function CampaignDetailsPage() {
             </div>
           )}
           <button
-            onClick={() => setIsApplyOpen(true)}
+            onClick={requestApply}
             className="w-full h-12 rounded-2xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-[#9810FA] to-[#E60076] flex items-center justify-center gap-2"
           >
             {t("applyForCampaign")} <ChevronRight size={16} />

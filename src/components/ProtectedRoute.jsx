@@ -23,6 +23,13 @@ const publicPaths = [
   // and a reviewer opens it while signed out. Removing this entry silently
   // breaks the support link on both store listings.
   "/support",
+  // The campaign marketplace is the product's shop window: a logged-out
+  // visitor browses it, opens a campaign, and only meets the auth wall when
+  // they try to APPLY. Gating the list meant every shared campaign link
+  // bounced to /login and lost the visitor before they saw anything.
+  // Applying stays creator-only — enforced on the detail page and again by
+  // apply-campaign server-side, which is the boundary that actually counts.
+  "/influencer/campaigns",
 ];
 const publicPrefixes = [
   "/kit/",
@@ -35,6 +42,10 @@ const publicPrefixes = [
   // on after Meta's "track my deletion" link MUST be reachable without
   // auth — they won't be logged in to RGossips at that point.
   "/instagram/",
+  // Individual campaign pages — the shareable unit. A social crawler and a
+  // logged-out human both have to reach this without a session, or the
+  // Open Graph card in offers/[id]/layout.js describes a login screen.
+  "/influencer/offers/",
 ];
 
 const PROFILE_TIMEOUT = 5000; // 5 seconds before redirecting stale sessions

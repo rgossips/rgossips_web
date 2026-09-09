@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+
 export default function Hero() {
   return (
     <section
@@ -105,6 +108,51 @@ export default function Hero() {
               The Right Creators.
             </span>
           </h1>
+
+          {/* The only public destination that shows the actual product
+              rather than describing it. Every other CTA on this page goes
+              to /login, which asks a visitor to commit before they have
+              seen anything — this lets them browse live campaigns first
+              and meet the sign-up wall only when they try to apply. */}
+          <div
+            className="hero-cta-row"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              marginTop: "34px",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              animation: "riseIn 0.6s ease 0.16s both",
+            }}
+          >
+            <Link
+              href="/influencer/campaigns"
+              className="hero-cta"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "9px",
+                background: "linear-gradient(95deg, #7C3AED, #A855F7 60%, #EC4899)",
+                color: "#FFFFFF",
+                fontWeight: 800,
+                fontSize: "15.5px",
+                padding: "15px 30px",
+                borderRadius: "999px",
+                boxShadow: "0 10px 30px rgba(124,58,237,0.28)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Explore our campaigns
+              <ArrowRight size={17} />
+            </Link>
+            <span
+              className="hero-cta-note"
+              style={{ fontSize: "13.5px", fontWeight: 600, color: "#6B7280" }}
+            >
+              No account needed to browse
+            </span>
+          </div>
         </div>
       </div>
       <style>{`
@@ -129,6 +177,21 @@ export default function Hero() {
             line-height: 1.65 !important;
             margin-top: 16px !important;
             max-width: 100% !important;
+          }
+          .hero-cta-row {
+            margin-top: 24px !important;
+            gap: 10px !important;
+            flex-direction: column !important;
+            width: 100% !important;
+          }
+          .hero-cta {
+            width: 100% !important;
+            justify-content: center !important;
+            font-size: 14.5px !important;
+            padding: 14px 24px !important;
+          }
+          .hero-cta-note {
+            font-size: 12.5px !important;
           }
         
           

@@ -20,6 +20,7 @@ import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import ListPagination from "@/components/ListPagination";
+import { matchesAnyCity } from "@/utils/indianCities";
 
 export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
@@ -45,6 +46,14 @@ export default function CampaignsPage() {
   const [selectedBrands, setSelectedBrands] = useState(() => {
     const b = searchParams?.get("brand");
     return b ? [b] : [];
+  });
+  // ?city=Dehradun (single) or ?cities=Dehradun,Mumbai (multi) pre-fill the
+  // location filter, mirroring the category params above.
+  const [selectedLocations, setSelectedLocations] = useState(() => {
+    const single = searchParams?.get("city");
+    const multi = searchParams?.get("cities");
+    if (multi) return multi.split(",").map((c) => c.trim()).filter(Boolean);
+    return single ? [single] : [];
   });
 
   // --- FETCH CAMPAIGNS ---
@@ -87,6 +96,22 @@ export default function CampaignsPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [campaigns]);
 
+  // Cities the loaded campaigns actually target, so the filter can never
+  // offer a city that returns nothing. list-campaigns sends `location` as a
+  // joined string ("Mumbai, Pune") or the literal "Pan India" — split the
+  // former and drop the latter, which is not a place you can filter to.
+  const campaignLocations = useMemo(() => {
+    const set = new Set();
+    for (const c of campaigns) {
+      if (!c.location || c.location === "Pan India") continue;
+      for (const city of String(c.location).split(",")) {
+        const name = city.trim();
+        if (name) set.add(name);
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [campaigns]);
+
   // Which tab a campaign belongs to. "Completed" surfaces only campaigns
   // the user applied to AND finished. "Invites" holds campaigns the brand
   // personally invited the creator to but they HAVEN'T applied yet — once
@@ -121,9 +146,19 @@ export default function CampaignsPage() {
       campaign.tags.some((t) => selectedCategories.some((c) => t.toLowerCase().includes(c.toLowerCase())));
     const matchesBrand =
       selectedBrands.length === 0 || selectedBrands.includes(campaign.brandName);
+    // A Pan-India campaign is open to every city, so it survives any location
+    // filter — hiding it would be telling a Dehradun creator they can't apply
+    // to a campaign that explicitly targets everyone. Otherwise the same
+    // both-direction fuzzy match the campaign matcher and /brands/search use,
+    // so a campaign stored as "Mumbai, Pune" matches a "Mumbai" filter.
+    const matchesLocation =
+      selectedLocations.length === 0 ||
+      !campaign.location ||
+      campaign.location === "Pan India" ||
+      matchesAnyCity(campaign.location, selectedLocations);
     const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
     const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-    return matchesSearch && matchesCategory && matchesBrand && matchesBudget;
+    return matchesSearch && matchesCategory && matchesBrand && matchesLocation && matchesBudget;
   };
 
   // Count for a tab that respects the same active filters as the list.
@@ -164,7 +199,7 @@ export default function CampaignsPage() {
       .sort((a, b) => b.score - a.score)
       .map(({ c }) => c);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange, profile]);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange, profile]);
 
   // Client-side pagination — 30 per page, reset to page 1 whenever the tab
   // or any filter changes so the user never lands on an empty page.
@@ -173,7 +208,7 @@ export default function CampaignsPage() {
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, searchQuery, selectedCategories, selectedBrands, budgetRange]);
+  }, [activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange]);
   const pageCount = Math.max(1, Math.ceil(filteredCampaigns.length / PAGE_SIZE));
   const pagedCampaigns = filteredCampaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const goToPage = (p) => {
@@ -188,12 +223,14 @@ export default function CampaignsPage() {
     searchQuery.trim() !== "" ||
     selectedCategories.length > 0 ||
     selectedBrands.length > 0 ||
+    selectedLocations.length > 0 ||
     budgetRange.min > 0 ||
     budgetRange.max < 200000;
   const clearAllFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
     setSelectedBrands([]);
+    setSelectedLocations([]);
     setBudgetRange({ min: 0, max: 200000 });
   };
 
@@ -323,6 +360,9 @@ export default function CampaignsPage() {
               brands={brandNames}
               selectedBrands={selectedBrands}
               setSelectedBrands={setSelectedBrands}
+              locations={campaignLocations}
+              selectedLocations={selectedLocations}
+              setSelectedLocations={setSelectedLocations}
               onExpand={() => setIsFiltersOpen(true)}
             />
           </aside>
@@ -445,6 +485,9 @@ export default function CampaignsPage() {
             brands={brandNames}
             selectedBrands={selectedBrands}
             setSelectedBrands={setSelectedBrands}
+            locations={campaignLocations}
+            selectedLocations={selectedLocations}
+            setSelectedLocations={setSelectedLocations}
           />
         )}
       </AnimatePresence>
