@@ -413,36 +413,43 @@ export default function CampaignsPage() {
             )}
 
             {/* Mobile Stats */}
-            <div className="grid grid-cols-3 gap-4 lg:hidden">
+            {/* Compact: icon, count and label on one row. The stacked
+                version was a tall card per stat for three small numbers,
+                eating a screen-width band above the campaign list. */}
+            <div className="grid grid-cols-3 gap-2 lg:hidden">
               {[
                 {
                   label: "Active",
                   val: tabCount("Active"),
-                  icon: <Activity className="text-[#00BA88]" />,
+                  icon: <Activity size={13} className="text-[#00BA88]" />,
                   bg: "bg-emerald-50",
                 },
                 {
                   label: "Applied",
                   val: tabCount("Applied"),
-                  icon: <Clock className="text-blue-500" />,
+                  icon: <Clock size={13} className="text-blue-500" />,
                   bg: "bg-blue-50",
                 },
                 {
                   label: "Completed",
                   val: tabCount("Completed"),
-                  icon: <CheckCircle className="text-emerald-500" />,
+                  icon: <CheckCircle size={13} className="text-emerald-500" />,
                   bg: "bg-emerald-50",
                 },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white p-4 rounded-[24px] border border-slate-50 flex flex-col items-center text-center"
+                  className="bg-white px-2 py-2 rounded-2xl border border-slate-50 flex items-center justify-center gap-1.5"
                 >
-                  <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center mb-2`}>
+                  <div className={`w-6 h-6 ${stat.bg} rounded-lg flex items-center justify-center shrink-0`}>
                     {stat.icon}
                   </div>
-                  <p className="text-lg font-black text-slate-800 leading-none">{stat.val}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight mt-1">{t(`tabs.${stat.label}`)}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-800 leading-none">{stat.val}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight leading-none mt-0.5 truncate">
+                      {t(`tabs.${stat.label}`)}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>

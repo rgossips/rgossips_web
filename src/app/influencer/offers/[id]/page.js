@@ -713,6 +713,29 @@ export default function CampaignDetailsPage() {
     return () => cancelAnimationFrame(raf);
   }, [loading]);
 
+  // Tell the shared floating chrome that this page occupies the bottom of
+  // the mobile viewport, so ScrollToTop lifts above the Apply / status bar
+  // instead of sitting on it. The bar's top edge is 144px up (bottom-16 plus
+  // ~80px of content), and ScrollToTop's own base is 80px, so 72px of lift
+  // clears it with a small gap.
+  //
+  // The condition is re-derived here rather than reusing `isActive` /
+  // `hasLiveApplication` below: those are computed after this component's
+  // early returns for the loading and not-found states, and a hook cannot
+  // live after those.
+  const showsMobileBar =
+    !!campaign &&
+    (campaign.status === "Active" ||
+      (!!campaign.applicationStatus &&
+        campaign.applicationStatus !== "withdrawn" &&
+        campaign.applicationStatus !== "rejected"));
+  useEffect(() => {
+    if (!showsMobileBar) return;
+    const root = document.documentElement;
+    root.style.setProperty("--rg-bottom-bar", "4.5rem");
+    return () => root.style.removeProperty("--rg-bottom-bar");
+  }, [showsMobileBar]);
+
   // This page is public — it is the shareable unit, and a logged-out visitor
   // has to be able to read the brief before deciding to sign up. Applying is
   // where the wall goes, and it goes here on the FRONT end only for the
@@ -837,7 +860,7 @@ export default function CampaignDetailsPage() {
     campaign.applicationStatus !== "rejected";
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] pb-20 lg:pb-0 font-sans lg:mt-20">
+    <div className="min-h-screen bg-[#F8F9FD] font-sans lg:mt-20">
       <AnimatePresence>
         {isApplyOpen && (
           <ApplyCampaignForm
@@ -910,7 +933,7 @@ export default function CampaignDetailsPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 pb-32 lg:pb-16">
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 pb-8 lg:pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* ── LEFT COLUMN ── */}
           <div className="lg:col-span-2 space-y-6">

@@ -215,6 +215,14 @@
   display: none;
 }
 
+/* Height a page's own fixed mobile action bar occupies, so shared floating
+ * chrome (ScrollToTop) can lift clear of it instead of landing on top. Pages
+ * that have such a bar set this on document.documentElement while it is
+ * mounted; 0 is the correct default for every page that doesn't. */
+:root {
+  --rg-bottom-bar: 0px;
+}
+
 /* Quiet scrollbar for panels where the scrollbar is plumbing, not decoration
  * — the filters sidebar being the case that prompted it. The global rule
  * above paints every scrollbar in the brand gradient, which on a tall filter
