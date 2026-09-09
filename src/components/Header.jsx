@@ -25,11 +25,11 @@ const Header = () => {
   // avoids a duplicate fetch.
 
   // Navigation items based on your reference images
-  // `link` entries navigate; the rest scroll to a section on the landing
-  // page. Campaigns is the only nav item that leaves the marketing site —
-  // it's the public campaign marketplace, browsable without an account.
+  // Every entry here scrolls to a section on the landing page. An entry may
+  // also carry `link` to navigate instead — both handlers below support it,
+  // though nothing uses it today. The public campaign marketplace is reached
+  // from the Hero CTA, not from this menu.
   const navItems = [
-    { name: "Campaigns", id: "", link: "/influencer/campaigns" },
     { name: "Features", id: "features" },
     { name: "For Brands", id: "brands-influencers-section", type: "brands" },
     {
