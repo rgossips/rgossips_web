@@ -157,7 +157,7 @@ export default function DiscoverBrands() {
               overflow-y-auto so the "All Filters" expand button at the
               bottom stays reachable on short viewports without
               scrolling the full page. */}
-          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 scrollbar-thin">
+          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 scrollbar-subtle">
             <div className="relative group">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E60076]"

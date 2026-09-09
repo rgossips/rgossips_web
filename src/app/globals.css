@@ -215,6 +215,31 @@
   display: none;
 }
 
+/* Quiet scrollbar for panels where the scrollbar is plumbing, not decoration
+ * — the filters sidebar being the case that prompted it. The global rule
+ * above paints every scrollbar in the brand gradient, which on a tall filter
+ * column reads as a magenta rule down the page and pulls the eye away from
+ * the content it sits beside.
+ *
+ * Same two cascade constraints as .scrollbar-hide above, for the same
+ * reasons — this must be UNLAYERED so class specificity (0,1,0) beats the
+ * universal selector (0,0,0), and it must set the STANDARD `scrollbar-color`
+ * rather than only ::-webkit-scrollbar, because Chrome 121+ ignores the
+ * webkit pseudo-elements entirely once `scrollbar-width` is set (and the
+ * global `*` rule sets it). The webkit block is kept for older engines.
+ */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 100px;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 html body {
   overflow-x: hidden;
 }

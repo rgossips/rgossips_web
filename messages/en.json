@@ -2772,8 +2772,7 @@
     "perInfluencer": "Per influencer",
     "loadingCampaign": "Loading campaign...",
     "campaignNotFound": "Campaign not found",
-    "goBack": "Go back",
-    "backToCampaigns": "Back to Campaigns",
+    "goBack": "Browse all campaigns",
     "refreshStatus": "Refresh status",
     "refresh": "Refresh",
     "completed": "Completed",
@@ -3031,7 +3030,8 @@
       "title": "Share",
       "copied": "Link copied",
       "text": "Check out this campaign on RGossips: {title}"
-    }
+    },
+    "allCampaigns": "All Campaigns"
   },
   "InfluencerPricing": {
     "header": {

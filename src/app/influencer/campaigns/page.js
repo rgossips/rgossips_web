@@ -298,7 +298,7 @@ export default function CampaignsPage() {
               off-screen on short viewports — was forcing the user to
               scroll the full page to reach it. The thin pr-2 leaves
               room for the scrollbar without pushing content under it. */}
-          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 scrollbar-thin">
+          <aside className="hidden lg:block lg:col-span-3 space-y-8 sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 scrollbar-subtle">
             <div className="relative group">
               <Search
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E60076]"

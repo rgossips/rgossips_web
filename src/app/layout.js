@@ -158,6 +158,21 @@ export default async function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }}
         />
+        {/* Opt out of browser scroll restoration in <head>, before first
+            paint. ScrollReset also sets this, but it does so from a React
+            effect that only runs after hydration — by which point iOS Safari
+            has already decided to restore a remembered offset for this URL.
+            Safari defers that restore until the document is tall enough to
+            honour it, so on a page whose content arrives asynchronously the
+            offset gets applied AFTER the content lands, dropping the visitor
+            partway down a page they just opened fresh. Setting it here runs
+            before any of that. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if('scrollRestoration' in history){history.scrollRestoration='manual'}",
+          }}
+        />
       </head>
       <body
         suppressHydrationWarning

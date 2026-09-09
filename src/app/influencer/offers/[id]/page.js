@@ -691,6 +691,28 @@ export default function CampaignDetailsPage() {
 
   const { campaign, loading, refetch } = useCampaign(id, user?.id);
 
+  // Land at the top when the campaign content first renders.
+  //
+  // ScrollReset resets on pathname change, but on a cold load from a shared
+  // link the pathname never changes — the page mounts showing a one-screen
+  // loading state and only becomes tall once the fetch resolves. iOS Safari
+  // holds a remembered scroll offset for the URL until the document is tall
+  // enough to apply it, so it lands AFTER the content does and drops the
+  // visitor at the banner instead of the top of a page they just opened.
+  // The <head> script in the root layout stops Safari remembering; this
+  // handles anything that still shifts us during the swap.
+  //
+  // Once only: `refetch` (after applying, or the Refresh button) must not
+  // yank the reader back to the top mid-page.
+  const didInitialScroll = React.useRef(false);
+  useEffect(() => {
+    if (loading || didInitialScroll.current) return;
+    didInitialScroll.current = true;
+    // After paint, so it wins against the layout the content swap causes.
+    const raf = requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => cancelAnimationFrame(raf);
+  }, [loading]);
+
   // This page is public — it is the shareable unit, and a logged-out visitor
   // has to be able to read the brief before deciding to sign up. Applying is
   // where the wall goes, and it goes here on the FRONT end only for the
@@ -710,18 +732,13 @@ export default function CampaignDetailsPage() {
     setIsApplyOpen(true);
   };
 
-  // "Back to Campaigns" has to actually go to campaigns. router.back() is
-  // right for someone who arrived from the list, but a visitor landing here
-  // from a shared WhatsApp/Instagram link has no in-app history — back()
-  // would throw them off the site entirely, out of a button labelled
-  // "Back to Campaigns". Fall back to the list when the referrer isn't ours.
-  const goBack = () => {
-    const ref = typeof document !== "undefined" ? document.referrer : "";
-    const sameOrigin =
-      ref && typeof window !== "undefined" && ref.startsWith(window.location.origin);
-    if (sameOrigin) router.back();
-    else router.push("/influencer/campaigns");
-  };
+  // The link is labelled "All Campaigns", so it goes to all campaigns —
+  // always, for everyone. This used to be router.back(), which sent a
+  // visitor arriving from a shared WhatsApp/Instagram link straight off the
+  // site (no in-app history to go back through); the referrer sniffing that
+  // replaced it made the destination depend on where you came from, which a
+  // link naming its destination shouldn't do.
+  const goToAllCampaigns = () => router.push("/influencer/campaigns");
 
   // Copy/share the canonical campaign URL. Native share sheet where the
   // browser offers one (mobile), clipboard everywhere else.
@@ -799,7 +816,7 @@ export default function CampaignDetailsPage() {
       <div className="min-h-screen bg-[#F8F9FD] flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-lg font-bold text-slate-600">{t("campaignNotFound")}</p>
-          <button onClick={goBack} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
+          <button onClick={goToAllCampaigns} className="text-sm text-purple-500 font-bold hover:underline cursor-pointer">
             {t("goBack")}
           </button>
         </div>
@@ -867,8 +884,8 @@ export default function CampaignDetailsPage() {
           revision requests, payment release) lag the polling, so a quick
           refresh button keeps the page honest. */}
       <div className="max-w-6xl mx-auto px-4 lg:px-8 pt-6 lg:pt-8 flex items-center justify-between mb-4 lg:mb-6">
-        <button onClick={goBack} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-          <ChevronLeft size={16} /> {t("backToCampaigns")}
+        <button onClick={goToAllCampaigns} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+          <ChevronLeft size={16} /> {t("allCampaigns")}
         </button>
         <div className="flex items-center gap-1">
           <button
@@ -1028,7 +1045,7 @@ export default function CampaignDetailsPage() {
 
       {/* Mobile floating bar */}
       {isActive && !hasLiveApplication && (
-        <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
+        <div className={`lg:hidden fixed ${user ? "bottom-16" : "bottom-0"} left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50`}>
           {campaign.invited && (
             <div className="mb-2 flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white px-3 py-2">
               <Sparkles size={14} className="shrink-0" />
@@ -1046,7 +1063,7 @@ export default function CampaignDetailsPage() {
         </div>
       )}
       {hasLiveApplication && (
-        <div className="lg:hidden fixed bottom-16 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50">
+        <div className={`lg:hidden fixed ${user ? "bottom-16" : "bottom-0"} left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50`}>
           <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
       )}
