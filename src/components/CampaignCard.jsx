@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Calendar, MapPin, FileText, DollarSign, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap, Sparkles, X, Copy, Check } from "lucide-react";
+import { Calendar, MapPin, FileText, IndianRupee, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap, Sparkles, X, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -187,7 +187,8 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-50">
             <p className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-1">
-              <DollarSign size={10} className="text-[#00BA88]" /> Budget
+              {/* Budgets are rupees. A $ beside "₹11,708" is just wrong. */}
+              <IndianRupee size={10} className="text-[#00BA88]" /> Budget
             </p>
             <p className="text-xs font-bold text-[#00BA88]">{campaign.budget}</p>
           </div>

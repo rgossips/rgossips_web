@@ -6,7 +6,7 @@ import {
   Search,
   SlidersHorizontal,
   ArrowUpDown,
-  DollarSign,
+  IndianRupee,
   Users,
   MapPin,
   Check,
@@ -472,7 +472,7 @@ export default function RecommendedCampaigns() {
                     {/* Pay + Followers row */}
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
                       <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <DollarSign size={12} className="text-green-500" />
+                        <IndianRupee size={12} className="text-green-500" />
                         <span className="font-semibold">{c.budget || t("card.budgetFallback")}</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -767,7 +767,7 @@ function BudgetDrawer({ budgetMin, setBudgetMin, budgetMax, setBudgetMax }) {
     <Drawer>
       <DrawerTrigger asChild>
         <button className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-slate-600">
-          <DollarSign size={12} /> {t("budget.pill")}
+          <IndianRupee size={12} /> {t("budget.pill")}
           {(budgetMin || budgetMax) && (
             <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
           )}

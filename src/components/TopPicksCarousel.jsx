@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { MapPin, DollarSign, Users } from "lucide-react";
+import { MapPin, IndianRupee, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -220,7 +220,7 @@ function CampaignCard({ item, onApply }) {
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-slate-50/80 p-3 rounded-2xl border border-slate-50">
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mb-1">
-              <DollarSign size={10} className="text-green-500" /> {t("pay")}
+              <IndianRupee size={10} className="text-green-500" /> {t("pay")}
             </p>
             <p className="text-xs font-black text-slate-800">{item.pay}</p>
           </div>
