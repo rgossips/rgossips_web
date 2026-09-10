@@ -85,6 +85,39 @@ export function razorpayCredsForMode(mode: RzpMode): RzpCreds | null {
   return readCreds(mode);
 }
 
+/**
+ * Test-mode Razorpay plan id for a tier + cycle, or null.
+ *
+ * Razorpay plans are scoped to a mode: a live plan id does not exist in test
+ * mode and vice versa. The browser sends the plan id it was BUILT with —
+ * live ids, baked into the bundle from the deploy host's env — so an
+ * allowlisted developer would send a live id to a server holding test keys
+ * and Razorpay would answer "plan not found". Their subscriptions would be
+ * the one thing the allowlist broke.
+ *
+ * So for test mode the server ignores the client's id and resolves its own.
+ * One JSON secret rather than six flat ones, because these six values only
+ * ever change together:
+ *
+ *   RAZORPAY_TEST_PLAN_IDS={"starter":{"monthly":"plan_x","annual":"plan_y"},…}
+ *
+ * Unset or malformed returns null and the caller keeps the client's id —
+ * which is correct for live mode and, for a misconfigured test account,
+ * fails loudly at Razorpay rather than silently charging the wrong plan.
+ */
+export function testPlanId(plan: string, cycle: string): string | null {
+  const raw = Deno.env.get("RAZORPAY_TEST_PLAN_IDS");
+  if (!raw) return null;
+  try {
+    const map = JSON.parse(raw) as Record<string, Record<string, string>>;
+    const id = map?.[String(plan).toLowerCase()]?.[String(cycle).toLowerCase()];
+    return id ? String(id) : null;
+  } catch {
+    console.error("razorpay: RAZORPAY_TEST_PLAN_IDS is not valid JSON");
+    return null;
+  }
+}
+
 export function rzpAuthHeader(creds: RzpCreds): string {
   return `Basic ${btoa(`${creds.keyId}:${creds.keySecret}`)}`;
 }

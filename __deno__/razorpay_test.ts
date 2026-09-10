@@ -17,6 +17,7 @@ import {
   isTestUser,
   razorpayCreds,
   razorpayCredsForMode,
+  testPlanId,
   verifyWebhookSignature,
 } from "../supabase/functions/_shared/razorpay.ts";
 
@@ -24,6 +25,7 @@ const DEV = "aaaaaaaa-0000-0000-0000-000000000001";
 const CUSTOMER = "bbbbbbbb-0000-0000-0000-000000000002";
 
 const ENV_KEYS = [
+  "RAZORPAY_TEST_PLAN_IDS",
   "RAZORPAY_KEY_ID",
   "RAZORPAY_KEY_SECRET",
   "RAZORPAY_TEST_KEY_ID",
@@ -165,5 +167,28 @@ Deno.test("a body tampered with after signing is rejected", async () => {
     const signed = await sign("live_hook", JSON.stringify({ amount: 100 }));
     const tampered = JSON.stringify({ amount: 999999 });
     assertEquals(await verifyWebhookSignature(tampered, signed), { ok: false, mode: null });
+  });
+});
+
+Deno.test("test-mode plan ids resolve per tier and cycle", async () => {
+  const MAP = JSON.stringify({
+    starter: { monthly: "plan_sm", annual: "plan_sa" },
+    pro: { monthly: "plan_pm", annual: "plan_pa" },
+  });
+  await withEnv({ RAZORPAY_TEST_PLAN_IDS: MAP } as never, () => {
+    assertEquals(testPlanId("starter", "monthly"), "plan_sm");
+    assertEquals(testPlanId("PRO", "ANNUAL"), "plan_pa");
+    // A tier with no mapping must not silently return another tier's plan.
+    assertEquals(testPlanId("elite", "monthly"), null);
+    assertEquals(testPlanId("starter", "weekly"), null);
+  });
+});
+
+Deno.test("a missing or malformed plan map yields null, never a guess", async () => {
+  await withEnv({} as never, () => {
+    assertEquals(testPlanId("starter", "monthly"), null);
+  });
+  await withEnv({ RAZORPAY_TEST_PLAN_IDS: "{not json" } as never, () => {
+    assertEquals(testPlanId("starter", "monthly"), null);
   });
 });

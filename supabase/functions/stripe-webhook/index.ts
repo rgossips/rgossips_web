@@ -122,7 +122,7 @@ async function cancelPriorSubscriptions(opts: {
   priorStripe: string | null;
   priorRazorpay: string | null;
 }) {
-  const { skipStripeSubId, priorStripe, priorRazorpay } = opts;
+  const { userId, skipStripeSubId, priorStripe, priorRazorpay } = opts;
 
   // Stripe: ignore if the prior sub IS the one we just activated (Stripe
   // re-issues the same id on a checkout for the same customer; we don't

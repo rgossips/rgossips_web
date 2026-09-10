@@ -27,6 +27,7 @@ import {
 } from "../_shared/referrals.ts";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
 import {
+  isTestUser,
   razorpayCreds,
   razorpayCredsForMode,
   verifyWebhookSignature,
@@ -351,9 +352,13 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
       const customerId = (extras as any).razorpay_customer_id as string | undefined;
       if (!to && customerId) {
         try {
-          const modeCreds = razorpayCredsForMode(rzpMode);
-          const keyId = modeCreds?.keyId;
-          const keySecret = modeCreds?.keySecret;
+          // Derived from the SUBSCRIBER, not the event mode: this runs
+          // inside setUserPlan, which has no rzpMode in scope. It is also
+          // the more robust source — a customer record belongs to the same
+          // mode as the user who owns it.
+          const custCreds = razorpayCreds(userId);
+          const keyId = custCreds?.keyId;
+          const keySecret = custCreds?.keySecret;
           if (keyId && keySecret) {
             const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
             const custRes = await fetch(
@@ -723,6 +728,25 @@ Deno.serve(async (req) => {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // A TEST-mode event may only touch a TEST-mode user.
+    //
+    // Test mode is trivially reachable — anyone who can open checkout on the
+    // test dashboard can "pay" with a test card. The events that result are
+    // real, correctly-signed webhook deliveries, and everything below grants
+    // a subscription straight from the payload. Without this gate, a test
+    // payment buys a real plan.
+    //
+    // Pairing the event's mode with the allowlist is what makes the split
+    // safe in both directions: an enrolled developer's test purchases work
+    // normally, and a test event aimed at anybody else is dropped.
+    if (rzpMode === "test" && !isTestUser(userId)) {
+      console.warn("razorpay webhook: test-mode event for a non-test user, ignored");
+      return new Response(
+        JSON.stringify({ received: true, skipped: "test event for non-test user" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     switch (type) {

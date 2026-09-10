@@ -51,24 +51,37 @@ export const PLAN_STRIPE_PRICES = {
 // Test-mode IDs are checked in as defaults so the local + staging flows
 // work without needing every dev to set six env vars. Production overrides
 // via NEXT_PUBLIC_RAZORPAY_PLAN_<PLAN>_<CYCLE> in Netlify.
+// NO FALLBACKS, deliberately. These used to default to hardcoded test-mode
+// plan ids. Once the account is live, a single missing env var on the
+// deploy host would pair a TEST plan id with a LIVE key — Razorpay rejects
+// that at checkout, so it fails for real customers only, in production, and
+// nowhere earlier. Empty is better: the caller in pricing/page.js already
+// guards on a falsy id and shows an error naming the exact variable to set.
 export const PLAN_RAZORPAY_IDS = {
   starter: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY || "plan_T1Y2naNQ87SYv2",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL  || "plan_T1Y2nn8FJlHWD1",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_MONTHLY || "",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_STARTER_ANNUAL  || "",
   },
   pro: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_MONTHLY     || "plan_T1Y2nz7EZ9TyVd",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_ANNUAL      || "plan_T1Y2oBVHOMtPtY",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_MONTHLY     || "",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_PRO_ANNUAL      || "",
   },
   elite: {
-    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_MONTHLY   || "plan_T1Y2oKsjhqTM11",
-    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_ANNUAL    || "plan_T1Y2oVUdagzL8t",
+    monthly: process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_MONTHLY   || "",
+    annual:  process.env.NEXT_PUBLIC_RAZORPAY_PLAN_ELITE_ANNUAL    || "",
   },
 };
 
-// Public Razorpay key surfaced to the browser checkout. Server-side
-// secret + webhook secret live in Supabase Edge Function secrets only.
-export const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_T1WsWMDox1kR7Z";
+// Public Razorpay key. Server-side secret + webhook secret live in Supabase
+// Edge Function secrets only.
+//
+// Nothing in the web app reads this any more: every checkout path takes
+// `key_id` from its own server response instead, which is what lets the
+// test-mode allowlist work — the widget opens in whatever mode the server
+// created the order in, and the two can never drift apart. Kept as an
+// export for parity with the mobile config, without a test-key fallback
+// that would silently misreport the mode.
+export const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
 
 export const PAYMENT_GATEWAYS = ["stripe", "razorpay"];
 

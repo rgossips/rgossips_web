@@ -13,7 +13,7 @@
 //   { userId: string, planId: string, plan: "starter"|"pro"|"elite", cycle: "monthly"|"annual", email?: string, name?: string, contact?: string }
 
 import { rewardsEnabled } from "../_shared/rewards.ts";
-import { razorpayCreds } from "../_shared/razorpay.ts";
+import { razorpayCreds, testPlanId } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,9 +73,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId, planId, plan, cycle, email, name, contact, applyRc, planPriceRupees } = await req.json();
+    const { userId, planId: clientPlanId, plan, cycle, email, name, contact, applyRc, planPriceRupees } = await req.json();
 
-    if (!userId || !planId) {
+    if (!userId || !clientPlanId) {
       return new Response(
         JSON.stringify({ error: "userId and planId are required" }),
         { status: 200, headers: jsonHeaders }
@@ -94,6 +94,12 @@ Deno.serve(async (req) => {
         { status: 200, headers: jsonHeaders }
       );
     }
+
+    // In test mode the client's plan id is a LIVE id — it was baked into
+    // the bundle at build time — and would not resolve against test keys.
+    // The server substitutes its own for the same tier + cycle.
+    const planId =
+      creds.mode === "test" ? (testPlanId(plan, cycle) || clientPlanId) : clientPlanId;
 
     const appUrl = Deno.env.get("APP_URL") || "https://rgossips.com";
     const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
