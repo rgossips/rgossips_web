@@ -4316,9 +4316,8 @@
     },
     "validation": {
       "verified": "Saved",
-      "failed": "Verify failed",
-      "verifying": "Pending review",
-      "failedReason": "Could not save this account"
+      "failed": "Details failed",
+      "failedReason": "These details were rejected. Please replace them."
     },
     "creditHistory": "Credit History",
     "noPayouts": "No payouts yet",
@@ -4375,7 +4374,7 @@
       "invalidHandle": "The bank handle (after @) should be alphabetic, e.g. okhdfcbank, paytm, ybl."
     },
     "pendingQueued": "Your payout is queued — we release it to your primary method.",
-    "pendingUnderReview": "Your payout method is pending review. We will release once it clears."
+    "pendingDetailsFailed": "Your saved details were rejected. Add a working UPI ID or bank account to receive this."
   },
   "PerformanceDashboard": {
     "planThisMonth": "PLAN THIS MONTH",

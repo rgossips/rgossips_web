@@ -39,13 +39,6 @@ const labelForMethod = (m, t) => {
 // pending admin review. Copy is worded honestly ("Saved" / "Pending review").
 const ValidationChip = ({ status, reason }) => {
   const t = useTranslations("PaymentMethods");
-  if (status === "success") {
-    return (
-      <span className="text-[8px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-        {t("validation.verified")}
-      </span>
-    );
-  }
   if (status === "failed") {
     return (
       <span
@@ -56,9 +49,13 @@ const ValidationChip = ({ status, reason }) => {
       </span>
     );
   }
+  // Anything that is not KNOWN BAD reads the same, because under manual
+  // payouts it IS the same: details are on file and an admin checks them
+  // when the payout is released. Showing "Pending review" for `manual`
+  // implied a queue the creator was waiting on; there is no such queue.
   return (
-    <span className="text-[8px] font-black text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full uppercase">
-      {t("validation.verifying")}
+    <span className="text-[8px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
+      {t("validation.verified")}
     </span>
   );
 };
@@ -318,9 +315,17 @@ const PaymentMethods = ({ onBack }) => {
                   {t("pendingWaiting", { amount: pendingTotalInr.toLocaleString("en-IN") })}
                 </p>
                 <p className="text-[11px] font-bold text-amber-700 mt-0.5">
-                  {methods.some((m) => m.validation_status === "success")
+                  {/* Mirrors escrow-release's own predicate: a method is
+                      usable when it is not KNOWN BAD. This used to require
+                      `success`, which nothing can produce — the only code
+                      that sets it listens for RazorpayX fund-account
+                      validation events, and RazorpayX was removed. So every
+                      creator was told their method was "pending review"
+                      forever, by a review process that does not exist,
+                      while their payout was in fact already queued. */}
+                  {methods.some((m) => m.validation_status !== "failed")
                     ? t("pendingQueued")
-                    : t("pendingUnderReview")}
+                    : t("pendingDetailsFailed")}
                 </p>
               </div>
             </div>
