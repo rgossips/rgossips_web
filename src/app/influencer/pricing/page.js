@@ -160,6 +160,24 @@ export default function PricingPage() {
     (profile?.billing_cycle || "").toLowerCase() === "annual" ? "annual" : "monthly";
   const showRenewal = !onTrial && hasPaidPlan && renewal.daysLeft != null;
 
+  // Open on the cycle the user is actually paying for. An annual subscriber
+  // landing on the monthly tab sees prices that aren't theirs and has to
+  // find their own plan by toggling — and the card marked "current" is the
+  // monthly one they never bought.
+  //
+  // It has to be an effect, not a useState initialiser: `profile` arrives
+  // asynchronously from AuthContext and is null on first render. The ref
+  // makes it fire once, so toggling to Monthly to compare prices isn't
+  // undone the next time AuthContext re-renders.
+  const didSyncBillingCycle = useRef(false);
+  useEffect(() => {
+    if (didSyncBillingCycle.current || !profile) return;
+    didSyncBillingCycle.current = true;
+    // Only for a real paid subscription. A trial or free profile has no
+    // cycle worth honouring, and monthly stays the right default there.
+    if (hasPaidPlan) setBilling(currentBillingCycle);
+  }, [profile, hasPaidPlan, currentBillingCycle]);
+
   // After Stripe / Razorpay redirects back with a success flag, the
   // webhook is the source of truth — it usually beats the user back to
   // this page, but not always. We poll the profile a handful of times
