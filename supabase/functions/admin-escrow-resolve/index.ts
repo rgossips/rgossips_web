@@ -10,6 +10,7 @@
 // explicit here).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,8 +76,10 @@ Deno.serve(async (req) => {
     const nowIso = new Date().toISOString();
 
     if (decision === "refund_brand") {
-      const keyId = Deno.env.get("RAZORPAY_KEY_ID")!;
-      const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET")!;
+      // Refunding the BRAND's escrow payment needs the keys that took it.
+      const refundCreds = razorpayCreds((app as any).campaigns?.brand_id);
+      const keyId = refundCreds?.keyId!;
+      const keySecret = refundCreds?.keySecret!;
       if (!app.escrow_payment_id) {
         return json({ error: "No payment id on this application to refund" }, 400);
       }

@@ -20,6 +20,8 @@
 //   created_at, paid_at, pdf_url, hosted_url, subscription_id
 // }
 
+import { razorpayCreds } from "../_shared/razorpay.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -128,8 +130,10 @@ Deno.serve(async (req) => {
     // we surface as "cancelled" for display purposes.
     const RZP_ACTIVE_STATUSES = new Set(["active", "authenticated", "created"]);
 
-    const rzpKey = Deno.env.get("RAZORPAY_KEY_ID");
-    const rzpSecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // Read a user's own history with the same keys that created it.
+    const rzpCreds = razorpayCreds(userId);
+    const rzpKey = rzpCreds?.keyId;
+    const rzpSecret = rzpCreds?.keySecret;
     if (rzpKey && rzpSecret) {
       try {
         const auth = `Basic ${btoa(`${rzpKey}:${rzpSecret}`)}`;

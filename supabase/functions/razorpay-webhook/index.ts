@@ -26,6 +26,12 @@ import {
   clawBackReferral,
 } from "../_shared/referrals.ts";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
+import {
+  razorpayCreds,
+  razorpayCredsForMode,
+  verifyWebhookSignature,
+  type RzpMode,
+} from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,13 +126,17 @@ async function cancelPriorSubscriptions(opts: {
   priorStripe: string | null;
   priorRazorpay: string | null;
 }) {
-  const { skipRazorpaySubId, priorStripe, priorRazorpay } = opts;
+  const { userId, skipRazorpaySubId, priorStripe, priorRazorpay } = opts;
 
   // Razorpay: ignore if the prior sub IS the one we just activated.
   if (priorRazorpay && priorRazorpay !== skipRazorpaySubId) {
     try {
-      const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-      const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      // Derived from the subscriber: a test user's prior subscriptions are
+      // test subscriptions, so cancelling them needs the same keys that
+      // created them.
+      const priorCreds = razorpayCreds(userId);
+      const keyId = priorCreds?.keyId;
+      const keySecret = priorCreds?.keySecret;
       if (keyId && keySecret) {
         const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
         const res = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(priorRazorpay)}/cancel`, {
@@ -341,8 +351,9 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
       const customerId = (extras as any).razorpay_customer_id as string | undefined;
       if (!to && customerId) {
         try {
-          const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-          const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+          const modeCreds = razorpayCredsForMode(rzpMode);
+          const keyId = modeCreds?.keyId;
+          const keySecret = modeCreds?.keySecret;
           if (keyId && keySecret) {
             const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
             const custRes = await fetch(
@@ -589,7 +600,8 @@ Deno.serve(async (req) => {
   }
 
   const signature = req.headers.get("x-razorpay-signature") || "";
-  const webhookSecret = Deno.env.get("RAZORPAY_WEBHOOK_SECRET");
+  const webhookSecret =
+    Deno.env.get("RAZORPAY_WEBHOOK_SECRET") || Deno.env.get("RAZORPAY_TEST_WEBHOOK_SECRET");
   const body = await req.text();
 
   // Refuse unverified payloads — both secret and signature must be
@@ -603,11 +615,18 @@ Deno.serve(async (req) => {
     console.error("Razorpay webhook rejected: missing x-razorpay-signature header");
     return new Response("Missing signature", { status: 401, headers: corsHeaders });
   }
-  const ok = await verifySignature(body, signature, webhookSecret);
-  if (!ok) {
+  // Verified against BOTH the primary and the test webhook secret. This is
+  // the one entry point with no authenticated user to derive a payment mode
+  // from — Razorpay sends a signature and nothing else — so the secret that
+  // validates tells us which dashboard sent the event. Both dashboards can
+  // therefore point at this same URL, and any Razorpay API call made while
+  // handling the event uses credentials matching the event's own mode.
+  const verdict = await verifyWebhookSignature(body, signature);
+  if (!verdict.ok) {
     console.error("Razorpay signature verification failed");
     return new Response("Invalid signature", { status: 400, headers: corsHeaders });
   }
+  const rzpMode: RzpMode = verdict.mode || "primary";
 
   let event: any;
   try {
@@ -803,8 +822,9 @@ Deno.serve(async (req) => {
             const basePlanId = String(notes.base_plan_id || "");
             const curPlanId = String(sub.plan_id || "");
             if (basePlanId && basePlanId !== curPlanId && !sub.has_scheduled_changes) {
-              const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-              const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+              const modeCreds = razorpayCredsForMode(rzpMode);
+              const keyId = modeCreds?.keyId;
+              const keySecret = modeCreds?.keySecret;
               if (keyId && keySecret) {
                 const upRes = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`, {
                   method: "PATCH",

@@ -16,6 +16,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rewardsEnabled } from "../_shared/rewards.ts";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
 import {
   ensureReferralCode,
@@ -142,8 +143,11 @@ async function cancelPriorSubscriptions(opts: {
 
   if (priorRazorpay) {
     try {
-      const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-      const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      // Cancelling this user's prior Razorpay sub needs the keys that
+      // created it, which follow the user.
+      const rzpCreds = razorpayCreds(userId);
+      const keyId = rzpCreds?.keyId;
+      const keySecret = rzpCreds?.keySecret;
       if (keyId && keySecret) {
         const auth = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
         const res = await fetch(`https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(priorRazorpay)}/cancel`, {

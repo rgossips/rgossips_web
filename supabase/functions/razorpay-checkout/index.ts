@@ -13,6 +13,7 @@
 //   { userId: string, planId: string, plan: "starter"|"pro"|"elite", cycle: "monthly"|"annual", email?: string, name?: string, contact?: string }
 
 import { rewardsEnabled } from "../_shared/rewards.ts";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,8 +82,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // Credentials follow the SUBSCRIBER, so an enrolled developer account
+    // checks out against test keys while everyone else is live. key_id goes
+    // back to the client below, so the widget always matches this mode.
+    const creds = razorpayCreds(userId);
+    const keyId = creds?.keyId;
+    const keySecret = creds?.keySecret;
     if (!keyId || !keySecret) {
       return new Response(
         JSON.stringify({ error: "Razorpay credentials are not configured" }),

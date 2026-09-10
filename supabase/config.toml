@@ -118,7 +118,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.razorpay-webhook]
-verify_jwt = true
+verify_jwt = false
 
 [functions.razorpayx-test-balance]
 verify_jwt = true

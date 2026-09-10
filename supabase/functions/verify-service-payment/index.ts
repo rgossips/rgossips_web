@@ -19,6 +19,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,8 +38,10 @@ Deno.serve(async (req) => {
       return json({ error: "userId, orderId, phase (advance|final), razorpayOrderId required" });
     }
 
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // The buyer paid, so verify the order with the buyer's credentials.
+    const vCreds = razorpayCreds(userId);
+    const keyId = vCreds?.keyId;
+    const keySecret = vCreds?.keySecret;
     if (!keyId || !keySecret) return json({ error: "Razorpay keys not configured" });
     const auth = "Basic " + btoa(`${keyId}:${keySecret}`);
 

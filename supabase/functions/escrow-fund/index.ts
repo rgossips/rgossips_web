@@ -12,6 +12,7 @@
 // out to the creator from RazorpayX when the brand clicks Release.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,8 +93,10 @@ Deno.serve(async (req) => {
     // about whether money moved; our DB is not.
     const existingOrderId = (app as any).escrow_order_id as string | null;
     if (existingOrderId) {
-      const rkId = Deno.env.get("RAZORPAY_KEY_ID");
-      const rkSecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      // The BRAND pays escrow, so credentials follow the brand.
+      const rkCreds = razorpayCreds(brandOwner);
+      const rkId = rkCreds?.keyId;
+      const rkSecret = rkCreds?.keySecret;
       if (rkId && rkSecret) {
         try {
           const auth = `Basic ${btoa(`${rkId}:${rkSecret}`)}`;
@@ -165,8 +168,9 @@ Deno.serve(async (req) => {
       return json({ error: `Amount mismatch: the accepted offer is ₹${acceptedRate}.` }, 409);
     }
 
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    const fundCreds = razorpayCreds(brandOwner);
+    const keyId = fundCreds?.keyId;
+    const keySecret = fundCreds?.keySecret;
     if (!keyId || !keySecret) return json({ error: "Razorpay keys not configured" }, 500);
 
     const amountPaise = Math.round(rupees * 100);

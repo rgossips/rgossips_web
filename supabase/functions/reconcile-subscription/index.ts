@@ -18,6 +18,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { log } from "../_shared/log.ts";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 import { ensureReferralCode, qualifyReferralIfEligible } from "../_shared/referrals.ts";
 
 const corsHeaders = {
@@ -49,9 +50,10 @@ function normCycle(c: string): string {
   return v.startsWith("year") || v === "annual" ? "annual" : "monthly";
 }
 
-async function cancelRazorpaySub(subId: string): Promise<boolean> {
-  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+async function cancelRazorpaySub(subId: string, userId: string): Promise<boolean> {
+  const creds = razorpayCreds(userId);
+  const keyId = creds?.keyId;
+  const keySecret = creds?.keySecret;
   if (!keyId || !keySecret) return false;
   try {
     const res = await fetch(
@@ -105,9 +107,10 @@ async function fetchSubDirect(
         status: String(s?.status || "active"),
       };
     }
-    // Default: Razorpay.
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // Default: Razorpay. userId is already a parameter here.
+    const creds = razorpayCreds(userId);
+    const keyId = creds?.keyId;
+    const keySecret = creds?.keySecret;
     if (!keyId || !keySecret) return null;
     const res = await fetch(
       `https://api.razorpay.com/v1/subscriptions/${encodeURIComponent(subId)}`,
@@ -139,9 +142,10 @@ async function fetchSubDirect(
 // PATCH is accepted. Schedules the change for cycle end so cycles 2..N bill
 // full price. Idempotent: skips if already on the real plan or already
 // scheduled.
-async function upgradeRazorpayFirstCycleIfNeeded(subId: string): Promise<void> {
-  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+async function upgradeRazorpayFirstCycleIfNeeded(subId: string, userId: string): Promise<void> {
+  const creds = razorpayCreds(userId);
+  const keyId = creds?.keyId;
+  const keySecret = creds?.keySecret;
   if (!keyId || !keySecret) return;
   const H = { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, "Content-Type": "application/json" };
   try {
@@ -333,14 +337,14 @@ Deno.serve(async (req) => {
     // Finish a first-cycle-discount subscription: swap it off the throwaway
     // discounted plan onto the real plan at cycle end (see helper). Only
     // Razorpay ever uses this mechanism; Stripe discounts via a one-off coupon.
-    if (!isStripe) await upgradeRazorpayFirstCycleIfNeeded(keeper.id);
+    if (!isStripe) await upgradeRazorpayFirstCycleIfNeeded(keeper.id, userId);
 
     // Single-active-subscription: cancel every OTHER live sub on either
     // gateway. This is what the webhook's cancelPriorSubscriptions does.
     const cancelled: string[] = [];
     for (const s of live) {
       if (s.id === keeper.id) continue;
-      const ok = s.gateway === "stripe" ? await cancelStripeSub(s.id) : await cancelRazorpaySub(s.id);
+      const ok = s.gateway === "stripe" ? await cancelStripeSub(s.id) : await cancelRazorpaySub(s.id, userId);
       if (ok) cancelled.push(s.id);
     }
 

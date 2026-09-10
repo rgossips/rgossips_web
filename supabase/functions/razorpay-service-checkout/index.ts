@@ -23,6 +23,7 @@
 // Both reject expired quotes and double-charges.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,8 +44,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    // Credentials follow the BUYER; key_id is returned to the client below
+    // so the checkout widget opens in the same mode as the order.
+    const scCreds = razorpayCreds(userId);
+    const keyId = scCreds?.keyId;
+    const keySecret = scCreds?.keySecret;
     if (!keyId || !keySecret) {
       return new Response(JSON.stringify({ error: "Razorpay keys not configured" }), { status: 200, headers: jsonHeaders });
     }

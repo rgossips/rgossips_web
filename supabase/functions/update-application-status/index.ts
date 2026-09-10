@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,9 +19,11 @@ const ok = (body: Record<string, unknown>) =>
 async function verifyRazorpaySignature(
   orderId: string,
   paymentId: string,
-  signature: string
+  signature: string,
+  payerId: string
 ): Promise<boolean> {
-  const secret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  // Signed with the key that created the order, which follows the payer.
+  const secret = razorpayCreds(payerId)?.keySecret;
   if (!secret) return false;
   try {
     const enc = new TextEncoder();
@@ -207,7 +210,7 @@ Deno.serve(async (req) => {
       if (!escrowPaymentId || !escrowOrderId || !escrowSignature) {
         return ok({ error: "Escrow payment is required to approve. Open Razorpay Checkout first." });
       }
-      const ok_sig = await verifyRazorpaySignature(escrowOrderId, escrowPaymentId, escrowSignature);
+      const ok_sig = await verifyRazorpaySignature(escrowOrderId, escrowPaymentId, escrowSignature, brandId);
       if (!ok_sig) return ok({ error: "Razorpay signature verification failed" });
 
       updates.escrow_payment_id = escrowPaymentId;

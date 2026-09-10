@@ -15,6 +15,7 @@
 //                   bank_name, label?, is_primary?: boolean }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { razorpayCreds } from "../_shared/razorpay.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,13 +57,15 @@ type BankBody = {
 //                 Razorpay hiccup never loses the user's payout info.
 async function validateVpa(
   vpa: string,
+  userId: string,
 ): Promise<
   | { outcome: "valid"; name: string | null }
   | { outcome: "invalid" }
   | { outcome: "unavailable"; error: string }
 > {
-  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+  const creds = razorpayCreds(userId);
+  const keyId = creds?.keyId;
+  const keySecret = creds?.keySecret;
   if (!keyId || !keySecret) {
     return { outcome: "unavailable", error: "razorpay_creds_missing" };
   }
@@ -169,7 +172,7 @@ Deno.serve(async (req) => {
         validationStatus = "success";
         validatedAt = new Date().toISOString();
       } else {
-        const v = await validateVpa(String((payload as UpiBody).upi_id).trim());
+        const v = await validateVpa(String((payload as UpiBody).upi_id).trim(), userId);
         if (v.outcome === "invalid") {
           return json(
             {
@@ -189,8 +192,12 @@ Deno.serve(async (req) => {
           // review rather than falsely marking it verified.
           console.error("VPA validation unavailable:", v.error);
           validationStatus = "manual";
-          validationFailureReason =
-            "Automatic verification unavailable — pending manual review.";
+          // NOT surfaced as "pending review" any more. There is no review
+          // queue: the only thing that could ever clear this flag listened
+          // for RazorpayX fund-account validation events, and RazorpayX was
+          // removed. Under manual payouts an admin checks the details when
+          // the payout is released, so the method is simply usable.
+          validationFailureReason = null;
         }
       }
     }
