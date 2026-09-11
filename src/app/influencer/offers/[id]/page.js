@@ -13,8 +13,6 @@ import {
   Share2,
   Heart,
   Instagram,
-  Youtube,
-  Smartphone,
   CheckCircle,
   Clock,
   Star,
@@ -52,6 +50,7 @@ import { AiMarkdown } from "@/components/AiMarkdown";
 import RatingModal from "@/components/RatingModal";
 import AlertPopup from "@/components/AlertPopup";
 import CreatorAuthModal from "@/components/auth/CreatorAuthModal";
+import { campaignBudgetDisplay } from "@/utils/campaignBudget";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
@@ -121,22 +120,17 @@ function useCampaign(id, userId) {
             slots: found.maxInfluencers || 0,
             about: found.description || t("noDescription"),
             requirements,
-            payments: [{ type: "base", label: t("basePayment"), val: found.budget, sub: t("perInfluencer") }],
+            // Same budget text the list card shows (utils/campaignBudget). A
+            // barter campaign has no cash budget, so this row used to read
+            // "Base Payment: On request"; it now shows what the product is
+            // worth, styled by the existing `product` payment type.
+            payments: [(() => {
+              const b = campaignBudgetDisplay(found);
+              return b.isProductValue
+                ? { type: "product", label: t("productValueLabel"), val: b.text, sub: t("perInfluencer") }
+                : { type: "base", label: t("basePayment"), val: b.text, sub: t("perInfluencer") };
+            })()],
             brandStats: { campaigns: brandCampaigns.length, success: t("brandStats.activeCount", { count: activeBrandCampaigns }), response: "24h" },
-            // Built from the RAW content_types_required array ("reels:3"), not
-            // from the `deliverables` display string. That string is already
-            // humanised server-side into "3 Reels" and carries no colon, so the
-            // old `d.split(":")` put the whole thing in the label and fell back
-            // to count "1" — the card read "1" above "3 Reels".
-            deliverableIcons: (found.contentTypesRequired || []).map((entry) => {
-              const [type, countRaw] = String(entry).split(":");
-              const n = Number(countRaw);
-              const base = (type || String(entry)).charAt(0).toUpperCase() + (type || "").slice(1);
-              const count = Number.isFinite(n) && n > 0 ? n : 1;
-              // "1 Reel", not "1 Reels" — mirrors list-campaigns' singularise.
-              const label = count === 1 && base.endsWith("s") ? base.slice(0, -1) : base;
-              return { platform: "instagram", count, label };
-            }),
           });
         }
       } catch (err) {
@@ -384,21 +378,16 @@ function ReqIcon({ type }) {
       return <Star size={size} />;
     case "history":
       return <History size={size} />;
+    case "calendar":
+      return <Calendar size={size} />;
+    case "clock":
+      return <Clock size={size} />;
+    case "slots":
+      return <CheckCircle2 size={size} />;
+    case "content":
+      return <FileText size={size} />;
     default:
       return <CheckCircle size={size} />;
-  }
-}
-
-function PlatformIcon({ platform, size = 20 }) {
-  switch (platform) {
-    case "instagram":
-      return <Instagram size={size} className="text-pink-500" />;
-    case "youtube":
-      return <Youtube size={size} className="text-red-500" />;
-    case "tiktok":
-      return <Smartphone size={size} className="text-slate-700" />;
-    default:
-      return null;
   }
 }
 
@@ -1141,88 +1130,119 @@ export default function CampaignDetailsPage() {
    ═══════════════════════════════════════════════════ */
 function ActiveContent({ campaign }) {
   const t = useTranslations("InfluencerOffersId");
+  const budget = campaignBudgetDisplay(campaign);
+  // "Expired"/"Today" are status words; only day counts get " left".
+  const countdown = (v) =>
+    !v ? "" : v === "Expired" || v === "Today" ? v : t("active.daysLeft", { value: v });
+  const withCountdown = (sub, v) => (countdown(v) ? sub + " · " + countdown(v) : sub);
+  // The campaign's logistics, shaped like the audience requirements so
+  // the two render as one checklist. Two separate date rows, because these
+  // are two different dates and pairing one date's label with the other's
+  // countdown is a bug this page has already fixed once ("30 Sept 2026 /
+  // 32d left", counting to the delivery date).
+  const logisticsRows = [
+    {
+      icon: "calendar",
+      label: t("requirements.applyBy", { value: campaign.deadline }),
+      sub: withCountdown(t("requirements.applicationDeadline"), campaign.applyDaysLeft),
+    },
+    campaign.deliveryDeadline && {
+      icon: "clock",
+      label: t("requirements.deliverBy", { value: campaign.deliveryDeadline }),
+      sub: withCountdown(t("requirements.deliveryDeadline"), campaign.deliveryDaysLeft),
+    },
+    campaign.slots > 0 && {
+      icon: "slots",
+      label: t("requirements.slots", { count: campaign.slots }),
+      sub: t("requirements.openSpots"),
+    },
+    campaign.deliverables && {
+      icon: "content",
+      label: t("requirements.content", { value: campaign.deliverables }),
+      sub: t("requirements.contentToPost"),
+    },
+  ].filter(Boolean);
   return (
     <div className="space-y-6">
-      {/* Budget / Deadline / Slots pills */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2.5 rounded-2xl">
-          <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xs font-bold">₹</div>
+      {/* Budget, alone at the top — it is the figure a creator decides on.
+          The apply/deliver dates, slots and deliverables that used to crowd
+          this row now sit under Requirements, where they read as what they
+          are: conditions of the campaign, not headline numbers. */}
+      <div className="flex">
+        <div className="flex items-center gap-2.5 bg-gradient-to-br from-emerald-50 to-teal-50 ring-1 ring-emerald-200 px-4 py-2.5 rounded-2xl">
+          <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-emerald-200">₹</div>
           <div>
-            <p className="text-xs font-black text-slate-800">{campaign.budget}</p>
-            <p className="text-[9px] text-slate-400">{t("active.budget")}</p>
-          </div>
-        </div>
-        {/* Two chips, because these are two different dates and pairing one
-            date's label with the other's countdown is exactly the bug this
-            replaces: the card showed the APPLY date beside a countdown to the
-            DELIVERY date ("30 Sept 2026 / 32d left" on 5 Sept, counting to
-            7 Oct). Creators quote against the delivery window, so both matter. */}
-        <div className="flex items-center gap-2 bg-red-50 px-4 py-2.5 rounded-2xl">
-          <div className="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center text-red-500">
-            <Calendar size={14} />
-          </div>
-          <div>
-            <p className="text-[9px] font-bold text-red-400 uppercase tracking-wide">
-              {t("active.applyBy")}
+            <p className="text-lg font-black text-[#00A67A] leading-tight">{budget.text}</p>
+            <p className="text-[9px] font-bold text-emerald-700/70">
+              {budget.isProductValue ? t("active.productValue") : t("active.budget")}
             </p>
-            <p className="text-xs font-black text-slate-800">{campaign.deadline}</p>
-            {campaign.applyDaysLeft && (
-              <p className="text-[9px] text-red-400">
-                {/* "Expired"/"Today" are status words; only counts get " left". */}
-                {campaign.applyDaysLeft === "Expired" || campaign.applyDaysLeft === "Today"
-                  ? campaign.applyDaysLeft
-                  : t("active.daysLeft", { value: campaign.applyDaysLeft })}
-              </p>
-            )}
           </div>
         </div>
-        {campaign.deliveryDeadline && (
-          <div className="flex items-center gap-2 bg-amber-50 px-4 py-2.5 rounded-2xl">
-            <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
-              <Calendar size={14} />
-            </div>
-            <div>
-              <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wide">
-                {t("active.deliverBy")}
-              </p>
-              <p className="text-xs font-black text-slate-800">{campaign.deliveryDeadline}</p>
-              {campaign.deliveryDaysLeft && (
-                <p className="text-[9px] text-amber-500">
-                  {campaign.deliveryDaysLeft === "Expired" || campaign.deliveryDaysLeft === "Today"
-                    ? campaign.deliveryDaysLeft
-                    : t("active.daysLeft", { value: campaign.deliveryDaysLeft })}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-        {campaign.slots && (
-          <div className="flex items-center gap-2 bg-purple-50 px-4 py-2.5 rounded-2xl">
-            <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center text-purple-500">
-              <Users size={14} />
-            </div>
-            <div>
-              <p className="text-xs font-black text-slate-800">{t("active.slots", { count: campaign.slots })}</p>
-              <p className="text-[9px] text-slate-400">{t("active.available")}</p>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Content Deliverables */}
-      {campaign.deliverableIcons && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <h3 className="text-base font-bold text-slate-800 mb-4">{t("active.contentDeliverables")}</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {campaign.deliverableIcons.map((d, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-2xl">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                  <PlatformIcon platform={d.platform} size={20} />
+      {/* Requirements — everything a creator has to meet and deliver, and by
+          when. Always rendered: the apply-by date alone makes it non-empty. */}
+      <div className="space-y-3">
+        <h3 className="text-base font-bold text-slate-800">{t("active.requirements")}</h3>
+
+        {/* One checklist: logistics first (when to apply, when to deliver,
+            how many creators, what to post), then who the brand wants. Same
+            row as followers / tier / location, so a creator scans a single
+            list instead of three different layouts. */}
+        <div className="space-y-2.5">
+          {[...logisticsRows, ...(campaign.requirements || [])].map((req, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm">
+              <div className="w-9 h-9 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+                <ReqIcon type={req.icon} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-800">{req.label}</p>
+                <p className="text-[11px] text-slate-400">{req.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Payment & Benefits */}
+      {campaign.payments && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-slate-800">{t("active.paymentBenefits")}</h3>
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 uppercase">
+              <ShieldCheck size={12} /> {t("active.verified")}
+            </span>
+          </div>
+          <div className="space-y-2.5">
+            {campaign.payments.map((p, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-3 p-4 rounded-2xl border shadow-sm ${
+                  p.type === "product" ? "bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-100" : "bg-white border-slate-50"
+                }`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    p.type === "base" ? "bg-emerald-50 text-emerald-500" : p.type === "bonus" ? "bg-pink-50 text-pink-500" : "bg-purple-50 text-purple-500"
+                  }`}
+                >
+                  {p.type === "base" ? <Wallet size={18} /> : p.type === "bonus" ? <TrendingUp size={18} /> : <Gift size={18} />}
                 </div>
-                <p className="text-2xl font-black text-slate-800">{d.count}</p>
-                <p className="text-[10px] font-bold text-slate-400">{d.label}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{p.label}</p>
+                  <p className="text-base font-black text-[#00A67A]">{p.val}</p>
+                </div>
+                <p className="text-[9px] font-bold text-slate-400 max-w-[100px] text-right hidden sm:block">{p.sub}</p>
               </div>
             ))}
+          </div>
+          {/* Exclusive banner */}
+          <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-2xl p-4 flex items-center gap-3">
+            <Gift size={20} className="text-white shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-white">{t("active.exclusiveRights")}</p>
+              <p className="text-[10px] text-emerald-100">{t("active.licensingNote")}</p>
+            </div>
           </div>
         </div>
       )}
@@ -1264,69 +1284,6 @@ function ActiveContent({ campaign }) {
       {/* Gallery */}
       {campaign.galleryImages?.length > 0 && (
         <Gallery images={campaign.galleryImages} />
-      )}
-
-      {/* Requirements */}
-      {campaign.requirements && (
-        <div className="space-y-3">
-          <h3 className="text-base font-bold text-slate-800">{t("active.requirements")}</h3>
-          <div className="space-y-2.5">
-            {campaign.requirements.map((req, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-50 shadow-sm">
-                <div className="w-9 h-9 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
-                  <ReqIcon type={req.icon} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-800">{req.label}</p>
-                  <p className="text-[11px] text-slate-400">{req.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Payment & Benefits */}
-      {campaign.payments && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-800">{t("active.paymentBenefits")}</h3>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 uppercase">
-              <ShieldCheck size={12} /> {t("active.verified")}
-            </span>
-          </div>
-          <div className="space-y-2.5">
-            {campaign.payments.map((p, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-3 p-4 rounded-2xl border shadow-sm ${
-                  p.type === "product" ? "bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-100" : "bg-white border-slate-50"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    p.type === "base" ? "bg-emerald-50 text-emerald-500" : p.type === "bonus" ? "bg-pink-50 text-pink-500" : "bg-purple-50 text-purple-500"
-                  }`}
-                >
-                  {p.type === "base" ? <Wallet size={18} /> : p.type === "bonus" ? <TrendingUp size={18} /> : <Gift size={18} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{p.label}</p>
-                  <p className="text-sm font-black text-slate-800">{p.val}</p>
-                </div>
-                <p className="text-[9px] font-bold text-slate-400 max-w-[100px] text-right hidden sm:block">{p.sub}</p>
-              </div>
-            ))}
-          </div>
-          {/* Exclusive banner */}
-          <div className="bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-2xl p-4 flex items-center gap-3">
-            <Gift size={20} className="text-white shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-white">{t("active.exclusiveRights")}</p>
-              <p className="text-[10px] text-emerald-100">{t("active.licensingNote")}</p>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
@@ -1435,10 +1392,10 @@ function AppliedContent({ campaign }) {
 
       {/* Budget & Deadline */}
       <div className="flex gap-3">
-        <div className="flex-1 flex items-center gap-2 bg-emerald-50 px-4 py-3 rounded-2xl">
-          <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xs font-bold">₹</div>
+        <div className="flex-1 flex items-center gap-2.5 bg-gradient-to-br from-emerald-50 to-teal-50 ring-1 ring-emerald-200 px-4 py-3 rounded-2xl">
+          <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-emerald-200">₹</div>
           <div>
-            <p className="text-xs font-black text-slate-800">{campaign.budget}</p>
+            <p className="text-lg font-black text-[#00A67A] leading-tight">{campaignBudgetDisplay(campaign).text}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-slate-50 px-4 py-3 rounded-2xl">
@@ -1511,9 +1468,11 @@ function AppliedSidebar({ campaign }) {
       <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
         <h4 className="text-sm font-bold text-slate-800">{t("applied.campaignDetails")}</h4>
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-sm font-black text-slate-800">{campaign.budget}</p>
-            <p className="text-[9px] font-bold text-slate-400 uppercase">{t("active.budget")}</p>
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 ring-1 ring-emerald-200 rounded-xl p-3 text-center">
+            <p className="text-base font-black text-[#00A67A] leading-tight">{campaignBudgetDisplay(campaign).text}</p>
+            <p className="text-[9px] font-bold text-emerald-700/70 uppercase">
+              {campaignBudgetDisplay(campaign).isProductValue ? t("active.productValue") : t("active.budget")}
+            </p>
           </div>
           <div className="bg-slate-50 rounded-xl p-3 text-center">
             <p className="text-sm font-black text-slate-800">{campaign.deadline}</p>
@@ -1787,12 +1746,24 @@ function SimilarCampaigns({ campaign }) {
             onClick={() => router.push(`/influencer/offers/${c.id}`)}
             className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded-xl p-2 -mx-2 transition-colors"
           >
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {/* Brand logo over the initials tile. The initials stay
+                underneath on purpose: a dead logo URL hides its <img> and the
+                letter shows through, so a row is never an empty box. */}
+            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden">
               {c.initials}
+              {c.brandLogo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.brandLogo}
+                  alt={c.brandName}
+                  className="absolute inset-0 w-full h-full object-cover bg-white"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-slate-800 truncate">{c.title}</p>
-              <p className="text-[10px] text-slate-400">{c.brandName} · {c.budget}</p>
+              <p className="text-[10px] text-slate-400">{c.brandName} · {campaignBudgetDisplay(c).text}</p>
             </div>
           </div>
         ))}

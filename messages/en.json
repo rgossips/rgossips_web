@@ -2789,7 +2789,15 @@
       "gender": "Gender: {value}",
       "preferred": "Preferred",
       "language": "Language: {value}",
-      "contentLanguage": "Content language"
+      "contentLanguage": "Content language",
+      "applyBy": "Apply by: {value}",
+      "applicationDeadline": "Application deadline",
+      "deliverBy": "Deliver by: {value}",
+      "deliveryDeadline": "Delivery deadline",
+      "slots": "Slots: {count} available",
+      "openSpots": "Creators the brand will take",
+      "content": "Content: {value}",
+      "contentToPost": "Deliverables to post"
     },
     "brandStats": {
       "activeCount": "{count} active"
@@ -2882,7 +2890,8 @@
       "exclusiveRights": "Exclusive Event/Rights",
       "licensingNote": "Brand gets content + licensing for 6 months",
       "applyBy": "Apply by",
-      "deliverBy": "Deliver by"
+      "deliverBy": "Deliver by",
+      "productValue": "Product value"
     },
     "sidebar": {
       "applyViaAgent": "Or apply via an agent or partnership",
@@ -3031,7 +3040,8 @@
       "copied": "Link copied",
       "text": "Check out this campaign on RGossips: {title}"
     },
-    "allCampaigns": "All Campaigns"
+    "allCampaigns": "All Campaigns",
+    "productValueLabel": "Product Value"
   },
   "InfluencerPricing": {
     "header": {
