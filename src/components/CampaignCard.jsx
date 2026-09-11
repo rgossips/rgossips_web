@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { explainCampaignMatch } from "@/utils/matchScore";
 import { useAiTool } from "@/hooks/useAiTool";
 import { AiMarkdown } from "@/components/AiMarkdown";
+import { campaignBudgetDisplay } from "@/utils/campaignBudget";
 
 // "Why this match?" coach — shows the transparent score breakdown and, on
 // demand, an AI-narrated prioritised to-do list to raise it (tool: match_coach).
@@ -123,12 +124,28 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
   // Countdown that belongs to the date this card prints (the apply-by date).
   const applyLeft = campaign.applyDaysLeft ?? campaign.daysLeft;
 
-  // Status Badge Colors
+  // Status Badge Colors — only used as a fallback now (see the badge below).
   const statusStyles = {
     Active: "bg-[#00BA88] text-white",
     Applied: "bg-[#4E82EE] text-white",
     Completed: "bg-[#E2E8F0] text-slate-600",
   };
+
+  // Campaign type is what a creator actually scans for — paid vs product.
+  // The "Active" status it replaces told them nothing: the tab already says
+  // Active, and every card in it is. Values are the three campaign_type
+  // options CreateCampaignDialog writes.
+  const CAMPAIGN_TYPES = {
+    paid: { label: "Paid", cls: "bg-[#00BA88] text-white" },
+    barter: { label: "Barter", cls: "bg-gradient-to-r from-[#9810FA] to-[#E60076] text-white" },
+    hybrid: { label: "Paid + Product", cls: "bg-[#4E82EE] text-white" },
+  };
+  const typeKey = String(campaign.campaignType || "").toLowerCase();
+  const typeBadge = CAMPAIGN_TYPES[typeKey];
+
+  // Shared with the campaign detail page so the two never disagree — see
+  // utils/campaignBudget.js for why a barter campaign shows product value.
+  const { text: budgetDisplay, isProductValue: showsProductValue } = campaignBudgetDisplay(campaign);
 
   return (
     <div className="bg-white rounded-[32px] shadow-sm border border-slate-50 overflow-hidden">
@@ -145,7 +162,14 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
         {/* Status over banner — the match % moved to a full button in the
             action row (it was too tiny to discover up here). */}
         <div className="absolute top-3 right-3 flex items-center gap-2">
-          <span className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm ${statusStyles[campaign.status]}`}>{campaign.status}</span>
+          {/* Campaign type when known; the status otherwise, so the demo rows
+              on (home)/offers — which carry a status but no type — render as
+              they always have. */}
+          {typeBadge ? (
+            <span className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm ${typeBadge.cls}`}>{typeBadge.label}</span>
+          ) : (
+            <span className={`px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm ${statusStyles[campaign.status]}`}>{campaign.status}</span>
+          )}
         </div>
       </div>
 
@@ -185,12 +209,19 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
 
         {/* Data Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-50">
-            <p className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-1">
+          {/* The budget is the number that decides whether a creator reads
+              further, so it is the one tile that stands out: tinted ground,
+              larger and heavier figure. The other three stay neutral so this
+              one has something to stand out against. */}
+          <div className="p-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
+            <p className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-700/70 uppercase mb-1">
               {/* Budgets are rupees. A $ beside "₹11,708" is just wrong. */}
               <IndianRupee size={10} className="text-[#00BA88]" /> Budget
             </p>
-            <p className="text-xs font-bold text-[#00BA88]">{campaign.budget}</p>
+            <p className="text-base font-black text-[#00A67A] leading-tight">{budgetDisplay}</p>
+            {showsProductValue && (
+              <p className="text-[9px] font-bold text-emerald-700/60 mt-0.5">in product value</p>
+            )}
           </div>
           <div className="p-3 bg-slate-50/50 rounded-2xl border border-slate-50">
             <p className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase mb-1">
