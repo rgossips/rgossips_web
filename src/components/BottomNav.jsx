@@ -3,23 +3,32 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, Compass, Briefcase, Sparkles, User } from "lucide-react";
+import { Home, Compass, Briefcase, Sparkles, Bell } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
-// Mirrors DeskTopNavbar's nav exactly (same 5 entries, same icons, same
-// order). Keeping them in sync means a user has the same mental model
-// regardless of breakpoint.
+// Mirrors DeskTopNavbar's nav, with one deliberate divergence: the last slot
+// is Alerts here and Profile there. Desktop reaches notifications through the
+// bell in the navbar, which has no mobile equivalent; mobile reaches Profile
+// through the home header avatar, which desktop also has. Each breakpoint
+// spends its fifth slot on the thing the other one already covers elsewhere.
 const navItems = [
   { label: "Home", icon: Home, path: "/influencer" },
   { label: "Brands", icon: Compass, path: "/influencer/brands" },
   { label: "Campaigns", icon: Briefcase, path: "/influencer/campaigns" },
   { label: "Services", icon: Sparkles, path: "/influencer/services" },
-  { label: "Profile", icon: User, path: "/influencer/profile" },
+  // Alerts replaced Profile here. Mobile had no route to notifications at
+  // all — no bell anywhere, the bar being the only persistent chrome — so a
+  // creator could not reach them except through a deep link. Profile is one
+  // tap away from the avatar in the home header (UserDoc), which is where
+  // people look for it anyway.
+  { label: "Alerts", icon: Bell, path: "/influencer/notifications", badge: true },
 ];
 
 const BottomNav = () => {
   const pathname = usePathname();
   const { user } = useAuth();
+  const unread = useUnreadNotifications();
 
   // Logged out, this bar's five tabs all lead somewhere that would reject
   // the visitor, so render nothing at all rather than five dead ends. The
@@ -60,6 +69,11 @@ const BottomNav = () => {
                     : "text-[#64748B] group-active:scale-90"
                 }`}
               />
+              {item.badge && unread > 0 && (
+                <span className="absolute top-0 translate-x-4 min-w-[16px] h-4 px-1 bg-[#E60076] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
 
               <span
                 className={`text-[10px] mt-1 font-semibold transition-colors duration-300 ${

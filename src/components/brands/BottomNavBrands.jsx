@@ -4,17 +4,22 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, Briefcase, User, Bell } from "lucide-react";
+import { useUnreadNotifications } from "@/hooks/useUnreadNotifications";
 
 const navItems = [
   { label: "Home", icon: Home, path: "/brands" },
   { label: "Search", icon: Search, path: "/brands/search" },
   { label: "Campaigns", icon: Briefcase, path: "/brands/campaigns" },
-  { label: "Alerts", icon: Bell, path: "/brands/notifications" },
+  { label: "Alerts", icon: Bell, path: "/brands/notifications", badge: true },
   { label: "Profile", icon: User, path: "/brands/profile" },
 ];
 
 const BottomNavBrands = () => {
   const pathname = usePathname();
+  // The Alerts tab was a bell with no count, so on mobile there was nothing
+  // anywhere telling a brand something had happened. Same 30s poll and the
+  // same #E60076 badge BrandNavbar uses on desktop.
+  const unread = useUnreadNotifications();
 
   return (
     <nav
@@ -49,6 +54,11 @@ const BottomNavBrands = () => {
                     : "text-[#64748B]"
                 }`}
               />
+              {item.badge && unread > 0 && (
+                <span className="absolute top-0 translate-x-4 min-w-[16px] h-4 px-1 bg-[#E60076] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
 
               <span
                 className={`text-[10px] mt-1 font-semibold transition-colors duration-300 ${

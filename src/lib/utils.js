@@ -14,7 +14,14 @@ export function navigateOrRefresh(router, currentPath, target) {
   // Compare ignoring query/hash — the path is what matters.
   const targetPath = target.split("?")[0].split("#")[0];
   if (currentPath === targetPath) {
-    router.refresh();
+    // A full reload, not router.refresh(). refresh() re-runs SERVER
+    // components, but every one of these surfaces loads its data from a
+    // client useEffect against an edge function — so refresh() completed
+    // without changing a pixel, and tapping a notification for the page you
+    // were already on looked like a dead tap. Reload is heavier but is the
+    // only thing that actually re-runs those fetches.
+    if (typeof window !== "undefined") window.location.reload();
+    else router.refresh();
   } else {
     router.push(target);
   }
