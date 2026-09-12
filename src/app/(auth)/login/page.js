@@ -22,7 +22,6 @@ const loadingFallback = () => (
 // (~650KB total). Lazy-loading keeps that out of the initial login
 // bundle so the role/phone steps render fast; the carousel itself only
 // appears when flow === "onboarding" which is the landing state.
-import OpenInAppGate from "@/components/OpenInAppGate";
 
 const OnboardingCarousel = dynamic(() => import("@/components/login/OnboardingCarousel"), { ssr: false, loading: () => null });
 
@@ -803,7 +802,6 @@ const LoginInner = () => {
     <div className="relative h-screen w-full bg-[#F8FAFC] overflow-hidden flex items-center justify-center">
       {/* On phones, offer the mobile app before the web flow (once per
           session; "Continue on web" dismisses). */}
-      <OpenInAppGate />
       {/* Back to landing — visible across onboarding + auth flows so the
           user can always escape the login surface without hitting the
           browser back. Uses <Link prefetch> so the home-page chunk

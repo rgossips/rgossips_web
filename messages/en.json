@@ -5071,12 +5071,6 @@
     "prev": "Prev",
     "next": "Next"
   },
-  "OpenInAppGate": {
-    "title": "Get the RGossips app",
-    "body": "Sign up and manage your campaigns with a smoother, faster experience in the mobile app — or keep going right here on the web.",
-    "useApp": "Use the mobile app",
-    "continueWeb": "Continue on web"
-  },
   "OfflineGate": {
     "title": "No signal, no gossip. 📵",
     "body": "Looks like your internet took a coffee break. We will pick up right where you left off the moment you are back online.",

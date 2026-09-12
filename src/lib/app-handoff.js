@@ -1,10 +1,15 @@
 // Marks browser sessions that were handed off from the mobile app.
 //
 // Plan management lives on the web, so the app sends users out to
-// rgossips.com (e.g. "Manage plan" → /influencer/pricing). Those users
-// obviously already have the app installed, so the "for a better experience
-// use our mobile app" nudge in <OpenInAppGate /> is noise at best and
-// confusing at worst — it asks them to open the app they just came from.
+// rgossips.com (e.g. "Manage plan" → /influencer/pricing), and this latches
+// the fact that they arrived from the app.
+//
+// NOTE: the one consumer of that flag, <OpenInAppGate /> — a "use our mobile
+// app" nudge, which this suppressed for people who had obviously already
+// installed it — has been removed. cameFromApp() therefore has no reader
+// today: the flag is still latched, but nothing acts on it. Kept because the
+// latch is the awkward half (see the sessionStorage note below) and any
+// future app-aware behaviour would need exactly this.
 //
 // The app appends `?from=app`. We latch that into sessionStorage on the
 // first page load because it does not survive navigation: ProtectedRoute
