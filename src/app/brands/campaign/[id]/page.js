@@ -1552,14 +1552,13 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
   }, [history, app.created_at, app.proposed_rate]);
 
   return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col"
-      >
+    // z-[200], not z-[110]: BottomNavBrands is fixed at z-[150], so the old
+    // value put the mobile nav bar ON TOP of this modal, covering its footer
+    // actions. No backdrop onClick either — this panel holds the review and
+    // approval actions for a campaign application, and a stray tap outside
+    // dismissing it mid-review is pure loss. Closing is the X button.
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="min-w-0">
             <h2 className="text-base font-black text-gray-900 truncate">{displayName}</h2>
