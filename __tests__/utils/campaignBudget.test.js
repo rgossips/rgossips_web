@@ -23,16 +23,24 @@ describe("campaignBudgetDisplay", () => {
     ).toEqual({ text: "On request", isProductValue: false });
   });
 
-  it("leaves a paid campaign's cash budget alone", () => {
+  it("presents a paid campaign's cash budget as a ceiling", () => {
+    // budget_per_influencer is the most the brand will pay, not a fixed fee.
     expect(
       campaignBudgetDisplay({ campaignType: "paid", productValue: 5000, budget: "₹11,708" }),
-    ).toEqual({ text: "₹11,708", isProductValue: false });
+    ).toEqual({ text: "Up to ₹11,708", isProductValue: false });
   });
 
-  it("leaves a hybrid campaign's cash budget as the headline", () => {
+  it("treats a hybrid campaign's cash leg the same way", () => {
     expect(
       campaignBudgetDisplay({ campaignType: "hybrid", productValue: 3500, budget: "₹8,000" }).text,
-    ).toBe("₹8,000");
+    ).toBe("Up to ₹8,000");
+  });
+
+  it("never prefixes a non-amount like \"On request\"", () => {
+    // "Up to On request" is nonsense; the ₹ check is what prevents it.
+    expect(campaignBudgetDisplay({ campaignType: "paid", budget: "On request" }).text).toBe(
+      "On request",
+    );
   });
 
   it("treats the type case-insensitively and survives missing fields", () => {
