@@ -220,10 +220,10 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           <div className="p-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
             <p className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-700/70 uppercase mb-1">
               {/* Budgets are rupees. A $ beside "₹11,708" is just wrong. */}
-              {/* Same label rule as the detail page: a paid campaign's ceiling
-                  is settled by the creator's own rate card. */}
+              {/* Same label rule as the detail page: a cash ceiling, paid or
+                  hybrid, is settled by the creator's own rate card. */}
               <IndianRupee size={10} className="text-[#00BA88]" />{" "}
-              {budgetKind === "paid" ? "As per profile" : "Budget"}
+              {budgetKind === "cash" ? "As per profile" : "Budget"}
             </p>
             <p className="text-base font-black text-[#00A67A] leading-tight">{budgetDisplay}</p>
             {showsProductValue && (

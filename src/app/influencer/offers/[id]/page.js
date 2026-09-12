@@ -1173,13 +1173,13 @@ function ActiveContent({ campaign }) {
           <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-emerald-200">₹</div>
           <div>
             <p className="text-lg font-black text-[#00A67A] leading-tight">{budget.text}</p>
-            {/* A paid campaign's figure is a ceiling the creator's own rate
-                card negotiates within, so it is labelled "As per profile"
-                rather than "Budget". */}
+            {/* A cash figure — paid or hybrid — is a ceiling the creator's own
+                rate card settles within, so it reads "As per profile" rather
+                than "Budget". */}
             <p className="text-[9px] font-bold text-emerald-700/70">
               {budget.kind === "product"
                 ? t("active.productValue")
-                : budget.kind === "paid"
+                : budget.kind === "cash"
                   ? t("active.asPerProfile")
                   : t("active.budget")}
             </p>
@@ -1480,7 +1480,7 @@ function AppliedSidebar({ campaign }) {
             <p className="text-[9px] font-bold text-emerald-700/70 uppercase">
               {campaignBudgetDisplay(campaign).kind === "product"
                 ? t("active.productValue")
-                : campaignBudgetDisplay(campaign).kind === "paid"
+                : campaignBudgetDisplay(campaign).kind === "cash"
                   ? t("active.asPerProfile")
                   : t("active.budget")}
             </p>

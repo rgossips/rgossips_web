@@ -35,17 +35,13 @@ export function campaignBudgetDisplay(campaign) {
   // `kind` is what each surface labels the figure with, kept here so the card
   // and the detail page cannot describe the same number differently:
   //   product — the item's worth, on a barter campaign
-  //   paid    — a cash ceiling on a paid campaign, which the creator's own
-  //             rate card decides within, hence "As per profile"
-  //   cash    — a hybrid's cash leg, still just the budget
+  //   cash    — a cash ceiling, on paid OR hybrid alike: the creator's own
+  //             rate card settles the figure within it, hence "As per
+  //             profile" rather than "Budget"
   //   none    — no amount at all ("On request")
   const budget = campaign?.budget || "";
   if (budget.startsWith("₹")) {
-    return {
-      text: `Up to ${budget}`,
-      isProductValue: false,
-      kind: type === "paid" ? "paid" : "cash",
-    };
+    return { text: `Up to ${budget}`, isProductValue: false, kind: "cash" };
   }
   return { text: budget, isProductValue: false, kind: "none" };
 }

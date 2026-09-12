@@ -27,7 +27,7 @@ describe("campaignBudgetDisplay", () => {
     // budget_per_influencer is the most the brand will pay, not a fixed fee.
     expect(
       campaignBudgetDisplay({ campaignType: "paid", productValue: 5000, budget: "₹11,708" }),
-    ).toEqual({ text: "Up to ₹11,708", isProductValue: false, kind: "paid" });
+    ).toEqual({ text: "Up to ₹11,708", isProductValue: false, kind: "cash" });
   });
 
   it("treats a hybrid campaign's cash leg the same way", () => {
@@ -44,9 +44,9 @@ describe("campaignBudgetDisplay", () => {
   });
 
   it("reports a kind so surfaces label the figure consistently", () => {
-    // Only a paid cash ceiling is "As per profile" — a hybrid's cash leg is
-    // still just the budget, and barter is the product's worth.
-    expect(campaignBudgetDisplay({ campaignType: "paid", budget: "₹500" }).kind).toBe("paid");
+    // Paid and hybrid are the same figure — a cash ceiling — so they share a
+    // kind and therefore a label. Barter is the product's worth instead.
+    expect(campaignBudgetDisplay({ campaignType: "paid", budget: "₹500" }).kind).toBe("cash");
     expect(campaignBudgetDisplay({ campaignType: "hybrid", budget: "₹500" }).kind).toBe("cash");
     expect(campaignBudgetDisplay({ campaignType: "barter", productValue: 500 }).kind).toBe("product");
     expect(campaignBudgetDisplay({ campaignType: "paid", budget: "On request" }).kind).toBe("none");
