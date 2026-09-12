@@ -7,7 +7,7 @@ describe("campaignBudgetDisplay", () => {
   it("shows a barter campaign's product value as an upper bound", () => {
     expect(
       campaignBudgetDisplay({ campaignType: "barter", productValue: 2399, budget: "On request" }),
-    ).toEqual({ text: "Up to ₹2,399", isProductValue: true });
+    ).toEqual({ text: "Up to ₹2,399", isProductValue: true, kind: "product" });
   });
 
   it("formats large values with Indian digit grouping", () => {
@@ -20,14 +20,14 @@ describe("campaignBudgetDisplay", () => {
     // Inventing a number would be worse than saying "On request".
     expect(
       campaignBudgetDisplay({ campaignType: "barter", productValue: 0, budget: "On request" }),
-    ).toEqual({ text: "On request", isProductValue: false });
+    ).toEqual({ text: "On request", isProductValue: false, kind: "none" });
   });
 
   it("presents a paid campaign's cash budget as a ceiling", () => {
     // budget_per_influencer is the most the brand will pay, not a fixed fee.
     expect(
       campaignBudgetDisplay({ campaignType: "paid", productValue: 5000, budget: "₹11,708" }),
-    ).toEqual({ text: "Up to ₹11,708", isProductValue: false });
+    ).toEqual({ text: "Up to ₹11,708", isProductValue: false, kind: "paid" });
   });
 
   it("treats a hybrid campaign's cash leg the same way", () => {
@@ -43,9 +43,18 @@ describe("campaignBudgetDisplay", () => {
     );
   });
 
+  it("reports a kind so surfaces label the figure consistently", () => {
+    // Only a paid cash ceiling is "As per profile" — a hybrid's cash leg is
+    // still just the budget, and barter is the product's worth.
+    expect(campaignBudgetDisplay({ campaignType: "paid", budget: "₹500" }).kind).toBe("paid");
+    expect(campaignBudgetDisplay({ campaignType: "hybrid", budget: "₹500" }).kind).toBe("cash");
+    expect(campaignBudgetDisplay({ campaignType: "barter", productValue: 500 }).kind).toBe("product");
+    expect(campaignBudgetDisplay({ campaignType: "paid", budget: "On request" }).kind).toBe("none");
+  });
+
   it("treats the type case-insensitively and survives missing fields", () => {
     expect(campaignBudgetDisplay({ campaignType: "BARTER", productValue: "999" }).text).toBe("Up to ₹999");
-    expect(campaignBudgetDisplay({})).toEqual({ text: "", isProductValue: false });
-    expect(campaignBudgetDisplay(null)).toEqual({ text: "", isProductValue: false });
+    expect(campaignBudgetDisplay({})).toEqual({ text: "", isProductValue: false, kind: "none" });
+    expect(campaignBudgetDisplay(null)).toEqual({ text: "", isProductValue: false, kind: "none" });
   });
 });

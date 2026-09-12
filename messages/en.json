@@ -2891,7 +2891,8 @@
       "licensingNote": "Brand gets content + licensing for 6 months",
       "applyBy": "Apply by",
       "deliverBy": "Deliver by",
-      "productValue": "Product value"
+      "productValue": "Product value",
+      "asPerProfile": "As per profile"
     },
     "sidebar": {
       "applyViaAgent": "Or apply via an agent or partnership",

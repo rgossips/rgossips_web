@@ -1173,8 +1173,15 @@ function ActiveContent({ campaign }) {
           <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm shadow-emerald-200">₹</div>
           <div>
             <p className="text-lg font-black text-[#00A67A] leading-tight">{budget.text}</p>
+            {/* A paid campaign's figure is a ceiling the creator's own rate
+                card negotiates within, so it is labelled "As per profile"
+                rather than "Budget". */}
             <p className="text-[9px] font-bold text-emerald-700/70">
-              {budget.isProductValue ? t("active.productValue") : t("active.budget")}
+              {budget.kind === "product"
+                ? t("active.productValue")
+                : budget.kind === "paid"
+                  ? t("active.asPerProfile")
+                  : t("active.budget")}
             </p>
           </div>
         </div>
@@ -1471,7 +1478,11 @@ function AppliedSidebar({ campaign }) {
           <div className="bg-gradient-to-br from-emerald-50 to-teal-50 ring-1 ring-emerald-200 rounded-xl p-3 text-center">
             <p className="text-base font-black text-[#00A67A] leading-tight">{campaignBudgetDisplay(campaign).text}</p>
             <p className="text-[9px] font-bold text-emerald-700/70 uppercase">
-              {campaignBudgetDisplay(campaign).isProductValue ? t("active.productValue") : t("active.budget")}
+              {campaignBudgetDisplay(campaign).kind === "product"
+                ? t("active.productValue")
+                : campaignBudgetDisplay(campaign).kind === "paid"
+                  ? t("active.asPerProfile")
+                  : t("active.budget")}
             </p>
           </div>
           <div className="bg-slate-50 rounded-xl p-3 text-center">

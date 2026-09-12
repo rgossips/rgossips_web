@@ -145,7 +145,11 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
 
   // Shared with the campaign detail page so the two never disagree — see
   // utils/campaignBudget.js for why a barter campaign shows product value.
-  const { text: budgetDisplay, isProductValue: showsProductValue } = campaignBudgetDisplay(campaign);
+  const {
+    text: budgetDisplay,
+    isProductValue: showsProductValue,
+    kind: budgetKind,
+  } = campaignBudgetDisplay(campaign);
 
   return (
     <div className="bg-white rounded-[32px] shadow-sm border border-slate-50 overflow-hidden">
@@ -216,7 +220,10 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
           <div className="p-3 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
             <p className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-700/70 uppercase mb-1">
               {/* Budgets are rupees. A $ beside "₹11,708" is just wrong. */}
-              <IndianRupee size={10} className="text-[#00BA88]" /> Budget
+              {/* Same label rule as the detail page: a paid campaign's ceiling
+                  is settled by the creator's own rate card. */}
+              <IndianRupee size={10} className="text-[#00BA88]" />{" "}
+              {budgetKind === "paid" ? "As per profile" : "Budget"}
             </p>
             <p className="text-base font-black text-[#00A67A] leading-tight">{budgetDisplay}</p>
             {showsProductValue && (

@@ -16,7 +16,11 @@ export function campaignBudgetDisplay(campaign) {
   const type = String(campaign?.campaignType || "").toLowerCase();
   const productValue = Number(campaign?.productValue) || 0;
   if (type === "barter" && productValue > 0) {
-    return { text: `Up to ₹${productValue.toLocaleString("en-IN")}`, isProductValue: true };
+    return {
+      text: `Up to ₹${productValue.toLocaleString("en-IN")}`,
+      isProductValue: true,
+      kind: "product",
+    };
   }
 
   // Cash budgets read "Up to ₹X" too. budget_per_influencer is the ceiling a
@@ -28,7 +32,20 @@ export function campaignBudgetDisplay(campaign) {
   // "On request" when no budget is set, and "Up to On request" is nonsense.
   // That also covers hybrid, whose cash leg is the same field with the same
   // ceiling meaning.
+  // `kind` is what each surface labels the figure with, kept here so the card
+  // and the detail page cannot describe the same number differently:
+  //   product — the item's worth, on a barter campaign
+  //   paid    — a cash ceiling on a paid campaign, which the creator's own
+  //             rate card decides within, hence "As per profile"
+  //   cash    — a hybrid's cash leg, still just the budget
+  //   none    — no amount at all ("On request")
   const budget = campaign?.budget || "";
-  if (budget.startsWith("₹")) return { text: `Up to ${budget}`, isProductValue: false };
-  return { text: budget, isProductValue: false };
+  if (budget.startsWith("₹")) {
+    return {
+      text: `Up to ${budget}`,
+      isProductValue: false,
+      kind: type === "paid" ? "paid" : "cash",
+    };
+  }
+  return { text: budget, isProductValue: false, kind: "none" };
 }
