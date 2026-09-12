@@ -136,7 +136,13 @@ Deno.serve(async (req) => {
               // had already moved on (submitted, accepted, live) BACKWARDS to
               // approved. The escrow guard is belt-and-braces on top.
               .eq("status", "offer_accepted")
-              .neq("escrow_status", "held");
+              // NOT .neq("escrow_status", "held"). In SQL, NULL <> 'held' is
+              // NULL rather than true, so a plain neq silently skips every
+              // row whose escrow_status is still NULL — which is exactly the
+              // set this recovery exists to heal (41 such rows live today).
+              // The row stayed unfunded while the brand's money sat paid at
+              // Razorpay, and the next Approve minted another order.
+              .or("escrow_status.is.null,escrow_status.neq.held");
 
             return json({
               ok: true,

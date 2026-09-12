@@ -52,6 +52,53 @@ const CreateCampaignDialog = dynamic(
 // Brand-side escrow funding uses the same Razorpay Checkout SDK as the
 // subscription flow. Loaded lazily on first Approve click to keep the
 // initial bundle lean.
+// supabase-js reports any non-2xx from an edge function as the opaque
+// "Edge Function returned a non-2xx status code", and puts the real response
+// on error.context. Every one of our functions answers with { error: "..." }
+// explaining exactly what it refused and why — "Escrow is not held", "Payout
+// already in state 'scheduled'", "forbidden" — so reading the body turns an
+// unactionable popup into the actual reason.
+// Invoke a verify_jwt-gated edge function, refreshing the session once if the
+// token turns out to be dead.
+//
+// Those functions do their own supabase.auth.getUser(token). getSession()
+// hands back a STORED session without proving the access token is still live,
+// so a tab left open long enough posts an expired token and the function
+// answers 401 {"error":"unauthorized"} — which in the UI is indistinguishable
+// from "not signed in", and lands on a money action. Confirmed from a real
+// 401 on escrow-release: the response carried OUR function's CORS headers, so
+// the request reached it and getUser rejected the token.
+//
+// Returns invoke's { data, error }, or { needsLogin: true } when even a
+// refresh cannot produce a live token.
+async function invokeAuthed(supabase, fn, body) {
+  const send = (token) =>
+    supabase.functions.invoke(fn, { body, headers: { Authorization: `Bearer ${token}` } });
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return { needsLogin: true };
+
+  const first = await send(session.access_token);
+  // supabase-js collapses non-2xx into a generic message, so branch on the
+  // status from error.context rather than trying to read the text.
+  if (first?.error?.context?.status !== 401) return first;
+
+  const { data: refreshed } = await supabase.auth.refreshSession();
+  const token = refreshed?.session?.access_token;
+  if (!token) return { needsLogin: true };
+  return send(token);
+}
+
+async function readFnError(err, fallback) {
+  try {
+    const body = await err?.context?.json?.();
+    if (body?.error) return body.error;
+  } catch {
+    /* not JSON, or the body was already consumed — fall through */
+  }
+  return err?.message || fallback;
+}
+
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
 // Bound an edge-function invoke so a hung request can't leave the escrow
@@ -901,16 +948,23 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
     setLoading(true);
     startLoading(t("loading.updatingApplication"));
     try {
-      const { data, error } = await supabase.functions.invoke("update-application-status", {
-        body: {
-          applicationId: app.id,
-          brandId,
-          status: newStatus,
-          ...extra,
-        },
+      // This runs immediately after a successful Razorpay payment, so a dead
+      // token here means the money moved and the escrow flip did not — which
+      // is precisely the "paid but not recorded" state application 81b7af4a
+      // was found in. Refresh and retry rather than losing the confirmation.
+      const res = await invokeAuthed(supabase, "update-application-status", {
+        applicationId: app.id,
+        brandId,
+        status: newStatus,
+        ...extra,
       });
+      if (res?.needsLogin) {
+        setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
+        return;
+      }
+      const { data, error } = res;
       if (error || data?.error) {
-        setPopup(error?.message || data?.error || t("errors.updateFailed"));
+        setPopup(await readFnError(error, data?.error || t("errors.updateFailed")));
         return;
       }
       setMode(null);
@@ -960,23 +1014,38 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
       // clients derive their key from the same project ref.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
+        // Every early return in THIS handler has to clear the overlay itself.
+        // Unlike releaseEscrow below, this try has no finally — only the catch
+        // stops the loader, and a `return` skips the catch. That is what left
+        // "Preparing escrow" on screen indefinitely, with the popup stranded
+        // behind it and no way forward but a reload.
+        setLoading(false);
+        stopLoading();
         setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
         return;
       }
-      const { data: fund, error: fundErr } = await withTimeout(
-        supabase.functions.invoke("escrow-fund", {
-          body: { applicationId: app.id, agreedRate: rate },
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }),
+      const fundRes = await withTimeout(
+        invokeAuthed(supabase, "escrow-fund", { applicationId: app.id, agreedRate: rate }),
         20000,
         "Escrow"
       );
+      if (fundRes?.needsLogin) {
+        setLoading(false);
+        stopLoading();
+        setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
+        return;
+      }
+      const { data: fund, error: fundErr } = fundRes;
       if (fundErr || fund?.error) {
-        setPopup(fundErr?.message || fund?.error || t("errors.escrowCreateFailed"));
+        setLoading(false);
+        stopLoading();
+        setPopup(await readFnError(fundErr, fund?.error || t("errors.escrowCreateFailed")));
         return;
       }
       await loadRazorpayCheckout();
       if (typeof window === "undefined" || !window.Razorpay) {
+        setLoading(false);
+        stopLoading();
         setPopup(t("errors.razorpayLoadFailed"));
         return;
       }
@@ -1049,12 +1118,14 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
         setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
         return;
       }
-      const { data, error } = await supabase.functions.invoke("escrow-release", {
-        body: { applicationId: app.id },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const releaseRes = await invokeAuthed(supabase, "escrow-release", { applicationId: app.id });
+      if (releaseRes?.needsLogin) {
+        setPopup({ title: t("popups.sessionExpired.title"), message: t("popups.sessionExpired.message"), tone: "info" });
+        return;
+      }
+      const { data, error } = releaseRes;
       if (error || data?.error) {
-        setPopup(error?.message || data?.error || t("errors.releaseFailed"));
+        setPopup(await readFnError(error, data?.error || t("errors.releaseFailed")));
         return;
       }
       onRefresh?.();
