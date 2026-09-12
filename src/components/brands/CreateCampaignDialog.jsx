@@ -1245,7 +1245,16 @@ export function CreateCampaignDialog({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent showCloseButton={false} className="mt-[30px] sm:max-w-[720px] h-[87vh] max-h-[87vh] p-0 flex flex-col overflow-hidden rounded-2xl">
+        {/* A stray click on the backdrop must not discard a half-filled
+            campaign. This form is long — banner upload, targeting, budget,
+            deliverables, guidelines — and none of it is drafted anywhere, so
+            an accidental dismissal loses the lot. Closing stays deliberate:
+            the X, Cancel, and Escape. */}
+        <DialogContent
+          showCloseButton={false}
+          onInteractOutside={(e) => e.preventDefault()}
+          className="mt-[30px] sm:max-w-[720px] h-[87vh] max-h-[87vh] p-0 flex flex-col overflow-hidden rounded-2xl"
+        >
           {renderHeader("dialog")}
           {content}
         </DialogContent>
@@ -1253,8 +1262,11 @@ export function CreateCampaignDialog({
     );
   }
 
+  // dismissible={false} is the mobile half of the same guard: it blocks both
+  // the tap-outside and the swipe-down, either of which would throw away the
+  // whole form. The header's close button still works.
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} dismissible={false}>
       <DrawerPortal>
         <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
         <DrawerContent className="fixed inset-x-0 bottom-0 z-50 h-[92vh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
