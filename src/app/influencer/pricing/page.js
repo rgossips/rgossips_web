@@ -274,14 +274,15 @@ export default function PricingPage() {
       for (let attempt = 0; token && attempt < 4 && !reconciled; attempt++) {
         if (attempt > 0) await new Promise((r) => setTimeout(r, 1200));
         try {
-          const { data } = await supabase.functions.invoke("reconcile-subscription", {
-            headers: { Authorization: `Bearer ${token}` },
-            body: {
-              preferSubscriptionId: capturedSubscription || undefined,
-              preferGateway: capturedGateway || undefined,
-              preferPlan: purchased?.plan || undefined,
-            },
+          // invokeAuthed refreshes once on a 401. The token read above is the
+          // STORED session — after a gateway redirect it can already be
+          // expired, and a failed reconcile here leaves a paid user unentitled.
+          const { data, needsLogin } = await invokeAuthed(supabase, "reconcile-subscription", {
+            preferSubscriptionId: capturedSubscription || undefined,
+            preferGateway: capturedGateway || undefined,
+            preferPlan: purchased?.plan || undefined,
           });
+          if (needsLogin) break;
           if (data?.reconciled) reconciled = true;
         } catch (e) {
           console.error("reconcile attempt failed:", e);

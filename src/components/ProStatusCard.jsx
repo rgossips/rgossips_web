@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { invokeAuthed } from "@/lib/invokeAuthed";
 import { isSubscribed, getSubscriptionStatus } from "@/lib/plans";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
 import ReferBalanceCard from "@/components/ReferBalanceCard";
@@ -76,7 +77,10 @@ export function ProStatusCard() {
     setRenewalFetching(true);
     (async () => {
       try {
-        const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
+        // invokeAuthed, not functions.invoke: subscription-history now takes the
+        // caller from the JWT, and a stale stored session (or the shared admin
+        // cookie) otherwise sends the publishable key -> 401 on every home load.
+        const { data: hist } = await invokeAuthed(supabase, "subscription-history", { userId: user.id });
         const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
         const ts = invoices.reduce((max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max), 0);
         if (!cancelled && ts > 0) setRealRenewalTs(ts);
