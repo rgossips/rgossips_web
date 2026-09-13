@@ -9,13 +9,17 @@ import {
   Loader2,
   RefreshCw,
   Sparkles,
+  Lock,
+  Crown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { CampaignCard } from "@/components/CampaignCard";
 import FilterModal, { FilterSidebar } from "@/components/FilterModal";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useFreeApplications } from "@/hooks/useFreeApplications";
 import { calculateCampaignMatchScore } from "@/utils/matchScore";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -25,6 +29,7 @@ import { matchesAnyCity } from "@/utils/indianCities";
 export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
   const { profile, user } = useAuth();
+  const freeApps = useFreeApplications();
   const searchParams = useSearchParams();
 
   const [campaigns, setCampaigns] = useState([]);
@@ -453,6 +458,44 @@ export default function CampaignsPage() {
                 </div>
               ))}
             </div>
+
+            {/* What a free creator's allowance actually is, stated once at the
+                top of the list rather than discovered on an Apply click deeper
+                in. Self-hides for subscribers and until the count has loaded. */}
+            {!freeApps.subscribed && freeApps.known && (
+              <div
+                className={`mb-5 flex items-start gap-3 rounded-2xl border px-4 py-3 ${
+                  freeApps.exhausted
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-purple-100 bg-gradient-to-r from-purple-50 to-pink-50"
+                }`}
+              >
+                <div
+                  className={`shrink-0 w-9 h-9 rounded-2xl bg-white flex items-center justify-center ${
+                    freeApps.exhausted ? "text-amber-600" : "text-purple-600"
+                  }`}
+                >
+                  {freeApps.exhausted ? <Lock size={16} /> : <Sparkles size={16} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-black text-slate-900">
+                    {freeApps.exhausted
+                      ? t("freeBanner.exhaustedTitle")
+                      : t("freeBanner.title", { remaining: freeApps.remaining })}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                    {t("freeBanner.body")}
+                  </p>
+                </div>
+                <Link
+                  href="/influencer/pricing"
+                  className="shrink-0 self-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-[11px] font-bold shadow-sm hover:brightness-110"
+                  style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+                >
+                  <Crown size={12} /> {t("freeBanner.cta")}
+                </Link>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">

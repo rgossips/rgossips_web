@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Calendar, MapPin, FileText, IndianRupee, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap, Sparkles, X, Copy, Check } from "lucide-react";
+import { Calendar, MapPin, FileText, IndianRupee, ChevronRight, Instagram, Youtube, CheckCircle2, Award, BarChart3, Eye, Zap, Sparkles, X, Copy, Check, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import { explainCampaignMatch } from "@/utils/matchScore";
 import { useAiTool } from "@/hooks/useAiTool";
 import { AiMarkdown } from "@/components/AiMarkdown";
 import { campaignBudgetDisplay } from "@/utils/campaignBudget";
+import { isSubscribed } from "@/lib/plans";
 
 // "Why this match?" coach — shows the transparent score breakdown and, on
 // demand, an AI-narrated prioritised to-do list to raise it (tool: match_coach).
@@ -120,6 +121,13 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
   const { profile } = useAuth();
   const [coachOpen, setCoachOpen] = useState(false);
   const match = profile ? explainCampaignMatch(profile, campaign) : { score: matchScore || 0, breakdown: [] };
+
+  // A free creator can only apply to barter campaigns. Saying so here means
+  // they are not learning it for the first time on the Apply click a screen
+  // later — the card is where they choose what to open.
+  const lockedForFree =
+    !isSubscribed(profile) &&
+    String(campaign.campaignType || "").toLowerCase() !== "barter";
 
   // Countdown that belongs to the date this card prints (the apply-by date).
   const applyLeft = campaign.applyDaysLeft ?? campaign.daysLeft;
@@ -316,6 +324,15 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
             </Button>
           )}
         </div>
+
+        {/* Named on the card so the limit is known before the campaign is
+            opened, not discovered on the Apply click. */}
+        {isActive && lockedForFree && (
+          <p className="mt-3 flex items-start gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+            <Lock size={11} className="shrink-0 mt-px" />
+            Subscribers only — your free applications cover barter campaigns
+          </p>
+        )}
       </div>
 
       {coachOpen && <MatchCoachModal campaign={campaign} profile={profile} score={match.score} breakdown={match.breakdown} onClose={() => setCoachOpen(false)} />}

@@ -241,6 +241,7 @@
       "registeredAsOther": "This number is registered as {otherRole}. Please switch role and try again.",
       "roleMismatchVerify": "This number is registered as {otherRole}, not {requestedRole}. Please go back and pick the correct role.",
       "sendOtpFailed": "Failed to send OTP",
+      "network": "We couldn't reach RGossips. Check your internet connection and try again.",
       "resendOtpFailed": "Failed to resend OTP",
       "verifyOtpFailed": "Failed to verify OTP",
       "instagramNoUsername": "Instagram didn't return your username. Please reconnect Instagram before continuing.",
@@ -424,6 +425,8 @@
       "otherAccount": "another account",
       "errors": {
         "connectFailed": "Failed to connect Instagram",
+        "codeAlreadyUsed": "That Instagram link has already been used. Tap Connect Instagram to try again.",
+        "network": "We couldn't reach RGossips. Check your internet connection and try again.",
         "verifyFailed": "Failed to verify Instagram",
         "registeredAsRoleSignin": "This Instagram is registered as {source}. Please sign in as {source} instead.",
         "registeredAsRoleSignup": "This Instagram is already registered as {source}. Please sign in instead."
@@ -618,7 +621,8 @@
     "errors": {
       "alreadyApplied": "You have already applied to this campaign.",
       "planLimitDefault": "You've reached your plan's monthly application limit.",
-      "submitFailed": "Failed to submit application"
+      "submitFailed": "Failed to submit application",
+      "network": "We couldn't reach RGossips to confirm your application. Check your connection and tap Apply again — you won't be applied twice."
     },
     "success": {
       "title": "Application Submitted!",
@@ -2671,7 +2675,13 @@
     "empty": "No {tab} campaigns found.",
     "filterTitle": "Filter Campaigns",
     "filteredOutOf": "{shown} out of {total} campaigns",
-    "showAll": "Show all"
+    "showAll": "Show all",
+    "freeBanner": {
+      "title": "{remaining, plural, one {# free barter application left} other {# free barter applications left}}",
+      "exhaustedTitle": "You have used all your free applications",
+      "body": "Free accounts can apply to barter campaigns, where brands pay in product. Paid campaigns, your media kit and analytics unlock on any plan.",
+      "cta": "See plans"
+    }
   },
   "InfluencerChats": {
     "title": "Messages",
@@ -3058,7 +3068,14 @@
       "text": "Check out this campaign on RGossips: {title}"
     },
     "allCampaigns": "All Campaigns",
-    "productValueLabel": "Product Value"
+    "productValueLabel": "Product Value",
+    "freeNote": {
+      "kindPaid": "paid",
+      "kindHybrid": "paid + product",
+      "paidCampaign": "This is a {kind} campaign — subscribers only. Your free applications cover barter campaigns.",
+      "remaining": "{remaining, plural, one {# free barter application left} other {# free barter applications left}}",
+      "exhausted": "You have used all your free applications. Subscribe to keep applying."
+    }
   },
   "InfluencerPricing": {
     "header": {
@@ -3074,7 +3091,13 @@
       "freeRemaining": "{remaining} of your {limit} free barter applications left",
       "freeBlurb": "Apply to {limit} barter campaigns free. Everything else needs a plan.",
       "freeWarning": "Subscribe to unlock paid campaigns, your media kit and analytics",
-      "freeExhausted": "You have used all your free applications — pick a plan to keep applying"
+      "freeExhausted": "You have used all your free applications — pick a plan to keep applying",
+      "autoRenewOff": "AUTO-RENEW OFF",
+      "cancelledUntil": "Auto-renew is cancelled — your plan runs until {date}",
+      "cancelledNoDate": "Auto-renew is cancelled. Your plan runs until the end of the paid period.",
+      "cancelledTitle": "Auto-renew is cancelled",
+      "cancelledBody": "{days, plural, =0 {Your plan ends today} one {Your plan ends in # day} other {Your plan ends in # days}} — after that you go back to the free plan. Resubscribe below to stay on.",
+      "cancelledBodyNoDate": "Your plan will end when the paid period finishes, then you go back to the free plan. Resubscribe below to stay on."
     },
     "billing": {
       "monthly": "Monthly",
@@ -5126,5 +5149,27 @@
     "note": "Barter campaigns pay in product. Paid campaigns, your media kit and analytics unlock on any plan.",
     "cta": "Let’s go",
     "close": "Close"
+  },
+  "UpgradeRequired": {
+    "close": "Close",
+    "kind": {
+      "paid": "paid",
+      "hybrid": "paid + product"
+    },
+    "paid": {
+      "title": "This one is for subscribers",
+      "body": "Your {limit} free applications cover barter campaigns, where brands pay in product. This is a {kind} campaign, so it needs a plan."
+    },
+    "quota": {
+      "title": "You have used all {limit} free applications",
+      "body": "Free accounts get {limit} barter campaign applications. Subscribe to keep applying."
+    },
+    "perk1": "Apply to paid campaigns, not just barter",
+    "perk2": "Unlock your media kit — the profile brands ask for before shortlisting",
+    "perk3": "Analytics, AI tools and faster payouts",
+    "ctaFrom": "See plans — from ₹{price}/month",
+    "cta": "See plans",
+    "browseBarter": "{remaining, plural, one {Browse barter campaigns (# free left)} other {Browse barter campaigns (# free left)}}",
+    "notNow": "Not now"
   }
 }

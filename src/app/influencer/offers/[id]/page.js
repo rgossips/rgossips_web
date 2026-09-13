@@ -37,6 +37,7 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Lock,
   Sparkles,
 } from "lucide-react";
 import Image from "next/image";
@@ -50,6 +51,9 @@ import { AiMarkdown } from "@/components/AiMarkdown";
 import RatingModal from "@/components/RatingModal";
 import AlertPopup from "@/components/AlertPopup";
 import CreatorAuthModal from "@/components/auth/CreatorAuthModal";
+import UpgradeRequiredModal from "@/components/UpgradeRequiredModal";
+import { useFreeApplications } from "@/hooks/useFreeApplications";
+import { FREE_BARTER_APPLICATIONS } from "@/lib/plans";
 import { campaignBudgetDisplay } from "@/utils/campaignBudget";
 
 /* ─── Fetch campaign from DB ─── */
@@ -674,9 +678,12 @@ export default function CampaignDetailsPage() {
   const [showRating, setShowRating] = useState(false);
   const [myRating, setMyRating] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
+  // "paid_campaign" | "quota" | null — why the Apply click was refused.
+  const [upgradeReason, setUpgradeReason] = useState(null);
   const [wrongRoleOpen, setWrongRoleOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const { user, role } = useAuth();
+  const freeApps = useFreeApplications();
 
   const { campaign, loading, refetch } = useCampaign(id, user?.id);
 
@@ -740,6 +747,24 @@ export default function CampaignDetailsPage() {
     if (role && role !== "influencer") {
       setWrongRoleOpen(true);
       return;
+    }
+    // Free tier. apply-campaign refuses both of these server-side, but it
+    // only gets the chance once the creator has opened the form and
+    // written a pitch — the worst moment to learn the rules. Check the
+    // same two conditions here so nothing is wasted.
+    //
+    // `known` guards the still-loading case: refusing before the count
+    // has landed would block a creator who has applications to spare. The
+    // server is the real boundary, so erring open here costs nothing.
+    if (!freeApps.subscribed && freeApps.known) {
+      if (!isBarter) {
+        setUpgradeReason("paid_campaign");
+        return;
+      }
+      if (freeApps.exhausted) {
+        setUpgradeReason("quota");
+        return;
+      }
     }
     setIsApplyOpen(true);
   };
@@ -848,8 +873,21 @@ export default function CampaignDetailsPage() {
     campaign.applicationStatus !== "withdrawn" &&
     campaign.applicationStatus !== "rejected";
 
+  // Free applications cover barter only. `hybrid` is NOT barter — it
+  // carries cash — and apply-campaign draws the line in the same place.
+  const isBarter = String(campaign.campaignType || "").toLowerCase() === "barter";
+  // Show the allowance to a free creator BEFORE they commit to the form.
+  const showFreeNote = !freeApps.subscribed && freeApps.known && !hasLiveApplication;
+
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sans lg:mt-20">
+      {/* Why the Apply click was refused, and what to do about it. */}
+      <UpgradeRequiredModal
+        reason={upgradeReason}
+        remaining={freeApps.remaining ?? 0}
+        campaignType={campaign.campaignType}
+        onClose={() => setUpgradeReason(null)}
+      />
       <AnimatePresence>
         {isApplyOpen && (
           <ApplyCampaignForm
@@ -1044,6 +1082,15 @@ export default function CampaignDetailsPage() {
               <ActiveSidebar
                 campaign={campaign}
                 onApply={isActive && !hasLiveApplication ? requestApply : null}
+                freeNote={
+                  showFreeNote ? (
+                    <FreeAllowanceNote
+                      isBarter={isBarter}
+                      remaining={freeApps.remaining ?? 0}
+                      campaignType={campaign.campaignType}
+                    />
+                  ) : null
+                }
                 appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
               />
@@ -1064,6 +1111,15 @@ export default function CampaignDetailsPage() {
               <p className="text-[11px] font-bold leading-tight">
                 {campaign.inviteBrandName || campaign.brandName} invited you — apply below
               </p>
+            </div>
+          )}
+          {showFreeNote && (
+            <div className="mb-2">
+              <FreeAllowanceNote
+                isBarter={isBarter}
+                remaining={freeApps.remaining ?? 0}
+                campaignType={campaign.campaignType}
+              />
             </div>
           )}
           <button
@@ -1299,7 +1355,42 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
+// What a free creator is working with, shown next to Apply rather than
+// only after they hit the wall. Two shapes, because the two limits fail
+// differently: a paid campaign is closed to them no matter how many
+// applications they have left, so the count would be misleading there.
+function FreeAllowanceNote({ isBarter, remaining, campaignType }) {
+  const t = useTranslations("InfluencerOffersId");
+  const blocked = !isBarter;
+  const out = remaining <= 0;
+  return (
+    <div
+      className={`flex items-start gap-2 rounded-xl px-3 py-2 border ${
+        blocked || out
+          ? "bg-amber-50 border-amber-200"
+          : "bg-purple-50 border-purple-100"
+      }`}
+    >
+      <span className={`mt-0.5 shrink-0 ${blocked || out ? "text-amber-600" : "text-purple-600"}`}>
+        {blocked || out ? <Lock size={13} /> : <Sparkles size={13} />}
+      </span>
+      <p className={`text-[11px] leading-snug font-semibold ${blocked || out ? "text-amber-800" : "text-purple-800"}`}>
+        {blocked
+          ? t("freeNote.paidCampaign", {
+              kind:
+                String(campaignType || "").toLowerCase() === "hybrid"
+                  ? t("freeNote.kindHybrid")
+                  : t("freeNote.kindPaid"),
+            })
+          : out
+            ? t("freeNote.exhausted")
+            : t("freeNote.remaining", { remaining })}
+      </p>
+    </div>
+  );
+}
+
+function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, freeNote }) {
   const t = useTranslations("InfluencerOffersId");
   return (
     <>
@@ -1324,6 +1415,7 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
               </div>
             </div>
           )}
+          {freeNote && <div className="hidden lg:block mb-2">{freeNote}</div>}
           <button
             onClick={onApply}
             className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
