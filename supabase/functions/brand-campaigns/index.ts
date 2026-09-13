@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -370,7 +371,7 @@ async function loadInviteTracking(
   return { inviteStats, invitees };
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("brand-campaigns", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -478,6 +479,10 @@ Deno.serve(async (req) => {
           bannerImage: meta.banner_image || "",
           galleryImages: meta.gallery_images || [],
           status: c.status || "draft",
+          // Why an admin turned this campaign down. Null on every other
+          // status; the brand UI keys its banner off it.
+          reviewReason: c.review_reason || "",
+          reviewedAt: c.reviewed_at || "",
           campaignType: c.campaign_type,
           maxInfluencers: c.max_influencers || 0,
           budgetTotal: c.budget_total || 0,
@@ -611,6 +616,10 @@ Deno.serve(async (req) => {
           galleryImages: m.gallery_images || [],
           minEngagementRate: m.min_engagement_rate || 0,
           status: c.status || "draft",
+          // Why an admin turned this campaign down. Null on every other
+          // status; the brand UI keys its banner off it.
+          reviewReason: c.review_reason || "",
+          reviewedAt: c.reviewed_at || "",
           campaignType: c.campaign_type,
           maxInfluencers: c.max_influencers || 0,
           budgetTotal: c.budget_total || 0,
@@ -978,7 +987,7 @@ Deno.serve(async (req) => {
       // sneaking a campaign with no cover image into creator listings.
       // Only gate the draft→active leg: resuming a paused campaign that
       // somehow lacks a banner (legacy rows) shouldn't brick pause/play.
-      if (status === "active" && c.status === "draft") {
+      if (status === "active" && (c.status === "draft" || c.status === "rejected")) {
         const { meta } = unpackDescription(c.description);
         if (!(meta as any)?.banner_image) {
           return ok({ error: "Add a campaign banner before publishing — it's the cover image creators see. Open Edit to upload one." });
@@ -989,9 +998,16 @@ Deno.serve(async (req) => {
       // gate as create-with-active. Resuming from `paused` is exempt (that
       // campaign was already approved once). Brands can never self-approve
       // an `under_review` campaign.
+      //
+      // `rejected` MUST be in this list. It is a campaign an admin just
+      // turned down; letting it republish straight to `active` would skip
+      // the very review it failed.
       let effectiveStatus = status;
       let underReview = false;
-      if (status === "active" && (c.status === "draft" || c.status === "under_review")) {
+      if (
+        status === "active" &&
+        (c.status === "draft" || c.status === "under_review" || c.status === "rejected")
+      ) {
         const { data: bp } = await supabase
           .from("brand_profiles")
           .select("verification_status, auto_approve_campaigns")
@@ -1009,9 +1025,17 @@ Deno.serve(async (req) => {
         }
       }
 
+      const patch: Record<string, unknown> = {
+        status: effectiveStatus,
+        updated_at: new Date().toISOString(),
+      };
+      // Leaving `rejected` retires the verdict with it. Keeping the reason
+      // would leave a live campaign showing why it was once turned down.
+      if (c.status === "rejected") patch.review_reason = null;
+
       const { error } = await supabase
         .from("campaigns")
-        .update({ status: effectiveStatus, updated_at: new Date().toISOString() })
+        .update(patch)
         .eq("campaign_id", campaignId);
 
       if (error) return ok({ error: error.message });
@@ -1023,7 +1047,13 @@ Deno.serve(async (req) => {
     // SERVICE ROLE key as the Bearer token (admin server actions hold it;
     // browsers never do). Approve flips under_review → active and runs the
     // same match-and-notify fan-out a direct publish would have; reject
-    // sends the campaign back to draft for the brand to fix and resubmit.
+    // moves the campaign to `rejected` WITH the admin's reason recorded
+    // on the row.
+    //
+    // Reject used to write `draft` and drop the reason entirely, so the
+    // brand saw a chip indistinguishable from a campaign they had never
+    // submitted and no statement of what to change. `rejected` is a
+    // distinct status precisely so that page can say so.
     if (action === "adminApprove" || action === "adminReject") {
       const bearer = (req.headers.get("authorization") || "").replace("Bearer ", "");
       if (!(await isServiceRoleCaller(bearer))) {
@@ -1031,6 +1061,10 @@ Deno.serve(async (req) => {
       }
       const { campaignId } = payload;
       if (!campaignId) return ok({ error: "campaignId is required" });
+      // Clamped: it is rendered to the brand and carried in a notification.
+      const reviewReason = payload.reason
+        ? String(payload.reason).trim().slice(0, 500)
+        : null;
 
       const { data: c, error: findErr } = await supabase
         .from("campaigns")
@@ -1042,7 +1076,12 @@ Deno.serve(async (req) => {
       if (action === "adminReject") {
         const { error } = await supabase
           .from("campaigns")
-          .update({ status: "draft", updated_at: new Date().toISOString() })
+          .update({
+            status: "rejected",
+            review_reason: reviewReason,
+            reviewed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           .eq("campaign_id", campaignId);
         if (error) return ok({ error: error.message });
         return ok({ success: true });
@@ -1050,7 +1089,15 @@ Deno.serve(async (req) => {
 
       const { error } = await supabase
         .from("campaigns")
-        .update({ status: "active", updated_at: new Date().toISOString() })
+        .update({
+          status: "active",
+          // An approved campaign carries no complaint. Clearing this is what
+          // stops a previously-rejected campaign going live still showing the
+          // reason it was turned down last time.
+          review_reason: null,
+          reviewed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq("campaign_id", campaignId);
       if (error) return ok({ error: error.message });
 

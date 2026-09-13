@@ -7,9 +7,11 @@ const statusStyles = {
   paused: "bg-yellow-100 text-yellow-700",
   completed: "bg-blue-100 text-blue-700",
   under_review: "bg-purple-100 text-purple-700",
+  rejected: "bg-red-100 text-red-700",
 };
 
-const statusLabel = (s) => (s === "under_review" ? "Under Review" : s ? s.charAt(0).toUpperCase() + s.slice(1) : "Draft");
+const statusLabel = (s) =>
+  s === "under_review" ? "Under Review" : s ? s.charAt(0).toUpperCase() + s.slice(1) : "Draft";
 
 const formatBudget = (n) => {
   if (!n) return "—";

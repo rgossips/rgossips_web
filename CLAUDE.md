@@ -8,9 +8,9 @@ decisions, or repo layout changed.
 
 | Repo | Path | What it is |
 |---|---|---|
-| Web (main) | `d:/Development/React/RS_Gossips` | Next.js 15 App Router, brand + influencer surfaces at rgossips.com. Also owns `supabase/` (migrations + edge functions). |
-| Admin | `d:/Development/React/rgossips-admin` | Next.js admin console (`/dashboard/*`). Reads/writes via server actions using the same Supabase project. |
-| Android | `d:/Development/android/rsgossips_app` | React Native app — mirrors the influencer web surface. |
+| Web (main) | `d:/Development/React/rgossips_web` | Next.js 15 App Router, brand + influencer surfaces at rgossips.com. Also owns `supabase/` (migrations + edge functions). |
+| Admin | `d:/Development/React/rsgossips_admin` | Next.js admin console (`/dashboard/*`). Reads/writes via server actions using the same Supabase project. |
+| Android | `d:/Development/React Native/rsgossips_app` | React Native app — mirrors the influencer web surface. |
 
 All three point at the **same Supabase project**: `hlfevcdtbehukxrrgykv`.
 Migrations and edge functions live in the web repo only.
@@ -179,6 +179,154 @@ picked the right column. Fixed sites:
 If you add a new edge function that joins to `influencer_profiles` and
 returns a photo, mirror the same coalesce or another surface will
 silently regress.
+
+## Free tier — the trial is gone (2026-09)
+
+The 30-day free trial was removed. A creator is now either on a **paid tier**
+(`starter` / `pro` / `elite`) or on **`free`**, and `free` buys exactly one
+thing: **3 barter campaign applications, lifetime**. Everything else needs a
+subscription.
+
+- **`subscription_plan` still literally says `"trial"` on most rows** (77 of 83
+  influencers at the time of the change) — it was the signup default. It is not
+  a tier and never was; it now means "has not paid", same as null/`"free"`.
+  **No data migration was needed or done.** Any new code that tests
+  `plan !== "free"` to mean "paid" is wrong for almost every row — two live
+  surfaces (`DashboardView` on both web and mobile, mobile `SidebarContent`)
+  had exactly that bug and were telling unsubscribed creators they had an
+  active subscription. Use the helpers.
+- **Signup age no longer buys anything.** `created_at` is not consulted by any
+  entitlement path. Four separate copies of the 30-day maths were deleted
+  (`apply-campaign`, `ai-generate`, `update-profile`, `escrow-release`).
+
+### Source of truth
+
+| Layer | File | Exports |
+|---|---|---|
+| Edge functions | `supabase/functions/_shared/plan.ts` | `effectivePlan`, `isSubscribed`, `isBarterCampaign`, `FREE_BARTER_APPLICATIONS`, `APPLICATION_LIMITS`, `AI_LIMITS` |
+| Web | `src/lib/plans.js` | `getEffectivePlan`, `isSubscribed`, `getFreeApplicationStatus`, `FREE_BARTER_APPLICATIONS`, `PLAN_IDS.FREE` |
+| Mobile | `src/lib/plans.ts` | same, plus `PaidPlanId` (= `PlanId` minus `free`) for price/SKU maps |
+
+`FEATURE_MATRIX` gained a `free` column **derived from a `FREE_TIER`
+allowlist**, not written per row: anything absent from that allowlist is
+`false`/`0`, so a feature added later cannot leak into the free tier by
+omission. A test pins the whole allowlist (`__tests__/lib/plans.test.js`).
+Only `discovery_listed`, `badge_verified_eligible`, `support_standard` and
+the 3 applications are on. **Discovery stays on deliberately** — being
+findable by brands is marketplace supply, not a perk the creator is buying,
+and de-listing unsubscribed creators would empty the brand-side search.
+
+### Where it is actually enforced
+
+- **`apply-campaign`** — the real gate. Free callers: campaign must be
+  `campaign_type = "barter"` (`hybrid` is NOT barter — it carries cash), and
+  the LIFETIME row count in `campaign_applications` must be under 3. Errors:
+  `subscription_required`, `free_quota_exhausted`. Paid tiers keep the
+  per-calendar-month caps.
+  **Failure handling differs by branch on purpose**: a failed *profile* read
+  falls open (refusing a paying creator over a transient read is worse), but
+  once the plan is known to be `free` a failed *count* refuses
+  (`quota_check_failed`) — falling open there turns a 3-application allowance
+  into an unlimited one.
+- **`update-profile`** — media kit is subscriber-only; a free caller is
+  refused before the per-template rank and change-cap rules are considered.
+- **`ai-generate`** — free returns `subscription_required`, not
+  `ai_limit_reached`: the tool is not part of the tier, it is not a spent quota.
+- **`escrow-release`** — payout delay: free waits 7 days, same as Starter.
+- **`list-campaigns`** returns an `entitlement` block
+  (`{plan, subscribed, freeLimit, freeUsed, freeRemaining}`) so client surfaces
+  do not each count rows.
+
+⚠️ **`brand_dms_limit` and the `analytics_*` rows have no enforcement point**
+— they never did, on any tier. The matrix says free gets none, but nothing
+reads those keys. Gating chat and the analytics dashboards is separate work.
+
+### Client surfaces
+
+- `useFreeApplications()` (web `src/hooks/`, mobile `src/hooks/`) — head-counts
+  `campaign_applications` through RLS (`applications_creator_self_rw`, migration
+  035 scopes it to `auth.uid()`), so the client sees the same number the server
+  counts. Subscribers short-circuit and never run the query. `known` is false
+  until the count lands — render neutral copy, not a wrong number.
+- Trial countdowns replaced with applications-remaining on web `ProStatusCard`
+  + `DashboardView` + pricing banner, and mobile `ProStatuscard` +
+  `DashboardView` + `SidebarContent`.
+- **Media kit page/screen is a full-page upsell** for free creators (web
+  `media-kit/page.js`, mobile `InfluencerMediaKit.tsx`), gated on a LOADED
+  profile — locking on a null profile flashes the paywall at subscribers.
+- **Apply form** shows a highlighted media-kit upsell to free creators and
+  **never blocks submission** — the kit raises their odds, it is not required.
+  Mobile's apply form also had a real bug fixed here: apply-campaign answers
+  200 with `{error}`, so every refusal was landing in the `else` branch and
+  reading "unexpected response" instead of the server's message.
+- `FreeCampaignsWelcomeModal` (web influencer home) — the one-time
+  "Congratulations, 3 free barter campaigns" popup with a Let's go button to
+  `/influencer/campaigns`. Two suppressors: localStorage per user AND
+  `used === 0`, so no migration and it never nags a creator already applying.
+  Visibility is DERIVED, not set from an effect (`react-hooks/set-state-in-effect`).
+
+### Not done
+
+- The pricing comparison table has no Free column (`formatFeatureValue` accepts
+  `{plan, key}` and `FREE_TIER_LABELS` renders "3 barter, one-time" when one is
+  added).
+- Paid campaigns are still listed to free creators — the refusal is at Apply,
+  deliberately, so the campaign is visible as an upsell. No lock badge on the card.
+
+## Campaign publish → "under review" notice (2026-09)
+
+Publishing does not make a campaign visible: `brand-campaigns` parks it in
+`under_review` unless the brand has `auto_approve_campaigns`. Both `create`
+and `updateStatus` already returned `underReview`; nothing read it, so brands
+were told "Creators can now see and apply" and then could not find their
+campaign. Now:
+
+- Web: `components/brands/CampaignUnderReviewModal.jsx` (acknowledge-only, no
+  outside-click dismiss, z-[200] over BottomNavBrands) shown from the create
+  dialog (`onCreated(id, {underReview, published})`) and from the detail page's
+  Publish. Navigation waits for the acknowledgement, or the modal would unmount
+  before rendering.
+- Mobile: an `underReview` Alert in `CreateCampaignScreen` + `BrandCampaignDetail`.
+- **Also fixed**: both detail pages set the local status to the requested
+  `newStatus`, so a draft published into review rendered a Live chip. They now
+  use the status the server actually applied.
+
+### Rejection is now a status, and the reason lives on the row (2026-09)
+
+`adminReject` used to write `status: "draft"` and **throw the reason away** —
+it survived only in `admin_activity_log` (admin-only) and inside a
+notification body. The brand opened their campaign to a plain "Draft" chip,
+identical to one they had never submitted, with no statement of what to fix.
+That is the exact job the review queue exists to do.
+
+- **Migration 068** adds `campaigns.review_reason` + `campaigns.reviewed_at`.
+  `campaigns.status` is a plain text column with no CHECK constraint (see
+  053), so the new **`rejected`** value needed no constraint change — but
+  every status branch had to learn it. Not backfilled: campaigns rejected
+  before this are indistinguishable from ordinary drafts in the row.
+- **`updateStatus` must include `rejected` in the review gate.** It sits
+  beside `draft`/`under_review` in the `status === "active"` branch. Leave it
+  out and a rejected campaign republishes **straight to `active`, skipping
+  the review it just failed**. The banner-required gate covers it too, and
+  the admin console's direct-status dropdown refuses `rejected → active` for
+  the same reason it already refused `under_review → active`.
+- **The reason is cleared on the way out** — by `adminApprove`, and by
+  `updateStatus` whenever the campaign leaves `rejected`. A stale reason on a
+  live campaign reads as a current complaint.
+- `list` and `get` map `reviewReason` / `reviewedAt` onto the campaign (both
+  already `select("*")`). Web brand detail renders a red banner above the
+  match callout plus a **Resubmit for review** action; mobile
+  `BrandCampaignDetail` mirrors both. Red chips on web list/card, admin
+  table, and mobile list.
+- **Mobile's campaign list had only 4 tabs** (Active/Draft/Paused/Completed),
+  so `under_review` was ALREADY unreachable there and `rejected` would have
+  been too. Added `Review` + `Rejected` tabs — the row scrolls horizontally.
+- Admin notification copy no longer says "back in your drafts" (it isn't).
+
+⚠️ **Deploy order is not optional: migration 068 BEFORE the
+`brand-campaigns` deploy.** The new handler writes `review_reason` /
+`reviewed_at`; without the columns every reject fails with 42703, so
+rejection breaks entirely rather than degrading.
 
 ## Payments
 
@@ -651,6 +799,7 @@ iOS via Firebase). One registry + one trigger; the sender branches per platform.
 | 061 | reward_credit_views_security_invoker | **Views bypass RLS too.** `v_reward_credits_balance` + `v_reward_credits_available_balance` aggregate a table whose RLS is correct, but a Postgres view runs with its OWNER’s privileges unless `security_invoker = on` — so anon read every user’s RC balance. Same lesson as 060 at the view layer, and the same revoke-from-`anon`-by-name requirement. Found by the TR-05 suite. |
 | 062 | revoke_anon_oracle_rpcs | Revokes anon EXECUTE on the arbitrary-uuid role oracles (`is_admin`/`is_super_admin`/`is_influencer`/`is_brand`) + the enumeration oracles (`check_phone_exists`, `check_brand_invitation`) + `get_my_referral_rank`. **Applied cleanly and did nothing** — see 063. |
 | 063 | revoke_anon_oracle_rpcs_from_public | Completes 062. **The mirror of 060 s lesson:** 060 = revoking from PUBLIC leaves anon s direct grant; 062 = revoking from anon leaves PUBLIC s grant, which anon inherits. Both are true; a function is closed to anon only when revoked from BOTH. `is_app_admin()` deliberately left granted (self-scoped, and evaluated inside an anon-reachable RLS policy). |
+| 068 | campaign_review_outcome | `campaigns.review_reason` + `reviewed_at`, and the `rejected` status value. **Must be applied before deploying `brand-campaigns`** — the new reject path writes those columns. |
 
 ## Feature: AI layer (2026-07)
 

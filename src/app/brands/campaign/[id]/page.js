@@ -44,6 +44,8 @@ import AlertPopup from "@/components/AlertPopup";
 // The Create/Edit dialog is fat (form + image compression + upload
 // helpers) and only mounts on an Edit click, so lazy-load to keep the
 // campaign-detail bundle lean.
+import { CampaignUnderReviewModal } from "@/components/brands/CampaignUnderReviewModal";
+
 const CreateCampaignDialog = dynamic(
   () => import("@/components/brands/CreateCampaignDialog").then((m) => m.CreateCampaignDialog),
   { ssr: false },
@@ -141,6 +143,7 @@ const statusStyles = {
   paused: "bg-yellow-50 text-yellow-700 border-yellow-200",
   completed: "bg-blue-50 text-blue-700 border-blue-200",
   under_review: "bg-purple-50 text-purple-700 border-purple-200",
+  rejected: "bg-red-50 text-red-700 border-red-200",
 };
 
 const appStatusConfig = {
@@ -264,6 +267,11 @@ const CampaignDetailPage = () => {
     if (!authLoading && user?.id && id) load();
   }, [authLoading, user?.id, id]);
 
+  // True once a publish from this page landed in the moderation queue.
+  const [reviewNotice, setReviewNotice] = useState(false);
+  // Where to go once the notice is dismissed (duplicate flow only).
+  const [reviewNoticeNext, setReviewNoticeNext] = useState(null);
+
   const updateStatus = async (newStatus) => {
     if (!user?.id || !campaign?.id) return;
     setStatusUpdating(true);
@@ -281,7 +289,13 @@ const CampaignDetailPage = () => {
         setErrorPopup(err?.message || data?.error || t("errors.updateStatusFailed"));
         return;
       }
-      setCampaign((prev) => ({ ...prev, status: newStatus }));
+      // Publishing a draft does not necessarily make it active: unless the
+      // brand is on auto-approve, the server parks it in `under_review`.
+      // Reflecting `newStatus` blindly showed a Live chip on a campaign no
+      // creator could see.
+      const applied = data?.underReview ? "under_review" : newStatus;
+      setCampaign((prev) => ({ ...prev, status: applied }));
+      if (data?.underReview) setReviewNotice(true);
     } finally {
       setStatusUpdating(false);
       stopLoading();
@@ -459,6 +473,35 @@ const CampaignDetailPage = () => {
           </button>
         </div>
       </nav>
+
+      {/* Why the campaign was turned down. The reason used to live only in
+          a notification and the admin audit log, so a brand who missed the
+          notification saw a bare status and had nothing to act on. It is
+          cleared server-side the moment the campaign leaves `rejected`. */}
+      {campaign.status === "rejected" && (
+        <div className="px-6 pt-4 max-w-6xl mx-auto">
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 w-9 h-9 rounded-2xl bg-white flex items-center justify-center text-red-600">
+                <AlertCircle size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-black text-red-800">{t("rejected.title")}</p>
+                {campaign.reviewReason ? (
+                  <p className="text-[12px] text-red-700 mt-1 leading-relaxed whitespace-pre-line">
+                    {campaign.reviewReason}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-red-700 mt-1 leading-relaxed">
+                    {t("rejected.noReason")}
+                  </p>
+                )}
+                <p className="text-[11px] text-red-600/80 mt-2">{t("rejected.next")}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Profile-match callout — shown on every campaign detail. The
           server recomputes matchingCount on every get() so this stays
@@ -751,8 +794,13 @@ const CampaignDetailPage = () => {
           brandId={user?.id}
           mode="create"
           initialCampaign={duplicatePrefill}
-          onCreated={(newId) => {
+          onCreated={(newId, info) => {
             setDuplicatePrefill(null);
+            if (info?.underReview) {
+              setReviewNoticeNext(newId || null);
+              setReviewNotice(true);
+              return;
+            }
             router.push(`/brands/campaign/${newId}`);
           }}
         />
@@ -760,6 +808,16 @@ const CampaignDetailPage = () => {
 
       {/* Delete confirmation — small dedicated modal (destructive
           actions deserve a slower path than a stock alert()). */}
+      <CampaignUnderReviewModal
+        open={reviewNotice}
+        onClose={() => {
+          const next = reviewNoticeNext;
+          setReviewNotice(false);
+          setReviewNoticeNext(null);
+          if (next) router.push(`/brands/campaign/${next}`);
+        }}
+      />
+
       {deleteOpen && (
         <DeleteCampaignModal
           open={deleteOpen}
@@ -808,6 +866,15 @@ const StatusActions = ({ status, onChange, loading }) => {
         <button onClick={() => onChange("active")} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           {t("statusActions.resume")}
+        </button>
+      )}
+      {/* A rejected campaign is fixed by editing it, then resubmitting.
+          Resubmit goes to `under_review`, never straight to active — the
+          server enforces that too. */}
+      {status === "rejected" && (
+        <button onClick={() => onChange("active")} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          {t("statusActions.resubmit")}
         </button>
       )}
       {status === "under_review" && <span className="text-xs font-semibold text-purple-600 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">{t("statusActions.underReviewNote")}</span>}

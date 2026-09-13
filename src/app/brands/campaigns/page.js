@@ -14,6 +14,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
+import { CampaignUnderReviewModal } from "@/components/brands/CampaignUnderReviewModal";
 
 // Heavy create form — code-split so list view loads fast
 const CreateCampaignDialog = dynamic(
@@ -25,6 +26,7 @@ const STATUS_TABS = [
   { key: "all", label: "All" },
   { key: "active", label: "Live" },
   { key: "under_review", label: "Under Review" },
+  { key: "rejected", label: "Rejected" },
   { key: "draft", label: "Drafts" },
   { key: "paused", label: "Paused" },
   { key: "completed", label: "Completed" },
@@ -43,6 +45,9 @@ const CampaignsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [createOpen, setCreateOpen] = useState(() => searchParams?.get("new") === "1");
+  // Set to the new campaign id when a publish landed in the review queue —
+  // the modal has to be acknowledged before we navigate away.
+  const [reviewNoticeId, setReviewNoticeId] = useState(null);
   const loadRef = useRef(0);
 
   // Auto-open create dialog when arriving with ?new=1 (e.g. from sidebar CTA)
@@ -224,8 +229,14 @@ const CampaignsPage = () => {
           open={createOpen}
           onOpenChange={setCreateOpen}
           brandId={user?.id}
-          onCreated={(newId) => {
+          onCreated={(newId, info) => {
             setCreateOpen(false);
+            // A published campaign that went to the review queue gets the
+            // explanation first; navigation waits for the acknowledgement.
+            if (info?.underReview) {
+              setReviewNoticeId(newId || "");
+              return;
+            }
             // Land the brand on the new campaign's detail page. Fall back to
             // reloading the list if the id didn't come back for some reason.
             if (newId) {
@@ -236,6 +247,16 @@ const CampaignsPage = () => {
           }}
         />
       )}
+
+      <CampaignUnderReviewModal
+        open={reviewNoticeId !== null}
+        onClose={() => {
+          const id = reviewNoticeId;
+          setReviewNoticeId(null);
+          if (id) router.push(`/brands/campaign/${id}`);
+          else loadCampaigns();
+        }}
+      />
     </div>
   );
 };

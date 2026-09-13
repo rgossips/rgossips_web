@@ -641,7 +641,10 @@ export function CreateCampaignDialog({
         });
         if (err) throw new Error(err.message);
         if (data?.error) throw new Error(data.error);
-        onCreated?.(data.campaignId);
+        // The server decides whether a publish goes live or into the review
+        // queue (auto_approve_campaigns). Hand that back so the caller can tell
+        // the brand why their campaign is not visible yet.
+        onCreated?.(data.campaignId, { underReview: !!data.underReview, published: !!publish });
       }
     } catch (e) {
       setError(e.message || (mode === "edit" ? t("errors.saveChangesFailed") : t("errors.createFailed")));
