@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
-import { isSubscribed } from "@/lib/plans";
+import { isSubscribed, getSubscriptionStatus } from "@/lib/plans";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
 import ReferBalanceCard from "@/components/ReferBalanceCard";
 import { REWARDS_ENABLED } from "@/lib/features";
@@ -97,6 +97,10 @@ export function ProStatusCard() {
   // a paid tier (₹99/mo). Previously this card excluded "starter" and showed
   // "Free Trial" to users who'd actually upgraded.
   const hasPaidPlan = isSubscribed(profile);
+  // A paid plan that is no longer renewing must say so here too.
+  // "Renews in N days" on a cancelled subscription is the opposite of
+  // what is about to happen.
+  const subStatus = getSubscriptionStatus(profile);
   const freeApps = useFreeApplications();
 
   // Real count of brands with active campaigns matching the creator's
@@ -223,19 +227,25 @@ export function ProStatusCard() {
                     <div className="flex items-center gap-2 mb-1">
                       <Zap size={14} className="text-purple-600 fill-purple-600" />
                       <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
-                        {t("activePlan")}
+                        {subStatus.cancelled ? t("autoRenewOff") : t("activePlan")}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                      {t("renewsLine", { cycle: profile?.billing_cycle === "annual" ? t("cycleAnnual") : t("cycleMonthly") })}
+                      {subStatus.cancelled
+                        ? t("endsLine")
+                        : t("renewsLine", { cycle: profile?.billing_cycle === "annual" ? t("cycleAnnual") : t("cycleMonthly") })}
                     </p>
                   </div>
                   <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
                     {renewalFetching && !renewal.exact ? (
                       <span className="inline-block w-10 h-8 rounded-lg bg-slate-100 animate-pulse" aria-label="…" />
                     ) : (
-                      <span className="text-3xl lg:text-3xl font-black leading-none bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text">
-                        {renewal.daysLeft != null ? renewal.daysLeft : "—"}
+                      <span className={`text-3xl lg:text-3xl font-black leading-none ${subStatus.cancelled ? "text-amber-500" : "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text"}`}>
+                        {subStatus.cancelled
+                          ? (subStatus.daysLeft ?? "—")
+                          : renewal.daysLeft != null
+                            ? renewal.daysLeft
+                            : "—"}
                       </span>
                     )}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">

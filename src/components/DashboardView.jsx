@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { REWARDS_ENABLED } from "@/lib/features";
-import { isSubscribed, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
+import { isSubscribed, getSubscriptionStatus, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
@@ -1042,6 +1042,7 @@ function PlanCard({ profile }) {
   // every unsubscribed row stores the string "trial", so this card told them
   // they had an active subscription. Resolve the plan properly instead.
   const hasPaidPlan = isSubscribed(profile);
+  const subStatus = getSubscriptionStatus(profile);
   const freeApps = useFreeApplications();
 
   const planLabel = hasPaidPlan
@@ -1058,7 +1059,9 @@ function PlanCard({ profile }) {
           <div>
             <h4 className="font-bold text-sm text-[#1A1A1A]">{planLabel}</h4>
             <p className="text-[10px] text-gray-400 font-medium">
-              {hasPaidPlan
+              {subStatus.cancelled
+                ? t("plan.autoRenewOff", { days: subStatus.daysLeft ?? 0 })
+                : hasPaidPlan
                 ? t("plan.activeSubscription")
                 : freeApps.known
                   ? t("plan.freeRemaining", { remaining: freeApps.remaining })

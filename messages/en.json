@@ -191,7 +191,9 @@
     "upgrade": "Upgrade",
     "freeApplications": "Free applications",
     "freeUsedUp": "Free applications used",
-    "freeLeft": "left"
+    "freeLeft": "left",
+    "autoRenewOff": "Auto-renew off",
+    "endsLine": "Cancelled · ends in"
   },
   "UserDoc": {
     "userFallback": "User",
@@ -2222,7 +2224,8 @@
       "freeBlurb": "{limit} free barter applications",
       "freeApplications": "Free applications",
       "freeUsedUp": "All used",
-      "freeCount": "{used} / {total}"
+      "freeCount": "{used} / {total}",
+      "autoRenewOff": "{days, plural, =0 {Auto-renew cancelled · ends today} one {Auto-renew cancelled · ends in # day} other {Auto-renew cancelled · ends in # days}}"
     },
     "rewardCredits": {
       "title": "Reward Credits",
