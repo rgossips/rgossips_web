@@ -9,7 +9,7 @@ import {
   BarChart3,
   Zap,
   Layers,
-  DollarSign,
+  IndianRupee,
   Briefcase,
   LineChart,
   Award,
@@ -228,7 +228,7 @@ const FeaturesSection = () => {
                       activeTab === "brands" ? "bg-emerald-500" : "bg-pink-500"
                     }`}
                   >
-                    {activeTab === "brands" ? <Zap /> : <DollarSign />}
+                    {activeTab === "brands" ? <Zap /> : <IndianRupee />}
                   </div>
                   <div>
                     <p className="text-2xl font-black text-slate-900">

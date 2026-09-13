@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Target, Activity, Eye, DollarSign } from "lucide-react";
+import { ArrowLeft, Target, Activity, Eye, IndianRupee } from "lucide-react";
 import { Bar, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -105,7 +105,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
             trendColor="text-pink-500"
           />
           <StatMiniCard
-            icon={<DollarSign size={16} />}
+            icon={<IndianRupee size={16} />}
             label={t("stats.totalEarnings")}
             value="$24.5K"
             trend="+20%"
@@ -327,7 +327,7 @@ const DetailedCampaignAnalytics = ({ onBack }) => {
             trendColor="text-pink-500"
           />
           <StatMiniCard
-            icon={<DollarSign size={16} />}
+            icon={<IndianRupee size={16} />}
             label={t("stats.totalEarnings")}
             value="$24.5K"
             trend="+20%"

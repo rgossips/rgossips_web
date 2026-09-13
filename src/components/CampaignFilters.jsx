@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Check, DollarSign } from "lucide-react";
+import { ChevronLeft, Check, IndianRupee } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -67,7 +67,7 @@ export function CampaignFilters({ onClose, filterData }) {
                   {t("budgetRange")}
                 </h3>
                 <div className="w-6 h-6 rounded-lg bg-[#00BA88] flex items-center justify-center text-white">
-                  <DollarSign size={14} />
+                  <IndianRupee size={14} />
                 </div>
               </div>
               <div className="flex items-center gap-4">

@@ -4,7 +4,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import {
-  DollarSign,
+  IndianRupee,
   Activity,
   ArrowUpRight,
   Target,
@@ -140,7 +140,7 @@ export default function PerformanceDashboard() {
       {/* METRIC ROWS (mobile) / GRID (desktop) */}
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-3 lg:gap-6">
         <MetricRow
-          icon={<DollarSign size={16} className="text-green-600" />}
+          icon={<IndianRupee size={16} className="text-green-600" />}
           iconBg="bg-green-50"
           title={t("metrics.earnings")}
           value="₹18,500"

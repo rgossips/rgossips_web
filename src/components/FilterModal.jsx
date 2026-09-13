@@ -7,7 +7,7 @@ import {
   Car,
   ChevronLeft,
   Dog,
-  DollarSign,
+  IndianRupee,
   Dumbbell,
   Gamepad2,
   Globe,
@@ -766,7 +766,7 @@ const FILTER_CATEGORIES = [
   },
   {
     label: "Finance & Personal Finance",
-    icon: <DollarSign size={14} className="text-emerald-500" />,
+    icon: <IndianRupee size={14} className="text-emerald-500" />,
   },
   {
     label: "Education & Career",

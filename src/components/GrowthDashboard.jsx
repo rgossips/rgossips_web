@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Users, Eye, Mail, DollarSign } from "lucide-react";
+import { ArrowUpRight, Users, Eye, Mail, IndianRupee } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export function GrowthDashboard() {
@@ -34,7 +34,7 @@ export function GrowthDashboard() {
             label="Avg. Deal Size"
             value="₹9.2K"
             trend="+ ₹1.1K"
-            icon={<DollarSign size={14} />}
+            icon={<IndianRupee size={14} />}
           />
         </div>
       </div>
