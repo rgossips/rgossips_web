@@ -1,0 +1,55 @@
+// Server-side source of truth for what an influencer's subscription entitles
+// them to. Mirrors `src/lib/plans.js` (web) and `src/lib/plans.ts` (mobile).
+//
+// There is no free trial. It was removed in 2026-09: every profile that has
+// not paid is on `free`, whatever its `subscription_plan` column happens to
+// say. That matters because the column literally holds the string "trial" for
+// most existing rows — it was the signup default — and the old code read a
+// 30-day window off `created_at` to decide entitlement. Anything that is not
+// one of the three paid tiers is free, full stop; no dates involved.
+//
+// The free tier is deliberately narrow: a creator may apply to
+// FREE_BARTER_APPLICATIONS barter campaigns, ever, and nothing else is
+// unlocked. It exists so a new creator can see the product work end to end
+// before paying, not as a permanent tier.
+
+export type PlanId = "free" | "starter" | "pro" | "elite";
+
+const PAID = new Set<string>(["starter", "pro", "elite"]);
+
+/** Lifetime, not monthly — the point is to convert, not to meter. */
+export const FREE_BARTER_APPLICATIONS = 3;
+
+/** Monthly application caps for the paid tiers. */
+export const APPLICATION_LIMITS: Record<PlanId, number> = {
+  free: FREE_BARTER_APPLICATIONS,
+  starter: 3,
+  pro: 15,
+  elite: Infinity,
+};
+
+/** AI generations per calendar month. Free gets none. */
+export const AI_LIMITS: Record<PlanId, number> = {
+  free: 0,
+  starter: 25,
+  pro: 150,
+  elite: Infinity,
+};
+
+export function effectivePlan(profile: { subscription_plan?: string | null } | null | undefined): PlanId {
+  const plan = String(profile?.subscription_plan || "").toLowerCase();
+  return PAID.has(plan) ? (plan as PlanId) : "free";
+}
+
+/** True when the creator holds any paid plan. The gate for everything. */
+export function isSubscribed(profile: { subscription_plan?: string | null } | null | undefined): boolean {
+  return effectivePlan(profile) !== "free";
+}
+
+/**
+ * Free creators may only apply to barter campaigns. `hybrid` ("paid +
+ * product") is NOT barter — it carries cash, so it sits behind a plan.
+ */
+export function isBarterCampaign(campaignType: string | null | undefined): boolean {
+  return String(campaignType || "").toLowerCase() === "barter";
+}

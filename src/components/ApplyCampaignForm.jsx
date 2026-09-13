@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { reportError } from "@/lib/reportError";
 import {
   X,
   Instagram,
@@ -18,8 +19,10 @@ import {
   Tag,
   AlertCircle,
   Sparkles,
+  Crown,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { isSubscribed } from "@/lib/plans";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useAiTool } from "@/hooks/useAiTool";
@@ -55,7 +58,11 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const instagramHandle = profile?.instagram_handle || profile?.username || "";
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
-  const mediaKitPublished = profile?.media_kit_published;
+  // The media kit is a subscriber feature, so a free creator has nothing
+  // to link to. They can still submit — the kit raises their odds, it is
+  // not a requirement — so this section becomes a nudge, never a block.
+  const subscribed = isSubscribed(profile);
+  const mediaKitPublished = subscribed && profile?.media_kit_published;
   // Slug fallback chain matches /influencer/media-kit so the share URL
   // here lines up with the one the creator sees on their kit page.
   // Phone-OTP signups land here with username + instagram_handle both
@@ -110,6 +117,17 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         return;
       }
 
+      // Free tier: either the campaign is not barter, or the three free
+      // applications are gone. Same inline-Upgrade treatment as the paid
+      // caps — the only useful next step is a plan.
+      if (data?.error === "subscription_required" || data?.error === "free_quota_exhausted") {
+        setError({
+          kind: "plan_limit_reached",
+          message: data.message || t("errors.planLimitDefault"),
+        });
+        return;
+      }
+
       if (data?.error === "plan_limit_reached") {
         // Surface a structured marker so the renderer can show an inline
         // Upgrade button next to the message instead of asking the user
@@ -134,6 +152,9 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         }, 2000);
       }
     } catch (err) {
+      reportError("campaign_application", "apply.submit.failed", err, {
+        context: { campaignId: campaignData?.id || null },
+      });
       setError(err.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
@@ -250,6 +271,29 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
                 </div>
                 <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">{t("mediaKit.published")}</span>
               </Link>
+            ) : !subscribed ? (
+              // Highlighted, not dimmed: this is the strongest upgrade moment
+              // in the product — the creator is mid-application and can see
+              // exactly what they are competing without.
+              <div className="p-4 rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 shrink-0 rounded-xl bg-white/80 flex items-center justify-center text-purple-600">
+                    <Sparkles size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800">{t("mediaKit.upsellTitle")}</p>
+                    <p className="text-xs text-slate-600 leading-relaxed mt-1">{t("mediaKit.upsellBody")}</p>
+                    <Link
+                      href="/influencer/pricing"
+                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-xs font-bold shadow-sm hover:brightness-110"
+                      style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+                    >
+                      <Crown size={13} /> {t("mediaKit.upsellCta")}
+                    </Link>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-3">{t("mediaKit.upsellOptional")}</p>
+              </div>
             ) : (
               <div className="p-4 border border-dashed border-slate-200 rounded-xl text-center">
                 <p className="text-xs text-slate-400">{t("mediaKit.notPublished")}</p>

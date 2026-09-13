@@ -6,18 +6,21 @@ import {
   getEffectivePlan,
   hasFeature,
   getFeatureValue,
-  isWithinTrial,
-  trialDaysLeft,
+  isSubscribed,
+  FREE_BARTER_APPLICATIONS,
   PLAN_IDS,
 } from "@/lib/plans";
 
 /**
  * Plan-aware helpers for the current signed-in user.
- *  - `plan`: effective plan id (starter / pro / elite)
- *  - `isTrial`: whether the user is in their 30-day trial window
- *  - `daysLeft`: trial days remaining (0 outside trial)
+ *  - `plan`: effective plan id (free / starter / pro / elite)
+ *  - `isFree`: no paid subscription — the 3-barter-application tier
+ *  - `subscribed`: holds any paid plan; the gate for every feature
  *  - `can(key)`: bool — feature gate
  *  - `valueOf(key)`: raw matrix value (number, string, bool)
+ *
+ * There is no trial. `isTrial` / `daysLeft` were removed with it — use
+ * `isFree` for the "hasn't paid" case they were standing in for.
  */
 export function usePlan() {
   const { profile } = useAuth();
@@ -25,11 +28,12 @@ export function usePlan() {
     const plan = getEffectivePlan(profile);
     return {
       plan,
+      isFree: plan === PLAN_IDS.FREE,
       isStarter: plan === PLAN_IDS.STARTER,
       isPro: plan === PLAN_IDS.PRO,
       isElite: plan === PLAN_IDS.ELITE,
-      isTrial: isWithinTrial(profile),
-      daysLeft: trialDaysLeft(profile),
+      subscribed: isSubscribed(profile),
+      freeApplicationLimit: FREE_BARTER_APPLICATIONS,
       can: (key) => hasFeature(plan, key),
       valueOf: (key) => getFeatureValue(plan, key),
     };

@@ -179,7 +179,6 @@
     "creatorFallback": "Creator",
     "planLabel": "PLAN:",
     "planFree": "Free",
-    "planStarterTrial": "Starter Trial",
     "brandsLoading": "…",
     "brandsCount": "{count, plural, =0 {0 brands} one {# brand} other {# brands}}",
     "lookingNiche": "are looking for creators in your niche",
@@ -189,10 +188,10 @@
     "cycleMonthly": "Monthly",
     "renewsLine": "{cycle} · renews in",
     "days": "days",
-    "trialExpired": "Trial Expired",
-    "freeTrial": "Free Trial",
-    "daysLeft": "days left",
-    "upgrade": "Upgrade"
+    "upgrade": "Upgrade",
+    "freeApplications": "Free applications",
+    "freeUsedUp": "Free applications used",
+    "freeLeft": "left"
   },
   "UserDoc": {
     "userFallback": "User",
@@ -651,7 +650,11 @@
       "view": "View Media Kit",
       "published": "Published",
       "notPublished": "Media kit not published yet",
-      "generate": "Generate Media Kit"
+      "generate": "Generate Media Kit",
+      "upsellTitle": "Add a media kit to stand out",
+      "upsellBody": "Brands shortlist creators whose reach, engagement and best reels are one click away. Your media kit is unlocked on any plan.",
+      "upsellCta": "Unlock my media kit",
+      "upsellOptional": "Optional — you can submit this application without one."
     },
     "rate": {
       "heading": "Your Proposed Rate",
@@ -1152,7 +1155,8 @@
       "complete": "Complete",
       "resume": "Resume",
       "completedNote": "This campaign is completed.",
-      "underReviewNote": "This campaign is under review by the RGossips team. It goes live to creators as soon as it is approved."
+      "underReviewNote": "This campaign is under review by the RGossips team. It goes live to creators as soon as it is approved.",
+      "resubmit": "Resubmit for review"
     },
     "gallery": {
       "previous": "Previous",
@@ -1265,6 +1269,11 @@
       "body": "<b>{title}</b> will be permanently removed. No creators have applied yet, so this is safe — but there's no undo.",
       "deleting": "Deleting…",
       "confirm": "Delete Campaign"
+    },
+    "rejected": {
+      "title": "This campaign was not approved",
+      "noReason": "Our team sent it back without a note. Check the brief against our campaign guidelines and resubmit.",
+      "next": "Edit the campaign to address this, then hit Resubmit for review."
     }
   },
   "BrandsCampaigns": {
@@ -2201,16 +2210,15 @@
     },
     "plan": {
       "free": "Free",
-      "starterTrial": "Starter Trial",
       "activeSubscription": "Active subscription",
-      "trialExpired": "Trial expired",
-      "daysLeft": "{days} days left",
       "activeBadge": "Active",
-      "expired": "Expired",
-      "trialProgress": "Trial Progress",
-      "daysCount": "{days}/{total} days",
       "managePlan": "Manage Plan",
-      "upgradeNow": "Upgrade Now"
+      "upgradeNow": "Upgrade Now",
+      "freeRemaining": "{remaining, plural, =0 {No free applications left} one {# free application left} other {# free applications left}}",
+      "freeBlurb": "{limit} free barter applications",
+      "freeApplications": "Free applications",
+      "freeUsedUp": "All used",
+      "freeCount": "{used} / {total}"
     },
     "rewardCredits": {
       "title": "Reward Credits",
@@ -2748,6 +2756,14 @@
       "limit": "You’ve used your AI generations this month.",
       "upgrade": "Upgrade",
       "bioHint": "“Use as my bio” applies only the Bio section (your profile bio is capped at 500 characters). Copy grabs all three sections for your media kit."
+    },
+    "locked": {
+      "title": "Your media kit is a subscriber feature",
+      "body": "A media kit is the one-link profile brands ask for before they shortlist. Pick any plan to build and share yours.",
+      "benefit1": "A shareable link with your reach, engagement and best reels — no PDF to keep updating.",
+      "benefit2": "Designer templates that make your numbers look like a pitch, not a screenshot.",
+      "benefit3": "Applications with a media kit attached get shortlisted noticeably more often.",
+      "cta": "See plans"
     }
   },
   "InfluencerNotifications": {
@@ -3050,15 +3066,15 @@
       "subtitle": "Upgrade anytime to unlock more features"
     },
     "currentPlan": {
-      "freeTrial": "Free Trial",
       "current": "CURRENT",
-      "proFeaturesUnlocked": "Pro features unlocked",
       "renewsIn": "Renews in {days, plural, one {# day} other {# days}}",
-      "trialDaysRemaining": "{days} days remaining on your 30-day free trial",
       "starterUpsell": "Upgrade to unlock more applications, analytics, and visibility",
       "activeSubscription": "Active {cycle} subscription",
       "activeSubscriptionRenews": "Active {cycle} subscription · renews on {date}",
-      "trialWarning": "Pick a plan before day 30 to keep your features"
+      "freeRemaining": "{remaining} of your {limit} free barter applications left",
+      "freeBlurb": "Apply to {limit} barter campaigns free. Everything else needs a plan.",
+      "freeWarning": "Subscribe to unlock paid campaigns, your media kit and analytics",
+      "freeExhausted": "You have used all your free applications — pick a plan to keep applying"
     },
     "billing": {
       "monthly": "Monthly",
@@ -5097,5 +5113,18 @@
       "notRegistered": "That number is not registered yet. Create a creator account to apply.",
       "registeredAsBrand": "That number is registered as a brand. Campaigns are applied to from a creator account."
     }
+  },
+  "CampaignUnderReview": {
+    "title": "Campaign submitted for review",
+    "body": "Kindly wait for the campaign to be reviewed before creators can see it.",
+    "note": "Our team checks every new campaign. You will be notified as soon as it goes live — usually within a few hours.",
+    "cta": "Got it"
+  },
+  "FreeCampaignsWelcome": {
+    "title": "Congratulations!",
+    "body": "You get to apply to {limit} barter campaigns free — no card, no plan needed.",
+    "note": "Barter campaigns pay in product. Paid campaigns, your media kit and analytics unlock on any plan.",
+    "cta": "Let’s go",
+    "close": "Close"
   }
 }

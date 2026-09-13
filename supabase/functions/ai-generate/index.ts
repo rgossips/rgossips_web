@@ -9,6 +9,8 @@ import { aiGenerate, TaskClass } from "../_shared/ai.ts";
 import { buildCampaignContext, contextToPrompt } from "../_shared/campaign-context.ts";
 import { buildCreatorVoice, voiceToPrompt } from "../_shared/creator-voice.ts";
 import { log } from "../_shared/log.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
+import { AI_LIMITS, effectivePlan } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,15 +22,8 @@ const json = (body: unknown, status = 200) =>
 
 // Monthly AI-generation caps by effective plan (mirrors FEATURE_MATRIX
 // ai_generations_limit; trial resolves to Pro on both platforms).
-const AI_LIMITS: Record<string, number> = { starter: 25, pro: 150, elite: Infinity };
-
-function effectivePlan(profile: any): "starter" | "pro" | "elite" {
-  const plan = String(profile?.subscription_plan || "").toLowerCase();
-  if (plan === "starter" || plan === "pro" || plan === "elite") return plan;
-  const created = profile?.created_at ? new Date(profile.created_at).getTime() : 0;
-  const inTrial = created && Date.now() - created < 30 * 24 * 60 * 60 * 1000;
-  return inTrial ? "pro" : "starter"; // floor entitlement
-}
+// Limits and plan resolution live in _shared/plan.ts — there is no trial,
+// and an unsubscribed creator gets no AI generations at all.
 
 // Tool registry: taskClass + a system prompt. The user message is assembled
 // from campaign context + creator voice + the caller's inputs.
@@ -85,7 +80,7 @@ const TOOLS: Record<string, { taskClass: TaskClass; system: string }> = {
   },
 };
 
-Deno.serve(async (req) => {
+serveWithLogging("ai-generate", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const rid = crypto.randomUUID().slice(0, 8);
   try {
@@ -114,6 +109,10 @@ Deno.serve(async (req) => {
       .eq("influencer_id", userId)
       .maybeSingle();
     const plan = effectivePlan(profile);
+    if (plan === "free") {
+      // Not a quota that ran out — the tool is not part of the free tier.
+      return json({ error: "subscription_required", upgrade: "starter", limit: 0, used: 0 });
+    }
     const limit = AI_LIMITS[plan] ?? 25;
     const period = new Date().toISOString().slice(0, 7);
     let used = 0;

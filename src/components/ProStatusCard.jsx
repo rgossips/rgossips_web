@@ -8,22 +8,10 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
-import { isWithinTrial, TRIAL_DAYS } from "@/lib/plans";
+import { isSubscribed } from "@/lib/plans";
+import { useFreeApplications } from "@/hooks/useFreeApplications";
 import ReferBalanceCard from "@/components/ReferBalanceCard";
 import { REWARDS_ENABLED } from "@/lib/features";
-
-function getTrialInfo(profile) {
-  const createdAt = profile?.created_at || profile?.updated_at;
-  if (!createdAt) return { daysLeft: TRIAL_DAYS, progress: 0, expired: false };
-
-  const start = new Date(createdAt);
-  const now = new Date();
-  const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, TRIAL_DAYS - elapsed);
-  const progress = Math.min(100, Math.round(((TRIAL_DAYS - daysLeft) / TRIAL_DAYS) * 100));
-
-  return { daysLeft, progress, expired: daysLeft === 0 };
-}
 
 // Prefer the EXACT next-billing date from the gateway (subscription-history's
 // `next_charge_at`, unix seconds). The updated_at approximation below resets
@@ -70,7 +58,8 @@ export function ProStatusCard() {
   // seconds before snapping to the real value. Approximation is now only the
   // FALLBACK after the fetch settles without a date.
   const [renewalFetching, setRenewalFetching] = useState(true);
-  const { daysLeft, progress, expired } = getTrialInfo(profile);
+  // Free-tier standing replaces the old trial countdown: what a creator
+  // has left is a number of applications, not a number of days.
   const renewal = getPlanRenewalInfo(profile, realRenewalTs);
 
   // Fetch the exact next-billing date (paid plans only) so the renewal
@@ -107,8 +96,8 @@ export function ProStatusCard() {
   // strings) counts as a paid subscription — that includes Starter, which is
   // a paid tier (₹99/mo). Previously this card excluded "starter" and showed
   // "Free Trial" to users who'd actually upgraded.
-  const hasPaidPlan = !!currentPlan && currentPlan !== "free" && currentPlan !== "trial";
-  const onTrial = !hasPaidPlan && isWithinTrial(profile);
+  const hasPaidPlan = isSubscribed(profile);
+  const freeApps = useFreeApplications();
 
   // Real count of brands with active campaigns matching the creator's
   // chosen categories. Mirrors the Recommended Campaigns filter so the
@@ -170,9 +159,7 @@ export function ProStatusCard() {
                   <span className="text-slate-900 ml-1">
                     {hasPaidPlan
                         ? currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
-                        : expired
-                        ? t("planFree")
-                        : t("planStarterTrial")}
+                        : t("planFree")}
                   </span>
                 </p>
               </div>
@@ -227,7 +214,7 @@ export function ProStatusCard() {
           {/* Vertical Divider - Desktop Only */}
           <div className="hidden lg:block w-px h-12 bg-slate-100 shrink-0" />
 
-          {/* Section 4: Trial Status + Upgrade */}
+          {/* Section 4: Plan status + Upgrade */}
           <div className="flex items-center gap-3">
             {hasPaidPlan ? (
               <div className="p-4 lg:p-0 lg:px-3 lg:py-2 bg-white border border-slate-100 rounded-2xl shadow-sm lg:shadow-lg flex-1">
@@ -262,27 +249,51 @@ export function ProStatusCard() {
                 <div className="flex items-center justify-between lg:gap-6">
                   <div className="flex-1 lg:w-36">
                     <div className="flex items-center gap-2 mb-3">
-                      <Zap size={14} className={expired ? "text-slate-400 fill-slate-400" : "text-purple-600 fill-purple-600"} />
+                      <Zap
+                        size={14}
+                        className={
+                          freeApps.exhausted
+                            ? "text-slate-400 fill-slate-400"
+                            : "text-purple-600 fill-purple-600"
+                        }
+                      />
                       <span className="text-[10px] lg:text-[11px] font-black tracking-widest text-slate-500 uppercase">
-                        {expired ? t("trialExpired") : t("freeTrial")}
+                        {freeApps.exhausted ? t("freeUsedUp") : t("freeApplications")}
                       </span>
                     </div>
-                    {/* Progress Bar */}
+                    {/* How much of the free allowance is spent. Unknown count
+                        (the query failed) renders an empty bar rather than a
+                        made-up one. */}
                     <div className="relative w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
                       <div
-                        className={`absolute inset-y-0 left-0 rounded-full ${expired ? "bg-red-400" : "bg-gradient-to-r from-[#9810fa] to-[#e60076]"}`}
-                        style={{ width: `${progress}%` }}
+                        className={`absolute inset-y-0 left-0 rounded-full ${
+                          freeApps.exhausted
+                            ? "bg-red-400"
+                            : "bg-gradient-to-r from-[#9810fa] to-[#e60076]"
+                        }`}
+                        style={{
+                          width: freeApps.known
+                            ? `${Math.min(100, Math.round((freeApps.used / freeApps.limit) * 100))}%`
+                            : "0%",
+                        }}
                       />
                     </div>
                   </div>
 
-                  {/* Day Counter */}
+
+                  {/* Applications left on the free tier */}
                   <div className="pl-4 lg:pl-0 border-l lg:border-0 border-slate-100 text-center">
-                    <span className={`text-3xl lg:text-3xl font-black leading-none ${expired ? "text-red-400" : "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text"}`}>
-                      {daysLeft}
+                    <span
+                      className={`text-3xl lg:text-3xl font-black leading-none ${
+                        freeApps.exhausted
+                          ? "text-red-400"
+                          : "bg-gradient-to-r from-[#9810fa] to-[#e60076] text-transparent bg-clip-text"
+                      }`}
+                    >
+                      {freeApps.known ? freeApps.remaining : "—"}
                     </span>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">
-                      {t("daysLeft")}
+                      {t("freeLeft")}
                     </p>
                   </div>
                 </div>
@@ -290,8 +301,8 @@ export function ProStatusCard() {
             )}
 
             {/* Upgrade Button — hidden on Elite (top tier, nothing to
-                upgrade to). Starter, Pro, trial, and free users all see
-                it pointing them at the pricing page. */}
+                upgrade to). Free, Starter and Pro all see it pointing
+                them at the pricing page. */}
             {currentPlan !== "elite" && (
               <Link
                 href="/influencer/pricing"

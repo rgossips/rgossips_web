@@ -15,6 +15,8 @@
 // Body: { applicationId }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
+import { effectivePlan, type PlanId } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,26 +30,17 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Trial users inherit Pro per product spec (mirrors getEffectivePlan in
-// src/lib/plans.js — trial = 30 days from created_at).
-const TRIAL_DAYS = 30;
-const PAYOUT_DELAY_DAYS: Record<string, number> = {
+// Faster payouts are something a creator buys. There is no trial, so an
+// unsubscribed creator waits the longest — the same as Starter rather than
+// the Pro window signup age used to hand them for free.
+const PAYOUT_DELAY_DAYS: Record<PlanId, number> = {
+  free: 7,
   starter: 7,
   pro: 3,
   elite: 0,
 };
 
-function resolveEffectivePlan(subscriptionPlan: string | null, createdAt: string | null): string {
-  const explicit = (subscriptionPlan || "").toLowerCase();
-  if (explicit === "starter" || explicit === "pro" || explicit === "elite") return explicit;
-  if (createdAt) {
-    const days = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
-    return days < TRIAL_DAYS ? "pro" : "starter";
-  }
-  return "starter";
-}
-
-Deno.serve(async (req) => {
+serveWithLogging("escrow-release", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -92,7 +85,7 @@ Deno.serve(async (req) => {
       .select("subscription_plan, created_at")
       .eq("influencer_id", app.influencer_id)
       .maybeSingle();
-    const plan = resolveEffectivePlan(profile?.subscription_plan, profile?.created_at);
+    const plan = effectivePlan(profile);
     const delayDays = PAYOUT_DELAY_DAYS[plan] ?? 7;
 
     // Does the creator have a usable payout method? If not, park the payout —

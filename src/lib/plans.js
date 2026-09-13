@@ -7,20 +7,38 @@
  *
  * Helpers:
  *  - `getEffectivePlan(profile)` — returns the plan a user is currently on,
- *    treating an active 30-day trial as Pro per product spec.
+ *    (`free` when they have never subscribed).
  *  - `hasFeature(plan, key)` — boolean gate for UI/edge-function checks.
  *  - `getFeatureValue(plan, key)` — for tiered values like
  *    "campaign_applications_limit" (number, or Infinity for Unlimited).
- *  - `isWithinTrial(profile)` — true when a user is in their first 30 days.
+ *  - `isSubscribed(profile)` — true when the user holds any paid plan.
+ *
+ * There is NO free trial. Anything that is not one of the three paid
+ * tiers resolves to `free`, whose only entitlement is
+ * FREE_BARTER_APPLICATIONS barter applications for the life of the
+ * account. Note that most existing rows literally store the string
+ * "trial" in `subscription_plan` — that was the signup default and it
+ * now means nothing more than "has not paid".
  */
 
 export const PLAN_IDS = {
+  // Not a purchasable plan — the state of having bought nothing.
+  FREE: "free",
   STARTER: "starter",
   PRO: "pro",
   ELITE: "elite",
 };
 
-export const TRIAL_DAYS = 30;
+/** The three tiers a creator can actually buy. */
+export const PAID_PLAN_IDS = [PLAN_IDS.STARTER, PLAN_IDS.PRO, PLAN_IDS.ELITE];
+
+/**
+ * How many barter campaigns an unsubscribed creator may apply to.
+ * Lifetime, not monthly — it is a taster, not an allowance. Enforced
+ * server-side in `apply-campaign` (see supabase/functions/_shared/plan.ts);
+ * everything here is presentation.
+ */
+export const FREE_BARTER_APPLICATIONS = 3;
 
 // Pricing — adjust monthly/annual figures here. Stripe price IDs live below
 // in PLAN_STRIPE_PRICES so the UI and the checkout edge function agree.
@@ -140,6 +158,34 @@ export const FEATURE_MATRIX = {
   support_strategy_call:      { starter: false, pro: false, elite: true },
 };
 
+// Everything the free tier includes, and nothing else. Any key absent
+// here is locked for free — the default is deny, so a feature added to
+// the matrix later cannot leak into the free tier by omission.
+//
+// Discovery stays on deliberately: being findable by brands is supply
+// for the marketplace, not a perk the creator is buying, and hiding
+// unsubscribed creators would empty the brand-side search.
+const FREE_TIER = {
+  discovery_listed: true,
+  badge_verified_eligible: true,
+  campaign_applications_limit: FREE_BARTER_APPLICATIONS,
+  support_standard: true,
+};
+
+for (const [key, row] of Object.entries(FEATURE_MATRIX)) {
+  row.free = Object.hasOwn(FREE_TIER, key)
+    ? FREE_TIER[key]
+    : typeof row.starter === "number"
+      ? 0
+      : false;
+}
+
+// The matrix stores a bare number for applications, but the free tier's
+// three are lifetime AND barter-only — "3/month" would be a lie.
+export const FREE_TIER_LABELS = {
+  campaign_applications_limit: `${FREE_BARTER_APPLICATIONS} barter, one-time`,
+};
+
 // Group features for display (used by pricing page).
 export const FEATURE_GROUPS = [
   {
@@ -215,7 +261,9 @@ export const FEATURE_GROUPS = [
  *  number → "N/month" or "Unlimited"
  *  string → the string as-is (e.g. payout speed text)
  */
-export function formatFeatureValue(value) {
+export function formatFeatureValue(value, { plan, key } = {}) {
+  // Free-tier values that a generic formatter would misdescribe.
+  if (plan === PLAN_IDS.FREE && key && FREE_TIER_LABELS[key]) return FREE_TIER_LABELS[key];
   if (value === true) return "✓";
   if (value === false || value === undefined || value === null) return "—";
   if (typeof value === "number") {
@@ -231,43 +279,38 @@ export function formatFeatureValue(value) {
 
 /* ─────────── plan-resolution helpers ─────────── */
 
-export function isWithinTrial(profile) {
-  if (!profile) return false;
-  // If the user has explicitly upgraded to a paid plan, the trial flag no longer matters.
-  if (profile.subscription_plan && profile.subscription_plan !== "trial") return false;
-  const createdAt = profile.created_at || profile.updated_at;
-  if (!createdAt) return false;
-  const created = new Date(createdAt).getTime();
-  if (!isFinite(created)) return false;
-  const days = (Date.now() - created) / (1000 * 60 * 60 * 24);
-  return days >= 0 && days < TRIAL_DAYS;
+/**
+ * Returns the plan ID a user is effectively on.
+ *
+ * An explicit paid tier wins; everything else — null, "", "free", and the
+ * legacy "trial" most rows still carry — is `free`. No dates are consulted:
+ * the trial was removed, so signup age no longer buys anything.
+ */
+export function getEffectivePlan(profile) {
+  const plan = (profile?.subscription_plan || "").toLowerCase();
+  return PAID_PLAN_IDS.includes(plan) ? plan : PLAN_IDS.FREE;
 }
 
-export function trialDaysLeft(profile) {
-  if (!profile) return 0;
-  const createdAt = profile.created_at || profile.updated_at;
-  if (!createdAt) return 0;
-  const created = new Date(createdAt).getTime();
-  if (!isFinite(created)) return 0;
-  const days = TRIAL_DAYS - Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24));
-  return Math.max(0, days);
+/** True when the creator holds any paid plan. The gate for everything. */
+export function isSubscribed(profile) {
+  return getEffectivePlan(profile) !== PLAN_IDS.FREE;
 }
 
 /**
- * Returns the plan ID a user is effectively on.
- * Order: explicit subscription_plan → trial-as-Pro → starter (default).
+ * Free-tier application allowance. `used` is the creator's LIFETIME
+ * application count (the server counts rows in `campaign_applications`),
+ * so the caller has to supply it — nothing on the profile carries it.
  */
-export function getEffectivePlan(profile) {
-  if (!profile) return PLAN_IDS.STARTER;
-  const plan = (profile.subscription_plan || "").toLowerCase();
-  if (plan === PLAN_IDS.PRO || plan === PLAN_IDS.ELITE || plan === PLAN_IDS.STARTER) {
-    return plan;
-  }
-  // Per spec: 30-day free trial = Pro features (all 5 templates, 3-change
-  // cap, etc.) — so the trial gives a realistic preview of the paid tier
-  // most creators would land on, without giving away the Elite perks.
-  if (isWithinTrial(profile)) return PLAN_IDS.PRO;
-  return PLAN_IDS.STARTER;
+export function getFreeApplicationStatus(profile, used = 0) {
+  const subscribed = isSubscribed(profile);
+  const remaining = subscribed ? Infinity : Math.max(0, FREE_BARTER_APPLICATIONS - used);
+  return {
+    subscribed,
+    used,
+    limit: FREE_BARTER_APPLICATIONS,
+    remaining,
+    exhausted: !subscribed && remaining === 0,
+  };
 }
 
 /**
@@ -306,8 +349,9 @@ export function profileFeatureValue(profile, key) {
 //   Pro     — Classic + Glass Blue + Editorial Noir (3 designs),
 //             capped at 3 lifetime saves between them
 //   Elite   — all five designs, unlimited saves
-// Trial users get Pro features (see getEffectivePlan): the same 3
-// templates Pro has, with the 3-change cap during the 30-day trial.
+// Free    — no media kit at all. It is a subscriber feature, so an
+//           unsubscribed creator cannot pick any template (PLAN_RANK
+//           has no `free` entry, so every template ranks above them).
 export const MEDIA_KIT_TEMPLATES = [
   {
     id: "classic",
@@ -358,7 +402,7 @@ export const MEDIA_KIT_TEMPLATE_CHANGE_LIMITS = {
   [PLAN_IDS.ELITE]: Infinity,
 };
 
-/** True when the given effective plan unlocks the template. Trial counts as Elite. */
+/** True when the given effective plan unlocks the template. Free unlocks none. */
 export function canUseMediaKitTemplate(plan, templateId) {
   const tmpl = MEDIA_KIT_TEMPLATES.find((t) => t.id === templateId);
   if (!tmpl) return false;

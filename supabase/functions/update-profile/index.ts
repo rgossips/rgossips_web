@@ -1,11 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
+import { effectivePlan } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+serveWithLogging("update-profile", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -128,25 +130,29 @@ Deno.serve(async (req) => {
         .eq("influencer_id", userId)
         .maybeSingle();
 
-      // Trial users (no explicit plan, within 30 days of signup) get Pro
-      // perks, matching getEffectivePlan on the client.
-      const TRIAL_DAYS = 30;
-      const createdMs = current?.created_at ? new Date(current.created_at).getTime() : 0;
-      const inTrial = createdMs > 0 && (Date.now() - createdMs) / 86_400_000 < TRIAL_DAYS;
-      const rawPlan = String(current?.subscription_plan || "").toLowerCase();
-      const effectivePlan = rawPlan === "pro" || rawPlan === "elite" || rawPlan === "starter"
-        ? rawPlan
-        : inTrial ? "pro" : "starter";
+      // The media kit is a subscriber feature. There is no trial: an
+      // unsubscribed creator cannot pick a template at all, so refuse before
+      // the per-template rank and change-cap rules are even considered.
+      const plan = effectivePlan(current);
+      if (plan === "free") {
+        return new Response(
+          JSON.stringify({
+            error: "subscription_required",
+            message: "The media kit is part of every paid plan. Subscribe to build and share yours.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
 
       const requiredRank = PLAN_RANK[TEMPLATE_MIN_PLAN[nextTemplate] || "starter"] || 0;
-      if ((PLAN_RANK[effectivePlan] || 0) < requiredRank) {
+      if ((PLAN_RANK[plan] || 0) < requiredRank) {
         return new Response(
           JSON.stringify({ error: `Your plan doesn't include the "${nextTemplate}" template. Upgrade to unlock it.` }),
           { status: 200, headers: jsonHeaders }
         );
       }
 
-      const limit = TEMPLATE_LIMITS[effectivePlan] ?? 0;
+      const limit = TEMPLATE_LIMITS[plan] ?? 0;
       const used = current?.media_kit_template_changes || 0;
       const sameAsCurrent = current?.media_kit_template === nextTemplate;
       // Re-selecting the template you're already on is a no-op — don't burn

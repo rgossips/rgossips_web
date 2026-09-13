@@ -1,4 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
+import {
+  APPLICATION_LIMITS,
+  FREE_BARTER_APPLICATIONS,
+  effectivePlan,
+  isBarterCampaign,
+} from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +13,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-Deno.serve(async (req) => {
+serveWithLogging("apply-campaign", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -52,56 +59,111 @@ Deno.serve(async (req) => {
     }
     const reapplying = !!existing; // existing is withdrawn/rejected
 
-    // Plan-based application limit (mirrors src/lib/plans.js values):
-    //   starter → 3/month, pro/trial → 15/month, elite → unlimited
+    // Entitlement gate. Two separate rules, because the free tier is not
+    // just a smaller paid tier:
+    //
+    //   free  → barter campaigns only, FREE_BARTER_APPLICATIONS of them,
+    //           counted for the lifetime of the account.
+    //   paid  → any campaign type, capped per calendar month.
+    //
+    // Failure handling differs on purpose. If we cannot read the profile we
+    // do not know which rules apply, so we let the apply through — refusing
+    // a paying creator over a transient read is the worse outcome. But once
+    // we KNOW the creator is on free, a failed count must refuse: falling
+    // open there turns a 3-application allowance into an unlimited one.
+    let planForLimit = "";
     try {
       const { data: profile } = await supabaseAdmin
         .from("influencer_profiles")
-        .select("subscription_plan, created_at")
+        .select("subscription_plan")
         .eq("influencer_id", influencerId)
         .maybeSingle();
 
-      const TRIAL_DAYS = 30;
-      const explicit = (profile?.subscription_plan || "").toLowerCase();
-      let plan: string;
-      if (explicit === "starter" || explicit === "pro" || explicit === "elite") {
-        plan = explicit;
-      } else if (profile?.created_at) {
-        const days = (Date.now() - new Date(profile.created_at).getTime()) / 86_400_000;
-        plan = days < TRIAL_DAYS ? "pro" : "starter";
-      } else {
-        plan = "starter";
-      }
+      const plan = effectivePlan(profile);
+      planForLimit = plan;
 
-      const limits: Record<string, number> = { starter: 3, pro: 15, elite: Infinity };
-      const cap = limits[plan] ?? 3;
+      if (plan === "free") {
+        // Re-activating a withdrawn/rejected application does not consume a
+        // fresh slot — the row is already counted below either way.
+        const { data: campaignRow } = await supabaseAdmin
+          .from("campaigns")
+          .select("campaign_type")
+          .eq("campaign_id", campaignId)
+          .maybeSingle();
 
-      if (cap !== Infinity) {
-        // Count this calendar month's applications
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-        const { count } = await supabaseAdmin
-          .from("campaign_applications")
-          .select("id", { count: "exact", head: true })
-          .eq("influencer_id", influencerId)
-          .gte("created_at", monthStart.toISOString());
-
-        if ((count ?? 0) >= cap) {
+        if (!isBarterCampaign(campaignRow?.campaign_type)) {
           return new Response(
             JSON.stringify({
-              error: "plan_limit_reached",
-              message: `You've reached your ${plan} plan limit of ${cap} applications this month. Upgrade to apply to more campaigns.`,
+              error: "subscription_required",
+              message:
+                "Paid campaigns are for subscribers. Your free applications cover barter campaigns — subscribe to apply to this one.",
               plan,
-              limit: cap,
-              used: count ?? 0,
+              campaignType: campaignRow?.campaign_type || null,
             }),
             { status: 200, headers: jsonHeaders }
           );
         }
+
+        const { count, error: countErr } = await supabaseAdmin
+          .from("campaign_applications")
+          .select("id", { count: "exact", head: true })
+          .eq("influencer_id", influencerId);
+
+        if (countErr) throw countErr; // fail closed — see the note above
+
+        const used = count ?? 0;
+        // `reapplying` reuses an existing row, so it is already inside `used`
+        // and must not be blocked by its own presence.
+        if (!reapplying && used >= FREE_BARTER_APPLICATIONS) {
+          return new Response(
+            JSON.stringify({
+              error: "free_quota_exhausted",
+              message: `You've used all ${FREE_BARTER_APPLICATIONS} of your free applications. Subscribe to keep applying.`,
+              plan,
+              limit: FREE_BARTER_APPLICATIONS,
+              used,
+            }),
+            { status: 200, headers: jsonHeaders }
+          );
+        }
+      } else {
+        const cap = APPLICATION_LIMITS[plan] ?? 3;
+        if (cap !== Infinity) {
+          // Count this calendar month's applications
+          const monthStart = new Date();
+          monthStart.setDate(1);
+          monthStart.setHours(0, 0, 0, 0);
+          const { count } = await supabaseAdmin
+            .from("campaign_applications")
+            .select("id", { count: "exact", head: true })
+            .eq("influencer_id", influencerId)
+            .gte("created_at", monthStart.toISOString());
+
+          if ((count ?? 0) >= cap) {
+            return new Response(
+              JSON.stringify({
+                error: "plan_limit_reached",
+                message: `You've reached your ${plan} plan limit of ${cap} applications this month. Upgrade to apply to more campaigns.`,
+                plan,
+                limit: cap,
+                used: count ?? 0,
+              }),
+              { status: 200, headers: jsonHeaders }
+            );
+          }
+        }
       }
     } catch (e) {
-      // Non-blocking — we'd rather let an apply through than block on a count failure.
+      if (planForLimit === "free") {
+        return new Response(
+          JSON.stringify({
+            error: "quota_check_failed",
+            message: "We couldn't confirm your remaining free applications. Please try again in a moment.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      // Paid plan, or the plan was never resolved — let the apply through.
       console.error("Plan-limit check failed:", e);
     }
 

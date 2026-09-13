@@ -29,13 +29,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { REWARDS_ENABLED } from "@/lib/features";
+import { isSubscribed, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
+import { useFreeApplications } from "@/hooks/useFreeApplications";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfileCompletion } from "./CompleteProfileCard";
 import { useTranslations } from "next-intl";
 
-const TRIAL_DAYS = 30;
 
 const ACTIVE_APP_STATUSES = new Set([
   "pending",
@@ -78,17 +79,6 @@ const formatINRCompact = (n) => {
   if (n >= 1_00_000) return `₹${(n / 1_00_000).toFixed(n >= 10_00_000 ? 1 : 2)}L`;
   return `₹${n.toLocaleString("en-IN")}`;
 };
-
-function getTrialInfo(profile) {
-  const createdAt = profile?.created_at || profile?.updated_at;
-  if (!createdAt) return { daysLeft: TRIAL_DAYS, progress: 0, expired: false };
-  const start = new Date(createdAt);
-  const now = new Date();
-  const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.max(0, TRIAL_DAYS - elapsed);
-  const progress = Math.min(100, Math.round(((TRIAL_DAYS - daysLeft) / TRIAL_DAYS) * 100));
-  return { daysLeft, progress, expired: daysLeft === 0 };
-}
 
 const DashboardView = ({
   onOpenInfo,
@@ -1048,14 +1038,15 @@ const DashboardView = ({
 function PlanCard({ profile }) {
   const t = useTranslations("DashboardView");
   const currentPlan = profile?.subscription_plan || "free";
-  const hasPaidPlan = currentPlan !== "free";
-  const { daysLeft, progress, expired } = getTrialInfo(profile);
+  // `currentPlan !== "free"` used to stand in for this and was wrong: almost
+  // every unsubscribed row stores the string "trial", so this card told them
+  // they had an active subscription. Resolve the plan properly instead.
+  const hasPaidPlan = isSubscribed(profile);
+  const freeApps = useFreeApplications();
 
   const planLabel = hasPaidPlan
     ? currentPlan.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    : expired
-    ? t("plan.free")
-    : t("plan.starterTrial");
+    : t("plan.free");
 
   return (
     <section className="bg-white rounded-xl shadow border border-gray-100 p-5 space-y-4">
@@ -1069,9 +1060,9 @@ function PlanCard({ profile }) {
             <p className="text-[10px] text-gray-400 font-medium">
               {hasPaidPlan
                 ? t("plan.activeSubscription")
-                : expired
-                ? t("plan.trialExpired")
-                : t("plan.daysLeft", { days: daysLeft })}
+                : freeApps.known
+                  ? t("plan.freeRemaining", { remaining: freeApps.remaining })
+                  : t("plan.freeBlurb", { limit: FREE_BARTER_APPLICATIONS })}
             </p>
           </div>
         </div>
@@ -1086,19 +1077,36 @@ function PlanCard({ profile }) {
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">
-              <Zap size={12} className={expired ? "text-red-400" : "text-purple-500 fill-purple-500"} />
+              <Zap
+                size={12}
+                className={
+                  freeApps.exhausted ? "text-red-400" : "text-purple-500 fill-purple-500"
+                }
+              />
               <span className="text-[10px] font-bold text-gray-400 uppercase">
-                {expired ? t("plan.expired") : t("plan.trialProgress")}
+                {freeApps.exhausted ? t("plan.freeUsedUp") : t("plan.freeApplications")}
               </span>
             </div>
-            <span className={`text-[10px] font-black ${expired ? "text-red-400" : "text-purple-600"}`}>
-              {t("plan.daysCount", { days: daysLeft, total: TRIAL_DAYS })}
+            <span
+              className={`text-[10px] font-black ${
+                freeApps.exhausted ? "text-red-400" : "text-purple-600"
+              }`}
+            >
+              {t("plan.freeCount", { used: freeApps.used, total: freeApps.limit })}
             </span>
           </div>
           <div className="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
             <div
-              className={`h-full rounded-full ${expired ? "bg-red-400" : "bg-gradient-to-r from-[#9810fa] to-[#e60076]"}`}
-              style={{ width: `${progress}%` }}
+              className={`h-full rounded-full ${
+                freeApps.exhausted
+                  ? "bg-red-400"
+                  : "bg-gradient-to-r from-[#9810fa] to-[#e60076]"
+              }`}
+              style={{
+                width: freeApps.known
+                  ? `${Math.min(100, Math.round((freeApps.used / freeApps.limit) * 100))}%`
+                  : "0%",
+              }}
             />
           </div>
         </div>

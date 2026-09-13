@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
+import { FREE_BARTER_APPLICATIONS, effectivePlan } from "../_shared/plan.ts";
 import {
   getBlockedIds,
   resolveViewerId,
@@ -39,7 +41,7 @@ function unpackDescription(raw: string | null) {
   }
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("list-campaigns", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -84,6 +86,19 @@ Deno.serve(async (req) => {
     // Campaigns this influencer was invited to by the brand — powers the
     // "Invited by {brand}" banner on the campaign apply view.
     const invitedCampaignIds = new Set<string>();
+
+    // Free-tier standing, computed here because this function already
+    // loads the creator's whole application history. Every influencer
+    // surface (list, detail, apply form, home) reads it from this one
+    // place rather than each counting rows for itself.
+    let entitlement = {
+      plan: "free",
+      subscribed: false,
+      freeLimit: FREE_BARTER_APPLICATIONS,
+      freeUsed: 0,
+      freeRemaining: FREE_BARTER_APPLICATIONS,
+    };
+
     if (influencerId) {
       // Try with submission_links first, fall back without it
       let applications: any[] = [];
@@ -125,6 +140,26 @@ Deno.serve(async (req) => {
             (app.escrow_amount ? Number(app.escrow_amount) / 100 : 0),
         };
       }
+
+      const { data: planRow } = await supabaseAdmin
+        .from("influencer_profiles")
+        .select("subscription_plan")
+        .eq("influencer_id", influencerId)
+        .maybeSingle();
+      const plan = effectivePlan(planRow);
+      const subscribed = plan !== "free";
+      // Lifetime, matching apply-campaign's count — a withdrawn
+      // application still spent one of the three.
+      const freeUsed = applications.length;
+      entitlement = {
+        plan,
+        subscribed,
+        freeLimit: FREE_BARTER_APPLICATIONS,
+        freeUsed,
+        freeRemaining: subscribed
+          ? Number.MAX_SAFE_INTEGER
+          : Math.max(0, FREE_BARTER_APPLICATIONS - freeUsed),
+      };
 
       // Brand-sent invitations for this creator (best-effort).
       const { data: invites } = await supabaseAdmin
@@ -283,7 +318,12 @@ Deno.serve(async (req) => {
             if (!type) return entry;
             const base = type.charAt(0).toUpperCase() + type.slice(1); // "Reels"
             if (!Number.isFinite(n) || n <= 0) return base;
-            const label = n === 1 && base.endsWith("s") ? base.slice(0, -1) : base;
+            // "Stories" -> "Story", not "Storie". Dropping the trailing "s"
+            // is only right for regular plurals; an -ies plural needs the y
+            // back. Reels/Posts/Videos still just lose the s.
+            const singular = (w: string) =>
+              w.endsWith("ies") ? w.slice(0, -3) + "y" : w.endsWith("s") ? w.slice(0, -1) : w;
+            const label = n === 1 ? singular(base) : base;
             return `${n} ${label}`;
           })
           .join(" + ");
@@ -442,7 +482,7 @@ Deno.serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ campaigns: visible }),
+      JSON.stringify({ campaigns: visible, entitlement }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

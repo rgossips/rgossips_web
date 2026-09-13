@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { reportError } from "@/lib/reportError";
 import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,8 @@ import { REWARDS_ENABLED } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
-import { getEffectivePlan, isWithinTrial, trialDaysLeft } from "@/lib/plans";
+import { getEffectivePlan, isSubscribed, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
+import { useFreeApplications } from "@/hooks/useFreeApplications";
 import { useTranslations } from "next-intl";
 
 // User-facing label / tagline / description live in the InfluencerPricing
@@ -145,20 +147,19 @@ export default function PricingPage() {
     setErrorModal({ title, message: String(message || t("errors.genericMessage")) });
 
   const effectivePlan = getEffectivePlan(profile);
-  const onTrial = isWithinTrial(profile);
-  const daysLeft = trialDaysLeft(profile);
-  // Paid plans show a "renews in N days" line at the top. Gate on an
-  // actual paid subscription_plan (not a lapsed trial) — same rule as
-  // ProStatusCard's hasPaidPlan.
+  // There is no trial. A creator is either on a paid plan or on free,
+  // whose whole entitlement is FREE_BARTER_APPLICATIONS applications.
+  const freeApps = useFreeApplications();
+  // Paid plans show a "renews in N days" line at the top.
   const renewal = getPlanRenewalInfo(profile, realRenewalTs);
   const currentPlanRaw = (profile?.subscription_plan || "").toLowerCase();
-  const hasPaidPlan = !!currentPlanRaw && currentPlanRaw !== "free" && currentPlanRaw !== "trial";
+  const hasPaidPlan = isSubscribed(profile);
   // The cycle the user is actually subscribed on. Anything that isn't
   // explicitly "annual" is treated as monthly, so a null/legacy value can't
   // accidentally mark the annual card as current.
   const currentBillingCycle =
     (profile?.billing_cycle || "").toLowerCase() === "annual" ? "annual" : "monthly";
-  const showRenewal = !onTrial && hasPaidPlan && renewal.daysLeft != null;
+  const showRenewal = hasPaidPlan && renewal.daysLeft != null;
 
   // Open on the cycle the user is actually paying for. An annual subscriber
   // landing on the monthly tab sees prices that aren't theirs and has to
@@ -173,8 +174,8 @@ export default function PricingPage() {
   useEffect(() => {
     if (didSyncBillingCycle.current || !profile) return;
     didSyncBillingCycle.current = true;
-    // Only for a real paid subscription. A trial or free profile has no
-    // cycle worth honouring, and monthly stays the right default there.
+    // Only for a real paid subscription. A free profile has no cycle
+    // worth honouring, and monthly stays the right default there.
     if (hasPaidPlan) setBilling(currentBillingCycle);
   }, [profile, hasPaidPlan, currentBillingCycle]);
 
@@ -600,6 +601,9 @@ export default function PricingPage() {
       }
       throw new Error(t("errors.noCheckoutUrl"));
     } catch (err) {
+      reportError("payment", "subscription.checkout.failed", err, {
+        context: { billing },
+      });
       showError(err.message || t("errors.checkoutFailed"));
       setPreparingCheckout(null);
     } finally {
@@ -633,9 +637,8 @@ export default function PricingPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-bold text-slate-900 capitalize">{onTrial ? t("currentPlan.freeTrial") : effectivePlan}</h2>
+                  <h2 className="text-lg font-bold text-slate-900 capitalize">{effectivePlan}</h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">{t("currentPlan.current")}</Badge>
-                  {onTrial && <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] font-bold">{t("currentPlan.proFeaturesUnlocked")}</Badge>}
                   {showRenewal &&
                     (renewalFetching && !renewal.exact ? (
                       <span className="inline-block w-24 h-5 rounded-full bg-slate-100 animate-pulse" aria-label="…" />
@@ -646,8 +649,13 @@ export default function PricingPage() {
                     ))}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  {onTrial
-                    ? t("currentPlan.trialDaysRemaining", { days: daysLeft })
+                  {!hasPaidPlan
+                    ? freeApps.known
+                      ? t("currentPlan.freeRemaining", {
+                          remaining: freeApps.remaining,
+                          limit: FREE_BARTER_APPLICATIONS,
+                        })
+                      : t("currentPlan.freeBlurb", { limit: FREE_BARTER_APPLICATIONS })
                     : effectivePlan === "starter"
                       ? t("currentPlan.starterUpsell")
                       : renewal.date
@@ -659,10 +667,14 @@ export default function PricingPage() {
                 </p>
               </div>
             </div>
-            {onTrial && (
+            {!hasPaidPlan && (
               <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl">
                 <Sparkles size={16} className="text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">{t("currentPlan.trialWarning")}</span>
+                <span className="text-sm font-semibold text-amber-700">
+                  {freeApps.exhausted
+                    ? t("currentPlan.freeExhausted")
+                    : t("currentPlan.freeWarning")}
+                </span>
               </div>
             )}
           </div>
@@ -761,7 +773,7 @@ export default function PricingPage() {
             // plan" with its button disabled — making a monthly->annual
             // upgrade impossible from this page.
             const isCurrent =
-              effectivePlan === planId && !onTrial && billing === currentBillingCycle;
+              effectivePlan === planId && billing === currentBillingCycle;
             const isPopular = meta.popular;
 
             return (
@@ -837,7 +849,7 @@ export default function PricingPage() {
             gradient header pill row, lavender category bands, purple
             check circles + gradient "star" circles for top-tier-only
             features, and Pro column highlighted as Most Popular. */}
-        <ComparisonTable openGatewayPicker={openGatewayPicker} effectivePlan={effectivePlan} onTrial={onTrial} upgrading={upgrading} />
+        <ComparisonTable openGatewayPicker={openGatewayPicker} effectivePlan={effectivePlan} upgrading={upgrading} />
       </div>
 
       {gatewayPickerPlan && (
@@ -1288,7 +1300,7 @@ function RazorpayLogo() {
 // out as a wide table — sticky purple→pink gradient header, Pro column
 // highlighted as "Most Popular", lavender category bands, purple check
 // circles for "included" and gradient star-circles for "Elite only".
-function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading }) {
+function ComparisonTable({ openGatewayPicker, effectivePlan, upgrading }) {
   const t = useTranslations("InfluencerPricing");
 
   return (
@@ -1380,7 +1392,7 @@ function ComparisonTable({ openGatewayPicker, effectivePlan, onTrial, upgrading 
                   <td className="sticky left-0 z-[2] bg-white border-b border-[#efeaf7] p-4" />
                   {PLAN_ORDER.map((p) => {
                     const isPop = PLAN_META[p].popular;
-                    const isCurrent = effectivePlan === p && !onTrial;
+                    const isCurrent = effectivePlan === p;
                     // Direction-aware CTA — "Upgrade to X" when X sits
                     // above the user's current tier in PLAN_ORDER,
                     // "Choose X" when it's a downgrade. Trial users

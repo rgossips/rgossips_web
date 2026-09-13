@@ -21,6 +21,7 @@ import { AiToolsGrid } from "@/components/AiToolsGrid";
 import PerformanceDashboard from "@/components/PerformanceDashboard";
 import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
 import WelcomeRewardModal from "@/components/WelcomeRewardModal";
+import FreeCampaignsWelcomeModal from "@/components/FreeCampaignsWelcomeModal";
 import { REWARDS_ENABLED } from "@/lib/features";
 
 // `labelKey` maps to InfluencerHome.nav.<key>.
@@ -140,6 +141,11 @@ export default function HomePage() {
               grants the 50 RC it celebrates, so it would announce a bonus that
               was never issued. See lib/features.js. */}
           {REWARDS_ENABLED && <WelcomeRewardModal />}
+
+          {/* What the free tier gives a brand-new creator, shown once
+              before they have applied to anything. Self-suppresses for
+              subscribers and for anyone already applying. */}
+          <FreeCampaignsWelcomeModal />
 
           {/* Refer & Earn balance now renders inside ProStatusCard above, as a
               cell in the account summary rather than a strip under it. */}

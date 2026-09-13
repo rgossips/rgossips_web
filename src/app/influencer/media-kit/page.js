@@ -7,7 +7,7 @@ import MediaKitLayout from "@/components/MediaKitLayout";
 import { Share2, Copy, Check, Loader2, Lock, Crown, LayoutTemplate, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage } from "@/lib/plans";
+import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage, isSubscribed } from "@/lib/plans";
 import { useAiTool } from "@/hooks/useAiTool";
 import { AiMarkdown } from "@/components/AiMarkdown";
 
@@ -215,6 +215,14 @@ export default function MediaKitPage() {
       url: `mailto:?subject=${encodeURIComponent(t("share.emailSubject", { name: profile?.full_name || "" }))}&body=${encodeURIComponent(t("share.message", { url: shareUrl }))}`,
     },
   ];
+
+  // The media kit is a subscriber feature. A free creator sees the pitch
+  // for it rather than a half-working editor: update-profile refuses their
+  // template saves, so an editable page would only produce dead ends.
+  //
+  // Gated on a LOADED profile — `profile` is null while AuthContext
+  // resolves, and locking on null would flash the paywall at subscribers.
+  if (profile && !isSubscribed(profile)) return <MediaKitLocked />;
 
   return (
     <div className="min-h-screen bg-[#F8F7FB] pb-20 lg:pb-0">
@@ -590,6 +598,51 @@ function TemplatePicker({ profile, previewTemplate, savedTemplate, savingTemplat
           editReels: (c) => <span className="font-bold text-purple-500">{c}</span>,
         })}
       </p>
+    </div>
+  );
+}
+
+
+// Full-page upsell shown instead of the editor to unsubscribed creators.
+// Deliberately concrete about what a media kit does for them — this is the
+// single most-cited reason creators give for subscribing, so the page is the
+// pitch, not an error message.
+function MediaKitLocked() {
+  const t = useTranslations("InfluencerMediaKit");
+  const benefits = [t("locked.benefit1"), t("locked.benefit2"), t("locked.benefit3")];
+
+  return (
+    <div className="min-h-screen bg-[#F8F7FB] pb-20 lg:pb-0">
+      <div className="max-w-xl mx-auto px-4 lg:px-10 py-[120px]">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+          <div className="px-6 py-8 text-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
+              <Lock size={26} />
+            </div>
+            <h1 className="mt-4 text-xl font-black text-slate-900">{t("locked.title")}</h1>
+            <p className="mt-2 text-sm text-slate-500 leading-relaxed">{t("locked.body")}</p>
+
+            <ul className="mt-6 space-y-3 text-left">
+              {benefits.map((b) => (
+                <li key={b} className="flex items-start gap-3">
+                  <span className="mt-0.5 shrink-0 text-purple-600">
+                    <Sparkles size={16} />
+                  </span>
+                  <span className="text-sm text-slate-600 leading-relaxed">{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/influencer/pricing"
+              className="mt-7 inline-flex w-full items-center justify-center gap-2 py-3 rounded-2xl text-white text-sm font-bold shadow-lg shadow-purple-200 hover:brightness-110"
+              style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+            >
+              <Crown size={16} /> {t("locked.cta")}
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
