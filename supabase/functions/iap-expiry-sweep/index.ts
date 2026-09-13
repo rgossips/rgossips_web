@@ -14,6 +14,7 @@
 // the same way payouts-cron is driven.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 import {
   verifyApple,
   verifyGoogle,
@@ -36,7 +37,7 @@ const GRACE_MINUTES = 60;
 // is picked up next run — expiries are spread across the day anyway.
 const BATCH = 100;
 
-Deno.serve(async (req) => {
+serveWithLogging("iap-expiry-sweep", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

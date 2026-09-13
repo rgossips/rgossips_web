@@ -1,3 +1,5 @@
+import { serveWithLogging } from "../_shared/serve.ts";
+
 // One-shot: provisions the 6 test-mode Razorpay Subscription Plans
 // (3 tiers × monthly + annual) and returns their IDs. Mirrors
 // stripe-create-test-prices but for Razorpay.
@@ -29,7 +31,7 @@ async function rzp(path: string, body: any) {
   return json;
 }
 
-Deno.serve(async () => {
+serveWithLogging("razorpay-create-test-plans", async () => {
   try {
     const out: Record<string, string> = {};
     for (const p of PLANS) {

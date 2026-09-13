@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,7 +99,7 @@ const INFLUENCER_TRANSITIONS: Record<string, string[]> = {
   withdrawn: ["pending", "offer_sent"],
 };
 
-Deno.serve(async (req) => {
+serveWithLogging("update-application-status", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

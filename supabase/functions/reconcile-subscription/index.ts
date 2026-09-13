@@ -20,6 +20,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { log } from "../_shared/log.ts";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { ensureReferralCode, qualifyReferralIfEligible } from "../_shared/referrals.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,7 +194,7 @@ async function cancelStripeSub(subId: string): Promise<boolean> {
   }
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("reconcile-subscription", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const rid = crypto.randomUUID();
 

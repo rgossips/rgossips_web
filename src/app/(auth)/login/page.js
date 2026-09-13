@@ -8,6 +8,7 @@ import { useGlobal } from "@/context/GlobalContext";
 import { useAuth } from "@/context/AuthContext";
 import RoleSelection from "@/components/login/RoleSelection";
 import { createClient } from "@/utils/supabase/client";
+import { reportError } from "@/lib/reportError";
 import { IoMdClose } from "react-icons/io";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 
@@ -427,6 +428,7 @@ const LoginInner = () => {
       await sendOtp(phoneNumber);
       nextStep(); // → step 3 (verify)
     } catch (err) {
+      reportError("signin", "signin.send_otp.failed", err, { context: { role: signupData.role } });
       setError(err.message || t("errors.sendOtpFailed"));
     } finally {
       setLoading(false);
@@ -467,6 +469,12 @@ const LoginInner = () => {
       });
       router.push(resolvePostAuthTarget(detectedRole || requestedRole));
     } catch (err) {
+      // no_user and deactivated are handled flows, not failures — only the
+      // fall-through below is worth recording, so this reports the code and
+      // lets the branches decide.
+      reportError("signin", "signin.verify_otp.failed", err, {
+        context: { code: err?.code || null, role: signupData.role },
+      });
       if (err.code === "no_user") {
         // Not registered — switch to sign-up flow with phone pre-filled.
         setError("");
@@ -764,6 +772,9 @@ const LoginInner = () => {
       setLoadingMsg(t("loading.redirecting"));
       router.push(resolvePostAuthTarget(data.role));
     } catch (err) {
+      reportError("signup", "signup.finish.failed", err, {
+        context: { role: signupData.role, step },
+      });
       setError(err.message || t("errors.finishSignupFailed"));
       setLoading(false);
     }

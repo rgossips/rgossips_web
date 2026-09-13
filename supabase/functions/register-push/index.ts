@@ -9,6 +9,7 @@
 // Deploy PUBLIC (does its own JWT check): npx supabase functions deploy register-push --no-verify-jwt
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,7 @@ const cors = {
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
-Deno.serve(async (req) => {
+serveWithLogging("register-push", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {

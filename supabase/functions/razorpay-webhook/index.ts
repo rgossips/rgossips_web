@@ -26,6 +26,7 @@ import {
   clawBackReferral,
 } from "../_shared/referrals.ts";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 import {
   isTestUser,
   razorpayCreds,
@@ -599,7 +600,7 @@ async function handleValidationEvent(type: string, validation: any) {
   return { received: true, fundAccountId, status };
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("razorpay-webhook", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

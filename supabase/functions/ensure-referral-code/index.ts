@@ -11,6 +11,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ensureReferralCode } from "../_shared/referrals.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +21,7 @@ const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: jsonHeaders });
 
-Deno.serve(async (req) => {
+serveWithLogging("ensure-referral-code", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

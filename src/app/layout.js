@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { LoadingProvider } from "@/context/LoadingContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OfflineGate from "@/components/OfflineGate";
+import ErrorReporter from "@/components/ErrorReporter";
 import Script from "next/script";
 import NavigationLoader from "@/components/NavigationLoader";
 import ScrollReset from "@/components/ScrollReset";
@@ -199,6 +200,8 @@ export default async function RootLayout({ children }) {
             <GlobalProvider>
               <AuthProvider>
                 <OfflineGate />
+                {/* Inside AuthProvider so every report carries a user id. */}
+                <ErrorReporter />
                 <ProtectedRoute>{children}</ProtectedRoute>
               </AuthProvider>
             </GlobalProvider>

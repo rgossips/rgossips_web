@@ -9,6 +9,7 @@
 // Auth: signed-in user (default JWT verification ON).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,7 @@ interface Body {
   role?: "influencer" | "brand";
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("send-account-event-email", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

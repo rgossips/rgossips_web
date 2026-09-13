@@ -12,6 +12,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiGenerate } from "../_shared/ai.ts";
 import { log } from "../_shared/log.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,7 +71,7 @@ function extractJson(text: string): any {
 
 const asArray = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x)) : []);
 
-Deno.serve(async (req) => {
+serveWithLogging("landing-match", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const rid = crypto.randomUUID().slice(0, 8);
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

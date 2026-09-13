@@ -1,4 +1,5 @@
 import { rewardsEnabled } from "../_shared/rewards.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 // Creates a Stripe Checkout Session for an influencer subscribing to a paid plan.
 // Required env (Supabase secrets):
@@ -16,7 +17,7 @@ const corsHeaders = {
 };
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
-Deno.serve(async (req) => {
+serveWithLogging("stripe-checkout", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

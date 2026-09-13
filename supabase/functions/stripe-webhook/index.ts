@@ -18,6 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rewardsEnabled } from "../_shared/rewards.ts";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
+import { serveWithLogging } from "../_shared/serve.ts";
 import {
   ensureReferralCode,
   qualifyReferralIfEligible,
@@ -527,7 +528,7 @@ async function handleServicePayment(session: Stripe.Checkout.Session) {
   }
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("stripe-webhook", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

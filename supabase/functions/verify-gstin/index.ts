@@ -1,3 +1,5 @@
+import { serveWithLogging } from "../_shared/serve.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -5,7 +7,7 @@ const corsHeaders = {
 
 const GSTIN_API_KEY = "a13bc852485ae825d8d6e61201f6f818";
 
-Deno.serve(async (req) => {
+serveWithLogging("verify-gstin", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

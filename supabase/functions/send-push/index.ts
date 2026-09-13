@@ -10,6 +10,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendWebPush, sendFcm, PushPayload } from "../_shared/push.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ const cors = {
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
-Deno.serve(async (req) => {
+serveWithLogging("send-push", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     // Shared-secret gate (skipped if PUSH_SECRET isn't configured).

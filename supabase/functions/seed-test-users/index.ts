@@ -16,6 +16,7 @@
 // from the client, so this is gated by an admin login.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,7 +45,7 @@ const TEST_USERS = [
   },
 ];
 
-Deno.serve(async (req) => {
+serveWithLogging("seed-test-users", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

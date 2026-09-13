@@ -26,6 +26,7 @@
 //     (Pub/Sub topic with a push subscription pointed at this URL)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 import {
   verifyApple,
   verifyGoogle,
@@ -48,7 +49,7 @@ function decodeJwsPayload<T>(jws: string): T {
   ) as T;
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("iap-notifications", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

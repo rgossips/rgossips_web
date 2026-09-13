@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { log, hashId } from "../_shared/log.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ const corsHeaders = {
 // couple dozen per hour against a 900k keyspace — brute-force infeasible.
 const MAX_OTP_ATTEMPTS = 5;
 
-Deno.serve(async (req) => {
+serveWithLogging("whatsapp-otp-verifier", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

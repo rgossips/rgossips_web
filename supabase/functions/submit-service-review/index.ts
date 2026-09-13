@@ -14,6 +14,7 @@
 // triggers.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ const clampStar = (n: any): number | null => {
   return Number.isFinite(x) && x >= 1 && x <= 5 ? x : null;
 };
 
-Deno.serve(async (req) => {
+serveWithLogging("submit-service-review", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

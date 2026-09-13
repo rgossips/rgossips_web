@@ -1,12 +1,13 @@
 // One-shot debug: read a Stripe subscription's actual price + metadata.
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   apiVersion: "2024-06-20",
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-Deno.serve(async (req) => {
+serveWithLogging("stripe-debug", async (req) => {
   try {
     const url = new URL(req.url);
     const subId = url.searchParams.get("sub") || "";

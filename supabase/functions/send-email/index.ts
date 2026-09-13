@@ -33,6 +33,7 @@
 // notifications, welcome) that internally invoke send-email.
 
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,7 +59,7 @@ function asList(v: string | string[] | undefined): string[] | undefined {
   return Array.isArray(v) ? v.filter(Boolean) : [v];
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("send-email", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

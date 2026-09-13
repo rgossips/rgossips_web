@@ -221,3 +221,9 @@ verify_jwt = false
 
 [functions.whatsapp-otp-verifier]
 verify_jwt = false
+
+[functions.log-client-error]
+# Public on purpose: the errors most worth capturing happen before a user has
+# a usable JWT (failed sign-in, sign-up, Instagram connect). The function
+# clamps every field, rate-limits per IP, and always answers 200.
+verify_jwt = false

@@ -10,6 +10,7 @@
 // matters because reports carry moderation weight.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ const REASONS = new Set([
   "other",
 ]);
 
-Deno.serve(async (req) => {
+serveWithLogging("report-content", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

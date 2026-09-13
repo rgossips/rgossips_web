@@ -1,3 +1,5 @@
+import { serveWithLogging } from "../_shared/serve.ts";
+
 // One-shot: provisions the 6 test-mode subscription prices (3 plans ×
 // monthly + annual) and returns their IDs. Reuses STRIPE_SECRET_KEY
 // from Supabase secrets so we don't have to plumb the test key
@@ -34,7 +36,7 @@ async function stripe(path: string, body: URLSearchParams) {
   return json;
 }
 
-Deno.serve(async () => {
+serveWithLogging("stripe-create-test-prices", async () => {
   try {
     const out: Record<string, string> = {};
     for (const p of PLANS) {

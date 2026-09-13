@@ -4,6 +4,7 @@
 // order_number so the client can route to it.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,7 @@ const corsHeaders = {
 
 const URL_RE = /^https?:\/\/\S+\.\S+/i;
 
-Deno.serve(async (req) => {
+serveWithLogging("submit-quote-request", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

@@ -8,6 +8,7 @@
 // past their deadline.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 import {
   getBlockedIds,
   resolveViewerId,
@@ -47,7 +48,7 @@ function unpackDescription(raw: string | null) {
   }
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("list-featured-campaigns", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

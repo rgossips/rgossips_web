@@ -14,6 +14,7 @@
 
 import { rewardsEnabled } from "../_shared/rewards.ts";
 import { razorpayCreds, testPlanId } from "../_shared/razorpay.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,7 +68,7 @@ async function findReusableSubscription(auth: string, userId: string, planId: st
   return null;
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("razorpay-checkout", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

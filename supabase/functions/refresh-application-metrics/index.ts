@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 // Pulls Instagram insights for every submission link on a single campaign
 // application and caches the aggregate on `campaign_applications.metrics`.
@@ -95,7 +96,7 @@ async function fetchMediaPublicCounts(mediaId: string, token: string) {
   };
 }
 
-Deno.serve(async (req) => {
+serveWithLogging("refresh-application-metrics", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

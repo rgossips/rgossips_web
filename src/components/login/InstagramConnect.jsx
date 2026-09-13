@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { reportError } from "@/lib/reportError";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -86,6 +87,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         });
       }
     } catch (err) {
+      reportError("instagram", "instagram.connect.failed", err);
       if (mountedRef.current) {
         setError(err.message || t("errors.connectFailed"));
       }
@@ -142,6 +144,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       // Don't setChecking(false) — parent takes over
       onNext(profile);
     } catch (err) {
+      reportError("instagram", "instagram.verify.failed", err);
       if (mountedRef.current) {
         setError(err.message || t("errors.verifyFailed"));
         setChecking(false);

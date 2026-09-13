@@ -21,6 +21,7 @@
 // }
 
 import { razorpayCreds } from "../_shared/razorpay.ts";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,7 +107,7 @@ async function stripeInvoicesForSubscription(key: string, subscriptionId: string
 
 // ── main ───────────────────────────────────────────────────────────────
 
-Deno.serve(async (req) => {
+serveWithLogging("subscription-history", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

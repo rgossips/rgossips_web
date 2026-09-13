@@ -7,6 +7,7 @@
 // Ownership is enforced: the order must belong to the calling user.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,7 @@ const corsHeaders = {
 
 const VALID_ACTIONS = new Set(["accept", "counter", "decline"]);
 
-Deno.serve(async (req) => {
+serveWithLogging("respond-to-quote", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
