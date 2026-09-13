@@ -29,6 +29,24 @@ export function setErrorReporterUserId(id) {
   currentUserId = id || null;
 }
 
+// The ways a browser says "the request never got a response". These are
+// connectivity (flaky mobile data, a captive portal, an ISP that can't reach
+// supabase.co), not bugs — and each engine words it differently:
+//   Chrome "Failed to fetch" · Safari "Load failed" · Firefox "NetworkError
+//   when attempting to fetch resource" · supabase-js FunctionsFetchError
+//   "Failed to send a request to the Edge Function".
+const NETWORK_ERROR = /failed to fetch|load failed|networkerror when attempting|network request failed|failed to send a request to the edge function|fetch failed|err_internet_disconnected|err_network/i;
+
+export function isNetworkError(err) {
+  try {
+    if (!err) return false;
+    if (err.name === "FunctionsFetchError") return true;
+    return NETWORK_ERROR.test(String(err.message || err));
+  } catch {
+    return false;
+  }
+}
+
 // Signature -> timestamp of the last send. Same error within the window is
 // counted locally and dropped rather than posted again.
 const recent = new Map();
@@ -61,18 +79,33 @@ export function reportError(area, event, err, extra = {}) {
     const message = err?.message || (err == null ? "" : String(err));
     if (!shouldSend(`${area}|${event}|${message}`)) return;
 
+    // Connectivity failures are recorded as warnings with the connection
+    // details attached, so the Errors page can tell "user's network dropped"
+    // from "our code broke" — and a pattern (one carrier, always offline,
+    // always 2g) is visible instead of guessed at.
+    const network = isNetworkError(err);
+    const conn = typeof navigator !== "undefined" ? navigator.connection : null;
+    const context = network
+      ? {
+          ...(extra.context || {}),
+          network: true,
+          online: typeof navigator !== "undefined" ? navigator.onLine : null,
+          effectiveType: conn?.effectiveType || null,
+        }
+      : extra.context || {};
+
     const body = JSON.stringify({
       source: "web",
       area,
       event,
-      severity: extra.severity || "error",
+      severity: extra.severity || (network ? "warn" : "error"),
       message,
       stack: err?.stack || null,
       path: window.location?.pathname || null,
       statusCode: extra.statusCode ?? null,
       userId: extra.userId || currentUserId,
       userRole: extra.userRole || null,
-      context: extra.context || {},
+      context,
     });
 
     // keepalive so a report survives the navigation that often follows a

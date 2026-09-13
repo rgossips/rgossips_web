@@ -2,10 +2,32 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { reportError } from "@/lib/reportError";
+import { isNetworkError, reportError } from "@/lib/reportError";
 import { Button } from "@/components/ui/button";
 import { Instagram, CheckCircle2, X, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+
+// Instagram OAuth codes are single-use. Remember the ones already sent for
+// exchange so a replayed code (Back button, reload, a second mount) is
+// skipped instead of producing a guaranteed "code has been used" failure.
+const USED_CODES_KEY = "instagram_oauth_used_codes";
+
+function codeAlreadyUsed(code) {
+  try {
+    return JSON.parse(localStorage.getItem(USED_CODES_KEY) || "[]").includes(code);
+  } catch {
+    return false;
+  }
+}
+
+function markCodeUsed(code) {
+  try {
+    const used = JSON.parse(localStorage.getItem(USED_CODES_KEY) || "[]");
+    localStorage.setItem(USED_CODES_KEY, JSON.stringify([code, ...used.filter((c) => c !== code)].slice(0, 5)));
+  } catch {
+    /* storage unavailable — the server-side message below still covers it */
+  }
+}
 
 function formatCount(n) {
   if (!n) return "0";
@@ -49,7 +71,7 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
       localStorage.removeItem("instagram_oauth_code");
       localStorage.removeItem("instagram_oauth_mode");
       localStorage.removeItem("instagram_oauth_role");
-      exchangeCode(code);
+      if (!codeAlreadyUsed(code)) exchangeCode(code);
     } else if (oauthError) {
       processedRef.current = true;
       localStorage.removeItem("instagram_oauth_error");
@@ -60,6 +82,8 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
   }, []);
 
   const exchangeCode = async (code) => {
+    // Spent the moment it is sent, whatever the outcome.
+    markCodeUsed(code);
     setConnecting(true);
     setError("");
     try {
@@ -87,9 +111,16 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         });
       }
     } catch (err) {
+      // A replayed code that slipped past the local guard (other device
+      // storage, private mode). Nothing failed that a fresh Connect won't
+      // fix, so don't log it as an error or show Instagram's raw text.
+      if (/authorization code has been used/i.test(err?.message || "")) {
+        if (mountedRef.current) setError(t("errors.codeAlreadyUsed"));
+        return;
+      }
       reportError("instagram", "instagram.connect.failed", err);
       if (mountedRef.current) {
-        setError(err.message || t("errors.connectFailed"));
+        setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.connectFailed"));
       }
     } finally {
       if (mountedRef.current) {

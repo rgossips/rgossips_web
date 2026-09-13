@@ -8,7 +8,7 @@ import { useGlobal } from "@/context/GlobalContext";
 import { useAuth } from "@/context/AuthContext";
 import RoleSelection from "@/components/login/RoleSelection";
 import { createClient } from "@/utils/supabase/client";
-import { reportError } from "@/lib/reportError";
+import { isNetworkError, reportError } from "@/lib/reportError";
 import { IoMdClose } from "react-icons/io";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 
@@ -429,7 +429,9 @@ const LoginInner = () => {
       nextStep(); // → step 3 (verify)
     } catch (err) {
       reportError("signin", "signin.send_otp.failed", err, { context: { role: signupData.role } });
-      setError(err.message || t("errors.sendOtpFailed"));
+      // "Failed to send a request to the Edge Function" means the phone never
+      // reached us — say that in plain words instead of the SDK's text.
+      setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.sendOtpFailed"));
     } finally {
       setLoading(false);
     }

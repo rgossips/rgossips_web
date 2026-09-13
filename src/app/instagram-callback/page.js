@@ -40,7 +40,11 @@ export default function InstagramCallback() {
       );
     }
 
-    window.location.href = "/login";
+    // replace(), not href: the callback URL (with the one-time ?code=) must
+    // not stay in history. Otherwise Back from /login lands here again,
+    // re-saves the already-spent code, and the second exchange fails with
+    // "This authorization code has been used".
+    window.location.replace("/login");
   }, []);
 
   return (

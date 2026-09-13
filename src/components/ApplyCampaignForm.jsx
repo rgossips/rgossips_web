@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { reportError } from "@/lib/reportError";
+import { isNetworkError, reportError } from "@/lib/reportError";
 import {
   X,
   Instagram,
@@ -155,7 +155,9 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       reportError("campaign_application", "apply.submit.failed", err, {
         context: { campaignId: campaignData?.id || null },
       });
-      setError(err.message || t("errors.submitFailed"));
+      // Safari reports a dropped connection as a bare "Load failed". Retrying
+      // is safe: a duplicate comes back as "already_applied".
+      setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
