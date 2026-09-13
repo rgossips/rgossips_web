@@ -149,7 +149,7 @@ serveWithLogging("iap-expiry-sweep", async (req) => {
         await supabase
           .from("influencer_profiles")
           .update({
-            subscription_plan: "starter",
+            subscription_plan: "free",
             iap_subscription_id: null,
             updated_at: new Date().toISOString(),
           })

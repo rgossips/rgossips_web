@@ -288,7 +288,54 @@ export function formatFeatureValue(value, { plan, key } = {}) {
  */
 export function getEffectivePlan(profile) {
   const plan = (profile?.subscription_plan || "").toLowerCase();
-  return PAID_PLAN_IDS.includes(plan) ? plan : PLAN_IDS.FREE;
+  if (!PAID_PLAN_IDS.includes(plan)) return PLAN_IDS.FREE;
+  // A cancelled subscription keeps its plan until the paid period ends,
+  // then drops to free — never to `starter`, which is itself a paid tier.
+  return isPlanExpired(profile) ? PLAN_IDS.FREE : plan;
+}
+
+/**
+ * True when a paid plan has run past the period it was paid for.
+ *
+ * Only a NON-NULL date in the past lapses anyone. Every row predating
+ * migration 069 has `plan_expires_at` NULL and must keep its plan — we
+ * do not know those period ends, and guessing would cut paying creators
+ * off.
+ */
+export function isPlanExpired(profile) {
+  const raw = profile?.plan_expires_at;
+  if (!raw) return false;
+  const at = Date.parse(raw);
+  return Number.isFinite(at) && at < Date.now();
+}
+
+/**
+ * Renewal standing for the UI: is the plan live, is auto-renew off, and
+ * when does access actually end. `cancelled` is the state this exists
+ * for — paid, still entitled, but not renewing.
+ */
+export function getSubscriptionStatus(profile) {
+  const plan = getEffectivePlan(profile);
+  const subscribed = plan !== PLAN_IDS.FREE;
+  const expiresAt = profile?.plan_expires_at ? new Date(profile.plan_expires_at) : null;
+  const validExpiry = expiresAt && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null;
+  // `auto_renew` defaults true, so a row that predates 069 reads as
+  // renewing — which is the safe assumption for an active subscriber.
+  const autoRenew = profile?.auto_renew !== false;
+  const daysLeft = validExpiry
+    ? Math.max(0, Math.ceil((validExpiry.getTime() - Date.now()) / 86_400_000))
+    : null;
+  return {
+    plan,
+    subscribed,
+    autoRenew,
+    expiresAt: validExpiry,
+    daysLeft,
+    // Paid, still entitled, but will not renew.
+    cancelled: subscribed && !autoRenew,
+    // Was on a paid plan; the paid period has run out.
+    lapsed: !subscribed && !!profile?.subscription_plan && isPlanExpired(profile),
+  };
 }
 
 /** True when the creator holds any paid plan. The gate for everything. */

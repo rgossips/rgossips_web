@@ -254,6 +254,14 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
     .from("influencer_profiles")
     .update({
       subscription_plan: plan,
+      // Granting a plan retires any earlier cancellation. Without this a
+      // creator who cancelled and then resubscribed would keep
+      // auto_renew=false and a past plan_expires_at, which getEffectivePlan
+      // reads as lapsed — so the new payment would buy them nothing.
+      // `extras` is spread after, so a caller can still override.
+      auto_renew: true,
+      subscription_cancelled_at: null,
+      plan_expires_at: null,
       ...templateReset,
       ...extras,
       updated_at: new Date().toISOString(),
@@ -699,7 +707,7 @@ serveWithLogging("stripe-webhook", async (req) => {
             // prior sub during an upgrade), ignore — the new active sub
             // on the profile should stand.
             if (await isCurrentStripeSub(userId, sub.id)) {
-              await setUserPlan(userId, "starter");
+              await setUserPlan(userId, "free");
             } else {
               console.log("Ignoring updated/canceled for stale Stripe sub", sub.id);
             }
@@ -713,7 +721,7 @@ serveWithLogging("stripe-webhook", async (req) => {
         const userId = (sub.metadata?.user_id as string) || "";
         if (userId) {
           if (await isCurrentStripeSub(userId, sub.id)) {
-            await setUserPlan(userId, "starter");
+            await setUserPlan(userId, "free");
           } else {
             console.log("Ignoring deletion of stale Stripe sub", sub.id);
           }

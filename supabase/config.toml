@@ -69,6 +69,9 @@ verify_jwt = true
 [functions.iap-expiry-sweep]
 verify_jwt = false
 
+[functions.subscription-lapse-sweep]
+verify_jwt = false
+
 [functions.iap-notifications]
 verify_jwt = false
 

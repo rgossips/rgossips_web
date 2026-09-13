@@ -2,6 +2,8 @@ import { describe, it, expect } from "@jest/globals";
 import {
   formatFeatureValue,
   isSubscribed,
+  isPlanExpired,
+  getSubscriptionStatus,
   getFreeApplicationStatus,
   FREE_BARTER_APPLICATIONS,
   FEATURE_MATRIX,
@@ -256,5 +258,66 @@ describe("getAiUsageStatus", () => {
       unlimited: false,
       plan: "free",
     });
+  });
+});
+
+describe("cancelled + expired subscriptions (migration 069)", () => {
+  const future = () => new Date(Date.now() + 5 * DAY).toISOString();
+  const past = () => new Date(Date.now() - 1 * DAY).toISOString();
+
+  it("a null expiry never lapses anyone", () => {
+    // Every row predating 069 has plan_expires_at NULL. We do not know those
+    // period ends, so treating null as expired would cut off paying creators.
+    expect(getEffectivePlan({ subscription_plan: "pro" })).toBe("pro");
+    expect(getEffectivePlan({ subscription_plan: "pro", plan_expires_at: null })).toBe("pro");
+    expect(isPlanExpired({ subscription_plan: "pro" })).toBe(false);
+    expect(isPlanExpired({ plan_expires_at: "not-a-date" })).toBe(false);
+  });
+
+  it("a cancelled plan keeps working until the paid period ends", () => {
+    const p = { subscription_plan: "pro", auto_renew: false, plan_expires_at: future() };
+    expect(getEffectivePlan(p)).toBe("pro");
+    expect(isSubscribed(p)).toBe(true);
+    expect(profileHasFeature(p, "ai_match_coach")).toBe(true);
+  });
+
+  it("once the period ends it drops to free, NOT starter", () => {
+    // starter is a paid tier since the trial was removed. Lapsing to it would
+    // hand the creator a plan they are not paying for.
+    const p = { subscription_plan: "pro", auto_renew: false, plan_expires_at: past() };
+    expect(getEffectivePlan(p)).toBe("free");
+    expect(isSubscribed(p)).toBe(false);
+    expect(profileHasFeature(p, "ai_match_coach")).toBe(false);
+    expect(profileCanUseMediaKitTemplate(p, "classic")).toBe(false);
+  });
+
+  it("an expired starter subscriber loses starter too", () => {
+    expect(getEffectivePlan({ subscription_plan: "starter", plan_expires_at: past() })).toBe("free");
+  });
+
+  it("getSubscriptionStatus describes each state", () => {
+    const cancelled = getSubscriptionStatus({
+      subscription_plan: "pro", auto_renew: false, plan_expires_at: future(),
+    });
+    expect(cancelled.cancelled).toBe(true);
+    expect(cancelled.subscribed).toBe(true);
+    expect(cancelled.lapsed).toBe(false);
+    expect(cancelled.daysLeft).toBeGreaterThan(0);
+
+    const renewing = getSubscriptionStatus({ subscription_plan: "pro", plan_expires_at: future() });
+    expect(renewing.cancelled).toBe(false);
+    expect(renewing.autoRenew).toBe(true); // absent auto_renew reads as renewing
+
+    const lapsed = getSubscriptionStatus({
+      subscription_plan: "pro", auto_renew: false, plan_expires_at: past(),
+    });
+    expect(lapsed.subscribed).toBe(false);
+    expect(lapsed.lapsed).toBe(true);
+    expect(lapsed.daysLeft).toBe(0);
+
+    const free = getSubscriptionStatus({ subscription_plan: "trial" });
+    expect(free.subscribed).toBe(false);
+    expect(free.cancelled).toBe(false);
+    expect(free.lapsed).toBe(false); // never subscribed, so not a lapse
   });
 });

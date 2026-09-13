@@ -251,12 +251,13 @@ serveWithLogging("iap-notifications", async (req) => {
       return ok({ received: true, event: eventLabel, applied: "skipped-stale" });
     }
 
-    // 'starter' is the floor the Razorpay webhook drops to on cancellation;
+    // 'free' is the floor since the trial was removed — 'starter' is a paid
+    // tier, so lapsing to it would hand out a plan for free;
     // matching it keeps one downgrade destination across every rail.
     const { error: downErr } = await supabase
       .from("influencer_profiles")
       .update({
-        subscription_plan: "starter",
+        subscription_plan: "free",
         iap_subscription_id: null,
         updated_at: new Date().toISOString(),
       })

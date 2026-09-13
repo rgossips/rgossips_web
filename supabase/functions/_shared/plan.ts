@@ -36,13 +36,36 @@ export const AI_LIMITS: Record<PlanId, number> = {
   elite: Infinity,
 };
 
-export function effectivePlan(profile: { subscription_plan?: string | null } | null | undefined): PlanId {
+export interface PlanProfile {
+  subscription_plan?: string | null;
+  /** Paid through. NULL/absent = no known end, which never lapses. */
+  plan_expires_at?: string | null;
+}
+
+/**
+ * True when a paid plan has run past the period it was paid for.
+ *
+ * Only a NON-NULL date in the past lapses anyone. Every row predating
+ * migration 069 has NULL here and must keep its plan — we do not know
+ * those period ends, and guessing would cut paying creators off.
+ */
+export function isPlanExpired(profile: PlanProfile | null | undefined): boolean {
+  const raw = profile?.plan_expires_at;
+  if (!raw) return false;
+  const at = Date.parse(String(raw));
+  return Number.isFinite(at) && at < Date.now();
+}
+
+export function effectivePlan(profile: PlanProfile | null | undefined): PlanId {
   const plan = String(profile?.subscription_plan || "").toLowerCase();
-  return PAID.has(plan) ? (plan as PlanId) : "free";
+  if (!PAID.has(plan)) return "free";
+  // A cancelled subscription keeps its plan until the paid period ends,
+  // then drops to free — never to `starter`, which is itself a paid tier.
+  return isPlanExpired(profile) ? "free" : (plan as PlanId);
 }
 
 /** True when the creator holds any paid plan. The gate for everything. */
-export function isSubscribed(profile: { subscription_plan?: string | null } | null | undefined): boolean {
+export function isSubscribed(profile: PlanProfile | null | undefined): boolean {
   return effectivePlan(profile) !== "free";
 }
 

@@ -27,6 +27,7 @@ import {
 } from "../_shared/referrals.ts";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { log } from "../_shared/log.ts";
 import {
   isTestUser,
   razorpayCreds,
@@ -265,6 +266,14 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
     .update({
       subscription_plan: plan,
       payment_gateway: "razorpay",
+      // Granting a plan retires any earlier cancellation. Without this a
+      // creator who cancelled and then resubscribed would keep
+      // auto_renew=false and a past plan_expires_at, which getEffectivePlan
+      // reads as lapsed — so the new payment would buy them nothing.
+      // `extras` is spread after, so a caller can still override.
+      auto_renew: true,
+      subscription_cancelled_at: null,
+      plan_expires_at: null,
       ...templateReset,
       ...extras,
       updated_at: new Date().toISOString(),
@@ -900,7 +909,47 @@ serveWithLogging("razorpay-webhook", async (req) => {
           );
           break;
         }
-        await setUserPlan(userId, "starter");
+        // Do NOT downgrade here. The creator has paid through the end of
+        // the current cycle and is entitled until then; wiping the plan on
+        // the cancellation event takes away access they bought.
+        //
+        // And the old target was `starter`, which since the trial removal
+        // is a paid ₹99/month tier rather than the floor — so the
+        // "downgrade" was handing out a paid plan for free, permanently.
+        //
+        // Record the facts instead and let getEffectivePlan decide by
+        // date: auto-renew off, paid through `current_end`. The lapse
+        // sweep is then only hygiene, not the boundary.
+        //
+        // `halted` (retries exhausted) and `completed` (total_count
+        // reached) end the same way — the difference is only why, and
+        // current_end is already in the past for halted, so entitlement
+        // drops immediately without a special case.
+        {
+          const subEntity = event?.payload?.subscription?.entity;
+          const currentEnd = Number(subEntity?.current_end) || 0;
+          const endedAt = Number(subEntity?.ended_at) || 0;
+          // Prefer the paid-through date; fall back to when it ended, and
+          // finally to now, so the column is never left null here (null
+          // means "no known end" and would never lapse).
+          const expiresMs = (currentEnd || endedAt || Math.floor(Date.now() / 1000)) * 1000;
+          const { error: cancelErr } = await supabase
+            .from("influencer_profiles")
+            .update({
+              auto_renew: false,
+              subscription_cancelled_at: new Date().toISOString(),
+              plan_expires_at: new Date(expiresMs).toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("influencer_id", userId);
+          if (cancelErr) {
+            log.error("razorpay.cancel_record_failed", {
+              userId,
+              subscriptionId,
+              event: String(event?.event || ""),
+            }, cancelErr);
+          }
+        }
         break;
       }
     }

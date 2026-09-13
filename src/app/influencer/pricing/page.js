@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { reportError } from "@/lib/reportError";
-import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Check, Crown, Loader2, Sparkles, Zap, Target, Rocket, X, ExternalLink, AlertCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SharedGatewayPickerModal from "@/components/GatewayPickerModal";
@@ -11,7 +11,7 @@ import { REWARDS_ENABLED } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
-import { getEffectivePlan, isSubscribed, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
+import { getEffectivePlan, isSubscribed, getSubscriptionStatus, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
 import { useTranslations } from "next-intl";
 
@@ -150,6 +150,9 @@ export default function PricingPage() {
   // There is no trial. A creator is either on a paid plan or on free,
   // whose whole entitlement is FREE_BARTER_APPLICATIONS applications.
   const freeApps = useFreeApplications();
+  // Renewal standing. `cancelled` is the case this exists for: paid,
+  // still entitled, but auto-renew is off at the gateway.
+  const subStatus = getSubscriptionStatus(profile);
   // Paid plans show a "renews in N days" line at the top.
   const renewal = getPlanRenewalInfo(profile, realRenewalTs);
   const currentPlanRaw = (profile?.subscription_plan || "").toLowerCase();
@@ -639,14 +642,20 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-bold text-slate-900 capitalize">{effectivePlan}</h2>
                   <Badge className="bg-purple-100 text-purple-700 border-0 text-[10px] font-bold">{t("currentPlan.current")}</Badge>
-                  {showRenewal &&
+                  {subStatus.cancelled ? (
+                    <Badge className="bg-amber-100 text-amber-800 border-0 text-[10px] font-bold">
+                      {t("currentPlan.autoRenewOff")}
+                    </Badge>
+                  ) : (
+                    showRenewal &&
                     (renewalFetching && !renewal.exact ? (
                       <span className="inline-block w-24 h-5 rounded-full bg-slate-100 animate-pulse" aria-label="…" />
                     ) : (
                       <Badge className="bg-blue-50 text-blue-700 border-0 text-[10px] font-bold">
                         {t("currentPlan.renewsIn", { days: renewal.daysLeft })}
                       </Badge>
-                    ))}
+                    ))
+                  )}
                 </div>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {!hasPaidPlan
@@ -656,6 +665,16 @@ export default function PricingPage() {
                           limit: FREE_BARTER_APPLICATIONS,
                         })
                       : t("currentPlan.freeBlurb", { limit: FREE_BARTER_APPLICATIONS })
+                    : subStatus.cancelled
+                      ? subStatus.expiresAt
+                        ? t("currentPlan.cancelledUntil", {
+                            date: subStatus.expiresAt.toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }),
+                          })
+                        : t("currentPlan.cancelledNoDate")
                     : effectivePlan === "starter"
                       ? t("currentPlan.starterUpsell")
                       : renewal.date
@@ -667,6 +686,21 @@ export default function PricingPage() {
                 </p>
               </div>
             </div>
+            {subStatus.cancelled && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 px-4 py-3 rounded-2xl">
+                <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-amber-800">
+                    {t("currentPlan.cancelledTitle")}
+                  </p>
+                  <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                    {subStatus.daysLeft != null
+                      ? t("currentPlan.cancelledBody", { days: subStatus.daysLeft })
+                      : t("currentPlan.cancelledBodyNoDate")}
+                  </p>
+                </div>
+              </div>
+            )}
             {!hasPaidPlan && (
               <div className="flex items-center gap-3 bg-amber-50 px-4 py-2.5 rounded-2xl">
                 <Sparkles size={16} className="text-amber-600" />
