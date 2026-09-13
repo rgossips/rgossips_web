@@ -194,6 +194,79 @@ async function cancelStripeSub(subId: string): Promise<boolean> {
   }
 }
 
+// Write down a cancellation the webhooks never told us about.
+//
+// Called only when BOTH gateways report nothing live. Derives the
+// paid-through date from the newest PAID invoice plus the billing cycle,
+// because a cancelled Razorpay subscription no longer exposes current_end —
+// their API nulls it — so the invoice is the last thing we can trust.
+//
+// Never overwrites an expiry that is already recorded: a webhook that did
+// arrive had the gateway's own figure, which beats this derivation.
+async function recordCancellationIfUnrecorded(
+  admin: any,
+  userId: string,
+  invoices: any[],
+  rid: string,
+): Promise<void> {
+  try {
+    const { data: prof } = await admin
+      .from("influencer_profiles")
+      .select("subscription_plan, billing_cycle, auto_renew, plan_expires_at")
+      .eq("influencer_id", userId)
+      .maybeSingle();
+
+    const plan = String(prof?.subscription_plan || "").toLowerCase();
+    // Nothing to retire if they were never on a paid tier.
+    if (!["starter", "pro", "elite"].includes(plan)) return;
+    // Already recorded — by a webhook, or by an earlier run of this.
+    if (prof?.auto_renew === false && prof?.plan_expires_at) return;
+
+    const paid = (invoices || []).filter((i) => String(i?.status) === "paid");
+    const newest = paid.reduce(
+      (max, i) => Math.max(max, Number(i?.paid_at || i?.created_at || 0)),
+      0,
+    );
+    // No paid invoice means we cannot say what they paid through. Leaving
+    // plan_expires_at NULL keeps them entitled rather than guessing a date
+    // that might cut off someone who did pay.
+    if (!newest) {
+      log.warn("reconcile.cancel_no_paid_invoice", { rid, userId, plan });
+      return;
+    }
+
+    const cycle = String(prof?.billing_cycle || "monthly").toLowerCase();
+    const end = new Date(newest * 1000);
+    if (cycle === "annual") end.setFullYear(end.getFullYear() + 1);
+    else end.setMonth(end.getMonth() + 1);
+
+    const { error } = await admin
+      .from("influencer_profiles")
+      .update({
+        auto_renew: false,
+        subscription_cancelled_at: new Date().toISOString(),
+        plan_expires_at: end.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("influencer_id", userId);
+
+    if (error) {
+      log.error("reconcile.cancel_record_failed", { rid, userId }, error);
+      return;
+    }
+    log.info("reconcile.cancellation_recorded", {
+      rid,
+      userId,
+      plan,
+      cycle,
+      expiresAt: end.toISOString(),
+    });
+  } catch (e) {
+    // Reconcile's job is the plan; this is bookkeeping on top of it.
+    log.warn("reconcile.cancel_record_threw", { rid, userId }, e);
+  }
+}
+
 serveWithLogging("reconcile-subscription", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const rid = crypto.randomUUID();
@@ -272,6 +345,16 @@ serveWithLogging("reconcile-subscription", async (req) => {
     if (!keeper) keeper = live[0] || null;
 
     if (!keeper) {
+      // The gateways have nothing live, but the profile may still claim a
+      // paid tier. That is an unrecorded cancellation: the creator stopped
+      // the subscription and the webhook never reached us — which is
+      // exactly what happened to the first one of these we found, and why
+      // it had to be backfilled by hand.
+      //
+      // Do not strip the plan. They have paid through the end of the cycle
+      // and are entitled until then. Record what we now know and let
+      // getEffectivePlan lapse them on the date.
+      await recordCancellationIfUnrecorded(admin, userId, invoices, rid);
       log.info("reconcile.no_live_sub", { rid, userId });
       return json({ reconciled: false, reason: "no_active_subscription" });
     }
@@ -305,6 +388,13 @@ serveWithLogging("reconcile-subscription", async (req) => {
         subscription_plan: keeper.plan,
         billing_cycle: normCycle(keeper.cycle),
         payment_gateway: keeper.gateway,
+        // The gateway says this one is live and renewing, so any earlier
+        // cancellation is stale. NULL plan_expires_at means "no known end",
+        // which is right for something that renews — and it is what stops a
+        // resubscribe inheriting the old expiry and lapsing immediately.
+        auto_renew: true,
+        plan_expires_at: null,
+        subscription_cancelled_at: null,
         ...gatewayFields,
         ...templateReset,
         updated_at: new Date().toISOString(),

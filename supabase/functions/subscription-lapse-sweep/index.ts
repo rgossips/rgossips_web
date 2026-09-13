@@ -36,6 +36,27 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// True only for a caller holding the service role.
+//
+// Compares the key, then falls back to exercising a service-role-only API.
+// Do NOT decode the bearer as a JWT to read `role`: the service key is not
+// always a JWT (this project has both the legacy JWT and the newer
+// sb_secret_ form), and the decode throws on the latter — which silently
+// locked the hourly sweep out of calling this.
+async function isServiceRoleCaller(bearer: string): Promise<boolean> {
+  if (!bearer) return false;
+  if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+  try {
+    const probe = createClient(Deno.env.get("SUPABASE_URL")!, bearer, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 const PAID = new Set(["starter", "pro", "elite"]);
 // Store billing has its own sweep and its own source of truth.
 const STORE_GATEWAYS = new Set(["apple_iap", "google_play"]);
@@ -56,15 +77,8 @@ serveWithLogging("subscription-lapse-sweep", async (req) => {
 
   let isServiceRole = false;
   if (!viaCron) {
-    const auth = (req.headers.get("authorization") || "").replace("Bearer ", "");
-    try {
-      const claims = JSON.parse(
-        atob(auth.split(".")[1].replace(/-/g, "+").replace(/_/g, "/") + "=="),
-      );
-      isServiceRole = claims?.role === "service_role";
-    } catch {
-      isServiceRole = false;
-    }
+    const auth = (req.headers.get("authorization") || "").replace("Bearer ", "").trim();
+    isServiceRole = await isServiceRoleCaller(auth);
   }
 
   if (!viaCron && !isServiceRole) return json({ error: "unauthorized" }, 401);

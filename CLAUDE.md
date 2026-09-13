@@ -328,6 +328,111 @@ That is the exact job the review queue exists to do.
 `reviewed_at`; without the columns every reject fails with 42703, so
 rejection breaks entirely rather than degrading.
 
+## Subscription lifecycle — cancelled, expired, and who is still entitled (2026-09)
+
+A Razorpay subscription showed as **Cancelled with its invoice still Paid**:
+the creator had turned off auto-renew and was paid through the cycle. We
+handled that by immediately writing `subscription_plan = 'starter'`, which
+was wrong twice over — it took away access they had paid for, and `starter`
+had stopped being the free floor, so the "downgrade" GRANTED a paid tier for
+free, forever. The same line was in the Stripe webhook and both IAP paths.
+
+**Migration 069** adds the state the profile could not express:
+
+| Column | Meaning |
+|---|---|
+| `auto_renew` | False once the recurring charge is stopped at the gateway. The plan may still be live. |
+| `plan_expires_at` | Paid through. **NULL = no known end and NEVER lapses.** |
+| `subscription_cancelled_at` | When we learned. Support only; entitlement is decided by the date. |
+
+### Entitlement is a function of the date, not of a job
+
+`getEffectivePlan()` returns `free` once `plan_expires_at` has passed — in
+`_shared/plan.ts`, `src/lib/plans.js` and mobile `plans.ts` alike. A creator
+is de-privileged at the moment it happens, whether or not any sweep runs. A
+cron is a bad place for a security boundary. `getSubscriptionStatus()` is the
+UI-facing view of the same thing (`cancelled` / `lapsed` / `daysLeft`).
+
+**A NULL date never lapses anyone**, which is every row predating 069 — the
+gateways hold those period ends, not us, and guessing would cut paying
+creators off. Nothing was backfilled. Tests pin this.
+
+**`free` is the lapse target everywhere, never `starter`.** Five sites were
+corrected: razorpay-webhook, stripe-webhook (×2), iap-expiry-sweep,
+iap-notifications.
+
+**Granting a plan clears the cancellation** (`setUserPlan` on both gateways,
+and reconcile's keeper path). Without it a creator who cancelled and
+resubscribed keeps `auto_renew=false` and a past expiry, which the resolver
+reads as lapsed — so their new payment buys them nothing.
+
+### The sweep rides an existing cron — do not add a new one
+
+`subscription-lapse-sweep` normalises the row, emits a churn event via the
+067 trigger, and notifies once. It is **hygiene, not the boundary**.
+
+It is called at the end of **`iap-expiry-sweep`**, which already runs hourly
+at :20 (`rgossips-iap-expiry-sweep`, migration 065) doing the identical job
+for store billing. One schedule, and the two never touch the same profile —
+the gateway sweep skips `apple_iap` / `google_play` rows. Verified by
+replaying the exact request pg_cron sends.
+
+### reconcile-subscription is the webhook safety net
+
+Razorpay webhooks here have been unreliable, which is how the first
+cancellation went unrecorded and had to be backfilled by hand. When BOTH
+gateways report nothing live but the profile still claims a paid tier,
+reconcile now records the cancellation itself, deriving paid-through from the
+newest PAID invoice + billing cycle — a cancelled Razorpay subscription no
+longer exposes `current_end` (their API nulls it), so the invoice is the last
+trustworthy signal. It never overwrites an expiry a webhook already set.
+
+## Detecting a service-role caller — the trap that bit three times (2026-09)
+
+**Never decide "is this the service role" by decoding the bearer as a JWT,
+and never by `token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` alone.**
+
+This project has BOTH service-key formats in play: the legacy JWT and the
+newer `sb_secret_…`. The deployed function env and the key on a developer
+machine can be different representations of the same role. So:
+
+* `atob(token.split(".")[1])` throws on the `sb_secret_` form — the check
+  silently returns false and the function refuses its own caller;
+* a bare string compare fails whenever the two representations differ, and
+  breaks silently on rotation.
+
+Both failed in production this session — `subscription-history` locked out
+reconcile-subscription, and `subscription-lapse-sweep` locked out the hourly
+cron chain. Both passed a local probe first, because the key on this machine
+happens to be the legacy JWT.
+
+**Use the compare-then-probe helper** (`brand-campaigns` has the original):
+compare the key, then fall back to actually exercising a service-role-only
+API (`auth.admin.listUsers`). Works with either format.
+
+⚠️ `iap-expiry-sweep` still has the JWT-decode version in its own gate. It is
+not broken in practice — pg_cron authenticates with `x-cron-secret`, not a
+bearer — but a service-role call to it will 401.
+
+## subscription-history was open to anyone (fixed 2026-09)
+
+It ran with `verify_jwt = false` and took `userId` straight from the request
+body with **no authentication at all** — anyone holding a user id could read
+that person's billing history: amounts, plans, invoice links. User ids are
+not secret; they appear in notification payloads and admin exports.
+
+The id now comes from the caller's JWT and the body is ignored, except for a
+service-role caller (reconcile-subscription runs server-to-server and holds
+no user token). A body/JWT mismatch serves the caller's own history and logs
+a warn rather than failing.
+
+**Consequence for clients:** the function now needs a real session token. The
+`invokeAuthed` helper (get session → invoke → on 401 refresh once → retry)
+moved out of the brands campaign page to **`src/lib/invokeAuthed.js`** and is
+used by the pricing page and PaymentMethods. Reach for it whenever calling a
+function that authenticates the caller — a bare `functions.invoke` posts a
+stored token that may be expired, and can fall back to the publishable key.
+Mobile needs nothing: `invokeFn` already attaches the JWT and retries on 401.
 ## Payments
 
 - **Stripe** (subscriptions): `stripe-checkout` creates Sessions,
@@ -800,6 +905,8 @@ iOS via Firebase). One registry + one trigger; the sender branches per platform.
 | 062 | revoke_anon_oracle_rpcs | Revokes anon EXECUTE on the arbitrary-uuid role oracles (`is_admin`/`is_super_admin`/`is_influencer`/`is_brand`) + the enumeration oracles (`check_phone_exists`, `check_brand_invitation`) + `get_my_referral_rank`. **Applied cleanly and did nothing** — see 063. |
 | 063 | revoke_anon_oracle_rpcs_from_public | Completes 062. **The mirror of 060 s lesson:** 060 = revoking from PUBLIC leaves anon s direct grant; 062 = revoking from anon leaves PUBLIC s grant, which anon inherits. Both are true; a function is closed to anon only when revoked from BOTH. `is_app_admin()` deliberately left granted (self-scoped, and evaluated inside an anon-reachable RLS policy). |
 | 068 | campaign_review_outcome | `campaigns.review_reason` + `reviewed_at`, and the `rejected` status value. **Must be applied before deploying `brand-campaigns`** — the new reject path writes those columns. |
+| 069 | subscription_lifecycle | `auto_renew` + `plan_expires_at` + `subscription_cancelled_at` on influencer_profiles. **NULL plan_expires_at never lapses anyone** — not backfilled. Apply BEFORE deploying the webhooks: setUserPlan writes these on every grant. |
+| 070 | error_logs_status | Triage state for the admin Errors page. **Was originally numbered 068 and collided with campaign_review_outcome** — Supabase tracks by numeric prefix, so it would have been silently skipped forever. Renumbered. Never reuse a prefix (see also 042). |
 
 ## Feature: AI layer (2026-07)
 

@@ -163,8 +163,44 @@ serveWithLogging("iap-expiry-sweep", async (req) => {
     }
 
     console.log(`iap sweep: ${renewed} renewed, ${lapsed} lapsed, ${failed} failed`);
+
+    // Retire lapsed Razorpay/Stripe subscriptions in the same pass.
+    //
+    // That rail needs the identical hourly job — a paid period ends, the row
+    // has to stop claiming a tier the creator no longer has, churn has to be
+    // recorded and the creator told once. Rather than add a second cron, it
+    // rides this one: the schedule already exists, the two sweeps never touch
+    // the same profile (this one owns store-billed rows, that one skips
+    // them), and one schedule is one thing to reason about.
+    //
+    // Kept as its own function rather than inlined here because the name of
+    // this one is about IAP, and because it stays independently runnable for
+    // a manual catch-up. Chained AFTER the response payload is computed and
+    // never allowed to fail this sweep — entitlement does not depend on
+    // either of them (getEffectivePlan goes by plan_expires_at), so a failed
+    // chain costs bookkeeping, not access.
+    let gatewayLapse: unknown = null;
+    try {
+      const res = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/subscription-lapse-sweep`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+          },
+          body: "{}",
+        },
+      );
+      gatewayLapse = await res.json().catch(() => ({ status: res.status }));
+    } catch (e) {
+      console.error("gateway lapse sweep failed:", e);
+      gatewayLapse = { error: String((e as Error)?.message || e) };
+    }
+
     return new Response(
-      JSON.stringify({ checked: stale?.length || 0, renewed, lapsed, failed }),
+      JSON.stringify({ checked: stale?.length || 0, renewed, lapsed, failed, gatewayLapse }),
       { status: 200, headers: jsonHeaders },
     );
   } catch (e) {
