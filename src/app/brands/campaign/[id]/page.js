@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
+import { invokeAuthed } from "@/lib/invokeAuthed";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import RatingModal from "@/components/RatingModal";
@@ -60,37 +61,6 @@ const CreateCampaignDialog = dynamic(
 // explaining exactly what it refused and why — "Escrow is not held", "Payout
 // already in state 'scheduled'", "forbidden" — so reading the body turns an
 // unactionable popup into the actual reason.
-// Invoke a verify_jwt-gated edge function, refreshing the session once if the
-// token turns out to be dead.
-//
-// Those functions do their own supabase.auth.getUser(token). getSession()
-// hands back a STORED session without proving the access token is still live,
-// so a tab left open long enough posts an expired token and the function
-// answers 401 {"error":"unauthorized"} — which in the UI is indistinguishable
-// from "not signed in", and lands on a money action. Confirmed from a real
-// 401 on escrow-release: the response carried OUR function's CORS headers, so
-// the request reached it and getUser rejected the token.
-//
-// Returns invoke's { data, error }, or { needsLogin: true } when even a
-// refresh cannot produce a live token.
-async function invokeAuthed(supabase, fn, body) {
-  const send = (token) =>
-    supabase.functions.invoke(fn, { body, headers: { Authorization: `Bearer ${token}` } });
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return { needsLogin: true };
-
-  const first = await send(session.access_token);
-  // supabase-js collapses non-2xx into a generic message, so branch on the
-  // status from error.context rather than trying to read the text.
-  if (first?.error?.context?.status !== 401) return first;
-
-  const { data: refreshed } = await supabase.auth.refreshSession();
-  const token = refreshed?.session?.access_token;
-  if (!token) return { needsLogin: true };
-  return send(token);
-}
-
 async function readFnError(err, fallback) {
   try {
     const body = await err?.context?.json?.();

@@ -13,6 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import { PLAN_IDS, PLAN_PRICING, PLAN_STRIPE_PRICES, PLAN_RAZORPAY_IDS, FEATURE_GROUPS, FEATURE_MATRIX, formatFeatureValue } from "@/lib/plans";
 import { getEffectivePlan, isSubscribed, getSubscriptionStatus, FREE_BARTER_APPLICATIONS } from "@/lib/plans";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
+import { invokeAuthed } from "@/lib/invokeAuthed";
 import { useTranslations } from "next-intl";
 
 // User-facing label / tagline / description live in the InfluencerPricing
@@ -212,7 +213,7 @@ export default function PricingPage() {
     setRenewalFetching(true);
     (async () => {
       try {
-        const { data: hist } = await supabase.functions.invoke("subscription-history", { body: { userId: user.id } });
+        const { data: hist } = await invokeAuthed(supabase, "subscription-history", { userId: user.id });
         const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
         const ts = invoices.reduce((max, i) => (i?.next_charge_at ? Math.max(max, i.next_charge_at) : max), 0);
         if (!cancelled && ts > 0) setRealRenewalTs(ts);
@@ -317,9 +318,7 @@ export default function PricingPage() {
         let invoiceUrl = null;
         try {
           if (userId) {
-            const { data: hist } = await supabase.functions.invoke("subscription-history", {
-              body: { userId },
-            });
+            const { data: hist } = await invokeAuthed(supabase, "subscription-history", { userId });
             const invoices = Array.isArray(hist?.invoices) ? hist.invoices : [];
             const forSub = capturedSubscription
               ? invoices.filter((i) => i.subscription_id === capturedSubscription)

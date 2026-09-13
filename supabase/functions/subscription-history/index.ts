@@ -11,7 +11,9 @@
 // fetch invoices per matching subscription. Page through up to 1000
 // subscriptions per gateway — plenty for any single creator's lifetime.
 //
-// Body: { userId: string }
+// Body: { userId: string } — but see the auth note below: for a normal
+// caller this is IGNORED and the id comes from their JWT. It is honoured
+// only for a service-role caller (reconcile-subscription).
 // Returns:
 //   { invoices: Invoice[] }
 //
@@ -20,8 +22,29 @@
 //   created_at, paid_at, pdf_url, hosted_url, subscription_id
 // }
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
+import { log } from "../_shared/log.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+
+// True only for a caller holding the service role. Compares the key first,
+// then falls back to exercising a service-role-only API — the string
+// compare alone fails when the deployed env value and the caller's key are
+// different representations of the same role, which is how the first cut of
+// this gate locked reconcile-subscription out.
+async function isServiceRoleCaller(bearer: string): Promise<boolean> {
+  if (!bearer) return false;
+  if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+  try {
+    const probe = createClient(Deno.env.get("SUPABASE_URL")!, bearer, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 });
+    return !error;
+  } catch {
+    return false;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,12 +136,64 @@ serveWithLogging("subscription-history", async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "userId is required" }), {
-        status: 200,
+    const body = await req.json().catch(() => ({}));
+    const requestedId = String(body?.userId || "");
+
+    // Whose history this is.
+    //
+    // This used to be whatever `userId` the body said, with no auth at all —
+    // so anyone holding a user id could read that person's billing history:
+    // amounts, plans, invoice links. The ids are not secret (they appear in
+    // notification payloads and admin exports), so this was effectively open.
+    //
+    // Now the id comes from the caller's own JWT and the body is ignored.
+    // The one exception is a service-role caller — reconcile-subscription
+    // runs server-to-server on behalf of a user and has no user token — and
+    // the service role key never reaches a browser.
+    const token = (req.headers.get("authorization") || "").replace("Bearer ", "").trim();
+    if (!token) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
         headers: jsonHeaders,
       });
+    }
+
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    let userId: string;
+
+    if (await isServiceRoleCaller(token)) {
+      if (!requestedId) {
+        return new Response(JSON.stringify({ error: "userId is required" }), {
+          status: 200,
+          headers: jsonHeaders,
+        });
+      }
+      userId = requestedId;
+    } else {
+      const authed = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey, {
+        auth: { persistSession: false },
+      });
+      const { data: userRes, error: userErr } = await authed.auth.getUser(token);
+      const callerId = userRes?.user?.id || "";
+      if (userErr || !callerId) {
+        // Also the path a caller lands on when they send the publishable key
+        // instead of a session token — which is what an anonymous prober has.
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: 401,
+          headers: jsonHeaders,
+        });
+      }
+      // Not an error — the clients all pass their own id, so a mismatch is
+      // either a stale token or someone probing. Serve the caller's own
+      // history either way, and record the mismatch.
+      if (requestedId && requestedId !== callerId) {
+        log.persistWarn("subscription_history.id_mismatch", {
+          fn: "subscription-history",
+          userId: callerId,
+          requestedId,
+        });
+      }
+      userId = callerId;
     }
 
     const out: any[] = [];

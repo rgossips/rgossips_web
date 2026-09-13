@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { invokeAuthed } from "@/lib/invokeAuthed";
 import { PLAN_PRICING } from "@/lib/plans";
 import { useTranslations } from "next-intl";
 
@@ -146,8 +147,8 @@ const PaymentMethods = ({ onBack }) => {
     if (!user?.id) return;
     setInvoicesLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("subscription-history", {
-        body: { userId: user.id },
+      const { data, error } = await invokeAuthed(supabase, "subscription-history", {
+        userId: user.id,
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
