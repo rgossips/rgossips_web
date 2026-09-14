@@ -1,16 +1,17 @@
 // Brand-side payout release. Called when the brand clicks "Accept &
-// Release Payment" on a live_submitted application. We don't fire the
-// RazorpayX payout here — instead we *schedule* it based on the
-// creator's plan tier:
-//   Starter → +7 days
-//   Pro     → +3 days
-//   Elite   → now (next cron tick)
-// payouts-cron picks up scheduled rows whose payout_release_at <= now()
-// and actually fires the payout API call.
+// Release Payment" on a live_submitted application. Nothing is paid here:
+// the payout is queued for an ADMIN, who pays manually from the admin
+// portal's /dashboard/payouts queue. The creator's plan sets
+// payout_release_at, the earliest date the admin should pay:
+//   Free / Starter → +7 days
+//   Pro            → +3 days
+//   Elite          → now
+// There is no automated payout rail. payouts-cron (RazorpayX) was
+// unscheduled in migration 032 and its function removed in 2026-09.
 //
-// If the creator has no verified payment method, we park the payout in
+// If the creator has no usable payment method, we park the payout in
 // 'pending_creator_info' instead — register-payout-method auto-resumes
-// it when a verified method gets added.
+// it when one gets added.
 //
 // Body: { applicationId }
 
@@ -102,8 +103,8 @@ serveWithLogging("escrow-release", async (req) => {
     // valid UPIs they added.
     //
     // `scheduled` here means "ready for the admin payouts queue", not "will be
-    // paid automatically" — payouts-cron has been unscheduled since migration
-    // 032 and is not coming back on its own.
+    // paid automatically" — payouts-cron was unscheduled in migration 032 and
+    // the function itself has since been removed.
     const { data: methods } = await supabase
       .from("payment_methods")
       .select("id, validation_status, is_primary")

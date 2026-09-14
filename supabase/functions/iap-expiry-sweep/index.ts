@@ -10,8 +10,7 @@
 // subscriber whose renewal simply succeeded is corrected back to active; one
 // who actually lapsed loses the plan.
 //
-// Run on a schedule (hourly is ample) via pg_cron or an external scheduler,
-// the same way payouts-cron is driven.
+// Run on a schedule (hourly is ample) via pg_cron — see migration 065.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
@@ -53,7 +52,7 @@ serveWithLogging("iap-expiry-sweep", async (req) => {
     // Privileged: this mutates entitlements for arbitrary users, so it must
     // never be callable with an ordinary user's token.
     //
-    // Two accepted callers, matching how payouts-cron is driven:
+    // Two accepted callers:
     //   - pg_cron, via the x-cron-secret shared secret. Postgres cannot
     //     conveniently hold a service-role JWT, and inlining one in cron.job
     //     would put the platform's highest-privilege credential in a table.

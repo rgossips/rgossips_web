@@ -415,7 +415,8 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
 // ── RazorpayX payout handler ───────────────────────────────────────────
 // Maps payout.processed → application.status='completed', payout.failed /
 // payout.reversed → payout_status='failed' for admin retry. We key on
-// notes.application_id (set by payouts-cron / admin-escrow-resolve) —
+// notes.application_id (set by admin-escrow-resolve; the retired payouts-cron
+// set it too, so historical payouts carry it) —
 // reference_id is also the bare application UUID but notes is the more
 // robust contract since RazorpayX trims/normalises reference_id.
 async function handlePayoutEvent(type: string, payout: any) {

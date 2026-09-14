@@ -105,9 +105,6 @@ verify_jwt = false
 [functions.notifications]
 verify_jwt = false
 
-[functions.payouts-cron]
-verify_jwt = true
-
 [functions.public-media-kit]
 verify_jwt = false
 

@@ -64,7 +64,7 @@ const STORE_GATEWAYS = new Set(["apple_iap", "google_play"]);
 serveWithLogging("subscription-lapse-sweep", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Same two callers as payouts-cron and iap-expiry-sweep:
+  // Same two callers as iap-expiry-sweep:
   //   - pg_cron, via the x-cron-secret shared secret. Postgres cannot
   //     conveniently hold a service-role JWT, and inlining one in cron.job
   //     would put the platform's highest-privilege credential in a table.

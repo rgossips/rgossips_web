@@ -73,7 +73,7 @@ describe("TR-12 / F-14 — the gated-off secondary gateway is still deployed", (
 describe("TR-12 / F-13 — payout endpoints outside current policy", () => {
   // CLAUDE.md: "RazorpayX removed 2026-07 in favour of manual payouts."
   // The strategy asks: are the endpoints refusing, or merely unused?
-  const PAYOUT_FNS = ["razorpayx-test-balance", "payouts-cron"];
+  const PAYOUT_FNS = ["razorpayx-test-balance"];
 
   it.each(PAYOUT_FNS)("%s: deployment status recorded for the register", async (name) => {
     const r = await probeDeployed(name);
@@ -82,7 +82,12 @@ describe("TR-12 / F-13 — payout endpoints outside current policy", () => {
     expect(typeof r.status).toBe("number");
   });
 
-  it("payouts-cron refuses an unauthenticated caller", async () => {
+  // Decision E-3 taken for payouts-cron (2026-09): retired. It was unscheduled
+  // in migration 032, but stayed DEPLOYED — able to fire real RazorpayX
+  // payouts for anyone holding CRON_SECRET, which is committed in migration
+  // 025. Removed from the repo; this asserts it is also gone from the project,
+  // so a stale deployment (or a re-deploy of an old checkout) fails the suite.
+  it("payouts-cron is no longer deployed", async () => {
     const res = await fetch(`${URL_BASE}/functions/v1/payouts-cron`, {
       method: "POST",
       headers: {
@@ -92,14 +97,8 @@ describe("TR-12 / F-13 — payout endpoints outside current policy", () => {
       },
       body: "{}",
     });
-    const text = await res.text();
-    // It is deployed with verify_jwt = true, so the platform rejects before the
-    // function body runs. Anything else would mean anon can trigger a payout run.
-    const refused = res.status >= 400 || /auth|unauthor|forbidden/i.test(text);
-    expect({ fn: "payouts-cron", refusesAnon: refused }).toEqual({
-      fn: "payouts-cron",
-      refusesAnon: true,
-    });
+    await res.text();
+    expect({ fn: "payouts-cron", status: res.status }).toEqual({ fn: "payouts-cron", status: 404 });
   });
 });
 

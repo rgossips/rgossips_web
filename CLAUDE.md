@@ -463,6 +463,14 @@ Mobile needs nothing: `invokeFn` already attaches the JWT and retries on 401.
   validation vendor is offline. The same predicate governs the auto-resume in
   register-payout-method, which previously required `success && isPrimary` and
   so never fired either.
+- **`payouts-cron` retired (2026-09).** Unscheduled in migration 032 but it
+  stayed deployed, still able to fire real RazorpayX payouts for anyone with
+  `CRON_SECRET` (committed in migration 025). Function folder + config.toml
+  entry removed; `__integration__/tr12-dormant-paths.test.js` now asserts it
+  returns 404. `CRON_SECRET` is still used by `iap-expiry-sweep` →
+  `subscription-lapse-sweep`, so rotating it means updating that cron job too.
+  Do not reintroduce an automated payout job without revisiting what
+  `scheduled` means — it is the ADMIN queue now.
 - **`/influencer/profile/payments` is a redirect, not a page.** PaymentMethods
   is a VIEW inside `/influencer/profile`; the route exists only because
   escrow-release, razorpay-webhook and admin-escrow-resolve all link to it from
