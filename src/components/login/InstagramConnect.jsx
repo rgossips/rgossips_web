@@ -118,6 +118,13 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
         if (mountedRef.current) setError(t("errors.codeAlreadyUsed"));
         return;
       }
+      // Instagram codes are short-lived: a creator who lingers on the consent
+      // screen (or reopens an old callback tab) gets "has expired". Same fix
+      // as a used code — start Connect again — so same treatment.
+      if (/authorization code has expired/i.test(err?.message || "")) {
+        if (mountedRef.current) setError(t("errors.codeExpired"));
+        return;
+      }
       reportError("instagram", "instagram.connect.failed", err);
       if (mountedRef.current) {
         setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.connectFailed"));

@@ -428,6 +428,7 @@
       "errors": {
         "connectFailed": "Failed to connect Instagram",
         "codeAlreadyUsed": "That Instagram link has already been used. Tap Connect Instagram to try again.",
+        "codeExpired": "That Instagram link expired before we could use it. Tap Connect Instagram to try again.",
         "network": "We couldn't reach RGossips. Check your internet connection and try again.",
         "verifyFailed": "Failed to verify Instagram",
         "registeredAsRoleSignin": "This Instagram is registered as {source}. Please sign in as {source} instead.",

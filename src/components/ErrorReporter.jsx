@@ -17,9 +17,26 @@ import { reportError, setErrorReporterUserId } from "@/lib/reportError";
 // Failures that are real but not ours, and carry nothing actionable. Dropped
 // here (global handlers only — an explicit reportError() in a catch block is
 // always a deliberate report and is never filtered).
+// Code injected by a browser extension — its frames live under the extension's
+// own scheme. It runs on our pages but isn't ours, and one user's broken
+// extension can flood error_logs (33 "reading 'M_ID'" rows from a single
+// Chrome extension in half an hour).
+const EXTENSION_SCHEME = /(chrome|moz|safari|safari-web|ms-browser)-extension:\/\//i;
+
+function fromBrowserExtension(file, stack) {
+  if (EXTENSION_SCHEME.test(String(file || ""))) return true;
+  const s = String(stack || "");
+  if (!EXTENSION_SCHEME.test(s)) return false;
+  // Only drop it when the error ORIGINATES in the extension (top frame), so a
+  // real bug of ours that merely passes through an extension hook still reports.
+  const firstFrame = s.split("\n").find((line) => /^\s*at\s|@/.test(line)) || "";
+  return EXTENSION_SCHEME.test(firstFrame);
+}
+
 function isIgnorableWindowError(e) {
   const file = String(e?.filename || "");
   const message = String(e?.message || e?.error?.message || "");
+  if (fromBrowserExtension(file, e?.error?.stack)) return true;
   // Instagram / Facebook's Android in-app browser injects its own scripts
   // (iabjs://navigation_performance_logger_android, …) whose bridge throws
   // "Java object is gone" when the WebView tears down mid-navigation.
@@ -35,6 +52,7 @@ function isIgnorableRejection(reason) {
   // An AbortController fired — navigation or unmount cancelled an in-flight
   // request. That is the intended outcome, not a failure.
   if (reason?.name === "AbortError") return true;
+  if (fromBrowserExtension(null, reason?.stack)) return true;
   return /signal is aborted|the (user|operation) aborted/i.test(String(reason?.message || reason || ""));
 }
 
