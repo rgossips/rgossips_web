@@ -35,11 +35,6 @@ const DESKTOP_NAV_ITEMS = [
   { key: "profile", icon: <User size={20} />, href: "/influencer/profile" },
 ];
 
-// The subset a logged-out visitor can actually open. The campaign
-// marketplace is public (see ProtectedRoute); every other tab bounces to
-// /login, and offering someone a tab that only rejects them is worse than
-// not offering it.
-const PUBLIC_NAV_KEYS = new Set(["campaigns"]);
 
 const NOTIF_ICON = {
   welcome: <UserPlus size={16} className="text-purple-500" />,
@@ -211,11 +206,13 @@ export const DesktopNavbar = () => {
           <Image src={logo} alt="logo" height={200} width={200} className="cursor-pointer" />
         </Link>
       </div>
+      {/* No menu for logged-out visitors. Every tab but Campaigns bounces them
+          to /login, and they are already on the campaign pages — the only ones
+          a visitor can reach — so a lone "Campaigns" tab pointing at the page
+          they are on is noise. The div stays so the grid keeps the logo left
+          and the Log in / Join buttons right. */}
       <div className="flex items-center gap-2">
-        {(user
-          ? DESKTOP_NAV_ITEMS
-          : DESKTOP_NAV_ITEMS.filter((i) => PUBLIC_NAV_KEYS.has(i.key))
-        ).map((item) => {
+        {(user ? DESKTOP_NAV_ITEMS : []).map((item) => {
           const isActive =
             item.href === "/influencer"
               ? pathname === "/influencer"

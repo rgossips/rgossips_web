@@ -221,7 +221,7 @@ export const FilterContent = ({
               className="h-11 bg-slate-50 border-none rounded-xl text-sm font-medium"
             />
           )}
-          <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+          <div className="flex flex-wrap gap-2 pb-1">
             {visibleLocations.map((name) => {
               const isSelected = selectedLocations?.includes(name);
               return (
@@ -259,7 +259,7 @@ export const FilterContent = ({
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+          <div className="flex flex-wrap gap-2 pb-1">
             {brands.map((name) => {
               const isSelected = selectedBrands?.includes(name);
               return (
