@@ -227,3 +227,6 @@ verify_jwt = false
 # a usable JWT (failed sign-in, sign-up, Instagram connect). The function
 # clamps every field, rate-limits per IP, and always answers 200.
 verify_jwt = false
+
+[functions.admin-cancel-subscription]
+verify_jwt = false
