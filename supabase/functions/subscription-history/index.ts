@@ -26,6 +26,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { log } from "../_shared/log.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { unverifiedJwtRole } from "../_shared/jwt.ts";
 
 // True only for a caller holding the service role. Compares the key first,
 // then falls back to exercising a service-role-only API — the string
@@ -35,6 +36,14 @@ import { serveWithLogging } from "../_shared/serve.ts";
 async function isServiceRoleCaller(bearer: string): Promise<boolean> {
   if (!bearer) return false;
   if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+  // Nearly every caller is a creator's own session (or, from a stale client,
+  // the publishable key). Neither can be the service role, and probing the
+  // admin API with them is a guaranteed 401 — one wasted Auth request per
+  // plan-card load, visible in the API logs. Rule them out without the call.
+  // This can only ever say "no": a token claiming service_role still has to
+  // pass the probe below.
+  const role = unverifiedJwtRole(bearer);
+  if (role === "authenticated" || role === "anon" || bearer.startsWith("sb_publishable_")) return false;
   try {
     const probe = createClient(Deno.env.get("SUPABASE_URL")!, bearer, {
       auth: { persistSession: false, autoRefreshToken: false },

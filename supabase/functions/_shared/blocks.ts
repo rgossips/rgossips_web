@@ -16,6 +16,7 @@
 // showing content the policy says must be hidden.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { unverifiedJwtRole } from "./jwt.ts";
 
 /**
  * Ids the viewer must not see, in either direction.
@@ -64,7 +65,11 @@ export async function resolveViewerId(
 ): Promise<string | null> {
   const authHeader = req.headers.get("authorization") || "";
   const jwt = authHeader.replace("Bearer ", "").trim();
-  if (jwt) {
+  // Only a signed-in user's session token can resolve to a user. The web app
+  // calls these functions with the publishable key, for which getUser() is a
+  // guaranteed 403 — skip that round trip. The peek decides whether to ASK
+  // Auth; getUser() below is still what proves the token.
+  if (jwt && unverifiedJwtRole(jwt) === "authenticated") {
     try {
       const { data } = await supabase.auth.getUser(jwt);
       if (data?.user?.id) return data.user.id;

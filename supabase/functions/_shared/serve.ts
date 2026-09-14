@@ -31,6 +31,23 @@ const FALLBACK_CORS = {
 
 type Handler = (req: Request) => Response | Promise<Response>;
 
+// How long a browser may reuse a CORS preflight. Without it every POST from
+// the web app is preceded by its own OPTIONS round trip — 11% of all API
+// traffic in a sampled 8 minutes, mostly ahead of the polled `notifications`
+// and `chat` calls. Browsers clamp this (Chrome to 2h, Firefox to 24h), so
+// asking for 24h simply gets each browser's maximum.
+const PREFLIGHT_MAX_AGE = "86400";
+
+// Adds Access-Control-Max-Age to a successful preflight response unless the
+// function already set one. Built as a new Response because a handler's
+// headers object may be immutable.
+function withPreflightCache(req: Request, res: Response): Response {
+  if (req.method !== "OPTIONS" || res.status >= 400 || res.headers.has("Access-Control-Max-Age")) return res;
+  const headers = new Headers(res.headers);
+  headers.set("Access-Control-Max-Age", PREFLIGHT_MAX_AGE);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 export function serveWithLogging(fn: string, handler: Handler) {
   Deno.serve(async (req: Request) => {
     // Correlates the log line with the response, and with anything the
@@ -44,7 +61,7 @@ export function serveWithLogging(fn: string, handler: Handler) {
     }
 
     try {
-      const res = await handler(req);
+      const res = withPreflightCache(req, await handler(req));
 
       if (res.status >= 400) {
         // Clone before reading: consuming the original body would send an
