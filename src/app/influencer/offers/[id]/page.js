@@ -53,7 +53,7 @@ import AlertPopup from "@/components/AlertPopup";
 import CreatorAuthModal from "@/components/auth/CreatorAuthModal";
 import UpgradeRequiredModal from "@/components/UpgradeRequiredModal";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
-import { FREE_BARTER_APPLICATIONS } from "@/lib/plans";
+import { FREE_BARTER_APPLICATIONS, isSubscribed } from "@/lib/plans";
 import { campaignBudgetDisplay } from "@/utils/campaignBudget";
 
 /* ─── Fetch campaign from DB ─── */
@@ -876,8 +876,6 @@ export default function CampaignDetailsPage() {
   // Free applications cover barter only. `hybrid` is NOT barter — it
   // carries cash — and apply-campaign draws the line in the same place.
   const isBarter = String(campaign.campaignType || "").toLowerCase() === "barter";
-  // Show the allowance to a free creator BEFORE they commit to the form.
-  const showFreeNote = !freeApps.subscribed && freeApps.known && !hasLiveApplication;
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sans lg:mt-20">
@@ -1082,15 +1080,6 @@ export default function CampaignDetailsPage() {
               <ActiveSidebar
                 campaign={campaign}
                 onApply={isActive && !hasLiveApplication ? requestApply : null}
-                freeNote={
-                  showFreeNote ? (
-                    <FreeAllowanceNote
-                      isBarter={isBarter}
-                      remaining={freeApps.remaining ?? 0}
-                      campaignType={campaign.campaignType}
-                    />
-                  ) : null
-                }
                 appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
               />
@@ -1111,15 +1100,6 @@ export default function CampaignDetailsPage() {
               <p className="text-[11px] font-bold leading-tight">
                 {campaign.inviteBrandName || campaign.brandName} invited you — apply below
               </p>
-            </div>
-          )}
-          {showFreeNote && (
-            <div className="mb-2">
-              <FreeAllowanceNote
-                isBarter={isBarter}
-                remaining={freeApps.remaining ?? 0}
-                campaignType={campaign.campaignType}
-              />
             </div>
           )}
           <button
@@ -1355,42 +1335,7 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-// What a free creator is working with, shown next to Apply rather than
-// only after they hit the wall. Two shapes, because the two limits fail
-// differently: a paid campaign is closed to them no matter how many
-// applications they have left, so the count would be misleading there.
-function FreeAllowanceNote({ isBarter, remaining, campaignType }) {
-  const t = useTranslations("InfluencerOffersId");
-  const blocked = !isBarter;
-  const out = remaining <= 0;
-  return (
-    <div
-      className={`flex items-start gap-2 rounded-xl px-3 py-2 border ${
-        blocked || out
-          ? "bg-amber-50 border-amber-200"
-          : "bg-purple-50 border-purple-100"
-      }`}
-    >
-      <span className={`mt-0.5 shrink-0 ${blocked || out ? "text-amber-600" : "text-purple-600"}`}>
-        {blocked || out ? <Lock size={13} /> : <Sparkles size={13} />}
-      </span>
-      <p className={`text-[11px] leading-snug font-semibold ${blocked || out ? "text-amber-800" : "text-purple-800"}`}>
-        {blocked
-          ? t("freeNote.paidCampaign", {
-              kind:
-                String(campaignType || "").toLowerCase() === "hybrid"
-                  ? t("freeNote.kindHybrid")
-                  : t("freeNote.kindPaid"),
-            })
-          : out
-            ? t("freeNote.exhausted")
-            : t("freeNote.remaining", { remaining })}
-      </p>
-    </div>
-  );
-}
-
-function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, freeNote }) {
+function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
   const t = useTranslations("InfluencerOffersId");
   return (
     <>
@@ -1415,7 +1360,6 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, freeNote }) 
               </div>
             </div>
           )}
-          {freeNote && <div className="hidden lg:block mb-2">{freeNote}</div>}
           <button
             onClick={onApply}
             className="hidden lg:flex w-full items-center justify-center gap-2 h-14 rounded-2xl text-white font-bold text-sm shadow-lg shadow-pink-100 bg-gradient-to-r from-[#9810FA] to-[#E60076] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
@@ -1902,7 +1846,9 @@ const SPECIAL_STATUSES = {
 // the application. No counter-offer round exists by design.
 function OfferResponseCard({ campaign, refetch }) {
   const t = useTranslations("InfluencerOffersId");
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  // Set when a free creator tries to take a PAID campaign forward.
+  const [needsPlan, setNeedsPlan] = useState(false);
   const supabase = createClient();
   const [busy, setBusy] = useState(null); // "accept" | "withdraw" | null
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
@@ -1911,6 +1857,19 @@ function OfferResponseCard({ campaign, refetch }) {
 
   const respond = async (nextStatus) => {
     if (!user?.id || !campaign?.applicationId) return;
+    // Many free creators applied to paid campaigns before the barter-only
+    // limit existed. Accepting the offer is the step that commits the
+    // brand to paying into escrow, so it is where the limit bites for
+    // them. Withdrawing is never blocked. update-application-status
+    // enforces the same rule; this just says so before the round trip.
+    if (
+      nextStatus === "offer_accepted" &&
+      !isSubscribed(profile) &&
+      String(campaign?.campaignType || "").toLowerCase() !== "barter"
+    ) {
+      setNeedsPlan(true);
+      return;
+    }
     setBusy(nextStatus === "offer_accepted" ? "accept" : "withdraw");
     try {
       const { data, error } = await supabase.functions.invoke("update-application-status", {
@@ -1920,6 +1879,12 @@ function OfferResponseCard({ campaign, refetch }) {
           status: nextStatus,
         },
       });
+      // The server refuses the same case; show the upgrade prompt rather
+      // than a raw error if the client check was bypassed or stale.
+      if (data?.error === "subscription_required") {
+        setNeedsPlan(true);
+        return;
+      }
       if (error || data?.error) {
         setPopup(error?.message || data?.error || t("offer.updateError"));
         return;
@@ -1932,6 +1897,11 @@ function OfferResponseCard({ campaign, refetch }) {
 
   return (
     <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl space-y-3">
+      <UpgradeRequiredModal
+        reason={needsPlan ? "continue_paid" : null}
+        campaignType={campaign?.campaignType}
+        onClose={() => setNeedsPlan(false)}
+      />
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-black text-sm shrink-0">₹</div>
         <div>

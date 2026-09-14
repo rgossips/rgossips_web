@@ -26,7 +26,12 @@ export function UpgradeRequiredModal({ reason, remaining = 0, campaignType, onCl
   const t = useTranslations("UpgradeRequired");
   if (!reason) return null;
 
-  const isPaidCampaign = reason === "paid_campaign";
+  // continue_paid — a free creator who applied to a paid campaign before
+  //                 the barter-only limit existed, now trying to take it
+  //                 forward. Not "your free applications cover barter":
+  //                 they already applied; what they need is a plan.
+  const isContinue = reason === "continue_paid";
+  const isPaidCampaign = reason === "paid_campaign" || isContinue;
   const from = PLAN_PRICING?.[PLAN_IDS.STARTER]?.monthly;
 
   return (
@@ -50,10 +55,12 @@ export function UpgradeRequiredModal({ reason, remaining = 0, campaignType, onCl
             {isPaidCampaign ? <Lock size={26} /> : <Crown size={26} />}
           </div>
           <h2 className="mt-4 text-lg font-black leading-tight">
-            {isPaidCampaign ? t("paid.title") : t("quota.title")}
+            {isContinue ? t("continue.title") : isPaidCampaign ? t("paid.title") : t("quota.title")}
           </h2>
           <p className="mt-2 text-sm text-white/90 leading-relaxed">
-            {isPaidCampaign
+            {isContinue
+              ? t("continue.body")
+              : isPaidCampaign
               ? t("paid.body", {
                   limit: FREE_BARTER_APPLICATIONS,
                   kind:
@@ -89,7 +96,7 @@ export function UpgradeRequiredModal({ reason, remaining = 0, campaignType, onCl
           {/* A creator blocked by campaign TYPE still has free applications to
               spend — point them at the ones they can use. Someone out of quota
               has nowhere useful to go but the plans page. */}
-          {isPaidCampaign && remaining > 0 ? (
+          {isPaidCampaign && !isContinue && remaining > 0 ? (
             <Link
               href="/influencer/campaigns?type=barter"
               className="mt-2 w-full flex items-center justify-center py-3 rounded-2xl text-[13px] font-bold text-purple-700 border border-purple-200 hover:bg-purple-50 cursor-pointer"

@@ -5174,6 +5174,10 @@
     "ctaFrom": "See plans — from ₹{price}/month",
     "cta": "See plans",
     "browseBarter": "{remaining, plural, one {Browse barter campaigns (# free left)} other {Browse barter campaigns (# free left)}}",
-    "notNow": "Not now"
+    "notNow": "Not now",
+    "continue": {
+      "title": "Subscribe to continue",
+      "body": "As this is a paid campaign, you will have to subscribe to a plan to continue."
+    }
   }
 }

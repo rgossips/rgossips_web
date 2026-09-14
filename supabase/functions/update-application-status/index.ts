@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { effectivePlan, isBarterCampaign } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -161,6 +162,44 @@ serveWithLogging("update-application-status", async (req) => {
       if (!allowedFrom) return ok({ error: "Influencers cannot set this status" });
       if (!allowedFrom.includes(previousStatus || "")) {
         return ok({ error: `Cannot move from '${previousStatus}' to '${status}'` });
+      }
+
+      // Free creators cannot take a PAID campaign forward.
+      //
+      // apply-campaign refuses a new application, but 70 free creators
+      // applied to paid campaigns before the 3-barter limit existed. Their
+      // applications are still open, and accepting a brand's offer is the
+      // step that commits the brand to paying into escrow — so it is where
+      // the limit has to bite for them.
+      //
+      // Only `offer_accepted` is gated. Withdrawing must always work, and
+      // nothing after escrow is funded is gated at all: blocking a creator
+      // there would strand money a brand has already paid, or withhold a
+      // payout for work already delivered.
+      //
+      // Read failures fall OPEN, matching apply-campaign's profile read: we
+      // only refuse a creator we positively know is free.
+      if (status === "offer_accepted") {
+        const [{ data: prof }, { data: camp }] = await Promise.all([
+          supabase
+            .from("influencer_profiles")
+            .select("subscription_plan, plan_expires_at")
+            .eq("influencer_id", influencerId)
+            .maybeSingle(),
+          supabase
+            .from("campaigns")
+            .select("campaign_type")
+            .eq("campaign_id", app.campaign_id)
+            .maybeSingle(),
+        ]);
+        if (prof && camp && effectivePlan(prof) === "free" && !isBarterCampaign(camp.campaign_type)) {
+          return ok({
+            error: "subscription_required",
+            message:
+              "As this is a paid campaign, you will have to subscribe to a plan to continue.",
+            campaignType: camp.campaign_type || null,
+          });
+        }
       }
     } else {
       // Brand path — verify the brand owns the campaign
