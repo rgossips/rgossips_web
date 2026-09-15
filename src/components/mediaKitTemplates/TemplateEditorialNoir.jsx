@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readHeadlineStats, readInsights, readSocials, toServiceLabel } from "./shared";
 import { truncateText } from "@/lib/text";
 
 // Magazine-style editorial layout — Fraunces serif, paper background,
@@ -15,6 +15,9 @@ export default function TemplateEditorialNoir({ profile }) {
   const socials = readSocials(p.followers);
   const ti = useTranslations("MediaKitInsights");
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = ti("headline.last30", { days: ins.days });
   const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const paper = "#f4efe6";
@@ -135,10 +138,10 @@ export default function TemplateEditorialNoir({ profile }) {
             <Block>
               <SecTitle>{t("theNumberThatMatters")}</SecTitle>
               <div className="grid grid-cols-2" style={{ border: `2px solid ${ink}` }}>
-                <Fig label={t("stats.accountsReached")} value={formatCount(p.totalReach || p.totalImpressions)} sub={t("stats.last30Days")} />
-                <Fig label={t("stats.engagementRate")} value={`${p.engagementRate || 0}%`} sub={t("stats.categoryAvg")} hl />
-                <Fig label={t("stats.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("stats.organicDiscovery")} />
-                <Fig label={t("stats.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.avgPerPost")} last />
+                <Fig label={ti("headline.viewers")} value={hs.viewers.display} sub={last30} />
+                <Fig label={ti("headline.reelViews")} value={hs.reelViews.display} sub={last30} hl />
+                <Fig label={ti("headline.posts")} value={hs.posts.display} sub={ti("headline.postsSub")} />
+                <Fig label={ti("headline.likes")} value={hs.likes.display} sub={last30} last />
               </div>
               {!ins.hasData && staleText && <StaleNote text={staleText} />}
             </Block>

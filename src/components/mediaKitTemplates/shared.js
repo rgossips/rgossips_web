@@ -162,7 +162,31 @@ export function countryName(value) {
 // plus how fresh they are. Every template renders the same set, in its own
 // style, from this one reader. Labels live in the "MediaKitInsights" i18n
 // namespace so all five templates say the same thing.
-export const INSIGHT_KEYS = ["reelViews", "reach", "likes", "comments", "shares", "saves", "reposts"];
+// Reel views, viewers and likes are the headline stats (readHeadlineStats),
+// so the "Last 30 days" block carries the rest and nothing shows twice.
+export const INSIGHT_KEYS = ["comments", "shares", "saves", "reposts"];
+
+// The four headline stats every template shows in its performance slot:
+// Reel views, Viewers, Posts, Likes. Replaced Accounts Reached / Engagement
+// Rate / Non-Follower Reach / Interactions (2026-09) to match what
+// Instagram's own report leads with.
+//   reelViews, likes — 30-day totals from instagram_insights
+//   viewers          — 30-day unique reach (falls back to total_reach)
+//   posts            — lifetime post count (media_count)
+// A metric Instagram has not returned shows "—", never a fabricated 0.
+export function readHeadlineStats(profile) {
+  const raw = profile?.instagram_insights || profile?.instagramInsights || null;
+  const pick = (v) => (v === null || v === undefined || v === "" ? null : Number(v) || 0);
+  const reach = pick(raw?.reach) ?? pick(profile?.total_reach ?? profile?.totalReach);
+  const posts = pick(profile?.media_count ?? profile?.mediaCount);
+  const stat = (value) => ({ value, display: value === null ? "—" : formatCount(value) });
+  return {
+    reelViews: stat(pick(raw?.reelViews)),
+    viewers: stat(reach),
+    posts: stat(posts),
+    likes: stat(pick(raw?.likes)),
+  };
+}
 export const STALE_AFTER_DAYS = 30;
 
 export function readInsights(profile) {

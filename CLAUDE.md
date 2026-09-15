@@ -329,6 +329,16 @@ Instagram's own report uses). Verified live; don't revert.
   >30 days old or the token is invalid. Owner media-kit pages (web + mobile)
   raise the reconnect banner on an invalid token, else trigger a refresh.
   "Open for Collaborations" cards were removed from every template.
+- **Headline stats** (2026-09): Accounts Reached / Engagement Rate /
+  Non-Follower Reach / Interactions were replaced in every template by
+  **Reel views · Viewers · Posts · Likes** via `readHeadlineStats(profile)`
+  (both shared files; labels `MediaKitInsights.headline.*`). Reel views, viewers
+  and likes are 30-day totals (viewers falls back to `total_reach`), posts is
+  `media_count`; a metric Instagram hasn't returned shows "—". The "Last 30
+  days" block (`INSIGHT_KEYS`) now carries only comments/shares/saves/reposts so
+  nothing shows twice. Mobile Glass/Noir/Bento/Neo had only
+  Followers·Engagement·Posts: Engagement became Reel views and a second row adds
+  Viewers·Likes. `engagement_rate` is still computed and stored, just not shown.
 - Backfill 2026-09-16: 218 connected creators refreshed — 210 ok, 8 dead tokens.
 
 ## Never `.slice(0, N)` text — use truncateText (2026-09)

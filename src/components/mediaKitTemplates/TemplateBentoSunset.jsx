@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readHeadlineStats, readInsights, readSocials, toServiceLabel } from "./shared";
 import { truncateText } from "@/lib/text";
 
 // Bento-grid layout on a warm cream background with a sunset gradient
@@ -15,6 +15,9 @@ export default function TemplateBentoSunset({ profile }) {
   const socials = readSocials(p.followers);
   const ti = useTranslations("MediaKitInsights");
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = ti("headline.last30", { days: ins.days });
   const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const sunset = "linear-gradient(135deg,#ff9a56 0%,#ff5d73 50%,#c850c0 100%)";
@@ -92,18 +95,18 @@ export default function TemplateBentoSunset({ profile }) {
             </div>
           )}
 
-          {/* Engagement big tile */}
+          {/* Reel views big tile */}
           <div className="col-span-12 sm:col-span-4 rounded-[26px] p-6 text-white flex flex-col justify-center" style={{ background: sunset }}>
-            <div className={lbl} style={{ color: "rgba(255,255,255,.85)" }}>{t("engagement.label")}</div>
-            <div style={disp} className="font-extrabold text-[56px] leading-[.95] my-1">{p.engagementRate || 0}%</div>
-            <div className="text-[13px] opacity-90">{t("engagement.categoryAvg")}</div>
+            <div className={lbl} style={{ color: "rgba(255,255,255,.85)" }}>{ti("headline.reelViews")}</div>
+            <div style={disp} className="font-extrabold text-[44px] sm:text-[56px] leading-[.95] my-1 tabular-nums">{hs.reelViews.display}</div>
+            <div className="text-[13px] opacity-90">{last30}</div>
           </div>
           {/* 3 stats */}
           <div className={`${tile} col-span-12 sm:col-span-8 flex items-center`}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
-              <PStat lbl={t("stats.reached.label")} v={formatCount(p.totalReach || p.totalImpressions)} sub={t("stats.reached.sub")} disp={disp} muted={muted} />
-              <PStat lbl={t("stats.nonFollower.label")} v={`${p.nonFollowerReachPct}%`} sub={t("stats.nonFollower.sub")} disp={disp} muted={muted} />
-              <PStat lbl={t("stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.interactions.sub")} disp={disp} muted={muted} />
+              <PStat lbl={ti("headline.viewers")} v={hs.viewers.display} sub={last30} disp={disp} muted={muted} />
+              <PStat lbl={ti("headline.posts")} v={hs.posts.display} sub={ti("headline.postsSub")} disp={disp} muted={muted} />
+              <PStat lbl={ti("headline.likes")} v={hs.likes.display} sub={last30} disp={disp} muted={muted} />
             </div>
           </div>
 

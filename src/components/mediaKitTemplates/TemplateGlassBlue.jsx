@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readHeadlineStats, readInsights, readSocials, toServiceLabel } from "./shared";
 import { truncateText } from "@/lib/text";
 
 // Glass-Blue editorial template. Frosted panels stacked over a soft
@@ -15,6 +15,9 @@ export default function TemplateGlassBlue({ profile }) {
   const socials = readSocials(p.followers);
   const ti = useTranslations("MediaKitInsights");
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = ti("headline.last30", { days: ins.days });
   const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const grad = "linear-gradient(135deg,#1564d6 0%,#0ea5e9 55%,#06b6d4 100%)";
@@ -64,8 +67,8 @@ export default function TemplateGlassBlue({ profile }) {
           </div>
           <div className="flex border-t mt-5 pt-4" style={{ borderColor: "rgba(14,42,68,.10)" }}>
             <Stat n={formatCount(p.followers)} l={t("stats.followers")} />
-            <Stat n={formatCount(p.totalReach || p.totalImpressions)} l={t("stats.accountsReached")} />
-            <Stat n={`${p.engagementRate || 0}%`} l={t("stats.engagement")} last />
+            <Stat n={hs.viewers.display} l={ti("headline.viewers")} />
+            <Stat n={hs.reelViews.display} l={ti("headline.reelViews")} last />
           </div>
         </div>
 
@@ -75,15 +78,15 @@ export default function TemplateGlassBlue({ profile }) {
             <Label>{t("performance.label")}</Label>
             <div className="rounded-2xl p-5 text-white flex justify-between items-baseline flex-wrap gap-3 mb-3" style={{ background: grad, boxShadow: "0 18px 40px -20px rgba(21,100,214,.7)" }}>
               <div>
-                <div className="text-[11px] tracking-[.14em] uppercase font-bold opacity-90">{t("performance.engagementRate")}</div>
-                <div className="text-[46px] font-extrabold leading-none tracking-tight">{p.engagementRate || 0}%</div>
+                <div className="text-[11px] tracking-[.14em] uppercase font-bold opacity-90">{ti("headline.reelViews")}</div>
+                <div className="text-[36px] sm:text-[46px] font-extrabold leading-none tracking-tight tabular-nums">{hs.reelViews.display}</div>
               </div>
-              <div className="text-[13px] opacity-90">{t("performance.categoryAverage")}</div>
+              <div className="text-[13px] opacity-90">{last30}</div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <PStat label={t("performance.accountsReached")} value={formatCount(p.totalReach || p.totalImpressions)} sub={t("performance.accountsReachedSub")} />
-              <PStat label={t("performance.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("performance.nonFollowerReachSub")} />
-              <PStat label={t("performance.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.interactionsSub")} />
+              <PStat label={ti("headline.viewers")} value={hs.viewers.display} sub={last30} />
+              <PStat label={ti("headline.posts")} value={hs.posts.display} sub={ti("headline.postsSub")} />
+              <PStat label={ti("headline.likes")} value={hs.likes.display} sub={last30} />
             </div>
             {!ins.hasData && staleText && <StaleNote text={staleText} />}
           </div>

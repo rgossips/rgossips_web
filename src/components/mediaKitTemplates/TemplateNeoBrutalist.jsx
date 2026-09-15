@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readHeadlineStats, readInsights, readSocials, toServiceLabel } from "./shared";
 import { truncateText } from "@/lib/text";
 
 // Loud, blocky neo-brutalist look — hard black borders, offset shadows,
@@ -15,6 +15,9 @@ export default function TemplateNeoBrutalist({ profile }) {
   const socials = readSocials(p.followers);
   const ti = useTranslations("MediaKitInsights");
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = ti("headline.last30", { days: ins.days });
   const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const ink = "#0f0f0f";
@@ -122,10 +125,10 @@ export default function TemplateNeoBrutalist({ profile }) {
                 {t.rich("performance.headline", { em: (c) => <em className="not-italic px-2" style={{ background: pink, color: "#fff" }}>{c}</em>, br: () => <br /> })}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <BStat lbl={t("performance.stats.accountsReached.label")} v={formatCount(p.totalReach || p.totalImpressions)} sub={t("performance.stats.accountsReached.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl={t("performance.stats.engagementRate.label")} v={`${p.engagementRate || 0}%`} sub={t("performance.stats.engagementRate.sub")} hl bg={purple} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl={t("performance.stats.nonFollowerReach.label")} v={`${p.nonFollowerReachPct}%`} sub={t("performance.stats.nonFollowerReach.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
-                <BStat lbl={t("performance.stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.stats.interactions.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={ti("headline.viewers")} v={hs.viewers.display} sub={last30} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={ti("headline.reelViews")} v={hs.reelViews.display} sub={last30} hl bg={purple} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={ti("headline.posts")} v={hs.posts.display} sub={ti("headline.postsSub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
+                <BStat lbl={ti("headline.likes")} v={hs.likes.display} sub={last30} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
               </div>
               {!ins.hasData && staleText && <StaleNote text={staleText} mono={mono} ink={ink} />}
             </div>

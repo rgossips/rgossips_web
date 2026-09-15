@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Pencil, Check, X as XIcon, Instagram, Youtube, Facebook, MapPin, ExternalLink, Heart, MessageCircle, Camera } from "lucide-react";
 import logoIcon from "@/assets/logoIcon.png";
 import logo from "@/assets/logo2.png";
-import { formatCount, readProfile, readDemographics, readInsights, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readHeadlineStats, readInsights, toServiceLabel } from "./shared";
 
 // Original RGossips two-column media kit. Keeps the inline edit affordances
 // (bio + top reels) so this template doubles as the editor view.
@@ -16,6 +16,9 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
   const demo = readDemographics(p.demographics, p.location);
   const ti = useTranslations("MediaKitInsights");
   const ins = readInsights(profile);
+  // Reel views · Viewers · Posts · Likes — see readHeadlineStats.
+  const hs = readHeadlineStats(profile);
+  const last30 = ti("headline.last30", { days: ins.days });
   const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   return (
@@ -186,24 +189,24 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
               <p className="text-xl sm:text-2xl font-black text-slate-900 mb-4">{t.rich("performanceHeadline", { em: (c) => <span className="text-pink-500">{c}</span> })}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t("stats.accountsReached")}</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(p.totalReach || p.totalImpressions)}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{t("stats.last30Days")}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{ti("headline.viewers")}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tabular-nums">{hs.viewers.display}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{last30}</p>
                 </div>
                 <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white" style={{ background: "linear-gradient(135deg, #ec4899, #a855f7)" }}>
-                  <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">{t("stats.engagementRate")}</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black">{p.engagementRate || 0}%</p>
-                  <p className="text-[10px] text-white/70 mt-1">{t("stats.categoryAvg")}</p>
+                  <p className="text-[10px] font-bold text-white/80 uppercase tracking-wider mb-1">{ti("headline.reelViews")}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black tabular-nums">{hs.reelViews.display}</p>
+                  <p className="text-[10px] text-white/70 mt-1">{last30}</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t("stats.nonFollowerReach")}</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{p.nonFollowerReachPct}%</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{t("stats.organicDiscovery")}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{ti("headline.posts")}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tabular-nums">{hs.posts.display}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{ti("headline.postsSub")}</p>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t("stats.interactions")}</p>
-                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900">{formatCount(p.avgLikes + p.avgComments)}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{t("stats.avgPerPost")}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{ti("headline.likes")}</p>
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tabular-nums">{hs.likes.display}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{last30}</p>
                 </div>
               </div>
               {!ins.hasData && staleText && <StaleNote text={staleText} />}

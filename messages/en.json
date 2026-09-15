@@ -5180,7 +5180,15 @@
     "updated": "Updated {date}",
     "stale": "Analytics last updated {date} — may be out of date",
     "staleNoDate": "Analytics may be out of date",
-    "source": "Source: Instagram Insights"
+    "source": "Source: Instagram Insights",
+    "headline": {
+      "reelViews": "Reel views",
+      "viewers": "Viewers",
+      "posts": "Posts",
+      "likes": "Likes",
+      "last30": "Last {days} days",
+      "postsSub": "On Instagram"
+    }
   },
   "InstagramReconnectModal": {
     "title": "Your Instagram connection has expired",
