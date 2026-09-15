@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,7 @@ serveWithLogging("resolve-reel-thumbnails", async (req) => {
         mediaType: match?.media_type || "VIDEO",
         likes: match?.like_count || 0,
         comments: match?.comments_count || 0,
-        caption: (match?.caption || "").slice(0, 100),
+        caption: truncateText(match?.caption, 100),
       };
     });
 

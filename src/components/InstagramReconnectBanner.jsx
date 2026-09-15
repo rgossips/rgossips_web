@@ -1,96 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Instagram, Loader2, X, AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/utils/supabase/client";
+import { isInstagramTokenExpired } from "@/lib/instagramToken";
+import { useInstagramReconnect } from "@/hooks/useInstagramReconnect";
 
 export default function InstagramReconnectBanner() {
   const t = useTranslations("InstagramReconnectBanner");
-  const { user, instagramTokenMissing, setInstagramTokenMissing, refreshProfile, refreshInstagram } = useAuth();
-  const [connecting, setConnecting] = useState(false);
+  const { profile, instagramTokenMissing } = useAuth();
   const [dismissed, setDismissed] = useState(false);
-  const [error, setError] = useState("");
-  const supabase = createClient();
+  // Same flow as the reconnect popup — see useInstagramReconnect.
+  const { connecting, error, reconnect: handleReconnect } = useInstagramReconnect({
+    messages: { denied: t("denied"), failed: t("failed") },
+  });
+  const expired = instagramTokenMissing || isInstagramTokenExpired(profile);
 
-  useEffect(() => {
-    const handleMessage = async (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== "instagram-oauth") return;
-
-      if (event.data.error) {
-        setError(t("denied"));
-        setConnecting(false);
-        return;
-      }
-
-      if (event.data.code) {
-        await exchangeCode(event.data.code);
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  const exchangeCode = async (code) => {
-    setConnecting(true);
-    setError("");
-    try {
-      const redirectUri = `${window.location.origin}/instagram-callback`;
-      const { data, error: funcError } = await supabase.functions.invoke(
-        "instagram-connect",
-        { body: { code, redirectUri } }
-      );
-
-      if (funcError) throw new Error(funcError.message);
-      if (data?.error) throw new Error(data.error);
-
-      // Save the token to the profile
-      const { data: updateData, error: updateError } = await supabase.functions.invoke(
-        "update-profile",
-        {
-          body: {
-            userId: user.id,
-            table: "influencer_profiles",
-            instagramAccessToken: data.accessToken,
-            instagramTokenExpiresAt: data.tokenExpiresAt,
-          },
-        }
-      );
-      if (updateError) throw new Error(updateError.message);
-      if (updateData?.error) throw new Error(updateData.error);
-
-      setInstagramTokenMissing(false);
-      // Trigger Instagram data + analytics refresh, then reload profile
-      await refreshInstagram(user.id);
-    } catch (err) {
-      setError(err.message || t("failed"));
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  const handleReconnect = () => {
-    setError("");
-
-    // Use intermediate route to prevent mobile deep linking to Instagram app
-    const reconnectUrl = `/api/auth/instagram?mode=reconnect&popup=1`;
-
-    const width = 500;
-    const height = 650;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    window.open(
-      reconnectUrl,
-      "instagram-oauth",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-  };
-
-  if (!instagramTokenMissing || dismissed) return null;
+  if (!expired || dismissed) return null;
 
   return (
     <div className="mx-4 lg:mx-10 mb-4">

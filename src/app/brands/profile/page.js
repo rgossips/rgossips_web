@@ -35,6 +35,7 @@ import BrandAccountActionsModal from "@/components/brands/BrandAccountActionsMod
 import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
 import InfoBadge from "@/components/brands/InfoBadge";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
+import { truncateText } from "@/lib/text";
 
 // Cropper is heavy and only needed when user uploads a new logo — lazy-load it.
 const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
@@ -1121,7 +1122,7 @@ const BrandInfoModal = ({ profile, onClose, onSave }) => {
         </label>
         <textarea
           value={about}
-          onChange={(e) => setAbout(e.target.value.slice(0, 1000))}
+          onChange={(e) => setAbout(truncateText(e.target.value, 1000))}
           placeholder={t("brandInfoModal.aboutPlaceholder")}
           rows={4}
           className="w-full p-3.5 bg-gray-50 border border-gray-100 focus:border-purple-300 focus:bg-white rounded-xl text-sm font-bold text-gray-700 outline-none transition-all resize-none"

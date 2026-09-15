@@ -22,6 +22,7 @@
 // what stops the useful signal drowning in routine validation failures.
 
 import { log } from "./log.ts";
+import { truncateText } from "./text.ts";
 
 const FALLBACK_CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +69,7 @@ export function serveWithLogging(fn: string, handler: Handler) {
         // empty response to the caller.
         let body = "";
         try {
-          body = (await res.clone().text()).slice(0, 1000);
+          body = truncateText(await res.clone().text(), 1000);
         } catch {
           /* streamed or already-consumed body — the status is still useful */
         }

@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { truncateText } from "@/lib/text";
 
 // Fallback shown while featured_campaigns has no active rows.
 const FALLBACK_STAYS = [
@@ -88,7 +89,7 @@ export default function StayCarousel() {
               // Short description fed into the badge — trimmed so it fits
               // the pill without wrapping. Falls back to the campaign
               // category if no description is set.
-              description: (c.description || "").slice(0, 60) || c.category || t("brandCollab"),
+              description: truncateText(c.description, 60) || c.category || t("brandCollab"),
               location: c.location,
               imageUrl: c.bannerImage || c.brandLogo || "",
               priceType: c.priceType,

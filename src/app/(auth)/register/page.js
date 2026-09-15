@@ -53,7 +53,7 @@ import {
   RecaptchaVerifier,
 } from "firebase/auth";
 
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo2.png";
 import ErrorModal from "@/components/ErrorModal";
 
 // Mock API

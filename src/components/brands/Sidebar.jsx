@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo2.png";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import BrandHelpAndSupport from "@/components/brands/BrandHelpAndSupport";

@@ -3,7 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { truncateText } from "@/lib/text";
 
 // Bento-grid layout on a warm cream background with a sunset gradient
 // running through the hero / engagement tile / bars. Read-only.
@@ -12,6 +13,9 @@ export default function TemplateBentoSunset({ profile }) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ti = useTranslations("MediaKitInsights");
+  const ins = readInsights(profile);
+  const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const sunset = "linear-gradient(135deg,#ff9a56 0%,#ff5d73 50%,#c850c0 100%)";
   const ink = "#2b1d18";
@@ -49,7 +53,7 @@ export default function TemplateBentoSunset({ profile }) {
           <div className={`${tile} col-span-12 sm:col-span-5`}>
             <div className={lbl} style={{ color: muted }}>{t("about.label")}</div>
             <div style={disp} className="font-bold text-[24px] leading-tight" >
-              <span style={{ color: "#ff5d73" }}>"{(p.bio || "").split("\n")[0].slice(0, 70)}"</span>
+              <span style={{ color: "#ff5d73" }}>"{truncateText((p.bio || "").split("\n")[0], 70)}"</span>
               <span className="block mt-1" style={{ color: faint }}>{t("about.tagline")}</span>
             </div>
           </div>
@@ -102,6 +106,34 @@ export default function TemplateBentoSunset({ profile }) {
               <PStat lbl={t("stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.interactions.sub")} disp={disp} muted={muted} />
             </div>
           </div>
+
+          {/* Instagram 30-day totals */}
+          {ins.hasData && (
+            <div className={`${tile} col-span-12`}>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
+                <span className="text-[11px] tracking-[.16em] uppercase font-bold" style={{ color: muted }}>{ti("title", { days: ins.days })}</span>
+                {ins.rangeLabel && <span className="text-[12px] font-medium" style={{ color: faint }}>· {ins.rangeLabel}</span>}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                {ins.items.map((it, i) => (
+                  <div
+                    key={it.key}
+                    className={`min-w-0 bg-[#faf4ef] rounded-2xl p-3.5 sm:p-4 ${i === ins.items.length - 1 ? lastSpan(ins.items.length) : ""}`}
+                  >
+                    <div className="text-[10px] sm:text-[11px] tracking-[.12em] uppercase font-bold truncate" style={{ color: muted }}>{ti(`labels.${it.key}`)}</div>
+                    <div style={disp} className="font-extrabold text-[26px] sm:text-[32px] leading-none tabular-nums mt-1.5">{it.display}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[11px] mt-3" style={{ color: faint }}>{ti("source")}</div>
+              {staleText && <StaleNote text={staleText} />}
+            </div>
+          )}
+          {!ins.hasData && staleText && (
+            <div className="col-span-12 -mt-3">
+              <StaleNote text={staleText} />
+            </div>
+          )}
 
           {/* Social */}
           <div className={`${tile} col-span-12 sm:col-span-6`}>
@@ -166,7 +198,7 @@ export default function TemplateBentoSunset({ profile }) {
                       {thumb ? <img src={thumb} alt={reel.caption || t("topContent.reelAlt")} className="w-full h-full object-cover" />
                         : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#ff9a56,#c850c0)" }} />}
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(43,29,24,.85),transparent 55%)" }} />
-                      {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-6 text-[12px] font-semibold text-white leading-tight">{reel.caption.slice(0, 50)}</div>}
+                      {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-6 text-[12px] font-semibold text-white leading-tight">{truncateText(reel.caption, 50)}</div>}
                       <div className="absolute left-2.5 bottom-2 flex gap-3 text-[11px] text-white opacity-95 font-semibold">
                         <span>❤ {reel.likes || 0}</span>
                         <span>💬 {reel.comments || 0}</span>
@@ -178,16 +210,24 @@ export default function TemplateBentoSunset({ profile }) {
             </div>
           )}
 
-          {/* CTA */}
-          <div className="col-span-12 rounded-[26px] p-8 text-center text-white" style={{ background: "#2b1d18" }}>
-            <h3 style={disp} className="font-extrabold text-2xl mb-1.5">{t("cta.heading")}</h3>
-            <p className="text-white/80 text-sm">{t("cta.body")}</p>
-          </div>
         </div>
         <div className="text-center mt-5 text-xs" style={{ color: faint }}>{t.rich("footer.generatedOn", { b: (c) => <b style={{ color: "#ff5d73" }}>{c}</b> })}</div>
       </div>
     </div>
   );
+}
+
+// 2 cols → 3 from sm → 4 from lg. The last tile stretches to close the final
+// row so an odd count (7 metrics is common) never leaves a hole.
+function lastSpan(n) {
+  const base = n % 2 === 1 ? "col-span-2" : "";
+  const sm = ["sm:col-span-1", "sm:col-span-3", "sm:col-span-2"][n % 3];
+  const lg = ["lg:col-span-1", "lg:col-span-4", "lg:col-span-3", "lg:col-span-2"][n % 4];
+  return `${base} ${sm} ${lg}`;
+}
+
+function StaleNote({ text }) {
+  return <div className="mt-3 text-[11.5px] font-medium rounded-xl px-3 py-1.5" style={{ background: "#fff4e0", color: "#a3620f" }}>{text}</div>;
 }
 
 function PStat({ lbl, v, sub, disp, muted }) {
@@ -218,7 +258,7 @@ function BentoDonut({ g }) {
     [g.female || 0, "#c850c0", t("gender.female")],
     [g.male || 0, "#ff5d73", t("gender.male")],
     [g.other || 0, "#ffb84d", t("gender.other")],
-  ];
+  ].filter(([val], i) => i < 2 || val > 0); // "Other" only when there is some
   const C = 2 * Math.PI * 45;
   let off = 0;
   return (

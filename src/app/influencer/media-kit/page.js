@@ -10,10 +10,13 @@ import { useRouter } from "next/navigation";
 import { MEDIA_KIT_TEMPLATES, profileCanUseMediaKitTemplate, getEffectivePlan, getProfileTemplateChangeUsage, isSubscribed } from "@/lib/plans";
 import { useAiTool } from "@/hooks/useAiTool";
 import { AiMarkdown } from "@/components/AiMarkdown";
+import { truncateText } from "@/lib/text";
+import InstagramReconnectBanner from "@/components/InstagramReconnectBanner";
+import { readInsights } from "@/components/mediaKitTemplates/shared";
 
 export default function MediaKitPage() {
   const t = useTranslations("InfluencerMediaKit");
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile, refreshInstagram, setInstagramTokenMissing } = useAuth();
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [bio, setBio] = useState(profile?.bio || "");
@@ -25,6 +28,19 @@ export default function MediaKitPage() {
   const [previewTemplate, setPreviewTemplate] = useState(savedTemplate);
   const [savingTemplate, setSavingTemplate] = useState(null);
   const [templateError, setTemplateError] = useState("");
+
+  // Out-of-date analytics. If Instagram rejected the token, raise the
+  // reconnect banner (rendered above the preview) — refreshing cannot work
+  // until the creator reconnects. Otherwise the data is just old: kick a
+  // refresh so the kit they are about to share is current. refresh-instagram
+  // throttles to once an hour, so repeat visits cost nothing.
+  const insightsStale = readInsights(profile).stale;
+  const insightsTokenInvalid = readInsights(profile).tokenInvalid;
+  useEffect(() => {
+    if (!user?.id || !insightsStale) return;
+    if (insightsTokenInvalid) setInstagramTokenMissing(true);
+    else refreshInstagram(user.id);
+  }, [user?.id, insightsStale, insightsTokenInvalid, refreshInstagram, setInstagramTokenMissing]);
 
   useEffect(() => {
     // If the profile refreshes (e.g. after a save) sync the local preview
@@ -231,6 +247,7 @@ export default function MediaKitPage() {
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
           {/* Main Preview */}
           <div className="flex-1">
+            <InstagramReconnectBanner />
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
               <MediaKitLayout profile={{ ...profile, bio }} onBioSave={handleBioSave} onTopReelsSave={handleTopReelsSave} editable templateOverride={previewTemplate} />
             </div>
@@ -400,7 +417,7 @@ function AiMediaKitCard({ onUseBio }) {
     // Strip markdown markers (the bio is stored as plain text) and cap at 500
     // chars (matches the editor + server guard).
     const plain = bioBlock.replace(/\*\*|__|^#+\s*/gm, "").replace(/^[-*•]\s+/gm, "");
-    onUseBio?.(plain.slice(0, 500));
+    onUseBio?.(truncateText(plain, 500));
     setApplied(true);
     setTimeout(() => setApplied(false), 2000);
   };

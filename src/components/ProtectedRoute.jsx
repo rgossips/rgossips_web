@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import logoIcon from "@/assets/logoIcon.png";
 import InstagramRequiredGate from "@/components/InstagramRequiredGate";
+import InstagramReconnectModal from "@/components/InstagramReconnectModal";
+import EliteWelcomeModal from "@/components/EliteWelcomeModal";
 import { useTranslations } from "next-intl";
 
 const publicPaths = [
@@ -163,6 +165,12 @@ export default function ProtectedRoute({ children }) {
     <>
       {children}
       {needsIgConnect && <InstagramRequiredGate />}
+      {/* Connected before, token since died — ask them to reconnect as soon
+          as they are back. Influencers only: refresh-instagram (the only
+          thing that detects a dead token) reads influencer_profiles. */}
+      {isInfluencerRoute && !needsIgConnect && <InstagramReconnectModal />}
+      {/* Once per new Elite subscription — see EliteWelcomeModal. */}
+      {isInfluencerRoute && !needsIgConnect && <EliteWelcomeModal />}
     </>
   );
 }

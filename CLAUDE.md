@@ -273,6 +273,92 @@ reads those keys. Gating chat and the analytics dashboards is separate work.
 - Paid campaigns are still listed to free creators — the refusal is at Apply,
   deliberately, so the campaign is visible as an upsell. No lock badge on the card.
 
+## Returning-user popups: Instagram reconnect + Welcome to Elite (2026-09)
+
+- **Reconnect popup** — web `InstagramReconnectModal` (mounted by
+  ProtectedRoute on influencer routes), mobile `InstagramReconnectModal`
+  (mounted ONCE in App.tsx — InfluencerLayout is mounted per stacked screen and
+  would stack Modals). Shows when `isInstagramTokenExpired(profile)`
+  (`src/lib/instagramToken.*`: token_invalid_at set, or expires_at past — the
+  date was verified reliable) or this visit's refresh reported a dead token.
+  "Later" hides it until the next visit, or until the user returns after 30+
+  min. Auth contexts re-check the token on tab focus / app foreground (≤ every
+  30 min). The OAuth flow is shared via `useInstagramReconnect` (banner +
+  popup), with a module-level set so two mounted listeners never replay a code.
+- **Elite welcome popup** — web `EliteWelcomeModal`, mobile `EliteWelcomeModal`
+  (same mounts). Shows while effective plan = elite and
+  `elite_welcome_seen_at` is null; dismiss stamps it via update-profile
+  `eliteWelcomeSeen`. **Migration 072** trigger `trg_reset_elite_welcome`
+  nulls it whenever a plan BECOMES elite, from any grant path — renewals do not
+  re-show it. It lists only the 7 perks that are actually delivered; waits
+  while the reconnect popup is up.
+- **Security fix**: update-profile (no caller auth, body userId) accepted
+  `subscriptionPlan` / `billingCycle` — anyone with a user id could grant Elite.
+  Removed; nothing legitimate used them. The broader issue (update-profile
+  trusts a body userId for every other field, including the Instagram token)
+  is still open.
+
+## Instagram insights — the 30-day window was ~2 days (fixed 2026-09)
+
+`refresh-instagram` asked for `period=days_28&metric_type=total_value` with no
+since/until. **Instagram answers that with roughly the last 1–3 days**, so every
+media kit understated reach ~12× and views ~40× (@thecozyshot: 1,051 reach vs a
+real 12,671). Now: `period=day&metric_type=total_value&since=<now-30d>&until=<now>`
+— one de-duplicated total for the window (30 days is the API max and what
+Instagram's own report uses). Verified live; don't revert.
+
+- **Migration 071**: `influencer_profiles.instagram_insights` jsonb
+  `{since, until, days, views, reelViews, reach, likes, comments, shares, saves,
+  reposts, interactions, accountsEngaged}` (reel views via
+  `breakdown=media_product_type`), and `instagram_token_invalid_at` (set on
+  OAuth error 190, cleared by the next successful refresh). The token is NOT
+  cleared on 190 — that would trip the Instagram-required gate and lock the
+  creator out of the dashboard.
+- **`total_interactions` / `accounts_engaged` do not exist as columns.** They
+  were written for months; every save failed once and was retried. The old
+  retry dropped a fixed column list, which silently discarded new columns too.
+  The save loop now drops only the column PostgREST names in
+  "Could not find the 'x' column".
+- **Gender** is split over known M/F only (`other: 0`, `unknownPct` kept) — the
+  "unknown" bucket is often most of the audience and was shown as "Other".
+  `readDemographics` (web shared.js, mobile shared.ts) re-splits old rows too.
+  **Countries** are stored as names; readers map old ISO codes.
+- **Templates**: `readInsights(profile)` in both shared files feeds a
+  "Last 30 days" block in all 5 web + 5 mobile templates (i18n
+  `MediaKitInsights`), with an amber "may be out of date" note when data is
+  >30 days old or the token is invalid. Owner media-kit pages (web + mobile)
+  raise the reconnect banner on an invalid token, else trigger a refresh.
+  "Open for Collaborations" cards were removed from every template.
+- Backfill 2026-09-16: 218 connected creators refreshed — 210 ok, 8 dead tokens.
+
+## Never `.slice(0, N)` text — use truncateText (2026-09)
+
+`s.slice(0, N)` counts UTF-16 units; most emoji are two, so the cut can leave
+half of one (a lone surrogate). **PostgREST rejects any body containing one as
+"Empty or invalid json" and fails the WHOLE write.** refresh-instagram cut reel
+captions at 100 → @thecozyshot's analytics never saved, silently, for days.
+The same pattern was live in ~15 sites (pitch, bio, brand about, rejection
+reason, report details, revision note, payout reason, checkout labels, and the
+logger's own error_logs insert).
+
+- **Helpers**: `supabase/functions/_shared/text.ts` (`truncateText`,
+  `wellFormed`, `toWellFormedString`), web `src/lib/text.js`, mobile
+  `src/lib/text.ts` (manual scan — no regex lookbehind on older Hermes).
+- **`wellFormed(payload)`** before writes built from external data:
+  refresh-instagram's profile update, update-profile, and log.ts's error_logs row.
+- **Guard**: `qa/checks/text-truncation.mjs` (in `npm run qa:checks`) fails on a
+  `.slice/.substring/.substr(0, <number>)` on text in edge functions. Exempt a
+  genuine non-text cut with `// text-truncation-ok: <reason>`. Tests:
+  `__deno__/text_test.ts`, `__tests__/lib/text.test.js`.
+- **Visibility**: refresh-instagram now persists `instagram.refresh.save_failed`
+  / `.unexpected` (error) and `.token_rejected` (warn) to error_logs — the client
+  discards refresh errors, so this is the only place they surface. Admin
+  dashboard card "IG analytics stale (7d+)" with a "connected, never refreshed"
+  hint (red when > 0) → links to Errors filtered to instagram.
+- ⚠️ `_shared/log.ts` and `_shared/serve.ts` were fixed too, but a shared file
+  only takes effect in functions that are redeployed. The 15 touched functions
+  were; every other function still bundles the old logger until its next deploy.
+
 ## Elite discovery perks (2026-09)
 
 Elite was sold with four perks; only unlimited applications was enforced.
@@ -948,6 +1034,8 @@ iOS via Firebase). One registry + one trigger; the sender branches per platform.
 | 068 | campaign_review_outcome | `campaigns.review_reason` + `reviewed_at`, and the `rejected` status value. **Must be applied before deploying `brand-campaigns`** — the new reject path writes those columns. |
 | 069 | subscription_lifecycle | `auto_renew` + `plan_expires_at` + `subscription_cancelled_at` on influencer_profiles. **NULL plan_expires_at never lapses anyone** — not backfilled. Apply BEFORE deploying the webhooks: setUserPlan writes these on every grant. |
 | 070 | error_logs_status | Triage state for the admin Errors page. **Was originally numbered 068 and collided with campaign_review_outcome** — Supabase tracks by numeric prefix, so it would have been silently skipped forever. Renumbered. Never reuse a prefix (see also 042). |
+| 071 | instagram_insights | `instagram_insights` jsonb (30-day account totals) + `instagram_token_invalid_at`. refresh-instagram writes both. |
+| 072 | elite_welcome | `elite_welcome_seen_at` + BEFORE UPDATE trigger that nulls it when a plan becomes elite. |
 
 ## Feature: AI layer (2026-07)
 

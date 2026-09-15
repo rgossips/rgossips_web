@@ -3896,10 +3896,6 @@
       "label": "Top Content",
       "reelAlt": "Reel"
     },
-    "cta": {
-      "heading": "Open for Collaborations",
-      "body": "Interested in working together? Reach out via Instagram or through RGossips."
-    },
     "footer": {
       "generatedOn": "Generated on <b>RGossips</b>"
     },
@@ -3913,7 +3909,6 @@
       "expertise": "Expertise",
       "servicesRates": "Services & Rates",
       "whosWatching": "Who's Watching",
-      "openForCollaborations": "Open for Collaborations",
       "socialMedia": "Social Media",
       "performance": "Performance",
       "topContent": "Top Content",
@@ -3931,10 +3926,6 @@
       "female": "Female {pct}%",
       "male": "Male {pct}%",
       "other": "Other {pct}%"
-    },
-    "collab": {
-      "question": "Interested in working together?",
-      "reachOut": "Reach out via Instagram or through the RGossips platform"
     },
     "social": {
       "followers": "Followers",
@@ -3996,8 +3987,6 @@
     "topCountries": "Top Countries",
     "topContent": "Top Content",
     "reelAlt": "Reel",
-    "openForCollaborations": "Open for Collaborations",
-    "collabCta": "Interested in working together? Reach out via Instagram or through the RGossips platform.",
     "generatedOn": "Generated on RGossips",
     "gender": {
       "female": "Female",
@@ -4053,11 +4042,6 @@
       "label": "Top Content",
       "reelAlt": "Reel"
     },
-    "cta": {
-      "title": "Open for Collaborations",
-      "subtitle": "Interested in working together? Reach out via Instagram or through the RGossips platform.",
-      "button": "Start a Collaboration"
-    },
     "footer": {
       "generatedOn": "Generated on <b>RGossips</b>"
     }
@@ -4109,10 +4093,6 @@
     "topContent": {
       "label": "Top Content",
       "reelAlt": "Reel"
-    },
-    "cta": {
-      "title": "Open for Collabs!",
-      "body": "Interested in working together? Reach out via Instagram or RGossips."
     },
     "footer": {
       "generatedOn": "Generated on <brand>RGossips</brand>"
@@ -5184,5 +5164,67 @@
   "EliteBadge": {
     "label": "Elite",
     "title": "Verified Elite creator"
+  },
+  "MediaKitInsights": {
+    "title": "Last {days} days",
+    "labels": {
+      "reelViews": "Reel views",
+      "reach": "Viewers",
+      "likes": "Likes",
+      "comments": "Comments",
+      "shares": "Shares",
+      "saves": "Saves",
+      "reposts": "Reposts"
+    },
+    "range": "{range}",
+    "updated": "Updated {date}",
+    "stale": "Analytics last updated {date} — may be out of date",
+    "staleNoDate": "Analytics may be out of date",
+    "source": "Source: Instagram Insights"
+  },
+  "InstagramReconnectModal": {
+    "title": "Your Instagram connection has expired",
+    "body": "Reconnect Instagram so brands see your latest followers, reach and engagement. Until you do, your media kit shows out-of-date numbers.",
+    "reconnect": "Reconnect Instagram",
+    "connecting": "Reconnecting…",
+    "later": "Later",
+    "denied": "Instagram connection was denied",
+    "failed": "Failed to reconnect Instagram"
+  },
+  "EliteWelcomeModal": {
+    "title": "Congratulations, you're Elite! 🎉",
+    "subtitle": "Here's everything your Elite plan unlocks:",
+    "perks": {
+      "topSpot": {
+        "title": "Top spot in brand search",
+        "body": "You now appear above everyone else whenever brands search for creators."
+      },
+      "spotlight": {
+        "title": "Homepage spotlight",
+        "body": "You're featured on the homepage creator carousels brands see first."
+      },
+      "badge": {
+        "title": "Elite verified badge",
+        "body": "An Elite badge on your profile, search results and public media kit."
+      },
+      "applications": {
+        "title": "Unlimited campaign applications",
+        "body": "Apply to as many campaigns as you like — no monthly cap."
+      },
+      "ai": {
+        "title": "Unlimited AI tools",
+        "body": "Captions, scripts, hooks, pitches and rate cards without a monthly limit."
+      },
+      "mediaKit": {
+        "title": "All 5 media kit designs",
+        "body": "Every premium template, and switch between them as often as you want."
+      },
+      "payouts": {
+        "title": "Fastest payouts",
+        "body": "Your earnings are released for payout as soon as the brand approves — no waiting period."
+      }
+    },
+    "cta": "Explore campaigns",
+    "close": "Got it"
   }
 }

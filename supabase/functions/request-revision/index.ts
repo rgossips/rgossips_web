@@ -17,6 +17,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,7 +95,7 @@ serveWithLogging("request-revision", async (req) => {
       order_id: orderId,
       type: "revision_requested",
       label: `Revision requested (${nextUsed} / ${order.revisions_allowed})`,
-      meta: { revisions_used: nextUsed, note: noteText.slice(0, 280) },
+      meta: { revisions_used: nextUsed, note: truncateText(noteText, 280) },
     });
 
     await supabase.from("service_order_messages").insert({

@@ -10,6 +10,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,7 @@ serveWithLogging("register-push", async (req) => {
     }
 
     if (action === "subscribe") {
-      const userAgent = String(payload?.userAgent || "").slice(0, 300);
+      const userAgent = truncateText(payload?.userAgent || "", 300);
       if (platform === "web") {
         const sub = payload?.subscription;
         const endpoint = sub?.endpoint;

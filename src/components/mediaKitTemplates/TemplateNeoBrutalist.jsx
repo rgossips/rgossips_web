@@ -3,7 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { truncateText } from "@/lib/text";
 
 // Loud, blocky neo-brutalist look — hard black borders, offset shadows,
 // chunky display type and a stamped colour palette. Read-only.
@@ -12,6 +13,9 @@ export default function TemplateNeoBrutalist({ profile }) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ti = useTranslations("MediaKitInsights");
+  const ins = readInsights(profile);
+  const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const ink = "#0f0f0f";
   const pink = "#E94560";
@@ -57,7 +61,7 @@ export default function TemplateNeoBrutalist({ profile }) {
             {/* About */}
             <div className="p-6" style={{ background: yellow, border: bd, boxShadow: sh, ...blk }}>
               <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1 mb-4">{t("about.label")}</span>
-              <div className="text-[22px] sm:text-[26px] uppercase leading-tight">"{p.bio.slice(0, 70)}"</div>
+              <div className="text-[22px] sm:text-[26px] uppercase leading-tight">"{truncateText(p.bio, 70)}"</div>
             </div>
 
             {/* Expertise */}
@@ -123,7 +127,32 @@ export default function TemplateNeoBrutalist({ profile }) {
                 <BStat lbl={t("performance.stats.nonFollowerReach.label")} v={`${p.nonFollowerReachPct}%`} sub={t("performance.stats.nonFollowerReach.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
                 <BStat lbl={t("performance.stats.interactions.label")} v={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.stats.interactions.sub")} ink={ink} sh={sh} bd={bd} mono={mono} blk={blk} />
               </div>
+              {!ins.hasData && staleText && <StaleNote text={staleText} mono={mono} ink={ink} />}
             </div>
+
+            {/* Instagram 30-day totals */}
+            {ins.hasData && (
+              <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-4">
+                  <span style={{ ...mono, background: ink, color: "#fff" }} className="inline-block font-bold text-[11px] tracking-wider uppercase px-2.5 py-1">{ti("title", { days: ins.days })}</span>
+                  {ins.rangeLabel && <span style={mono} className="font-bold text-[11px] uppercase text-[#666]">{ins.rangeLabel}</span>}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {ins.items.map((it, i) => (
+                    <div
+                      key={it.key}
+                      className={`min-w-0 p-3 sm:p-3.5 ${i === ins.items.length - 1 ? lastSpan(ins.items.length) : ""}`}
+                      style={{ background: i === 0 ? yellow : "#fff", border: `2.5px solid ${ink}`, boxShadow: `3px 3px 0 ${ink}` }}
+                    >
+                      <div style={mono} className="font-bold text-[10px] sm:text-[10.5px] tracking-wider uppercase text-[#555] truncate">{ti(`labels.${it.key}`)}</div>
+                      <div style={blk} className="text-[22px] sm:text-[26px] leading-none tabular-nums mt-1.5">{it.display}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={mono} className="text-[11px] text-[#777] mt-4">{ti("source")}</div>
+                {staleText && <StaleNote text={staleText} mono={mono} ink={ink} />}
+              </div>
+            )}
 
             {/* Audience */}
             <div className="bg-white p-6" style={{ border: bd, boxShadow: sh }}>
@@ -154,7 +183,7 @@ export default function TemplateNeoBrutalist({ profile }) {
                         {thumb ? <img src={thumb} alt={reel.caption || t("topContent.reelAlt")} className="w-full h-full object-cover" />
                           : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#7F47CD,#E94560)" }} />}
                         <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(15,15,15,.85),transparent 50%)" }} />
-                        {reel.caption && <div style={mono} className="absolute left-2 right-2 bottom-7 font-bold text-[11px] text-white uppercase leading-tight">{reel.caption.slice(0, 50)}</div>}
+                        {reel.caption && <div style={mono} className="absolute left-2 right-2 bottom-7 font-bold text-[11px] text-white uppercase leading-tight">{truncateText(reel.caption, 50)}</div>}
                         <div className="absolute left-2 bottom-2 flex gap-3 font-bold text-[11px]" style={{ ...mono, color: yellow }}>
                           <span>❤ {reel.likes || 0}</span>
                           <span>💬 {reel.comments || 0}</span>
@@ -168,15 +197,23 @@ export default function TemplateNeoBrutalist({ profile }) {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-5 p-8 text-center" style={{ background: cyan, border: bd, boxShadow: shLg }}>
-          <h3 style={blk} className="text-[26px] uppercase mb-2">{t("cta.title")}</h3>
-          <p style={mono} className="text-[13px]">{t("cta.body")}</p>
-        </div>
-        <div className="text-center mt-5 font-bold text-xs uppercase tracking-wider" style={mono}>{t.rich("footer.generatedOn", { brand: (c) => <b style={{ background: ink, color: "#fff", padding: "3px 8px" }}>{c}</b> })}</div>
+        <div className="text-center mt-7 font-bold text-xs uppercase tracking-wider" style={mono}>{t.rich("footer.generatedOn", { brand: (c) => <b style={{ background: ink, color: "#fff", padding: "3px 8px" }}>{c}</b> })}</div>
       </div>
     </div>
   );
+}
+
+// 2 cols → 3 from sm → 2 from md (the right column narrows) → 3 from lg.
+// The last tile stretches to close the final row.
+function lastSpan(n) {
+  const base = n % 2 === 1 ? "col-span-2" : "";
+  const sm = ["sm:col-span-1", "sm:col-span-3", "sm:col-span-2"][n % 3];
+  const md = n % 2 === 1 ? "md:col-span-2" : "md:col-span-1";
+  const lg = ["lg:col-span-1", "lg:col-span-3", "lg:col-span-2"][n % 3];
+  return `${base} ${sm} ${md} ${lg}`;
+}
+function StaleNote({ text, mono, ink }) {
+  return <div style={{ ...mono, color: "#8a5a00", borderColor: ink }} className="mt-4 text-[11px] font-bold leading-snug border-l-4 pl-2.5 py-0.5">{text}</div>;
 }
 
 function BStat({ lbl, v, sub, hl, bg, ink, sh, bd, mono, blk }) {
@@ -208,7 +245,7 @@ function BrutalDonut({ g, ink }) {
     [g.female || 0, "#7F47CD", t("gender.female")],
     [g.male || 0, "#E94560", t("gender.male")],
     [g.other || 0, "#ffd23f", t("gender.other")],
-  ];
+  ].filter(([val], i) => i < 2 || val > 0); // "Other" only when there is some
   const C = 2 * Math.PI * 45;
   let off = 0;
   const mono = { fontFamily: "'Space Mono', monospace" };

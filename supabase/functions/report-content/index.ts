@@ -11,6 +11,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,7 +112,7 @@ serveWithLogging("report-content", async (req) => {
         entity_type: entityType,
         entity_id: resolvedEntityId,
         reason,
-        details: details ? String(details).trim().slice(0, 1000) : null,
+        details: details ? truncateText(String(details).trim(), 1000) : null,
       });
 
     if (insertErr) {

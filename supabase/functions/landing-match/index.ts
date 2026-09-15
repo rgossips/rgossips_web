@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiGenerate } from "../_shared/ai.ts";
 import { log } from "../_shared/log.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,8 +82,8 @@ serveWithLogging("landing-match", async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 
     const body = (await req.json().catch(() => ({}))) as { prompt?: string; sessionId?: string };
-    const prompt = String(body?.prompt || "").trim().slice(0, 400);
-    const sessionId = String(body?.sessionId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+    const prompt = truncateText(String(body?.prompt || "").trim(), 400);
+    const sessionId = String(body?.sessionId || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64); // text-truncation-ok: ASCII-only after the replace
     if (prompt.length < 2) return json({ error: "empty_prompt" });
 
     // ── Rate limit ───────────────────────────────────────────────────
@@ -162,12 +163,12 @@ serveWithLogging("landing-match", async (req) => {
       filters.categories = asArray(parsed.categories).filter((c) => CATEGORIES.includes(c));
       filters.locations = asArray(parsed.locations).slice(0, 5);
       filters.followerBuckets = asArray(parsed.followerBuckets).filter((b) => FOLLOWER_BUCKETS.includes(b));
-      filters.query = String(parsed.query || "").trim().slice(0, 80);
-      summary = String(parsed.summary || "").trim().slice(0, 140);
+      filters.query = truncateText(String(parsed.query || "").trim(), 80);
+      summary = truncateText(String(parsed.summary || "").trim(), 140);
     } catch (e) {
       // AI down / bad JSON → degrade to a raw keyword search so results still show.
       log.warn?.("landing_match.ai_parse_failed", { rid }, e as any);
-      filters.query = prompt.slice(0, 80);
+      filters.query = truncateText(prompt, 80);
     }
 
     // ── Real creators via list-influencers (reuses privacy + invite merge) ──

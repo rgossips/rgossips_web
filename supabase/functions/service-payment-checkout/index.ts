@@ -20,6 +20,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -151,7 +152,7 @@ serveWithLogging("service-payment-checkout", async (req) => {
     params.append("line_items[0][quantity]", "1");
     params.append("line_items[0][price_data][currency]", "inr");
     params.append("line_items[0][price_data][unit_amount]", String(amountPaise));
-    params.append("line_items[0][price_data][product_data][name]", lineLabel.slice(0, 120));
+    params.append("line_items[0][price_data][product_data][name]", truncateText(lineLabel, 120));
     params.append("line_items[0][price_data][product_data][metadata][order_number]", order.order_number);
     params.append("client_reference_id", orderId);
     // The webhook uses these to find the order + know which phase fired.

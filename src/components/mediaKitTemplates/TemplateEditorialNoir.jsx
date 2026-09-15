@@ -3,7 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { truncateText } from "@/lib/text";
 
 // Magazine-style editorial layout — Fraunces serif, paper background,
 // hard ink borders and offset shadows. Read-only.
@@ -12,6 +13,9 @@ export default function TemplateEditorialNoir({ profile }) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ti = useTranslations("MediaKitInsights");
+  const ins = readInsights(profile);
+  const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const paper = "#f4efe6";
   const ink = "#16130f";
@@ -136,7 +140,33 @@ export default function TemplateEditorialNoir({ profile }) {
                 <Fig label={t("stats.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("stats.organicDiscovery")} />
                 <Fig label={t("stats.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("stats.avgPerPost")} last />
               </div>
+              {!ins.hasData && staleText && <StaleNote text={staleText} />}
             </Block>
+
+            {ins.hasData && (
+              <Block>
+                <SecTitle>{ti("title", { days: ins.days })}</SecTitle>
+                {ins.rangeLabel && (
+                  <div style={{ ...SER, color: ink2 }} className="italic text-[15px] -mt-2 mb-4">{ins.rangeLabel}</div>
+                )}
+                {/* gap-px over a rule-coloured ground draws the hairlines between
+                    figures; the last figure stretches so no empty cell shows. */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-px" style={{ border: `2px solid ${ink}`, background: line }}>
+                  {ins.items.map((it, i) => (
+                    <div
+                      key={it.key}
+                      className={`min-w-0 p-4 sm:p-5 ${i === ins.items.length - 1 ? lastSpan(ins.items.length) : ""}`}
+                      style={{ background: paper }}
+                    >
+                      <div className="text-[10px] sm:text-[10.5px] tracking-[.2em] uppercase font-bold truncate" style={{ color: muted }}>{ti(`labels.${it.key}`)}</div>
+                      <div className="font-black text-[30px] sm:text-[36px] md:text-[34px] lg:text-[40px] leading-none tabular-nums mt-2" style={{ ...SER, color: ink }}>{it.display}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[10.5px] tracking-[.2em] uppercase mt-3" style={{ color: muted }}>{ti("source")}</div>
+                {staleText && <StaleNote text={staleText} />}
+              </Block>
+            )}
 
             <Block>
               <SecTitle>{t("whosWatching")}</SecTitle>
@@ -172,7 +202,7 @@ export default function TemplateEditorialNoir({ profile }) {
                       ? <img src={thumb} alt={reel.caption || t("reelAlt")} className="w-full h-full object-cover" />
                       : <div className="w-full h-full" style={{ background: "linear-gradient(150deg,#9b8a72,#1a2a3a)" }} />}
                     <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(22,19,15,.85),transparent 50%)" }} />
-                    {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-7 text-[14px] text-white leading-tight" style={SER}>{reel.caption.slice(0, 60)}</div>}
+                    {reel.caption && <div className="absolute left-2.5 right-2.5 bottom-7 text-[14px] text-white leading-tight" style={SER}>{truncateText(reel.caption, 60)}</div>}
                     <div className="absolute left-2.5 bottom-2 flex gap-3 text-[11px] text-white/90 font-semibold">
                       <span>❤ {reel.likes || 0}</span>
                       <span>💬 {reel.comments || 0}</span>
@@ -185,11 +215,7 @@ export default function TemplateEditorialNoir({ profile }) {
         )}
 
         {/* Colophon */}
-        <div className="mt-12 pt-5 text-center" style={{ borderTop: `3px solid ${ink}` }}>
-          <div style={SER} className="font-black text-[30px] mb-1.5">{t("openForCollaborations")}</div>
-          <p style={{ ...SER, color: ink2 }} className="italic text-[15px]">{t("collabCta")}</p>
-        </div>
-        <div className="text-center mt-7 text-[11px] tracking-[.25em] uppercase" style={{ color: muted }}>{t("generatedOn")}</div>
+        <div className="mt-12 pt-5 text-center text-[11px] tracking-[.25em] uppercase" style={{ borderTop: `3px solid ${ink}`, color: muted }}>{t("generatedOn")}</div>
       </div>
     </div>
   );
@@ -231,6 +257,18 @@ export default function TemplateEditorialNoir({ profile }) {
   }
 }
 
+// 2 cols → 3 from sm → back to 2 from md (where the right column halves).
+// The last figure stretches to close the final row.
+function lastSpan(n) {
+  const base = n % 2 === 1 ? "col-span-2" : "";
+  const sm = ["sm:col-span-1", "sm:col-span-3", "sm:col-span-2"][n % 3];
+  const md = n % 2 === 1 ? "md:col-span-2" : "md:col-span-1";
+  return `${base} ${sm} ${md}`;
+}
+function StaleNote({ text }) {
+  return <div className="mt-3 italic text-[13px] leading-snug" style={{ fontFamily: "'Fraunces', 'Times New Roman', serif", color: "#9a6a1f" }}>{text}</div>;
+}
+
 function NBar({ label, pct, ink, line }) {
   return (
     <div className="grid grid-cols-[100px_1fr_46px] sm:grid-cols-[118px_1fr_46px] items-center gap-3 mb-2.5">
@@ -248,7 +286,7 @@ function NoirDonut({ g }) {
     [g.female || 0, "#7F47CD", t("gender.female")],
     [g.male || 0, "#E94560", t("gender.male")],
     [g.other || 0, "#b08545", t("gender.other")],
-  ];
+  ].filter(([val], i) => i < 2 || val > 0); // "Other" only when there is some
   const C = 2 * Math.PI * 45;
   let off = 0;
   return (

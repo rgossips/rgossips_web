@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText, wellFormed } from "../_shared/text.ts";
 import { effectivePlan } from "../_shared/plan.ts";
 
 const corsHeaders = {
@@ -89,6 +90,9 @@ serveWithLogging("update-profile", async (req) => {
     if (fields.services !== undefined) updateData.services = fields.services;
     if (fields.notificationsEnabled !== undefined) updateData.notifications_enabled = fields.notificationsEnabled;
     if (fields.welcomeRewardSeen !== undefined) updateData.welcome_reward_seen = !!fields.welcomeRewardSeen;
+    // Welcome-to-Elite popup dismissed. Stamp-only: the flag is cleared by a
+    // DB trigger when the plan becomes elite (migration 072), never by clients.
+    if (fields.eliteWelcomeSeen === true) updateData.elite_welcome_seen_at = new Date().toISOString();
 
     // Also support updating basic profile fields
     if (fields.name !== undefined) updateData.full_name = fields.name;
@@ -98,11 +102,15 @@ serveWithLogging("update-profile", async (req) => {
     if (fields.followersCount !== undefined) updateData.followers_count = fields.followersCount;
     if (fields.followsCount !== undefined) updateData.follows_count = fields.followsCount;
     if (fields.mediaCount !== undefined) updateData.media_count = fields.mediaCount;
-    if (fields.subscriptionPlan !== undefined) updateData.subscription_plan = fields.subscriptionPlan;
-    if (fields.billingCycle !== undefined) updateData.billing_cycle = fields.billingCycle;
+    // subscriptionPlan / billingCycle are deliberately NOT accepted (removed
+    // 2026-09-16). This function has no caller authentication and takes
+    // userId from the body, so accepting them let anyone who knew a user id
+    // grant that account Elite for free. Nothing legitimate used them: plans
+    // are only granted by the payment webhooks, reconcile-subscription, the
+    // IAP paths and the admin console, all server-side.
     // Bio is capped at 500 chars everywhere (matches the media-kit editor's
     // maxLength) — enforce it here too so AI-applied / API bios can't exceed it.
-    if (fields.bio !== undefined) updateData.bio = fields.bio == null ? fields.bio : String(fields.bio).slice(0, 500);
+    if (fields.bio !== undefined) updateData.bio = fields.bio == null ? fields.bio : truncateText(fields.bio, 500);
     if (fields.mediaKitPublished !== undefined) updateData.media_kit_published = fields.mediaKitPublished;
     // Media-kit template change is plan-gated and counted server-side so a
     // determined client can't bypass the cap. Starter → Classic only;
@@ -211,7 +219,7 @@ serveWithLogging("update-profile", async (req) => {
       // non-existent column and failed every save that included it.
       if (fields.website !== undefined) updateData.website_url = fields.website || null;
       // "About the brand" — shown to influencers on the brand page.
-      if (fields.aboutBrand !== undefined) updateData.full_description = fields.aboutBrand ? String(fields.aboutBrand).slice(0, 1000) : null;
+      if (fields.aboutBrand !== undefined) updateData.full_description = fields.aboutBrand ? truncateText(fields.aboutBrand, 1000) : null;
       if (fields.instagramUsername !== undefined) updateData.instagram_username = fields.instagramUsername;
       if (fields.logoUrl !== undefined) updateData.logo_url = fields.logoUrl || null;
       // GSTIN-derived display fields. We let the brand override these on
@@ -232,7 +240,9 @@ serveWithLogging("update-profile", async (req) => {
 
     const { error: dbError } = await supabaseAdmin
       .from(table)
-      .update(updateData)
+      // wellFormed: last line of defence — a stray lone surrogate in any
+      // field would otherwise fail the whole save as "invalid json".
+      .update(wellFormed(updateData))
       .eq(idCol, userId);
 
     if (dbError) {

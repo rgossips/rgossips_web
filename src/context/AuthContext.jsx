@@ -162,6 +162,23 @@ export const AuthProvider = ({ children }) => {
 
     initializeAuth();
 
+    // Coming back to the tab counts as coming back to the platform: re-check
+    // the Instagram token (refresh-instagram reports a dead one and the
+    // reconnect popup opens). At most every 30 minutes; the server also
+    // throttles a healthy account to one refresh an hour.
+    let lastIgCheck = Date.now();
+    const onVisible = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastIgCheck < 30 * 60 * 1000) return;
+      lastIgCheck = Date.now();
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid || !isMounted) return;
+      await fetchProfile(uid);
+      refreshInstagram(uid);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -203,6 +220,7 @@ export const AuthProvider = ({ children }) => {
       isMounted = false;
       clearTimeout(safetyTimer);
       clearInterval(sessionPollInterval);
+      document.removeEventListener("visibilitychange", onVisible);
       subscription.unsubscribe();
     };
   }, []);

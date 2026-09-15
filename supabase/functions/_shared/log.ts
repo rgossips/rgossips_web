@@ -13,6 +13,8 @@
 //   log.warn("otp.verify.bad_code", { rid, phoneHash, attempts });
 //   log.error("escrow.fund.order_failed", { rid, userId, applicationId }, err);
 
+import { truncateText, wellFormed } from "./text.ts";
+
 type Ctx = Record<string, unknown>;
 type Severity = "debug" | "info" | "warn" | "error";
 
@@ -25,7 +27,7 @@ function redact(ctx: Ctx): Ctx {
     if (SECRET_KEYS.test(k)) {
       out[k] = "[redacted]";
     } else if (typeof v === "string" && v.length > 512) {
-      out[k] = v.slice(0, 512) + "…";
+      out[k] = truncateText(v, 512) + "…";
     } else {
       out[k] = v;
     }
@@ -124,7 +126,7 @@ function persist(severity: StoredSeverity, event: string, ctx: Ctx, err?: unknow
       message: e?.message || (err !== undefined ? String(err) : null),
       // Sliced, not split into lines: the column is text and the whole point
       // is a readable head of the trace. Keeps this free of escape handling.
-      stack: e?.stack ? String(e.stack).slice(0, 2000) : null,
+      stack: e?.stack ? truncateText(e.stack, 2000) : null,
       status_code: Number(c.statusCode ?? c.status_code) || null,
       // Only a real uuid goes in the column; anything else would abort the
       // insert and lose the error we were trying to record.
@@ -146,7 +148,9 @@ function persist(severity: StoredSeverity, event: string, ctx: Ctx, err?: unknow
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
-      body: JSON.stringify(row),
+      // wellFormed: a lone surrogate anywhere in the row would make the
+      // insert fail silently and lose the very error being recorded.
+      body: JSON.stringify(wellFormed(row)),
     }).catch(() => {});
 
     // Edge runtimes can kill work that outlives the response. waitUntil keeps

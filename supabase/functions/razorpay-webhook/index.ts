@@ -27,6 +27,7 @@ import {
 } from "../_shared/referrals.ts";
 import { applyServicePaymentCaptured } from "../_shared/service-payment.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 import { log } from "../_shared/log.ts";
 import {
   isTestUser,
@@ -515,7 +516,7 @@ async function handlePayoutEvent(type: string, payout: any) {
       .from("campaign_applications")
       .update({
         payout_status: type === "payout.reversed" ? "reversed" : "failed",
-        payout_failure_reason: String(reason).slice(0, 500),
+        payout_failure_reason: truncateText(reason, 500),
       })
       .eq("id", applicationId);
 

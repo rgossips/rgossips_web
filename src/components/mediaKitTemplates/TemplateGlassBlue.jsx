@@ -3,7 +3,8 @@
 import React from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { formatCount, readProfile, readDemographics, readSocials, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readInsights, readSocials, toServiceLabel } from "./shared";
+import { truncateText } from "@/lib/text";
 
 // Glass-Blue editorial template. Frosted panels stacked over a soft
 // gradient background. Read-only — bio + reels editing live in Classic.
@@ -12,6 +13,9 @@ export default function TemplateGlassBlue({ profile }) {
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
   const socials = readSocials(p.followers);
+  const ti = useTranslations("MediaKitInsights");
+  const ins = readInsights(profile);
+  const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   const grad = "linear-gradient(135deg,#1564d6 0%,#0ea5e9 55%,#06b6d4 100%)";
   const glass = {
@@ -42,7 +46,7 @@ export default function TemplateGlassBlue({ profile }) {
             <div>
               <div className="text-[clamp(28px,5.5vw,44px)] font-extrabold leading-none tracking-tight">{p.name}</div>
               <div className="text-[#1564d6] font-semibold mt-2">@{p.handle}</div>
-              <div className="text-base font-medium mt-3">"{p.bio.split("\n")[0].slice(0, 90)}"</div>
+              <div className="text-base font-medium mt-3">"{truncateText(p.bio.split("\n")[0], 90)}"</div>
               <div className="text-sm text-[#48657e] mt-1 font-medium">{p.primaryCategory}{p.location ? ` · ${p.location}` : ""}</div>
               <div className="flex flex-wrap gap-2 mt-4">
                 {p.categories.slice(0, 6).map((cat) => (
@@ -81,7 +85,30 @@ export default function TemplateGlassBlue({ profile }) {
               <PStat label={t("performance.nonFollowerReach")} value={`${p.nonFollowerReachPct}%`} sub={t("performance.nonFollowerReachSub")} />
               <PStat label={t("performance.interactions")} value={formatCount(p.avgLikes + p.avgComments)} sub={t("performance.interactionsSub")} />
             </div>
+            {!ins.hasData && staleText && <StaleNote text={staleText} />}
           </div>
+          {ins.hasData && (
+            <div style={glass} className="p-7 mt-5">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-4">
+                <span className="text-[11px] tracking-[.16em] uppercase font-bold text-[#74909f]">{ti("title", { days: ins.days })}</span>
+                {ins.rangeLabel && <span className="text-[12px] text-[#48657e] font-medium">· {ins.rangeLabel}</span>}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                {ins.items.map((it, i) => (
+                  <div
+                    key={it.key}
+                    className={`min-w-0 p-3.5 sm:p-4 rounded-2xl ${i === ins.items.length - 1 ? lastSpan(ins.items.length) : ""}`}
+                    style={{ background: "rgba(255,255,255,.5)", border: "1px solid rgba(255,255,255,.6)" }}
+                  >
+                    <div className="text-[10px] sm:text-[10.5px] tracking-[.1em] uppercase font-bold text-[#74909f] truncate">{ti(`labels.${it.key}`)}</div>
+                    <div className="text-[24px] sm:text-[28px] font-extrabold tracking-tight leading-none tabular-nums mt-1.5">{it.display}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[11.5px] text-[#48657e] font-medium mt-4">{ti("source")}</div>
+              {staleText && <StaleNote text={staleText} />}
+            </div>
+          )}
         </SectionRow>
 
         {/* 02 AUDIENCE */}
@@ -157,7 +184,7 @@ export default function TemplateGlassBlue({ profile }) {
                     <a key={reel.id || i} href={reel.permalink} target="_blank" rel="noopener noreferrer" className="relative rounded-xl overflow-hidden aspect-square block" style={{ background: thumb ? "transparent" : "linear-gradient(150deg,#4a5e72,#1a2a3a)" }}>
                       {thumb && <img src={thumb} alt={reel.caption || t("content.reelAlt")} className="absolute inset-0 w-full h-full object-cover" />}
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(8,24,40,.82),transparent 52%)" }} />
-                      {reel.caption && <div className="absolute left-2 right-2 bottom-6 text-[11.5px] font-semibold text-white leading-tight">{reel.caption.slice(0, 60)}</div>}
+                      {reel.caption && <div className="absolute left-2 right-2 bottom-6 text-[11.5px] font-semibold text-white leading-tight">{truncateText(reel.caption, 60)}</div>}
                       <div className="absolute left-2 bottom-2 flex gap-3 text-[11px] text-white/90 font-semibold">
                         <span>❤ {reel.likes || 0}</span>
                         <span>💬 {reel.comments || 0}</span>
@@ -170,12 +197,6 @@ export default function TemplateGlassBlue({ profile }) {
           </SectionRow>
         )}
 
-        {/* CTA */}
-        <div className="rounded-[22px] p-8 text-center text-white" style={{ background: grad, boxShadow: "0 22px 50px -22px rgba(21,100,214,.7)" }}>
-          <h3 className="text-2xl font-extrabold mb-1">{t("cta.title")}</h3>
-          <p className="opacity-95 mb-4 text-sm">{t("cta.subtitle")}</p>
-          <a href={`https://instagram.com/${p.handle}`} target="_blank" rel="noreferrer" className="inline-block bg-white text-[#1564d6] font-bold px-6 py-3 rounded-xl text-sm">{t("cta.button")}</a>
-        </div>
         <div className="text-center text-xs text-[#48657e] font-medium">{t.rich("footer.generatedOn", { b: (c) => <b className="text-[#1564d6]">{c}</b> })}</div>
       </div>
     </div>
@@ -192,6 +213,17 @@ function SectionRow({ num, label, children }) {
       <div>{children}</div>
     </div>
   );
+}
+// 2 cols → 3 from sm → 4 from lg. The last tile stretches to close the final
+// row so an odd count (7 metrics is common) never leaves a hole.
+function lastSpan(n) {
+  const base = n % 2 === 1 ? "col-span-2" : "";
+  const sm = ["sm:col-span-1", "sm:col-span-3", "sm:col-span-2"][n % 3];
+  const lg = ["lg:col-span-1", "lg:col-span-4", "lg:col-span-3", "lg:col-span-2"][n % 4];
+  return `${base} ${sm} ${lg}`;
+}
+function StaleNote({ text }) {
+  return <div className="mt-3 text-[11px] sm:text-[11.5px] font-medium text-[#92600a] rounded-lg px-3 py-1.5" style={{ background: "rgba(254,243,199,.6)", border: "1px solid rgba(251,191,36,.35)" }}>{text}</div>;
 }
 function Label({ children }) {
   return <div className="text-[11px] tracking-[.16em] uppercase font-bold text-[#74909f] mb-4">{children}</div>;
@@ -233,7 +265,7 @@ function Donut({ g, colors }) {
     [g.female || 0, colors[0], t("gender.female")],
     [g.male || 0, colors[1], t("gender.male")],
     [g.other || 0, colors[2], t("gender.other")],
-  ];
+  ].filter(([val], i) => i < 2 || val > 0); // "Other" only when there is some
   const C = 2 * Math.PI * 45;
   let off = 0;
   return (

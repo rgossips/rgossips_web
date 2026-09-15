@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1063,7 +1064,7 @@ serveWithLogging("brand-campaigns", async (req) => {
       if (!campaignId) return ok({ error: "campaignId is required" });
       // Clamped: it is rendered to the brand and carried in a notification.
       const reviewReason = payload.reason
-        ? String(payload.reason).trim().slice(0, 500)
+        ? truncateText(String(payload.reason).trim(), 500)
         : null;
 
       const { data: c, error: findErr } = await supabase

@@ -18,6 +18,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendBrandedEmail } from "../_shared/email.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +36,7 @@ serveWithLogging("attribute-referral", async (req) => {
     // Fraud-attribution — device fingerprint is a client-supplied hash
     // (canvas + UA + timezone), IP falls back to what the caller sent or
     // whatever the edge proxy stamped on x-forwarded-for.
-    const deviceFingerprint = (body?.deviceFingerprint || "").toString().trim().slice(0, 128) || null;
+    const deviceFingerprint = truncateText((body?.deviceFingerprint || "").toString().trim(), 128) || null;
     const forwardedFor = req.headers.get("x-forwarded-for") || "";
     const signupIp =
       (body?.signupIp || forwardedFor.split(",")[0] || "").toString().trim() || null;

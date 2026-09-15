@@ -1,5 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText, wellFormed } from "../_shared/text.ts";
+import { log } from "../_shared/log.ts";
+
+// Instagram accepts at most a 30-day since/until range; its own report uses 30.
+const INSIGHTS_DAYS = 30;
+
+// ISO-3166 code → English name for the kit ("IN" → "India"). Falls back to
+// the code if the runtime has no Intl.DisplayNames.
+const regionNames = (() => {
+  try { return new Intl.DisplayNames(["en"], { type: "region" }); } catch { return null; }
+})();
+const countryName = (code: string) => {
+  try { return (code && regionNames?.of(code)) || code; } catch { return code; }
+};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,8 +113,19 @@ serveWithLogging("refresh-instagram", async (req) => {
     if (debug) debugCaptures.profile = igProfile;
 
     if (igProfile.error) {
-      // Token might be expired/revoked
-      console.error("Instagram API error:", igProfile.error);
+      // Token might be expired/revoked. Code 190 = the token itself is dead
+      // (password change, revoked access, expiry): record it so the kit can
+      // say its analytics are out of date. Not cleared here, and the token is
+      // left in place — the Instagram-required gate would otherwise lock the
+      // creator out of the whole dashboard.
+      if (Number(igProfile.error?.code) === 190) {
+        await supabaseAdmin
+          .from("influencer_profiles")
+          .update({ instagram_token_invalid_at: new Date().toISOString() })
+          .eq("influencer_id", userId)
+          .is("instagram_token_invalid_at", null);
+      }
+      log.persistWarn("instagram.refresh.token_rejected", { fn: "refresh-instagram", userId, igCode: igProfile.error?.code }, igProfile.error?.message);
       return new Response(
         JSON.stringify({ error: "Instagram token expired. Please reconnect Instagram.", igError: igProfile.error.message }),
         { status: 200, headers: jsonHeaders }
@@ -145,34 +170,81 @@ serveWithLogging("refresh-instagram", async (req) => {
       );
     }
 
-    // Account-level insights — use the dedup'd `days_28` window instead of
-    // summing daily values (which double-counts users seen on multiple days).
-    // Pull `views` (Instagram's new headline metric, replaces impressions),
-    // unique `reach`, `total_interactions`, and `accounts_engaged`.
+    // Account-level insights over an EXPLICIT 30-day window.
+    //
+    // Do not go back to `period=days_28&metric_type=total_value` without a
+    // since/until: Instagram answers that with roughly the last 1–3 days, not
+    // 28. It did so silently for every creator — @thecozyshot read 1,051
+    // reach against a real 12,671 (views 4,180 vs 237,856). With since/until,
+    // `period=day&metric_type=total_value` returns ONE de-duplicated total for
+    // the whole window (reach is unique accounts, not a sum of days). 30 days
+    // is the longest range the API accepts and what Instagram's own report
+    // uses. Verified against the live API on 2026-09-16.
+    const insightsUntil = Math.floor(Date.now() / 1000);
+    const insightsSince = insightsUntil - INSIGHTS_DAYS * 86_400;
+    const windowQs = `period=day&metric_type=total_value&since=${insightsSince}&until=${insightsUntil}`;
+    const insights30: Record<string, number> = {};
+    let insightsOk = false;
     try {
-      const insightsRes = await fetch(
-        `https://graph.instagram.com/v22.0/me/insights?metric=reach,views,total_interactions,accounts_engaged&period=days_28&metric_type=total_value&access_token=${encodeURIComponent(accessToken)}`
-      );
-      const insights = await insightsRes.json();
-      if (debug) debugCaptures.insights_days_28 = insights;
-      if (insights?.data) {
-        for (const metric of insights.data) {
-          const value = metric?.total_value?.value ?? 0;
-          if (metric.name === "reach") totalReach = value;
-          else if (metric.name === "views") totalImpressions = value;
-          else if (metric.name === "total_interactions") totalInteractions = value;
-          else if (metric.name === "accounts_engaged") accountsEngaged = value;
+      // Split into two calls: one unsupported metric fails a whole request,
+      // and `reposts` is newer than the rest.
+      for (const metrics of [
+        "views,reach,total_interactions,accounts_engaged,likes,comments,shares,saves",
+        "reposts",
+      ]) {
+        const res = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=${metrics}&${windowQs}&access_token=${encodeURIComponent(accessToken)}`
+        );
+        const body = await res.json();
+        if (debug) debugCaptures[`insights_30d_${metrics.split(",")[0]}`] = body;
+        if (body?.error) {
+          log.persistWarn("instagram.refresh.insights_failed", { fn: "refresh-instagram", userId, metrics }, body.error?.message);
+          continue;
         }
-      } else if (insights?.error) {
-        console.error("Insights error:", insights.error);
+        for (const m of body?.data || []) {
+          insights30[m.name] = Number(m?.total_value?.value) || 0;
+          insightsOk = true;
+        }
       }
 
-      // Fallback: if the new `views` metric isn't available yet for this
-      // account/region, use reach as the impression proxy.
-      if (!totalImpressions) totalImpressions = totalReach;
+      // Reel views specifically — Instagram's report leads with this, and the
+      // account `views` total also counts stories, carousels and posts.
+      const byProduct = await fetch(
+        `https://graph.instagram.com/v22.0/me/insights?metric=views&breakdown=media_product_type&${windowQs}&access_token=${encodeURIComponent(accessToken)}`
+      ).then((r) => r.json());
+      if (debug) debugCaptures.insights_30d_views_by_product = byProduct;
+      for (const r of byProduct?.data?.[0]?.total_value?.breakdowns?.[0]?.results || []) {
+        if (r?.dimension_values?.[0] === "REEL") insights30.reelViews = Number(r.value) || 0;
+      }
     } catch (e) {
-      console.error("Failed to fetch account insights:", e);
+      log.error("instagram.refresh.insights_unexpected", { fn: "refresh-instagram", userId }, e);
     }
+
+    totalReach = insights30.reach || 0;
+    totalImpressions = insights30.views || 0;
+    totalInteractions = insights30.total_interactions || 0;
+    accountsEngaged = insights30.accounts_engaged || 0;
+    // If `views` isn't available for this account/region, reach is the
+    // closest stand-in (kept from the previous behaviour).
+    if (!totalImpressions) totalImpressions = totalReach;
+
+    const instagramInsights = insightsOk
+      ? {
+          since: new Date(insightsSince * 1000).toISOString(),
+          until: new Date(insightsUntil * 1000).toISOString(),
+          days: INSIGHTS_DAYS,
+          views: insights30.views ?? null,
+          reelViews: insights30.reelViews ?? null,
+          reach: insights30.reach ?? null,
+          likes: insights30.likes ?? null,
+          comments: insights30.comments ?? null,
+          shares: insights30.shares ?? null,
+          saves: insights30.saves ?? null,
+          reposts: insights30.reposts ?? null,
+          interactions: insights30.total_interactions ?? null,
+          accountsEngaged: insights30.accounts_engaged ?? null,
+        }
+      : null;
 
     // Debug-only: alternate metric shapes to compare against what the IG
     // app displays. We try `period=day` (daily values across the window),
@@ -379,7 +451,10 @@ serveWithLogging("refresh-instagram", async (req) => {
         mediaType: p.media_type,
         thumbnail: p.thumbnail_url || p.media_url || "",
         permalink: p.permalink || "",
-        caption: (p.caption || "").slice(0, 100),
+        // truncateText, never .slice: splitting an emoji here made
+        // PostgREST reject the WHOLE profile update as "Empty or invalid
+        // json", so @thecozyshot never had analytics saved.
+        caption: truncateText(p.caption, 100),
         likes: Number(p.like_count) || 0,
         comments: Number(p.comments_count) || 0,
         timestamp: p.timestamp,
@@ -430,11 +505,17 @@ serveWithLogging("refresh-instagram", async (req) => {
         else genderU += val;
       }
 
-      const totalGender = genderM + genderF + genderU;
+      // Split over KNOWN gender only, the way Instagram reports it. "U"
+      // (unknown) is often most of the audience — 74% for one creator — and
+      // showing it as "Other" made every kit disagree with Instagram.
+      // unknownPct is kept for anyone who wants to disclose it.
+      const knownGender = genderM + genderF;
+      const totalGender = knownGender + genderU;
       const genderBreakdownResult = {
-        male: totalGender > 0 ? parseFloat(((genderM / totalGender) * 100).toFixed(1)) : 0,
-        female: totalGender > 0 ? parseFloat(((genderF / totalGender) * 100).toFixed(1)) : 0,
-        other: totalGender > 0 ? parseFloat(((genderU / totalGender) * 100).toFixed(1)) : 0,
+        male: knownGender > 0 ? parseFloat(((genderM / knownGender) * 100).toFixed(1)) : 0,
+        female: knownGender > 0 ? parseFloat(((genderF / knownGender) * 100).toFixed(1)) : 0,
+        other: 0,
+        unknownPct: totalGender > 0 ? parseFloat(((genderU / totalGender) * 100).toFixed(1)) : 0,
       };
 
       // Age ranges with percentages
@@ -456,7 +537,7 @@ serveWithLogging("refresh-instagram", async (req) => {
       const topCountries = countryBreakdown
         .sort((a: any, b: any) => b.value - a.value)
         .slice(0, 5)
-        .map((c: any) => ({ name: c.dimension_values[0], value: c.value }));
+        .map((c: any) => ({ name: countryName(c.dimension_values[0]), code: c.dimension_values[0], value: c.value }));
       const totalCountryFollowers = countryBreakdown.reduce((s: number, c: any) => s + c.value, 0);
       const topCountriesWithPct = topCountries.map((c: any) => ({
         ...c,
@@ -530,35 +611,53 @@ serveWithLogging("refresh-instagram", async (req) => {
       total_reach: totalReach,
       total_interactions: totalInteractions,
       accounts_engaged: accountsEngaged,
+      // A successful refresh means the token works again.
+      instagram_token_invalid_at: null,
       updated_at: new Date().toISOString(),
     };
+
+    // Keep the last good window rather than blanking it on a failed call.
+    if (instagramInsights) updateData.instagram_insights = instagramInsights;
 
     // Add demographics if fetched successfully
     if (Object.keys(audienceDemographics).length > 0) {
       updateData.audience_demographics = audienceDemographics;
     }
 
-    let { error: updateError } = await supabaseAdmin
-      .from("influencer_profiles")
-      .update(updateData)
-      .eq("influencer_id", userId);
-
-    // Retry without the new metrics columns if they haven't been added yet
-    // (avoids breaking when migration 003 hasn't run yet).
-    if (updateError && /total_interactions|accounts_engaged/i.test(updateError.message)) {
-      console.warn("Retrying without new metrics columns:", updateError.message);
-      const fallback = { ...updateData };
-      delete (fallback as any).total_interactions;
-      delete (fallback as any).accounts_engaged;
-      const retry = await supabaseAdmin
+    // Save, dropping only columns this database does not have.
+    //
+    // `total_interactions` and `accounts_engaged` were written here for
+    // months but never existed (their migration never ran), so every save
+    // failed once and was retried without them. The old retry dropped a
+    // fixed list of columns, which silently discarded new ones too
+    // (instagram_insights never saved). Now: drop exactly the column
+    // PostgREST names, and try again. Bounded, so a real error still lands.
+    const payload: Record<string, unknown> = { ...updateData };
+    const droppedColumns: string[] = [];
+    let updateError: { message: string } | null = null;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const { error } = await supabaseAdmin
         .from("influencer_profiles")
-        .update(fallback)
+        // Everything in here came from Instagram. wellFormed means a bad
+        // character costs one U+FFFD, not the creator's analytics.
+        .update(wellFormed(payload))
         .eq("influencer_id", userId);
-      updateError = retry.error;
+      updateError = error;
+      const missing = error?.message?.match(/Could not find the '(\w+)' column/)?.[1];
+      if (!missing || !(missing in payload)) break;
+      delete payload[missing];
+      droppedColumns.push(missing);
     }
+    if (droppedColumns.length) {
+      console.warn("refresh-instagram: columns not in schema, skipped:", droppedColumns.join(", "));
+    }
+    if (debug) debugCaptures.save_dropped_columns = droppedColumns;
 
     if (updateError) {
-      console.error("DB update error:", updateError);
+      // Persisted, not just console: this failure was silent for days —
+      // the client discards refresh errors, so error_logs is the only place
+      // it can be seen.
+      log.error("instagram.refresh.save_failed", { fn: "refresh-instagram", userId }, updateError);
       return new Response(
         JSON.stringify({ error: "Failed to update profile: " + updateError.message }),
         { status: 200, headers: jsonHeaders }
@@ -585,7 +684,7 @@ serveWithLogging("refresh-instagram", async (req) => {
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {
-    console.error("Unexpected error:", err?.message || err);
+    log.error("instagram.refresh.unexpected", { fn: "refresh-instagram" }, err);
     return new Response(
       JSON.stringify({ error: "Internal server error: " + (err?.message || String(err)) }),
       { status: 200, headers: jsonHeaders }

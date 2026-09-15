@@ -44,7 +44,7 @@ export async function buildCreatorVoice(admin: SupabaseClient, userId: string): 
     typeof genderF === "number" && `${Math.round(genderF)}% female`,
   ].filter(Boolean);
 
-  const captions = arr((p.top_reels || []).map((r: any) => r?.caption)).slice(0, 5);
+  const captions = arr((p.top_reels || []).map((r: any) => r?.caption)).slice(0, 5); // text-truncation-ok: an array of captions, not a string
   const rates = p.service_rates || {};
 
   return {

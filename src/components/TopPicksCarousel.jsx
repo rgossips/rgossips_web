@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { scoreCampaignForUser, calculateCampaignMatchScore } from "@/utils/matchScore";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { truncateText } from "@/lib/text";
 
 const PLACEHOLDER_IMAGES = [
   "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=600",
@@ -100,7 +101,7 @@ export default function RecommendedCampaigns() {
       brand: c.brandName,
       title: c.title,
       location: c.location || t("locationDefault"),
-      desc: c.description?.slice(0, 80) || t("descDefault"),
+      desc: truncateText(c.description, 80) || t("descDefault"),
       pay: c.budget,
       req: c.deliverables || t("reqDefault"),
     }));

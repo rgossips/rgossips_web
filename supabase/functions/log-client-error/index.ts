@@ -19,6 +19,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ const SEVERITIES = new Set(["warn", "error", "fatal"]);
 
 const clamp = (v: unknown, n: number): string | null => {
   const s = typeof v === "string" ? v.trim() : v == null ? "" : String(v);
-  return s ? s.slice(0, n) : null;
+  return s ? truncateText(s, n) : null;
 };
 
 // Non-cryptographic, first 12 hex — enough to rate-limit and to spot a single

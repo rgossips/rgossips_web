@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 import { isElite } from "../_shared/plan.ts";
 
 const corsHeaders = {
@@ -31,7 +32,7 @@ serveWithLogging("public-media-kit", async (req) => {
     );
 
     // Try influencer profile first
-    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status, subscription_plan, plan_expires_at";
+    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status, subscription_plan, plan_expires_at, instagram_insights, instagram_refreshed_at, instagram_token_invalid_at";
 
     let influencer = null;
 
@@ -111,7 +112,7 @@ serveWithLogging("public-media-kit", async (req) => {
                   mediaType: fresh.media_type || reel.mediaType || "IMAGE",
                   likes: fresh.like_count ?? reel.likes ?? 0,
                   comments: fresh.comments_count ?? reel.comments ?? 0,
-                  caption: fresh.caption?.slice(0, 100) || reel.caption || "",
+                  caption: truncateText(fresh.caption, 100) || reel.caption || "",
                 };
               }
               return reel;
@@ -156,6 +157,11 @@ serveWithLogging("public-media-kit", async (req) => {
         media_kit_template: influencer.media_kit_template || "classic",
         // Elite verified badge. The boolean only — plan and expiry stay here.
         isElite: isElite(influencer),
+        // 30-day account totals + when they were fetched, so the kit can show
+        // its date range and flag data that has gone stale.
+        instagramInsights: influencer.instagram_insights || null,
+        analyticsUpdatedAt: influencer.instagram_refreshed_at || null,
+        instagramTokenInvalid: !!influencer.instagram_token_invalid_at,
       };
       return new Response(
         JSON.stringify({ profile, role: "influencer" }),

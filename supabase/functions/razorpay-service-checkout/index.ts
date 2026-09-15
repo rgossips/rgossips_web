@@ -25,6 +25,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,7 +126,7 @@ serveWithLogging("razorpay-service-checkout", async (req) => {
           order_id: orderId,
           order_number: order.order_number || "",
           user_id: userId,
-          service_title: lineLabel.slice(0, 200),
+          service_title: truncateText(lineLabel, 200),
         },
       }),
     });

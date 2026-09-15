@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Pencil, Check, X as XIcon, Instagram, Youtube, Facebook, MapPin, ExternalLink, Heart, MessageCircle, Camera } from "lucide-react";
 import logoIcon from "@/assets/logoIcon.png";
 import logo from "@/assets/logo2.png";
-import { formatCount, readProfile, readDemographics, toServiceLabel } from "./shared";
+import { formatCount, readProfile, readDemographics, readInsights, toServiceLabel } from "./shared";
 
 // Original RGossips two-column media kit. Keeps the inline edit affordances
 // (bio + top reels) so this template doubles as the editor view.
@@ -14,6 +14,9 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
   const t = useTranslations("MediaKitTemplatesTemplateClassic");
   const p = readProfile(profile);
   const demo = readDemographics(p.demographics, p.location);
+  const ti = useTranslations("MediaKitInsights");
+  const ins = readInsights(profile);
+  const staleText = ins.stale ? (ins.updatedLabel ? ti("stale", { date: ins.updatedLabel }) : ti("staleNoDate")) : null;
 
   return (
     <div className="w-full">
@@ -166,13 +169,6 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
                 )}
               </div>
             </SectionCard>
-
-            <SectionCard title={t("sections.openForCollaborations")}>
-              <div className="text-center py-2">
-                <p className="text-sm font-semibold text-slate-700 mb-1">{t("collab.question")}</p>
-                <p className="text-xs text-slate-500">{t("collab.reachOut")}</p>
-              </div>
-            </SectionCard>
           </div>
 
           {/* RIGHT */}
@@ -210,7 +206,33 @@ export default function TemplateClassic({ profile, editable = false, onBioSave, 
                   <p className="text-[10px] text-slate-400 mt-1">{t("stats.avgPerPost")}</p>
                 </div>
               </div>
+              {!ins.hasData && staleText && <StaleNote text={staleText} />}
             </SectionCard>
+
+            {ins.hasData && (
+              <SectionCard
+                title={
+                  <span className="min-w-0">
+                    {ti("title", { days: ins.days })}
+                    {ins.rangeLabel && <span className="text-slate-400"> · {ins.rangeLabel}</span>}
+                  </span>
+                }
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                  {ins.items.map((it, i) => (
+                    <div
+                      key={it.key}
+                      className={`min-w-0 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 ${i === ins.items.length - 1 ? lastSpan(ins.items.length) : ""}`}
+                    >
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate">{ti(`labels.${it.key}`)}</p>
+                      <p className="text-xl sm:text-2xl font-black text-slate-900 leading-none tabular-nums">{it.display}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-3">{ti("source")}</p>
+                {staleText && <StaleNote text={staleText} />}
+              </SectionCard>
+            )}
 
             {(p.topReels.length > 0 || editable) && (
               <EditableTopContent reels={p.topReels} editable={editable} onSave={onTopReelsSave} />
@@ -240,6 +262,18 @@ function SectionCard({ title, children }) {
       {children}
     </div>
   );
+}
+
+// Grid is 2 cols, 3 from sm. The last tile stretches to close the final row
+// so an odd count (7 metrics is common) never leaves a hole.
+function lastSpan(n) {
+  const base = n % 2 === 1 ? "col-span-2" : "";
+  const sm = ["sm:col-span-1", "sm:col-span-3", "sm:col-span-2"][n % 3];
+  return `${base} ${sm}`;
+}
+
+function StaleNote({ text }) {
+  return <p className="mt-3 text-[10px] sm:text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">{text}</p>;
 }
 
 function SocialStat({ icon, label, sublabel, value }) {

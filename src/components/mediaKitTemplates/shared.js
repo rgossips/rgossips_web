@@ -117,9 +117,94 @@ export function readDemographics(d, location) {
           { range: "35-44", pct: 0 },
           { range: "45+", pct: 0 },
         ];
-  const gender = d?.gender || { male: 0, female: 0, other: 0 };
-  const topCountries = d?.topCountries || [];
+  const gender = normaliseGender(d?.gender);
+  const topCountries = (d?.topCountries || []).map((c) => ({ ...c, name: countryName(c.name) }));
   return { topCities, ageRanges, gender, topCountries };
+}
+
+// Gender as Instagram reports it: split over KNOWN gender only. Rows saved
+// before 2026-09 carry Instagram's "unknown" bucket as `other` — often most
+// of the audience — which made every kit disagree with Instagram. Re-split
+// those here so old data reads right without waiting for a refresh.
+export function normaliseGender(g) {
+  const male = Number(g?.male) || 0;
+  const female = Number(g?.female) || 0;
+  const other = Number(g?.other) || 0;
+  if (other > 0 && g?.unknownPct === undefined && male + female > 0) {
+    const known = male + female;
+    return {
+      male: Math.round((male / known) * 1000) / 10,
+      female: Math.round((female / known) * 1000) / 10,
+      other: 0,
+    };
+  }
+  return { male, female, other };
+}
+
+// "IN" → "India". Older rows stored ISO codes; newer ones store names.
+let regionNames = null;
+try {
+  regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+} catch {
+  regionNames = null;
+}
+export function countryName(value) {
+  const v = String(value || "");
+  if (!/^[A-Z]{2}$/.test(v)) return v;
+  try {
+    return regionNames?.of(v) || v;
+  } catch {
+    return v;
+  }
+}
+
+// Instagram's 30-day account totals (refresh-instagram → instagram_insights)
+// plus how fresh they are. Every template renders the same set, in its own
+// style, from this one reader. Labels live in the "MediaKitInsights" i18n
+// namespace so all five templates say the same thing.
+export const INSIGHT_KEYS = ["reelViews", "reach", "likes", "comments", "shares", "saves", "reposts"];
+export const STALE_AFTER_DAYS = 30;
+
+export function readInsights(profile) {
+  const raw = profile?.instagram_insights || profile?.instagramInsights || null;
+  const updatedRaw = profile?.instagram_refreshed_at || profile?.analyticsUpdatedAt || null;
+  const tokenInvalid = !!(profile?.instagram_token_invalid_at || profile?.instagramTokenInvalid);
+
+  const updatedAt = updatedRaw ? new Date(updatedRaw) : null;
+  const validUpdated = updatedAt && !Number.isNaN(updatedAt.getTime()) ? updatedAt : null;
+  const ageDays = validUpdated ? Math.floor((Date.now() - validUpdated.getTime()) / 86_400_000) : null;
+
+  // Fixed month names: toLocaleDateString("en-IN") prints "Sept", and would
+  // differ between the server render and the browser. Mirrors mobile.
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const fmtDate = (d, withYear) => `${d.getDate()} ${MONTHS[d.getMonth()]}${withYear ? " " + d.getFullYear() : ""}`;
+  const since = raw?.since ? new Date(raw.since) : null;
+  const until = raw?.until ? new Date(raw.until) : null;
+  const rangeLabel =
+    since && until && !Number.isNaN(since.getTime()) && !Number.isNaN(until.getTime())
+      ? `${fmtDate(since, false)} – ${fmtDate(until, true)}`
+      : null;
+
+  // A metric Instagram did not return is left out, never shown as 0.
+  const items = raw
+    ? INSIGHT_KEYS.filter((k) => raw[k] !== null && raw[k] !== undefined).map((k) => ({
+        key: k,
+        value: Number(raw[k]) || 0,
+        display: formatCount(Number(raw[k]) || 0),
+      }))
+    : [];
+
+  return {
+    hasData: items.length > 0,
+    items,
+    days: raw?.days || 30,
+    rangeLabel,
+    updatedLabel: validUpdated ? fmtDate(validUpdated, true) : null,
+    ageDays,
+    // Old analytics, or Instagram has rejected the token so they cannot update.
+    stale: tokenInvalid || (ageDays !== null && ageDays > STALE_AFTER_DAYS),
+    tokenInvalid,
+  };
 }
 
 // 4-channel social rollup that all templates surface — keeps the

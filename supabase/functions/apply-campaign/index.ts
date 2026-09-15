@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { truncateText } from "../_shared/text.ts";
 import {
   APPLICATION_LIMITS,
   FREE_BARTER_APPLICATIONS,
@@ -23,7 +24,7 @@ serveWithLogging("apply-campaign", async (req) => {
   try {
     const { campaignId, influencerId, proposedRate, pitch } = await req.json();
     // Creator's "why choose you" note (draftable via the AI Pitch Assistant).
-    const pitchClean = pitch ? String(pitch).trim().slice(0, 800) : null;
+    const pitchClean = pitch ? truncateText(String(pitch).trim(), 800) : null;
 
     if (!campaignId || !influencerId) {
       return new Response(
