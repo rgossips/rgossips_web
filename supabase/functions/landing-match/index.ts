@@ -227,6 +227,7 @@ serveWithLogging("landing-match", async (req) => {
         category: cats[0] || "",
         city: r.city || "",
         fit,
+        isElite: !!r.is_elite,
       };
     });
 

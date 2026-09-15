@@ -3814,7 +3814,8 @@
       "notFound": "Media kit not found",
       "loadFailed": "Failed to load media kit",
       "removedOrInvalid": "This media kit may have been removed or the link is invalid."
-    }
+    },
+    "eliteVerified": "Verified Elite creator on RGossips"
   },
   "LogoutConfirmDialog": {
     "title": "Log out?",
@@ -5179,5 +5180,9 @@
       "title": "Subscribe to continue",
       "body": "As this is a paid campaign, you will have to subscribe to a plan to continue."
     }
+  },
+  "EliteBadge": {
+    "label": "Elite",
+    "title": "Verified Elite creator"
   }
 }

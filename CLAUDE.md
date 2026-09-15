@@ -273,6 +273,39 @@ reads those keys. Gating chat and the analytics dashboards is separate work.
 - Paid campaigns are still listed to free creators — the refusal is at Apply,
   deliberately, so the campaign is visible as an upsell. No lock badge on the card.
 
+## Elite discovery perks (2026-09)
+
+Elite was sold with four perks; only unlimited applications was enforced.
+The `FEATURE_MATRIX` keys `discovery_top_placement`,
+`discovery_homepage_spotlight` and `badge_elite_verified` were read by nothing.
+All three are now real, driven by **`isElite()` in `_shared/plan.ts`**
+(date-aware via `effectivePlan`, so a lapsed Elite loses them at expiry).
+
+- **Surfaces get a boolean, never the plan.** `list-influencers` rows carry
+  `is_elite`; `public-media-kit` → `profile.isElite`; `landing-match` →
+  `isElite`. The functions select `subscription_plan` / `plan_expires_at` but
+  must not return them — verified live that no response contains either.
+- **Top spot**: `list-influencers` stable-sorts Elite first AFTER the chosen
+  sort and AFTER filters (an Elite creator outside the brief is not promoted
+  into it). Mobile `BrandSearch` re-sorts client-side, so it repeats the Elite
+  partition; web `PocketFriendlyCreators` does too (Elite, then cheapest).
+- **Homepage spotlight**: `list-influencers { eliteOnly: true }` (skips the
+  invitation merge). `src/lib/spotlight.{js,ts}` merges live Elite ahead of the
+  admin's `featured_creators` rows (or the hard-coded fallback), de-duped by
+  handle, in all four carousels: web `brands/TopCreatorCarousel` +
+  `CreatorsCarouselWithLink`, mobile `TopCreatorCarousel` (brand home) +
+  `CreatorCarouselWithLink` (influencer home). It honours Public Profile and
+  blocks because it goes through list-influencers.
+- **Badge**: `EliteBadge` (web `components/EliteBadge.jsx`, mobile
+  `components/EliteBadge.tsx`, i18n `EliteBadge.*`) on brand search cards,
+  pocket-friendly cards, carousels, AI matcher results (landing, brand home,
+  explore hero, mobile matcher) and above the public `/kit/<handle>` page
+  (outside the templates, so all five show it).
+- Not done: Pro's `discovery_priority` still has no effect, and the landing
+  pricing table's "✓" verified badge for Pro has no implementation. Mobile
+  `BrandSearch` calls list-influencers with `{}` (default limit 50) and filters
+  client-side — a pre-existing cap, not changed here.
+
 ## Campaign publish → "under review" notice (2026-09)
 
 Publishing does not make a campaign visible: `brand-campaigns` parks it in

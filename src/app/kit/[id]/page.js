@@ -7,6 +7,7 @@ import MediaKitLayout from "@/components/MediaKitLayout";
 import { Loader2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
+import EliteBadge from "@/components/EliteBadge";
 
 export default function PublicMediaKitPage() {
   const t = useTranslations("KitId");
@@ -104,6 +105,14 @@ export default function PublicMediaKitPage() {
 
       {/* Media Kit */}
       <div className="max-w-4xl mx-auto px-0 sm:px-4 py-0 sm:py-6 lg:py-10">
+        {/* Elite verified badge — above the kit so it shows whichever of the
+            five templates the creator picked. */}
+        {profile?.isElite && (
+          <div className="flex items-center justify-center gap-2 px-4 py-3 sm:pt-0 sm:pb-4 text-xs font-semibold text-slate-600">
+            <EliteBadge size="md" />
+            <span>{t("eliteVerified")}</span>
+          </div>
+        )}
         <div className="bg-white sm:rounded-3xl shadow-xl sm:border border-slate-100 overflow-hidden">
           <MediaKitLayout profile={profile} isPublic />
         </div>

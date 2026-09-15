@@ -10,6 +10,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { ChevronDown, Loader2, IndianRupee, Check } from "lucide-react";
+import EliteBadge from "@/components/EliteBadge";
 
 // Reel rate buckets. The brand picks one; we filter influencers whose
 // service_rates.reels (rupees per reel) falls in [min, max). Open-ended
@@ -91,7 +92,9 @@ export default function PocketFriendlyCreators() {
       out.push({ ...inf, _reelRate: rate });
     }
     // Cheapest first inside the bucket — feels natural for "pocket friendly".
-    out.sort((a, b) => a._reelRate - b._reelRate);
+    // Elite creators still lead (their "top spot" perk), cheapest first
+    // within each group.
+    out.sort((a, b) => (b.is_elite ? 1 : 0) - (a.is_elite ? 1 : 0) || a._reelRate - b._reelRate);
     return out;
   }, [influencers, range]);
 
@@ -212,6 +215,7 @@ export default function PocketFriendlyCreators() {
                     <h3 className="font-bold text-[#16224E] text-lg leading-tight truncate w-full">
                       {display}
                     </h3>
+                    {inf.is_elite && <EliteBadge className="mt-1" />}
 
                     <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mt-3 truncate max-w-full">
                       {category}

@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { FaCheckCircle, FaInstagram } from "react-icons/fa";
 import { useTranslations } from "next-intl";
+import EliteBadge from "./EliteBadge";
 
 export default function CreatorCard({
   name,
   verified,
+  elite = false,
   image,
   posts,
   followers,
@@ -18,7 +20,11 @@ export default function CreatorCard({
       {/* Name */}
       <div className="flex items-center gap-1 text-lg font-semibold justify-center">
         {name}
-        {verified && <FaCheckCircle className="text-blue-500 text-sm ml-1" />}
+        {elite ? (
+          <EliteBadge className="ml-1" />
+        ) : (
+          verified && <FaCheckCircle className="text-blue-500 text-sm ml-1" />
+        )}
       </div>
 
       {/* Gradient Border Image Container */}
@@ -27,13 +33,21 @@ export default function CreatorCard({
         <div className="p-2 rounded-full bg-gradient-to-tr from-[#F6339A] to-[#FDC700] shadow-sm">
           {/* The Inner Wrapper creates the white gap between image and gradient (optional) */}
           <div className="bg-white rounded-full">
-            <Image
-              width={700}
-              height={700}
-              src={image}
-              className="w-52 h-52 rounded-full object-cover"
-              alt={name}
-            />
+            {image ? (
+              <Image
+                width={700}
+                height={700}
+                src={image}
+                className="w-52 h-52 rounded-full object-cover"
+                alt={name}
+              />
+            ) : (
+              // A spotlighted Elite creator may have no photo yet; next/image
+              // throws on an empty src.
+              <div className="w-52 h-52 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 grid place-items-center text-white text-6xl font-black">
+                {(name || "?").charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
       </div>

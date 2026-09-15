@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { isElite } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +31,7 @@ serveWithLogging("public-media-kit", async (req) => {
     );
 
     // Try influencer profile first
-    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status";
+    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status, subscription_plan, plan_expires_at";
 
     let influencer = null;
 
@@ -153,6 +154,8 @@ serveWithLogging("public-media-kit", async (req) => {
         // Snake_case duplicated so the React dispatcher (which reads either)
         // gets the saved template id on the public page.
         media_kit_template: influencer.media_kit_template || "classic",
+        // Elite verified badge. The boolean only — plan and expiry stay here.
+        isElite: isElite(influencer),
       };
       return new Response(
         JSON.stringify({ profile, role: "influencer" }),

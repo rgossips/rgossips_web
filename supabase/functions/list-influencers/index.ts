@@ -5,6 +5,7 @@ import {
   resolveViewerId,
   filterBlocked,
 } from "../_shared/blocks.ts";
+import { isElite } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +42,9 @@ serveWithLogging("list-influencers", async (req) => {
       languages?: string[];
     } = {};
     let sort: "followers_desc" | "followers_asc" | "alpha" = "followers_desc";
+    // Homepage spotlight: only live Elite creators, skipping the invitation
+    // merge (an invited stub has no plan and can never qualify).
+    let eliteOnly = false;
     try {
       const body = await req.json();
       if (Number.isFinite(body?.limit)) limit = Math.max(1, Math.min(MAX_LIMIT, Math.floor(body.limit)));
@@ -48,6 +52,7 @@ serveWithLogging("list-influencers", async (req) => {
       if (typeof body?.q === "string") q = body.q.trim().toLowerCase();
       if (body?.filters && typeof body.filters === "object") filters = body.filters;
       if (body?.sort === "followers_asc" || body?.sort === "alpha") sort = body.sort;
+      if (body?.eliteOnly === true) eliteOnly = true;
     } catch {
       // No body / not JSON → defaults.
     }
@@ -83,7 +88,7 @@ serveWithLogging("list-influencers", async (req) => {
     // Content Language data only exists on invitation notes. The old
     // select("*") masked this (r.languages was just undefined).
     const PROFILE_COLS =
-      "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, location, services, service_rates, gender, creator_type, content_languages, media_kit_published, status";
+      "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, location, services, service_rates, gender, creator_type, content_languages, media_kit_published, status, subscription_plan, plan_expires_at";
     const PAGE = 1000;
     const pageThrough = async (
       table: string,
@@ -176,7 +181,7 @@ serveWithLogging("list-influencers", async (req) => {
 
     // Admin-invited (not yet registered) influencers
     let invitesData: any[] = [];
-    try {
+    if (!eliteOnly) try {
       invitesData = await pageThrough(
         "influencer_invitations",
         (q) => q.eq("status", "pending"),
@@ -213,6 +218,9 @@ serveWithLogging("list-influencers", async (req) => {
       // B4 — the client only renders the media-kit action when a kit
       // actually exists; otherwise /kit/<handle> would 404.
       media_kit_published: !!r.media_kit_published,
+      // Elite perks (top placement, spotlight, badge). A boolean only — the
+      // plan and its expiry are read here but never leave the function.
+      is_elite: isElite(r),
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,
@@ -285,7 +293,7 @@ serveWithLogging("list-influencers", async (req) => {
     // (B3) categories + city — the search placeholder promises "name,
     // username or category" so a "beauty" query must hit the Beauty &
     // Skincare creators, not just people with beauty in their name.
-    let filtered = merged;
+    let filtered = eliteOnly ? merged.filter((r: any) => r.is_elite) : merged;
     if (q) {
       filtered = filtered.filter((r: any) => {
         const cats = Array.isArray(r.categories) ? r.categories.join(" ") : "";
@@ -374,6 +382,13 @@ serveWithLogging("list-influencers", async (req) => {
     } else {
       filtered.sort((a: any, b: any) => (b.followers_count || 0) - (a.followers_count || 0));
     }
+
+    // Elite "Featured · top spot": Elite creators lead every result set,
+    // whichever sort was picked. Array.prototype.sort is stable, so each
+    // group keeps the order the sort above gave it. Filters have already
+    // run — an Elite creator who doesn't match the brief is not promoted
+    // into it.
+    filtered.sort((a: any, b: any) => (b.is_elite ? 1 : 0) - (a.is_elite ? 1 : 0));
 
     // Slice to the requested page. We return `total` so the client can
     // paginate intelligently (e.g. show "showing 25 of 412 creators").

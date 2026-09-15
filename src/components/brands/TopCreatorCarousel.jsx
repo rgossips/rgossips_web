@@ -10,6 +10,8 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { createClient } from "@/utils/supabase/client";
+import EliteBadge from "@/components/EliteBadge";
+import { fetchEliteSpotlight, mergeSpotlight } from "@/lib/spotlight";
 
 // Hand-curated fallback shown when the admin hasn't published any rows in
 // public.featured_creators yet. As soon as admin adds entries, those take
@@ -145,25 +147,29 @@ export const TopCreatorsCarousel = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("featured_creators")
-        .select("username, display_name, avatar_url, followers_label, rating, verified, instagram_url")
-        .eq("is_active", true)
-        .order("position", { ascending: true });
+      // Elite spotlight and the admin's picks load together; Elite leads.
+      const [{ data }, elite] = await Promise.all([
+        supabase
+          .from("featured_creators")
+          .select("username, display_name, avatar_url, followers_label, rating, verified, instagram_url")
+          .eq("is_active", true)
+          .order("position", { ascending: true }),
+        fetchEliteSpotlight(supabase),
+      ]);
       if (cancelled) return;
-      if (data && data.length > 0) {
-        setTopCreators(
-          data.map((r) => ({
-            name: r.username,
-            verified: r.verified,
-            rating: r.rating ? String(r.rating) : "—",
-            image: r.avatar_url || "",
-            followers: r.followers_label || "",
-            bio: r.display_name || "",
-            link: r.instagram_url,
-          }))
-        );
-      }
+      const curated =
+        data && data.length > 0
+          ? data.map((r) => ({
+              name: r.username,
+              verified: r.verified,
+              rating: r.rating ? String(r.rating) : "—",
+              image: r.avatar_url || "",
+              followers: r.followers_label || "",
+              bio: r.display_name || "",
+              link: r.instagram_url,
+            }))
+          : fallbackTopCreators;
+      setTopCreators(mergeSpotlight(elite, curated));
     })();
     return () => {
       cancelled = true;
@@ -198,13 +204,25 @@ export const TopCreatorsCarousel = () => {
                 <div className="bg-white rounded-4xl border border-[#E4E9F4] shadow-sm overflow-hidden group">
                   {/* Image Container */}
                   <div className="relative h-64 w-full">
-                    <Image
-                      src={creator.image}
-                      alt={creator.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Rating Badge */}
+                    {creator.image ? (
+                      <Image
+                        src={creator.image}
+                        alt={creator.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      // next/image throws on an empty src — an Elite creator
+                      // may not have a photo yet.
+                      <div className="absolute inset-0 bg-gradient-to-br from-pink-400 to-purple-500 grid place-items-center text-white text-6xl font-black">
+                        {(creator.name || "?").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    {/* Elite spotlight rows carry the badge in place of a
+                        rating — there is no rating on a live profile. */}
+                    {creator.elite ? (
+                      <EliteBadge size="md" className="absolute top-4 right-4 shadow-sm" />
+                    ) : (
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-xl flex items-center gap-1 shadow-sm">
                       <Star
                         size={14}
@@ -214,6 +232,7 @@ export const TopCreatorsCarousel = () => {
                         {creator.rating}
                       </span>
                     </div>
+                    )}
                   </div>
 
                   {/* Content Container */}

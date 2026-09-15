@@ -5,6 +5,7 @@ import { Sparkles, Search, Loader2, Check, Users, Send } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import CampaignPickerModal from "@/components/brands/CampaignPickerModal";
+import EliteBadge from "@/components/EliteBadge";
 
 // Brand-home AI matcher. Reuses the public `landing-match` edge fn (which
 // relaxes its rate limit for authenticated callers) to turn a free-text brief
@@ -127,7 +128,10 @@ export default function BrandMatchPrompt() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-[#16224E] truncate">{r.name}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-[13px] font-bold text-[#16224E] truncate">{r.name}</p>
+                        {r.isElite && <EliteBadge />}
+                      </div>
                       <p className="text-[11px] text-[#6B6785] truncate">
                         {[r.category, `${fmt(r.followers)} followers`].filter(Boolean).join(" · ")}
                       </p>

@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
 import CampaignPickerModal from "@/components/brands/CampaignPickerModal";
+import EliteBadge from "@/components/EliteBadge";
 
 /**
  * Explore hero — the navy panel from "RGossips Explore.dc.html".
@@ -324,7 +325,10 @@ export default function BrandExploreHero() {
                     )}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                    <span className="truncate text-[13px] font-semibold">{r.name}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-[13px] font-semibold">{r.name}</span>
+                      {r.isElite && <EliteBadge />}
+                    </span>
                     <span className="truncate text-[11px] text-white/[.62]">
                       {[r.category, `${fmt(r.followers)} followers`].filter(Boolean).join(" · ")}
                     </span>

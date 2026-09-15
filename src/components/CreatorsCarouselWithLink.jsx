@@ -10,6 +10,7 @@ import SectionTitle from "./SectionTitle";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import CreatorCard from "./CreatorCard";
 import { createClient } from "@/utils/supabase/client";
+import { fetchEliteSpotlight, mergeSpotlight } from "@/lib/spotlight";
 
 // Built-in fallback shown until the admin publishes any rows in
 // public.featured_creators. Same source-of-truth as the brand-side
@@ -137,28 +138,32 @@ export default function CreatorsCarouselWithLink() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("featured_creators")
-        .select("username, display_name, avatar_url, followers_label, verified, instagram_url")
-        .eq("is_active", true)
-        .order("position", { ascending: true });
+      // Elite spotlight and the admin's picks load together; Elite leads.
+      const [{ data }, elite] = await Promise.all([
+        supabase
+          .from("featured_creators")
+          .select("username, display_name, avatar_url, followers_label, verified, instagram_url")
+          .eq("is_active", true)
+          .order("position", { ascending: true }),
+        fetchEliteSpotlight(supabase),
+      ]);
       if (cancelled) return;
-      if (data && data.length > 0) {
-        setCreators(
-          data.map((r) => ({
-            name: r.username,
-            verified: !!r.verified,
-            image: r.avatar_url || "",
-            followers: r.followers_label || "",
-            // CreatorCard renders these slots but the table doesn't carry
-            // them — pass empty strings so the card hides the rows.
-            posts: "",
-            following: "",
-            bio: r.display_name || "",
-            link: r.instagram_url,
-          }))
-        );
-      }
+      const curated =
+        data && data.length > 0
+          ? data.map((r) => ({
+              name: r.username,
+              verified: !!r.verified,
+              image: r.avatar_url || "",
+              followers: r.followers_label || "",
+              // CreatorCard renders these slots but the table doesn't carry
+              // them — pass empty strings so the card hides the rows.
+              posts: "",
+              following: "",
+              bio: r.display_name || "",
+              link: r.instagram_url,
+            }))
+          : fallbackCreators;
+      setCreators(mergeSpotlight(elite, curated));
     })();
     return () => {
       cancelled = true;

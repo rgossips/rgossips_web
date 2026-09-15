@@ -70,6 +70,19 @@ export function isSubscribed(profile: PlanProfile | null | undefined): boolean {
 }
 
 /**
+ * Elite's discovery perks: top placement in brand search, the homepage
+ * spotlight, and the Elite verified badge. Date-aware through
+ * effectivePlan, so a lapsed Elite loses all three the moment the paid
+ * period ends — no sweep has to run first.
+ *
+ * Surfaces expose this as a boolean only (`is_elite`), never the plan
+ * itself: the badge is public by design, a creator's billing tier is not.
+ */
+export function isElite(profile: PlanProfile | null | undefined): boolean {
+  return effectivePlan(profile) === "elite";
+}
+
+/**
  * Free creators may only apply to barter campaigns. `hybrid` ("paid +
  * product") is NOT barter — it carries cash, so it sits behind a plan.
  */
