@@ -17,3 +17,12 @@ export function isInstagramTokenExpired(profile) {
   const at = Date.parse(raw);
   return Number.isFinite(at) && at < Date.now();
 }
+
+// Connected, token fine, but the creator switched off the insights permission
+// when connecting — so reach/views can never load until they reconnect with it
+// on. Set by refresh-instagram (migration 073), cleared by a refresh that gets
+// insights. Only meaningful when the token itself is healthy.
+export function isInstagramInsightsNotGranted(profile) {
+  if (!profile?.instagram_connected) return false;
+  return !!profile.instagram_insights_denied_at && !isInstagramTokenExpired(profile);
+}

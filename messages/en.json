@@ -171,7 +171,9 @@
     "failed": "Failed to reconnect Instagram",
     "title": "Instagram Reconnection Required",
     "body": "Reconnect your Instagram to keep your followers, engagement rate, and analytics up to date.",
-    "reconnect": "Reconnect"
+    "reconnect": "Reconnect",
+    "insightsTitle": "Reconnect Instagram to show your reach and views",
+    "insightsBody": "Instagram isn't sharing your insights with us. Reconnect and keep \"insights\" switched on so brands can see your reach and views."
   },
   "ProStatusCard": {
     "userFallback": "User",

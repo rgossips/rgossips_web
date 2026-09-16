@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Instagram, Loader2, X, AlertTriangle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/context/AuthContext";
-import { isInstagramTokenExpired } from "@/lib/instagramToken";
+import { isInstagramInsightsNotGranted, isInstagramTokenExpired } from "@/lib/instagramToken";
 import { useInstagramReconnect } from "@/hooks/useInstagramReconnect";
 
 export default function InstagramReconnectBanner() {
@@ -16,8 +16,11 @@ export default function InstagramReconnectBanner() {
     messages: { denied: t("denied"), failed: t("failed") },
   });
   const expired = instagramTokenMissing || isInstagramTokenExpired(profile);
+  // A working connection without the insights permission needs the same fix —
+  // reconnect — but a different explanation: leave "insights" switched on.
+  const insightsMissing = !expired && isInstagramInsightsNotGranted(profile);
 
-  if (!expired || dismissed) return null;
+  if ((!expired && !insightsMissing) || dismissed) return null;
 
   return (
     <div className="mx-4 lg:mx-10 mb-4">
@@ -29,10 +32,10 @@ export default function InstagramReconnectBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <AlertTriangle size={14} className="text-amber-500" />
-            <p className="text-sm font-bold text-slate-900">{t("title")}</p>
+            <p className="text-sm font-bold text-slate-900">{insightsMissing ? t("insightsTitle") : t("title")}</p>
           </div>
           <p className="text-xs text-slate-500">
-            {t("body")}
+            {insightsMissing ? t("insightsBody") : t("body")}
           </p>
           {error && (
             <p className="text-xs text-red-500 mt-1">{error}</p>

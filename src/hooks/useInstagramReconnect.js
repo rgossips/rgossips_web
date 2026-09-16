@@ -60,9 +60,11 @@ export function useInstagramReconnect({ messages, onReconnected } = {}) {
 
       latest.current.setInstagramTokenMissing(false);
       // Pull fresh analytics — a successful refresh also clears
-      // instagram_token_invalid_at — then reload the profile so every
-      // "expired" check sees the new expiry.
-      await latest.current.refreshInstagram(u.id);
+      // instagram_token_invalid_at and instagram_insights_denied_at — then
+      // reload the profile so every "expired" check sees the new expiry.
+      // Forced: refresh-instagram otherwise skips anything refreshed in the
+      // last hour, leaving the banner up after a reconnect that worked.
+      await latest.current.refreshInstagram(u.id, { force: true });
       await latest.current.refreshProfile?.();
       done?.();
     } catch (err) {

@@ -21,6 +21,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// The creator switched off the insights permission on Instagram's consent
+// screen (or connected before it was requested). Code 10 is Graph's
+// "Application does not have permission for this action". Nothing but a
+// reconnect fixes it, so it is recorded on the profile rather than retried and
+// logged on every refresh — see migration 073.
+const isInsightsPermissionError = (e: { code?: unknown; message?: string } | undefined) =>
+  Number(e?.code) === 10 || /does not have permission/i.test(e?.message || "");
+
 serveWithLogging("refresh-instagram", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -80,6 +88,15 @@ serveWithLogging("refresh-instagram", async (req) => {
         );
       }
     }
+
+    // Read separately and tolerantly: before migration 073 the column does not
+    // exist, and naming it in the select above would fail the whole refresh.
+    const { data: deniedRow } = await supabaseAdmin
+      .from("influencer_profiles")
+      .select("instagram_insights_denied_at")
+      .eq("influencer_id", userId)
+      .maybeSingle();
+    const insightsDeniedSince: string | null = deniedRow?.instagram_insights_denied_at ?? null;
 
     let accessToken = profile.instagram_access_token;
     let tokenExpiresAt = profile.instagram_token_expires_at;
@@ -185,19 +202,28 @@ serveWithLogging("refresh-instagram", async (req) => {
     const windowQs = `period=day&metric_type=total_value&since=${insightsSince}&until=${insightsUntil}`;
     const insights30: Record<string, number> = {};
     let insightsOk = false;
+    let insightsDenied = false;
     try {
       // Split into two calls: one unsupported metric fails a whole request,
       // and `reposts` is newer than the rest.
-      for (const metrics of [
-        "views,reach,total_interactions,accounts_engaged,likes,comments,shares,saves",
-        "reposts",
-      ]) {
+      const MAIN_METRICS = "views,reach,total_interactions,accounts_engaged,likes,comments,shares,saves";
+      for (const metrics of [MAIN_METRICS, "reposts"]) {
         const res = await fetch(
           `https://graph.instagram.com/v22.0/me/insights?metric=${metrics}&${windowQs}&access_token=${encodeURIComponent(accessToken)}`
         );
         const body = await res.json();
         if (debug) debugCaptures[`insights_30d_${metrics.split(",")[0]}`] = body;
         if (body?.error) {
+          if (metrics === MAIN_METRICS && isInsightsPermissionError(body.error)) {
+            // No insights permission at all: `reposts` and the breakdown
+            // below need the same one, so stop here. Logged once, on the
+            // refresh that first finds it — not on every refresh after.
+            insightsDenied = true;
+            if (!insightsDeniedSince) {
+              log.persistWarn("instagram.refresh.insights_not_granted", { fn: "refresh-instagram", userId }, body.error?.message);
+            }
+            break;
+          }
           log.persistWarn("instagram.refresh.insights_failed", { fn: "refresh-instagram", userId, metrics }, body.error?.message);
           continue;
         }
@@ -209,12 +235,14 @@ serveWithLogging("refresh-instagram", async (req) => {
 
       // Reel views specifically — Instagram's report leads with this, and the
       // account `views` total also counts stories, carousels and posts.
-      const byProduct = await fetch(
-        `https://graph.instagram.com/v22.0/me/insights?metric=views&breakdown=media_product_type&${windowQs}&access_token=${encodeURIComponent(accessToken)}`
-      ).then((r) => r.json());
-      if (debug) debugCaptures.insights_30d_views_by_product = byProduct;
-      for (const r of byProduct?.data?.[0]?.total_value?.breakdowns?.[0]?.results || []) {
-        if (r?.dimension_values?.[0] === "REEL") insights30.reelViews = Number(r.value) || 0;
+      if (!insightsDenied) {
+        const byProduct = await fetch(
+          `https://graph.instagram.com/v22.0/me/insights?metric=views&breakdown=media_product_type&${windowQs}&access_token=${encodeURIComponent(accessToken)}`
+        ).then((r) => r.json());
+        if (debug) debugCaptures.insights_30d_views_by_product = byProduct;
+        for (const r of byProduct?.data?.[0]?.total_value?.breakdowns?.[0]?.results || []) {
+          if (r?.dimension_values?.[0] === "REEL") insights30.reelViews = Number(r.value) || 0;
+        }
       }
     } catch (e) {
       log.error("instagram.refresh.insights_unexpected", { fn: "refresh-instagram", userId }, e);
@@ -618,6 +646,13 @@ serveWithLogging("refresh-instagram", async (req) => {
 
     // Keep the last good window rather than blanking it on a failed call.
     if (instagramInsights) updateData.instagram_insights = instagramInsights;
+
+    // Insights permission state (migration 073). Getting insights clears it —
+    // that is how a reconnect with insights switched on takes the banner away.
+    // Keep the original timestamp while it stays denied. If the column does not
+    // exist yet, the save loop below drops it.
+    if (insightsOk) updateData.instagram_insights_denied_at = null;
+    else if (insightsDenied) updateData.instagram_insights_denied_at = insightsDeniedSince || new Date().toISOString();
 
     // Add demographics if fetched successfully
     if (Object.keys(audienceDemographics).length > 0) {

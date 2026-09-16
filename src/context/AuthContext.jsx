@@ -78,7 +78,9 @@ export const AuthProvider = ({ children }) => {
     }
   }, [handleRemovedAccount]);
 
-  const refreshInstagram = useCallback(async (userId) => {
+  // `force` bypasses refresh-instagram's once-an-hour throttle — used right
+  // after a reconnect, when the new token has to be exercised immediately.
+  const refreshInstagram = useCallback(async (userId, { force = false } = {}) => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
@@ -89,7 +91,7 @@ export const AuthProvider = ({ children }) => {
           "apikey": supabaseKey,
           "Authorization": `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify(force ? { userId, force: true } : { userId }),
       });
       const data = await res.json();
       if (data?.success && !data?.skipped) {
