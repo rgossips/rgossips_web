@@ -241,6 +241,18 @@ and de-listing unsubscribed creators would empty the brand-side search.
 — they never did, on any tier. The matrix says free gets none, but nothing
 reads those keys. Gating chat and the analytics dashboards is separate work.
 
+### Email + gender required before applying (2026-09)
+
+`apply-campaign` refuses with `profile_incomplete` (`missing: ["email","gender"]`)
+until the influencer profile has a valid email and a gender — for EVERY tier,
+checked before the entitlement gate, and it does NOT fall open on a read error
+(`profile_check_failed`). ~211 of 251 active creators had neither at rollout.
+Both apply forms (web `ApplyCampaignForm.jsx`, mobile `ApplyCampaignForm.tsx`)
+show a "Complete your details" section when either is missing, save via
+update-profile, then submit. update-profile now rejects a malformed email
+(`invalid_email`) so a junk value can't pass the gate. Older app builds get the
+server's message and can set both in the existing profile edit screens.
+
 ### Client surfaces
 
 - `useFreeApplications()` (web `src/hooks/`, mobile `src/hooks/`) — head-counts

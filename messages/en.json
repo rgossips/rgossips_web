@@ -716,6 +716,24 @@
       "on_approval": "On content approval",
       "7_days": "Within 7 days of posting",
       "30_days": "Within 30 days"
+    },
+    "details": {
+      "heading": "Complete your details to apply",
+      "subtitle": "Brands use these to find and contact you. We'll save them to your profile.",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "gender": "Gender",
+      "genderPlaceholder": "Select",
+      "genders": {
+        "female": "Female",
+        "male": "Male",
+        "non_binary": "Non-binary",
+        "prefer_not_to_say": "Prefer not to say"
+      },
+      "emailInvalid": "Enter a valid email address to apply.",
+      "genderRequired": "Select your gender to apply.",
+      "required": "Add your email and gender to apply.",
+      "saveFailed": "Couldn't save your details. Please try again."
     }
   },
   "ApplyCampaignNotLoggedIn": {

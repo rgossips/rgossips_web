@@ -27,9 +27,13 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useAiTool } from "@/hooks/useAiTool";
 
+// Same allow-list update-profile accepts and the brand-side Gender filter reads.
+const GENDER_OPTIONS = ["female", "male", "non_binary", "prefer_not_to_say"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const t = useTranslations("ApplyCampaignForm");
-  const { profile, user } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +54,17 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
     const text = await draftPitch({ tool: "pitch", campaignId: campaignData?.id, inputs });
     if (text) setWhyChooseYou(text);
   };
+
+  // Required before applying: email + gender (apply-campaign refuses
+  // without them as "profile_incomplete"). Most phone-OTP creators never
+  // gave either, so the form collects whatever is missing and saves it to
+  // the profile before submitting. Decided once on open, so the section does
+  // not vanish mid-edit when the profile refreshes.
+  const [needsDetails, setNeedsDetails] = useState(
+    () => !EMAIL_RE.test(String(profile?.email || "").trim()) || !profile?.gender,
+  );
+  const [detailsEmail, setDetailsEmail] = useState(profile?.email || user?.email || "");
+  const [detailsGender, setDetailsGender] = useState(profile?.gender || "");
 
   // Auto-populated from profile
   const fullName = profile?.full_name || "";
@@ -89,11 +104,42 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       setError(t("why.required"));
       return;
     }
+    if (needsDetails) {
+      if (!EMAIL_RE.test(detailsEmail.trim())) {
+        setError(t("details.emailInvalid"));
+        return;
+      }
+      if (!detailsGender) {
+        setError(t("details.genderRequired"));
+        return;
+      }
+    }
     setSubmitting(true);
     setError("");
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+      // Save the missing details first, so the application goes in against
+      // a complete profile.
+      if (needsDetails) {
+        const saveRes = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify({
+            userId: user?.id,
+            table: "influencer_profiles",
+            email: detailsEmail.trim(),
+            gender: detailsGender,
+          }),
+        });
+        const saved = await saveRes.json().catch(() => ({}));
+        if (saved?.error) {
+          setError(saved.message || t("details.saveFailed"));
+          return;
+        }
+        refreshProfile?.();
+      }
 
       const res = await fetch(`${supabaseUrl}/functions/v1/apply-campaign`, {
         method: "POST",
@@ -111,6 +157,12 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       });
 
       const data = await res.json();
+
+      if (data?.error === "profile_incomplete") {
+        setNeedsDetails(true);
+        setError(data.message || t("details.required"));
+        return;
+      }
 
       if (data?.error === "already_applied") {
         setError(t("errors.alreadyApplied"));
@@ -230,6 +282,42 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
               {typeof error === "string" ? error : error.message}
             </div>
           ) : null}
+
+          {needsDetails && (
+            <section className="space-y-3 p-4 rounded-xl border border-amber-200 bg-amber-50/60">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">{t("details.heading")}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{t("details.subtitle")}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">{t("details.email")}</span>
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={detailsEmail}
+                    onChange={(e) => setDetailsEmail(e.target.value)}
+                    placeholder={t("details.emailPlaceholder")}
+                    className="mt-1 w-full py-2.5 px-3 bg-white border border-slate-200 focus:border-pink-300 rounded-xl text-sm text-slate-700 outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">{t("details.gender")}</span>
+                  <select
+                    value={detailsGender}
+                    onChange={(e) => setDetailsGender(e.target.value)}
+                    className="mt-1 w-full py-2.5 px-3 bg-white border border-slate-200 focus:border-pink-300 rounded-xl text-sm text-slate-700 outline-none"
+                  >
+                    <option value="">{t("details.genderPlaceholder")}</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g}>{t(`details.genders.${g}`)}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+          )}
 
           {/* Campaign briefing — what you're committing to */}
           <CampaignBriefing campaign={campaignData} />

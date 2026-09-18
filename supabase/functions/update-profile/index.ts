@@ -198,7 +198,18 @@ serveWithLogging("update-profile", async (req) => {
       const ALLOWED_GENDERS = new Set(["male", "female", "non_binary", "prefer_not_to_say"]);
       updateData.gender = ALLOWED_GENDERS.has(g) ? g : null;
     }
-    if (fields.email !== undefined) updateData.email = fields.email;
+    // Email is required before applying (apply-campaign), so store only a
+    // plausible address — a malformed one would pass that gate as "set".
+    if (fields.email !== undefined) {
+      const e = String(fields.email || "").trim().toLowerCase();
+      if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+        return new Response(
+          JSON.stringify({ error: "invalid_email", message: "Enter a valid email address." }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      updateData.email = e || null;
+    }
     if (fields.phone !== undefined) updateData.phone = fields.phone;
     if (fields.address !== undefined) updateData.address = fields.address;
     if (fields.serviceRates !== undefined) updateData.service_rates = fields.serviceRates;

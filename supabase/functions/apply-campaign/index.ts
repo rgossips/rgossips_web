@@ -1,5 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+
+// Deliberately loose: one @, something on each side, a dot in the domain.
+const isValidEmail = (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
 import { truncateText } from "../_shared/text.ts";
 import {
   APPLICATION_LIMITS,
@@ -59,6 +62,41 @@ serveWithLogging("apply-campaign", async (req) => {
       );
     }
     const reapplying = !!existing; // existing is withdrawn/rejected
+
+    // Minimum profile before applying: a contact email and gender. Brands
+    // filter and contact on both, and neither is collected at signup for
+    // phone-OTP creators. The apply forms (web + mobile) collect them inline
+    // and save via update-profile, so this refusal is the backstop.
+    //
+    // Unlike the entitlement gate below, this does NOT fall open on a read
+    // failure: it is a data requirement, not a billing one, and a retry
+    // costs the creator nothing.
+    {
+      const { data: basics, error: basicsErr } = await supabaseAdmin
+        .from("influencer_profiles")
+        .select("email, gender")
+        .eq("influencer_id", influencerId)
+        .maybeSingle();
+      if (basicsErr) {
+        return new Response(
+          JSON.stringify({ error: "profile_check_failed", message: "Couldn't check your profile. Please try again." }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+      const missing: string[] = [];
+      if (!isValidEmail(basics?.email)) missing.push("email");
+      if (!String(basics?.gender || "").trim()) missing.push("gender");
+      if (missing.length) {
+        return new Response(
+          JSON.stringify({
+            error: "profile_incomplete",
+            missing,
+            message: "Add your email and gender to your profile before applying to campaigns.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    }
 
     // Entitlement gate. Two separate rules, because the free tier is not
     // just a smaller paid tier:
