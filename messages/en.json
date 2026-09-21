@@ -2395,6 +2395,9 @@
     "imageAlt": "Featured Product"
   },
   "FilterModal": {
+    "brandType": "Brand type",
+    "brandTypeBrand": "Brands",
+    "brandTypeAgency": "Agencies",
     "category": "Category",
     "selectedCount": "{count} selected",
     "all": "All",

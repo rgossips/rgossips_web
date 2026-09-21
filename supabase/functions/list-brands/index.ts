@@ -224,7 +224,7 @@ serveWithLogging("list-brands", async (req) => {
     // eslint-disable-next-line max-len
     const { data: profiles, error: profError } = await supabaseAdmin
       .from("brand_profiles")
-      .select("brand_id,brand_name,categories,contact_name,followers_count,gstin_trade_name,instagram_username,is_verified,logo_url,status")
+      .select("account_type,brand_id,brand_name,categories,contact_name,followers_count,gstin_trade_name,instagram_username,is_verified,logo_url,status")
       // NOT IN would also drop NULL-status legacy rows — keep those.
       .or("status.is.null,status.not.in.(deactivated,pending_deletion)");
 
@@ -255,6 +255,8 @@ serveWithLogging("list-brands", async (req) => {
         logo: p.logo_url || "",
         instagram: p.instagram_username || "",
         isVerified: p.is_verified || false,
+        // "brand" | "agency" — admin-set label (migration 075).
+        accountType: p.account_type === "agency" ? "agency" : "brand",
         isRegistered: true,
         activeCampaigns: 0,
         rating: 0,
@@ -302,6 +304,7 @@ serveWithLogging("list-brands", async (req) => {
         logo: inv.logo_url || "",
         instagram: inv.instagram_username || "",
         isVerified,
+        accountType: inv.account_type === "agency" ? "agency" : "brand",
         isRegistered: false,
         activeCampaigns: 0,
         rating: 0,

@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import { CampaignCard } from "@/components/CampaignCard";
-import FilterModal, { FilterSidebar } from "@/components/FilterModal";
+import FilterModal, { FilterSidebar, matchesBrandType } from "@/components/FilterModal";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
@@ -60,6 +60,8 @@ export default function CampaignsPage() {
     if (multi) return multi.split(",").map((c) => c.trim()).filter(Boolean);
     return single ? [single] : [];
   });
+  // Brand / agency checkboxes — [] or both ticked = everyone.
+  const [brandTypes, setBrandTypes] = useState([]);
 
   // --- FETCH CAMPAIGNS ---
   useEffect(() => {
@@ -163,7 +165,7 @@ export default function CampaignsPage() {
       matchesAnyCity(campaign.location, selectedLocations);
     const budgetNum = parseInt((campaign.budget || "").replace(/[^\d]/g, "")) || 0;
     const matchesBudget = budgetNum >= budgetRange.min && (budgetRange.max >= 200000 || budgetNum <= budgetRange.max);
-    return matchesSearch && matchesCategory && matchesBrand && matchesLocation && matchesBudget;
+    return matchesSearch && matchesCategory && matchesBrand && matchesLocation && matchesBudget && matchesBrandType(brandTypes, campaign.brandType);
   };
 
   // Count for a tab that respects the same active filters as the list.
@@ -204,7 +206,7 @@ export default function CampaignsPage() {
       .sort((a, b) => b.score - a.score)
       .map(({ c }) => c);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange, profile]);
+  }, [campaigns, activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange, brandTypes, profile]);
 
   // Client-side pagination — 30 per page, reset to page 1 whenever the tab
   // or any filter changes so the user never lands on an empty page.
@@ -213,7 +215,7 @@ export default function CampaignsPage() {
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange]);
+  }, [activeTab, searchQuery, selectedCategories, selectedBrands, selectedLocations, budgetRange, brandTypes]);
   const pageCount = Math.max(1, Math.ceil(filteredCampaigns.length / PAGE_SIZE));
   const pagedCampaigns = filteredCampaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const goToPage = (p) => {
@@ -368,6 +370,8 @@ export default function CampaignsPage() {
               locations={campaignLocations}
               selectedLocations={selectedLocations}
               setSelectedLocations={setSelectedLocations}
+              brandTypes={brandTypes}
+              setBrandTypes={setBrandTypes}
               onExpand={() => setIsFiltersOpen(true)}
             />
           </aside>
@@ -538,6 +542,8 @@ export default function CampaignsPage() {
             locations={campaignLocations}
             selectedLocations={selectedLocations}
             setSelectedLocations={setSelectedLocations}
+            brandTypes={brandTypes}
+            setBrandTypes={setBrandTypes}
           />
         )}
       </AnimatePresence>

@@ -28,6 +28,38 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 
+// Brand / agency checkboxes (admin-set label, migration 075). Rendered only
+// when the page passes `brandTypes` + `setBrandTypes`. Ticking both or neither
+// shows everyone — callers filter only when exactly one is ticked.
+const BRAND_TYPES = ["brand", "agency"];
+const BrandTypeChecks = ({ brandTypes, setBrandTypes, compact = false }) => {
+  const t = useTranslations("FilterModal");
+  const toggle = (type) =>
+    setBrandTypes((prev) => (prev.includes(type) ? prev.filter((x) => x !== type) : [...prev, type]));
+  return (
+    <div className={`flex flex-wrap ${compact ? "gap-3" : "gap-4"}`}>
+      {BRAND_TYPES.map((type) => (
+        <label
+          key={type}
+          className={`inline-flex items-center gap-2 cursor-pointer font-bold ${compact ? "text-[11px] text-slate-500" : "text-sm text-slate-600"}`}
+        >
+          <input
+            type="checkbox"
+            checked={brandTypes.includes(type)}
+            onChange={() => toggle(type)}
+            className="w-4 h-4 rounded border-slate-300 accent-[#E60076] cursor-pointer"
+          />
+          {type === "agency" ? t("brandTypeAgency") : t("brandTypeBrand")}
+        </label>
+      ))}
+    </div>
+  );
+};
+
+/** Filter helper for pages: true when `type` passes the ticked boxes. */
+export const matchesBrandType = (brandTypes, type) =>
+  !brandTypes || brandTypes.length !== 1 || brandTypes[0] === (type === "agency" ? "agency" : "brand");
+
 // --- 1. The Full Filter Content (Used in Modal popup) ---
 export const FilterContent = ({
   selectedCategories,
@@ -44,6 +76,8 @@ export const FilterContent = ({
   locations,
   selectedLocations,
   setSelectedLocations,
+  brandTypes,
+  setBrandTypes,
 }) => {
   const t = useTranslations("FilterModal");
   // Location list can run long (every city any live campaign targets), so it
@@ -280,6 +314,13 @@ export const FilterContent = ({
         </section>
       )}
 
+      {brandTypes && setBrandTypes && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-bold text-slate-800">{t("brandType")}</h3>
+          <BrandTypeChecks brandTypes={brandTypes} setBrandTypes={setBrandTypes} />
+        </section>
+      )}
+
       {/* Verified Only */}
       <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
         <div>
@@ -313,6 +354,8 @@ export const FilterSidebar = ({
   locations,
   selectedLocations,
   setSelectedLocations,
+  brandTypes,
+  setBrandTypes,
 }) => {
   const t = useTranslations("FilterModal");
   const activeFiltersCount =
@@ -320,6 +363,7 @@ export const FilterSidebar = ({
     (selectedPlatforms?.length || 0) +
     (selectedBrands?.length || 0) +
     (selectedLocations?.length || 0) +
+    (brandTypes?.length === 1 ? 1 : 0) +
     (isVerifiedOnly ? 1 : 0) +
     (budgetRange.min > 0 || budgetRange.max < 10000 ? 1 : 0);
 
@@ -329,7 +373,9 @@ export const FilterSidebar = ({
     if (setSelectedPlatforms) setSelectedPlatforms([]);
     if (setSelectedBrands) setSelectedBrands([]);
     if (setSelectedLocations) setSelectedLocations([]);
-    setIsVerifiedOnly(false);
+    if (setBrandTypes) setBrandTypes([]);
+    // The campaigns page has no verified toggle and doesn't pass the setter.
+    if (setIsVerifiedOnly) setIsVerifiedOnly(false);
   };
 
   const handleCategoryToggle = (cat) => {
@@ -515,6 +561,13 @@ export const FilterSidebar = ({
         </div>
       )}
 
+      {brandTypes && setBrandTypes && (
+        <div className="space-y-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[2px]">{t("brandType")}</h3>
+          <BrandTypeChecks brandTypes={brandTypes} setBrandTypes={setBrandTypes} compact />
+        </div>
+      )}
+
       {/* Verified Toggle */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold text-slate-500">{t("verifiedOnly")}</span>
@@ -558,6 +611,8 @@ const FilterModal = ({
   locations,
   selectedLocations,
   setSelectedLocations,
+  brandTypes,
+  setBrandTypes,
   title,
 }) => {
   const t = useTranslations("FilterModal");
@@ -568,7 +623,8 @@ const FilterModal = ({
     if (setSelectedPlatforms) setSelectedPlatforms([]);
     if (setSelectedBrands) setSelectedBrands([]);
     if (setSelectedLocations) setSelectedLocations([]);
-    setIsVerifiedOnly(false);
+    if (setBrandTypes) setBrandTypes([]);
+    if (setIsVerifiedOnly) setIsVerifiedOnly(false);
   };
 
   const handleApply = () => {
@@ -623,6 +679,8 @@ const FilterModal = ({
               locations={locations}
               selectedLocations={selectedLocations}
               setSelectedLocations={setSelectedLocations}
+              brandTypes={brandTypes}
+              setBrandTypes={setBrandTypes}
             />
           </div>
 
@@ -685,6 +743,8 @@ const FilterModal = ({
               locations={locations}
               selectedLocations={selectedLocations}
               setSelectedLocations={setSelectedLocations}
+              brandTypes={brandTypes}
+              setBrandTypes={setBrandTypes}
             />
           </div>
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import BrandCard from "@/components/BrandCard";
 import ListPagination from "@/components/ListPagination";
-import FilterModal, { FilterSidebar } from "@/components/FilterModal";
+import FilterModal, { FilterSidebar, matchesBrandType } from "@/components/FilterModal";
 import { useAuth } from "@/context/AuthContext";
 import { calculateBrandMatchScore } from "@/utils/matchScore";
 import { useTranslations } from "next-intl";
@@ -24,6 +24,8 @@ export default function DiscoverBrands() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 10000 });
   const [isVerifiedOnly, setIsVerifiedOnly] = useState(false);
+  // Brand / agency checkboxes — [] or both ticked = everyone.
+  const [brandTypes, setBrandTypes] = useState([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   // --- FETCH BRANDS ---
@@ -86,7 +88,7 @@ export default function DiscoverBrands() {
 
       const matchesVerified = isVerifiedOnly ? brand.isVerified : true;
 
-      return matchesSearch && matchesCategory && matchesBudget && matchesVerified;
+      return matchesSearch && matchesCategory && matchesBudget && matchesVerified && matchesBrandType(brandTypes, brand.accountType);
     });
 
     // User-selectable sort. "match" (default) keeps the best-fit brands on
@@ -102,7 +104,7 @@ export default function DiscoverBrands() {
       .map((b) => ({ b, score: calculateBrandMatchScore(profile, b) }))
       .sort((a, c) => c.score - a.score)
       .map(({ b }) => b);
-  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, profile, sortBy]);
+  }, [brands, searchQuery, selectedCategories, budgetRange, isVerifiedOnly, brandTypes, profile, sortBy]);
 
   // Client-side pagination — 30 per page, reset on any filter change.
   const PAGE_SIZE = 30;
@@ -110,7 +112,7 @@ export default function DiscoverBrands() {
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, sortBy]);
+  }, [searchQuery, selectedCategories, budgetRange, isVerifiedOnly, brandTypes, sortBy]);
   const pageCount = Math.max(1, Math.ceil(filteredBrands.length / PAGE_SIZE));
   const pagedBrands = filteredBrands.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const goToPage = (p) => {
@@ -123,6 +125,7 @@ export default function DiscoverBrands() {
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
     setIsVerifiedOnly(false);
+    setBrandTypes([]);
   };
 
   return (
@@ -178,6 +181,8 @@ export default function DiscoverBrands() {
               setBudgetRange={setBudgetRange}
               isVerifiedOnly={isVerifiedOnly}
               setIsVerifiedOnly={setIsVerifiedOnly}
+              brandTypes={brandTypes}
+              setBrandTypes={setBrandTypes}
               onExpand={() => setIsFiltersOpen(true)}
             />
           </aside>
@@ -242,6 +247,8 @@ export default function DiscoverBrands() {
             setBudgetRange={setBudgetRange}
             isVerifiedOnly={isVerifiedOnly}
             setIsVerifiedOnly={setIsVerifiedOnly}
+            brandTypes={brandTypes}
+            setBrandTypes={setBrandTypes}
           />
         )}
       </AnimatePresence>

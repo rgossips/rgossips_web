@@ -189,7 +189,7 @@ serveWithLogging("list-campaigns", async (req) => {
     if (brandIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from("brand_profiles")
-        .select("brand_id, brand_name, gstin_trade_name, logo_url, instagram_username, status")
+        .select("brand_id, brand_name, gstin_trade_name, logo_url, instagram_username, status, account_type")
         .in("brand_id", brandIds);
 
       for (const p of profiles || []) {
@@ -201,6 +201,7 @@ serveWithLogging("list-campaigns", async (req) => {
           name: p.gstin_trade_name || p.brand_name || "",
           logo: p.logo_url || "",
           instagram: p.instagram_username || "",
+          accountType: p.account_type === "agency" ? "agency" : "brand",
         };
       }
     }
@@ -209,7 +210,7 @@ serveWithLogging("list-campaigns", async (req) => {
     if (invitationIds.length > 0) {
       const { data: invitations } = await supabaseAdmin
         .from("brand_invitations")
-        .select("id, brand_name, logo_url, instagram_username")
+        .select("id, brand_name, logo_url, instagram_username, account_type")
         .in("id", invitationIds);
 
       for (const inv of invitations || []) {
@@ -218,6 +219,7 @@ serveWithLogging("list-campaigns", async (req) => {
             name: inv.brand_name || "",
             logo: inv.logo_url || "",
             instagram: inv.instagram_username || "",
+            accountType: inv.account_type === "agency" ? "agency" : "brand",
           };
         }
       }
@@ -402,6 +404,12 @@ serveWithLogging("list-campaigns", async (req) => {
         brandId: c.brand_id || null,
         brandName: brand.name,
         brandLogo: brand.logo,
+        // "brand" | "agency" (migration 075). Agency when either owner — the
+        // registered brand or the invitation it came from — is labelled so.
+        brandType:
+          brandMap[c.brand_id]?.accountType === "agency" || brandMap[c.brand_invitation_id]?.accountType === "agency"
+            ? "agency"
+            : "brand",
         status,
         tags,
         budget,

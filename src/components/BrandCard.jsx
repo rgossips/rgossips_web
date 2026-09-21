@@ -152,6 +152,15 @@ const BrandCard = ({ brand, matchScore }) => {
       onClick={handleOpen}
       className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-50 hover:shadow-lg hover:border-[#E60076]/10 transition-all relative group cursor-pointer"
     >
+      {/* Brand / agency — admin-set label (migration 075, via list-brands). */}
+      <span
+        className={`absolute top-6 left-6 z-10 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide ${
+          brand.accountType === "agency" ? "bg-violet-50 text-violet-600" : "bg-sky-50 text-sky-600"
+        }`}
+      >
+        {brand.accountType === "agency" ? "Agency" : "Brand"}
+      </span>
+
       {matchScore > 0 && (
         <button
           type="button"
