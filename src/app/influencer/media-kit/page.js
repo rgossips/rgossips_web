@@ -138,12 +138,24 @@ export default function MediaKitPage() {
               body: JSON.stringify({ userId: user.id, reelLinks: links }),
             });
             const resolveData = await resolveRes.json();
+            // Instagram disconnected: nothing can be matched until they
+            // reconnect, so say that (and raise the reconnect prompt) rather
+            // than blaming each link.
+            if (resolveData?.reason === "no_token" || resolveData?.reason === "token_invalid") {
+              setInstagramTokenMissing?.(true);
+              return { error: { kind: "reconnect" } };
+            }
+            if (resolveData?.error || resolveData?.reason === "lookup_failed") {
+              return { error: { kind: "failed" } };
+            }
             if (Array.isArray(resolveData?.unresolved) && resolveData.unresolved.length > 0) {
               return {
                 error: {
                   kind: "unresolved",
-                  links: resolveData.unresolved,
+                  details: resolveData.details || resolveData.unresolved.map((url) => ({ url, reason: "not_found" })),
                   account: resolveData.account || profile?.instagram_handle || profile?.username || "",
+                  scanned: resolveData.scanned || 0,
+                  limit: resolveData.limit || 50,
                 },
               };
             }
@@ -156,7 +168,7 @@ export default function MediaKitPage() {
           }
         }
 
-        await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
+        const saveRes = await fetch(`${supabaseUrl}/functions/v1/update-profile`, {
           method: "POST",
           headers,
           body: JSON.stringify({
@@ -165,6 +177,8 @@ export default function MediaKitPage() {
             topReels: resolvedReels,
           }),
         });
+        const saved = await saveRes.json().catch(() => ({}));
+        if (!saveRes.ok || saved?.error) return { error: { kind: "failed" } };
         // Show the new reels right away — without this the preview kept the
         // old list until a reload, which read as "it didn't work".
         await refreshProfile?.();
@@ -174,7 +188,7 @@ export default function MediaKitPage() {
         return { error: { kind: "failed" } };
       }
     },
-    [user, profile, refreshProfile],
+    [user, profile, refreshProfile, setInstagramTokenMissing],
   );
 
   const handlePublish = async () => {

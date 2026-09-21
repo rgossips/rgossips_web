@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText, wellFormed } from "../_shared/text.ts";
 import { log } from "../_shared/log.ts";
+import { isCuratedReels, refreshReels } from "../_shared/ig-media.ts";
 
 // Instagram accepts at most a 30-day since/until range; its own report uses 30.
 const INSIGHTS_DAYS = 30;
@@ -59,7 +60,7 @@ serveWithLogging("refresh-instagram", async (req) => {
     // Fetch stored token from DB
     const { data: profile, error: dbError } = await supabaseAdmin
       .from("influencer_profiles")
-      .select("instagram_access_token, instagram_token_expires_at, instagram_refreshed_at")
+      .select("instagram_access_token, instagram_token_expires_at, instagram_refreshed_at, top_reels")
       .eq("influencer_id", userId)
       .maybeSingle();
 
@@ -473,7 +474,7 @@ serveWithLogging("refresh-instagram", async (req) => {
     // Build top reels: sort by engagement (likes + comments), take top 6
     // Now ranking across up to 100 recent posts (was 25) — much more likely
     // to surface a creator's actual best-performing content.
-    const topReels = mediaPosts
+    const autoTopReels = mediaPosts
       .map((p: any) => ({
         id: p.id,
         mediaType: p.media_type,
@@ -489,6 +490,18 @@ serveWithLogging("refresh-instagram", async (req) => {
       }))
       .sort((a: any, b: any) => (b.likes + b.comments) - (a.likes + a.comments))
       .slice(0, 6);
+
+    // A creator who picked their own top reels in the media-kit editor keeps
+    // them. This used to overwrite the list with the automatic "most liked
+    // recent posts" on EVERY refresh — i.e. every login — silently throwing
+    // away the creator's choice. Curated entries are only refreshed (fresh
+    // thumbnail, likes, comments); the order and selection stay theirs.
+    let topReels: any[] = autoTopReels;
+    const storedReels = Array.isArray(profile.top_reels) ? profile.top_reels : [];
+    if (isCuratedReels(storedReels)) {
+      const { reels } = await refreshReels(accessToken, storedReels);
+      topReels = reels.map((r: any) => ({ ...r, curated: true }));
+    }
 
     // Step 4: Fetch audience demographics (requires Business/Creator account)
     let audienceDemographics: Record<string, unknown> = {};

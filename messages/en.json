@@ -3866,12 +3866,9 @@
     },
     "reels": {
       "title": "Edit your top reels",
-      "subtitle": "Instagram post or reel links — thumbnails resolve automatically",
+      "subtitle": "Show brands your best work — links to your own posts or reels",
       "invalidLink": "Only Instagram post / reel links are allowed.",
-      "addLink": "+ Add reel link",
-      "notYours": "The highlighted link isn't a post on your connected Instagram account (@{account}), so we can't show its preview or stats. Only your own posts and reels can be added — remove it or replace it with one of yours.",
-      "notYoursShort": "Not on your connected Instagram account",
-      "saveFailed": "Couldn't save your reels. Please try again."
+      "addLink": "+ Add reel link"
     }
   },
   "MediaKitTemplatesTemplateBentoSunset": {
@@ -3977,16 +3974,14 @@
     },
     "common": {
       "cancel": "Cancel",
-      "save": "Save"
+      "save": "Save",
+      "saving": "Saving…"
     },
     "reels": {
       "editTitle": "Edit reels",
       "invalidLink": "Only Instagram post/reel links are allowed",
       "addLink": "+ Add Reel Link",
-      "addFirst": "+ Add your top content links",
-      "notYours": "The highlighted link isn't a post on your connected Instagram account (@{account}), so we can't show its preview or stats. Only your own posts and reels can be added — remove it or replace it with one of yours.",
-      "notYoursShort": "Not on your connected Instagram account",
-      "saveFailed": "Couldn't save your reels. Please try again."
+      "addFirst": "+ Add your top content links"
     }
   },
   "MediaKitTemplatesTemplateEditorialNoir": {
@@ -5263,5 +5258,34 @@
     },
     "cta": "Explore campaigns",
     "close": "Got it"
+  },
+  "MediaKitReels": {
+    "guidance": {
+      "own": "Add posts or reels from your own Instagram account (@{account}) — Instagram only shares previews and stats for your own posts.",
+      "ownNoAccount": "Add posts or reels from your own connected Instagram account — Instagram only shares previews and stats for your own posts.",
+      "howTo": "To get a link: open the reel or post on Instagram, tap ⋯ (or the paper-plane icon) → Copy link, then paste it here.",
+      "latestOnly": "To show brands your latest, up-to-date work, top reels can only come from your {limit} most recent posts."
+    },
+    "yourAccount": "your connected account",
+    "placeholder": "https://www.instagram.com/reel/…",
+    "addLink": "+ Add another link",
+    "remove": "Remove this link",
+    "saving": "Checking your latest posts on Instagram…",
+    "top": {
+      "unresolved": "{count, plural, one {# link couldn't be added} other {# links couldn't be added}} — see the note under each one. Fix or remove {count, plural, one {it} other {them}}, then save again.",
+      "reconnect": "Your Instagram connection has expired, so we can't look up your posts. Reconnect Instagram, then save again.",
+      "failed": "We couldn't reach Instagram just now. Nothing was saved — please try again in a moment."
+    },
+    "errors": {
+      "notInstagram": "This isn't an Instagram link. Paste a link that starts with instagram.com/reel/ or instagram.com/p/.",
+      "story": "Stories can't be added — they disappear after 24 hours. Add a reel or post instead.",
+      "share": "This is an Instagram share link. Open the reel on Instagram, tap ⋯ → Copy link, and paste that link instead.",
+      "profile": "This is a profile or highlights link. Open the specific reel or post and copy its link instead.",
+      "notPost": "This doesn't look like a link to a post or reel. Copy the link from the post itself.",
+      "duplicate": "You've already added this post — remove one of the copies.",
+      "notFound": "We couldn't find this on @{account}. Only posts and reels from your connected account can be added — it may belong to another account, or be archived or deleted.",
+      "notReached": "Instagram took too long to respond, so we couldn't check this link. Please save again.",
+      "tooOld": "This isn't one of your latest {limit} posts. To show brands only your latest and updated work, we keep top reels to your {limit} most recent posts — please pick a newer one from @{account}."
+    }
   }
 }

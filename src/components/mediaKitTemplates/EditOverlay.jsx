@@ -7,10 +7,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Pencil, Loader2, X as XIcon, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useReelLinksEditor, ReelLinksFields } from "./ReelLinksEditor";
 
-const INSTAGRAM_LINK_RE = /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels)\//;
 
-export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsSave }) {
+export default function MediaKitEditOverlay({ bio, reels, account, onBioSave, onTopReelsSave }) {
   const t = useTranslations("MediaKitTemplatesEditOverlay");
   const [open, setOpen] = useState(null); // "bio" | "reels" | null
 
@@ -41,6 +41,7 @@ export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsS
       {open === "reels" && (
         <ReelsModal
           initial={reels || []}
+          account={account}
           onClose={() => setOpen(null)}
           onSave={async (next) => {
             const res = await onTopReelsSave?.(next);
@@ -148,41 +149,9 @@ function BioModal({ initial, onClose, onSave }) {
   );
 }
 
-function ReelsModal({ initial, onClose, onSave }) {
+function ReelsModal({ initial, account, onClose, onSave }) {
   const t = useTranslations("MediaKitTemplatesEditOverlay");
-  const [links, setLinks] = useState(() =>
-    initial?.length > 0 ? initial.map((r) => r.permalink || "") : [""]
-  );
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-
-  const handleAdd = () => setLinks((prev) => [...prev, ""]);
-  const handleRemove = (i) => setLinks((prev) => prev.filter((_, idx) => idx !== i));
-  const handleChange = (i, val) => setLinks((prev) => prev.map((l, idx) => (idx === i ? val : l)));
-
-  const invalid = links.some((l) => l.trim() && !INSTAGRAM_LINK_RE.test(l.trim()));
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const valid = links.filter((l) => l.trim());
-      const next = valid.map((url, i) => ({
-        id: `custom_${i}`,
-        permalink: url,
-        thumbnail: "",
-        mediaType: "VIDEO",
-        likes: 0,
-        comments: 0,
-        caption: "",
-      }));
-      setSaveError(null);
-      const res = await onSave(next);
-      if (res?.error) setSaveError(res.error);
-    } finally {
-      setSaving(false);
-    }
-  };
-  const unresolved = new Set(saveError?.kind === "unresolved" ? saveError.links : []);
+  const editor = useReelLinksEditor(initial, onSave);
 
   return (
     <ModalShell
@@ -191,56 +160,22 @@ function ReelsModal({ initial, onClose, onSave }) {
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">{t("common.cancel")}</button>
+          <button onClick={onClose} disabled={editor.saving} className="px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl cursor-pointer disabled:opacity-50">{t("common.cancel")}</button>
           <button
-            onClick={handleSave}
-            disabled={saving || invalid}
+            // onSave closes the modal on success; on failure the editor stays
+            // open with the reason under each link.
+            onClick={editor.handleSave}
+            disabled={!editor.canSave}
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl hover:opacity-90 cursor-pointer disabled:opacity-40"
             style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-            {saving ? t("common.saving") : t("common.save")}
+            {editor.saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+            {editor.saving ? t("common.saving") : t("common.save")}
           </button>
         </div>
       }
     >
-      <div className="space-y-3">
-        {saveError && (
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 leading-relaxed">
-            {saveError.kind === "unresolved"
-              ? t("reels.notYours", { account: saveError.account || "—" })
-              : t("reels.saveFailed")}
-          </div>
-        )}
-        {links.map((link, i) => {
-          const isValid = !link.trim() || INSTAGRAM_LINK_RE.test(link.trim());
-          const notYours = unresolved.has(link.trim());
-          return (
-            <div key={i}>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={link}
-                  onChange={(e) => handleChange(i, e.target.value)}
-                  placeholder="https://www.instagram.com/reel/…"
-                  className={`flex-1 py-2.5 px-3 bg-slate-50 border focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${!isValid || notYours ? "border-red-300 focus:border-red-400" : "border-slate-200 focus:border-purple-300"}`}
-                />
-                <button onClick={() => handleRemove(i)} disabled={links.length === 1} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center cursor-pointer disabled:opacity-40">
-                  <XIcon size={14} />
-                </button>
-              </div>
-              {!isValid && <p className="text-[10px] text-red-500 mt-1 ml-1">{t("reels.invalidLink")}</p>}
-              {isValid && notYours && <p className="text-[10px] text-red-500 mt-1 ml-1">{t("reels.notYoursShort")}</p>}
-            </div>
-          );
-        })}
-        <button
-          onClick={handleAdd}
-          className="w-full py-2.5 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-400 hover:border-purple-300 hover:text-purple-500 cursor-pointer"
-        >
-          {t("reels.addLink")}
-        </button>
-      </div>
+      <ReelLinksFields editor={editor} account={account} />
     </ModalShell>
   );
 }

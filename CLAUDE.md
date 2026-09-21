@@ -314,6 +314,39 @@ pages back up to 500 posts and returns `unresolved` + `account`; the media-kit
 editors (EditOverlay, TemplateClassic) refuse to save unresolved links and say
 why, instead of saving a blank "❤ 0" tile.
 
+**Top reels plumbing — `_shared/ig-media.ts`** (`reelShortcode`,
+`findMediaByShortcode`, `refreshReels`, `isCuratedReels`, `enrichReel`):
+- **Hand-picked lists are never overwritten.** refresh-instagram used to replace
+  `top_reels` with the automatic "most liked recent" six on EVERY refresh (every
+  login), silently discarding the creator's picks. A curated list (entries with
+  `curated: true`, or legacy `reel_N`/`custom_N` placeholder ids) is now only
+  re-enriched. Editor saves carry `curated: true`.
+- **Only a creator's latest 50 posts can be added** (`TOP_REELS_POST_LIMIT`,
+  product decision 2026-09: brands should see recent, up-to-date work; mirrored
+  in `src/lib/reelLinks.js`). There is no look-up-by-link endpoint on the
+  Instagram-Login API, so `findMediaByShortcode` reads the account newest-first
+  (`id,permalink` only) up to `maxPosts`, then fetches full fields for matches.
+  resolve-reel-thumbnails checks EVERY link on every save — no stored-id
+  shortcut, so an edit can't keep stale picks — and returns per-link
+  `details[{url, reason}]`: `too_old` (outside the latest 50, or not theirs —
+  indistinguishable on a big account), `not_found` (account has <50 posts and
+  this isn't one), `not_reached` (timeout), `not_a_post`; plus a request
+  `reason` (`no_token` | `token_invalid` | `lookup_failed`). ~1–3 s. Reels
+  saved before the rule keep displaying (kit views fetch by stored id) until
+  the creator next edits their list. A full-history search was built and
+  verified first (post #2,101 in ~19 s), then deliberately capped.
+- **Editor messages** live in one place: `src/lib/reelLinks.js` (pre-save
+  checks — not Instagram, story, share link, profile, duplicate) +
+  `mediaKitTemplates/ReelLinksEditor.jsx` (`useReelLinksEditor` hook +
+  `ReelLinksFields`, i18n `MediaKitReels`), used by both EditOverlay and
+  TemplateClassic. Each problem shows under its own link; an expired Instagram
+  connection shows one "reconnect" message and raises the reconnect prompt.
+- **public-media-kit** re-fetches thumbnails per view (IG CDN links expire). It
+  used to read only the latest 25 posts, so older picks were blank
+  (@alifestyledition's sat at posts 156–433). `refreshReels` fetches reels by
+  their stored numeric media id in parallel (~1 s); only id-less reels page
+  history (~12–15 s), after which the ids are persisted so the next view is fast.
+
 ## Returning-user popups: Instagram reconnect + Welcome to Elite (2026-09)
 
 - **Reconnect popup** — web `InstagramReconnectModal` (mounted by

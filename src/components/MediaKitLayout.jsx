@@ -49,6 +49,7 @@ export default function MediaKitLayout({
         <MediaKitEditOverlay
           bio={profile?.bio || ""}
           reels={profile?.top_reels || profile?.topReels || []}
+          account={profile?.instagram_handle || profile?.username || ""}
           onBioSave={onBioSave}
           onTopReelsSave={onTopReelsSave}
         />

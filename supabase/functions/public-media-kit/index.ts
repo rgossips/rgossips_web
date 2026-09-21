@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText } from "../_shared/text.ts";
 import { isElite } from "../_shared/plan.ts";
+import { isCuratedReels, refreshReels } from "../_shared/ig-media.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,7 @@ serveWithLogging("public-media-kit", async (req) => {
     );
 
     // Try influencer profile first
-    const selectFields = "full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status, subscription_plan, plan_expires_at, instagram_insights, instagram_refreshed_at, instagram_token_invalid_at";
+    const selectFields = "influencer_id, full_name, username, instagram_handle, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, categories, content_languages, services, bio, created_at, service_rates, location, address, email, tiktok_url, youtube_url, facebook_url, engagement_rate, avg_likes, avg_comments, total_impressions, total_reach, top_reels, instagram_access_token, audience_demographics, media_kit_template, status, subscription_plan, plan_expires_at, instagram_insights, instagram_refreshed_at, instagram_token_invalid_at";
 
     let influencer = null;
 
@@ -84,43 +85,28 @@ serveWithLogging("public-media-kit", async (req) => {
       let enrichedReels = influencer.top_reels || [];
       const accessToken = influencer.instagram_access_token;
 
+      // Instagram CDN links expire, so thumbnails are re-fetched per view.
+      // Hand-picked reels are often months old: this used to read only the
+      // latest 25 posts, so older picks rendered as blank tiles. Pages back
+      // until every reel is found (up to 500 posts, stopping early).
       if (accessToken && enrichedReels.length > 0) {
-        try {
-          const mediaRes = await fetch(
-            `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,like_count,comments_count&limit=25&access_token=${encodeURIComponent(accessToken)}`
-          );
-          const mediaData = await mediaRes.json();
-          const igMedia = mediaData?.data || [];
-
-          if (igMedia.length > 0) {
-            // Build a lookup by shortcode extracted from permalink
-            const getShortcode = (url: string) => url?.match(/\/(p|reel)\/([^/?]+)/)?.[2] || "";
-            const mediaByShortcode: Record<string, any> = {};
-            for (const m of igMedia) {
-              const sc = getShortcode(m.permalink || "");
-              if (sc) mediaByShortcode[sc] = m;
-            }
-
-            enrichedReels = enrichedReels.map((reel: any) => {
-              const sc = getShortcode(reel.permalink || "");
-              const fresh = sc ? mediaByShortcode[sc] : null;
-              if (fresh) {
-                return {
-                  ...reel,
-                  mediaUrl: fresh.media_url || "",
-                  thumbnailUrl: fresh.thumbnail_url || fresh.media_url || "",
-                  mediaType: fresh.media_type || reel.mediaType || "IMAGE",
-                  likes: fresh.like_count ?? reel.likes ?? 0,
-                  comments: fresh.comments_count ?? reel.comments ?? 0,
-                  caption: truncateText(fresh.caption, 100) || reel.caption || "",
-                };
-              }
-              return reel;
-            });
-          }
-        } catch (e) {
-          console.error("Failed to fetch Instagram media:", e);
-          // Continue with stored reels without fresh URLs
+        // Old hand-picked lists are recognised by their placeholder ids, which
+        // this replaces with real ones — so carry the curated flag explicitly
+        // or refresh-instagram would stop recognising the list and overwrite it.
+        const wasCurated = isCuratedReels(enrichedReels);
+        const refreshed = await refreshReels(accessToken, enrichedReels);
+        enrichedReels = wasCurated
+          ? refreshed.reels.map((r: any) => ({ ...r, curated: true }))
+          : refreshed.reels;
+        // First sight of these reels: persist their Instagram ids so every
+        // later view fetches them directly instead of paging history.
+        // Best effort — a failed write only costs the next view some time.
+        if (refreshed.changed) {
+          const { error: saveErr } = await supabaseAdmin
+            .from("influencer_profiles")
+            .update({ top_reels: enrichedReels })
+            .eq("influencer_id", influencer.influencer_id);
+          if (saveErr) console.warn("public-media-kit: could not persist reel ids:", saveErr.message);
         }
       }
 
