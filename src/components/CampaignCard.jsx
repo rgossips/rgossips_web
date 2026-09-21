@@ -36,8 +36,8 @@ function MatchCoachModal({ campaign, profile, score, breakdown, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
-      <div className="bg-white w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div data-scroll-lock className="fixed inset-0 z-[320] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] max-h-[92dvh] sm:max-h-[90dvh] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur px-5 py-4 flex items-center justify-between border-b border-slate-50">
           <div className="flex items-center gap-2">
             <Zap size={16} className={scoreColor} />
@@ -48,7 +48,7 @@ function MatchCoachModal({ campaign, profile, score, breakdown, onClose }) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-5 space-y-4">
           <div className="flex items-center gap-3">
             <div className={`text-3xl font-black ${scoreColor}`}>{score}%</div>
             <p className="text-xs text-slate-500 leading-snug">

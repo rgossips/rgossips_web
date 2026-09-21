@@ -251,3 +251,8 @@
 html body {
   overflow-x: hidden;
 }
+
+/* Any open custom popup marks itself data-scroll-lock; lock the page behind
+   it so touch scrolling moves the popup, not the page. Radix dialogs lock
+   the body themselves. */
+html:has([data-scroll-lock]), body:has([data-scroll-lock]) { overflow: hidden; }

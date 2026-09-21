@@ -228,8 +228,8 @@ const LogoutAllModal = ({ isOpen, onClose, onConfirm }) => {
   const t = useTranslations("TrustedDevices");
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div data-scroll-lock className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mb-6">
           <X size={28} className="text-rose-500" strokeWidth={3} />
         </div>

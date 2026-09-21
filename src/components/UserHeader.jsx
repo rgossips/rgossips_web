@@ -124,8 +124,8 @@ export default function UserHeader() {
 
       {/* Confirmation Dialog */}
       {isDialogOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-6 w-[90%] max-w-sm text-center shadow-2xl">
+        <div data-scroll-lock className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-[90%] max-w-sm max-h-[90dvh] overflow-y-auto overscroll-contain text-center shadow-2xl">
             <h3 className="text-lg font-bold mb-2">{t("applyBannerTitle")}</h3>
 
             {pendingBanner && (

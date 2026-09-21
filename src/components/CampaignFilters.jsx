@@ -18,7 +18,8 @@ export function CampaignFilters({ onClose, filterData }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm"
+        data-scroll-lock
+        className="fixed inset-0 z-[250] bg-black/20 backdrop-blur-sm"
       />
 
       {/* Modal - Full screen on mobile, centered on desktop */}
@@ -27,7 +28,7 @@ export function CampaignFilters({ onClose, filterData }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-0 z-60 bg-white flex flex-col overflow-y-auto scrollbar-hide mb-16 lg:inset-auto lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-2xl lg:max-h-[90vh] lg:rounded-[40px] lg:mb-0 lg:shadow-2xl"
+        className="fixed inset-0 z-[260] bg-white flex flex-col overflow-y-auto overscroll-contain scrollbar-hide lg:inset-auto lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-2xl lg:max-h-[90dvh] lg:rounded-[40px] lg:shadow-2xl"
       >
         <div className="p-6 space-y-8">
           {/* Header */}
@@ -163,7 +164,7 @@ export function CampaignFilters({ onClose, filterData }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-100 p-6 flex gap-4 lg:rounded-b-[40px]">
+        <div className="sticky bottom-0 bg-white border-t border-slate-100 px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:pb-6 flex gap-4 lg:rounded-b-[40px]">
           <Button
             variant="outline"
             className="flex-1 cursor-pointer h-14 rounded-2xl font-bold border-slate-100 text-slate-400"

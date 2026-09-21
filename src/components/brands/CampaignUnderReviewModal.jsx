@@ -21,9 +21,10 @@ export function CampaignUnderReviewModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    // Above BottomNavBrands (z-150) — see the z-index note in CLAUDE.md.
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
+    // Popups start at z-250, above BottomNavBrands (z-150) — see the popup
+    // layering note in CLAUDE.md.
+    <div data-scroll-lock className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-y-auto overscroll-contain">
         <div className="px-6 pt-7 pb-5 text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
             <ShieldCheck size={26} />

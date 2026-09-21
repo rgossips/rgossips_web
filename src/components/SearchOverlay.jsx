@@ -13,10 +13,11 @@ export function SearchOverlay({ onClose, recentSearches }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed inset-0 z-[60] bg-white flex flex-col"
+      data-scroll-lock
+      className="fixed inset-0 z-[260] bg-white flex flex-col"
     >
       {/* Search Header */}
-      <div className="p-4 flex items-center gap-3 border-b border-slate-50">
+      <div className="shrink-0 p-4 flex items-center gap-3 border-b border-slate-50">
         <button
           onClick={onClose}
           className="w-10 h-10 rounded-full bg-[#FFEBF5] flex items-center justify-center text-[#E60076]"
@@ -38,7 +39,7 @@ export function SearchOverlay({ onClose, recentSearches }) {
       </div>
 
       {/* Content */}
-      <div className="p-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-800">{t("recentSearches")}</h3>
           <button className="text-xs font-bold text-slate-400 hover:text-[#E60076]">

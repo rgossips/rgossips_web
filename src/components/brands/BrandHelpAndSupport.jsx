@@ -103,11 +103,11 @@ export default function BrandHelpAndSupport({ open, onClose, onOpenChat }) {
   // Plain `fixed` from inside the sidebar tree was being out-stacked by
   // cards on the profile page.
   return createPortal((
-    <div className="fixed inset-0 z-[9999] flex justify-end">
+    <div data-scroll-lock className="fixed inset-0 z-[9999] flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white w-full max-w-xl h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white px-6 py-5 flex items-center gap-4 border-b border-[#E4E9F4]">
+        <div className="sticky top-0 z-10 shrink-0 bg-white px-6 py-5 flex items-center gap-4 border-b border-[#E4E9F4]">
           <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
             <HelpCircle size={20} />
           </div>
@@ -124,7 +124,7 @@ export default function BrandHelpAndSupport({ open, onClose, onOpenChat }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] space-y-6">
           {/* Search */}
           <div className="relative group">
             <Search

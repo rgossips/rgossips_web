@@ -146,8 +146,8 @@ export default function RatingModal({
   const busy = submitting || skipping;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+    <div data-scroll-lock className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200 max-h-[90dvh] overflow-y-auto overscroll-contain">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 pr-3">
             <h3 className="text-lg font-black text-slate-900 leading-tight">

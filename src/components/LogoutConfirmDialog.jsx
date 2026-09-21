@@ -26,8 +26,8 @@ export default function LogoutConfirmDialog({ open, onClose, redirectTo = "/" })
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-[90vw] max-w-xs flex flex-col items-center animate-in fade-in zoom-in duration-200">
+    <div data-scroll-lock className="fixed inset-0 z-[300] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 w-[90vw] max-w-xs max-h-[90dvh] overflow-y-auto overscroll-contain flex flex-col items-center animate-in fade-in zoom-in duration-200">
         <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mb-4 text-rose-500">
           <LogOut size={28} />
         </div>

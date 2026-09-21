@@ -578,7 +578,7 @@ const FilterModal = ({
   return (
     <>
       {/* Mobile Modal - Right Slide */}
-      <div className="fixed inset-0 z-[110] bg-black/20 backdrop-blur-sm lg:hidden">
+      <div data-scroll-lock className="fixed inset-0 z-[310] bg-black/20 backdrop-blur-sm lg:hidden">
         <motion.div
           initial={{ x: "100%", opacity: 1 }}
           animate={{
@@ -607,7 +607,7 @@ const FilterModal = ({
           </div>
 
           {/* Scrollable Content */}
-          <div className="p-6 flex-1 overflow-y-auto min-h-0 scrollbar-hide">
+          <div className="p-6 flex-1 overflow-y-auto overscroll-contain min-h-0 scrollbar-hide">
             <FilterContent
               selectedCategories={selectedCategories}
               setSelectedCategories={setSelectedCategories}
@@ -627,7 +627,7 @@ const FilterModal = ({
           </div>
 
           {/* Mobile Footer Buttons */}
-          <div className="bg-white border-t border-slate-100 p-4 pb-6 flex gap-3">
+          <div className="shrink-0 bg-white border-t border-slate-100 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex gap-3">
             <Button
               variant="ghost"
               className="flex-1 h-14 rounded-2xl font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 cursor-pointer"
@@ -646,7 +646,7 @@ const FilterModal = ({
       </div>
 
       {/* Desktop Modal - Centered */}
-      <div className="hidden lg:fixed inset-0 z-[110] bg-black/20 backdrop-blur-sm lg:flex items-center justify-center">
+      <div className="hidden lg:fixed inset-0 z-[310] bg-black/20 backdrop-blur-sm lg:flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{
@@ -655,7 +655,7 @@ const FilterModal = ({
             transition: { type: "spring", stiffness: 300, damping: 30 },
           }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+          className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90dvh] flex flex-col"
         >
           {/* Desktop Header */}
           <div className="flex items-center justify-between p-8 bg-white z-10 border-b border-slate-100 rounded-t-4xl">
@@ -669,7 +669,7 @@ const FilterModal = ({
           </div>
 
           {/* Desktop Content */}
-          <div className="p-8 flex-1 overflow-y-auto min-h-0">
+          <div className="p-8 flex-1 overflow-y-auto overscroll-contain min-h-0">
             <FilterContent
               selectedCategories={selectedCategories}
               setSelectedCategories={setSelectedCategories}

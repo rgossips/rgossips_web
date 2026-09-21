@@ -662,7 +662,7 @@ export function CreateCampaignDialog({
 
   const content = (
     <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-      <div ref={formScrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
+      <div ref={formScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 space-y-6">
         {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
         {/* Basic Info */}
@@ -843,8 +843,8 @@ export function CreateCampaignDialog({
 
           {/* Banner crop overlay (3:1) */}
           {bannerCropSrc && (
-            <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-sm flex flex-col">
-              <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+            <div data-scroll-lock className="fixed inset-0 z-[400] bg-black/85 backdrop-blur-sm flex flex-col">
+              <div className="shrink-0 flex items-center justify-between px-5 py-4 bg-black/50">
                 <button type="button" onClick={cancelBannerCrop} className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors">
                   {t("bannerCrop.cancel")}
                 </button>
@@ -856,7 +856,7 @@ export function CreateCampaignDialog({
                   {t("bannerCrop.apply")}
                 </button>
               </div>
-              <div className="flex-1 relative">
+              <div className="flex-1 min-h-0 relative">
                 <Cropper
                   image={bannerCropSrc}
                   crop={bCrop}
@@ -868,7 +868,7 @@ export function CreateCampaignDialog({
                   onCropComplete={(_, px) => setBPixels(px)}
                 />
               </div>
-              <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+              <div className="shrink-0 px-8 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-black/50 flex items-center gap-4">
                 <span className="text-white/60 text-xs font-bold shrink-0">{t("bannerCrop.zoom")}</span>
                 <input type="range" min={1} max={3} step={0.1} value={bZoom} onChange={(e) => setBZoom(Number(e.target.value))} className="flex-1 accent-purple-500" />
               </div>
@@ -1256,7 +1256,7 @@ export function CreateCampaignDialog({
         <DialogContent
           showCloseButton={false}
           onInteractOutside={(e) => e.preventDefault()}
-          className="mt-[30px] sm:max-w-[720px] h-[87vh] max-h-[87vh] p-0 flex flex-col overflow-hidden rounded-2xl"
+          className="mt-[30px] sm:max-w-[720px] h-[87dvh] max-h-[87dvh] p-0 flex flex-col overflow-hidden rounded-2xl"
         >
           {renderHeader("dialog")}
           {content}
@@ -1271,8 +1271,8 @@ export function CreateCampaignDialog({
   return (
     <Drawer open={open} onOpenChange={onOpenChange} dismissible={false}>
       <DrawerPortal>
-        <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
-        <DrawerContent className="fixed inset-x-0 bottom-0 z-50 h-[92vh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
+        <DrawerOverlay className="fixed inset-0 bg-black/40 z-[250]" />
+        <DrawerContent className="fixed inset-x-0 bottom-0 z-[250] h-[92dvh] data-[vaul-drawer-direction=bottom]:max-h-[92dvh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
           {renderHeader("drawer")}
           {content}
         </DrawerContent>

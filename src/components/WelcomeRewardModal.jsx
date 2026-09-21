@@ -86,7 +86,8 @@ export default function WelcomeRewardModal() {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[130] flex items-center justify-center p-4"
+          data-scroll-lock
+          className="fixed inset-0 z-[330] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -117,7 +118,7 @@ export default function WelcomeRewardModal() {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 22 }}
-            className="relative w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl"
+            className="relative w-full max-w-sm max-h-[90dvh] rounded-[32px] overflow-y-auto overscroll-contain shadow-2xl"
             style={{ background: "linear-gradient(160deg, #ffffff 0%, #FBF7FF 100%)" }}
           >
             {/* Gradient header with the gift */}

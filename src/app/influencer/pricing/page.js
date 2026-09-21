@@ -929,7 +929,8 @@ function ErrorModal({ title, message, onClose }) {
   const t = useTranslations("InfluencerPricing");
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[270] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -937,7 +938,7 @@ function ErrorModal({ title, message, onClose }) {
       aria-modal="true"
       aria-labelledby="error-modal-title"
     >
-      <div className="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+      <div className="w-full sm:w-[420px] max-h-[90dvh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-y-auto overscroll-contain">
         <div className="px-5 pt-5 pb-3 flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#e11d48" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -1016,7 +1017,8 @@ function FullPageLoader({ title, message, hint }) {
     <div
       aria-busy="true"
       role="status"
-      className="fixed inset-0 z-[80] bg-white/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[280] bg-white/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
     >
       <div className="relative w-16 h-16">
         <div className="absolute inset-0 rounded-full border-4 border-purple-100" />
@@ -1071,7 +1073,8 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[290] flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="payment-success-title"
@@ -1079,7 +1082,7 @@ function PaymentSuccessModal({ details, profile, billing, onClose }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden relative">
+      <div className="w-full sm:w-[460px] max-h-[90dvh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-y-auto overscroll-contain relative">
         {/* Close in the top-right, per spec. */}
         <button
           type="button"
@@ -1232,8 +1235,8 @@ function normalizeIndianPhone(raw) {
 function GatewayPickerModal({ planId, planLabel, onCancel, onPick }) {
   const t = useTranslations("InfluencerPricing");
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+    <div data-scroll-lock className="fixed inset-0 z-[260] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="w-full sm:w-[420px] max-h-[90dvh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-y-auto overscroll-contain">
         <div className="flex items-start justify-between px-5 pt-5 pb-3">
           <div>
             <h3 className="text-base font-black text-slate-900">

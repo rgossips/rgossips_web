@@ -150,8 +150,8 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
   const t = useTranslations("MyInformationDetail");
   if (!reel) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-200">
+    <div data-scroll-lock className="fixed inset-0 z-[250] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white w-full max-w-sm max-h-[90dvh] rounded-[2rem] overflow-y-auto overscroll-contain shadow-2xl relative animate-in fade-in zoom-in duration-200">
         <div className="relative h-64 w-full">
           <img src={reel.thumbnail} alt="Reel" className="w-full h-full object-cover" />
           <button onClick={onClose} className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white hover:bg-white/40 transition">
@@ -211,8 +211,8 @@ const ReelDetailsModal = ({ reel, onClose, onEdit }) => {
 const DeleteConfirmModal = ({ onCancel, onConfirm }) => {
   const t = useTranslations("MyInformationDetail");
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-      <div className="bg-white w-full max-w-xs rounded-[2rem] p-6 text-center animate-in zoom-in duration-200">
+    <div data-scroll-lock className="fixed inset-0 z-[270] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+      <div className="bg-white w-full max-w-xs max-h-[90dvh] overflow-y-auto overscroll-contain rounded-[2rem] p-6 text-center animate-in zoom-in duration-200">
         <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <Trash2 size={24} />
         </div>
@@ -248,8 +248,8 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
   const filtered = CATEGORY_OPTIONS.filter((opt) => opt.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+    <div data-scroll-lock className="fixed inset-0 z-[280] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[90dvh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-black text-gray-900">{t("categoryModal.title")}</h3>
@@ -270,7 +270,7 @@ const CategoryModal = ({ selected, onSave, onClose }) => {
         </div>
 
         {/* Category Grid */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5">
           <div className="flex flex-wrap gap-2">
             {filtered.map((cat) => {
               const isSelected = localSelected.includes(cat);
@@ -331,8 +331,8 @@ const LocationModal = ({ selected, onSave, onClose }) => {
   const filtered = q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+    <div data-scroll-lock className="fixed inset-0 z-[280] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[90dvh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-black text-gray-900">{t("locationModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -350,7 +350,7 @@ const LocationModal = ({ selected, onSave, onClose }) => {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5">
           <div className="flex flex-wrap gap-2">
             {filtered.map((city) => {
               const isSelected = localSelected.includes(city);
@@ -408,8 +408,8 @@ const LanguageModal = ({ selected, onSave, onClose }) => {
   const filtered = q ? options.filter((opt) => opt.toLowerCase().includes(q)) : options;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+    <div data-scroll-lock className="fixed inset-0 z-[280] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[90dvh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-black text-gray-900">{t("languageModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -427,7 +427,7 @@ const LanguageModal = ({ selected, onSave, onClose }) => {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5">
           <div className="flex flex-wrap gap-2">
             {filtered.map((lang) => {
               const isSelected = localSelected.includes(lang);
@@ -512,8 +512,8 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[85vh] flex flex-col">
+    <div data-scroll-lock className="fixed inset-0 z-[280] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-200 max-h-[90dvh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h3 className="text-lg font-black text-gray-900">{t("servicesModal.title")}</h3>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -521,7 +521,7 @@ const ServicesRatesModal = ({ services, rates, onSave, onClose }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("servicesModal.selectServices")}</p>
           <div className="grid grid-cols-3 gap-2">
             {SERVICE_OPTIONS.map((svc) => {
@@ -1572,8 +1572,8 @@ const MyInformationDetail = ({ onBack }) => {
       {/* Edit Profile Modal */}
       {showEditModal && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[90vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+          <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[90dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="text-base lg:text-lg font-black text-gray-900">{t("profileCard.editProfile")}</h2>
@@ -1585,15 +1585,15 @@ const MyInformationDetail = ({ onBack }) => {
               </button>
             </div>
             {/* Scrollable Form */}
-            <div className="flex-1 overflow-y-auto p-6">{editForm(false)}</div>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:pb-6">{editForm(false)}</div>
           </div>
         </>
       )}
 
       {/* Crop Modal */}
       {showCropper && imageSrc && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+        <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-sm flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 bg-black/50">
             <button
               onClick={() => {
                 setShowCropper(false);
@@ -1613,7 +1613,7 @@ const MyInformationDetail = ({ onBack }) => {
               {uploading ? t("crop.saving") : t("common.save")}
             </button>
           </div>
-          <div ref={cropContainerRef} className="flex-1 relative">
+          <div ref={cropContainerRef} className="flex-1 min-h-0 relative">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -1629,7 +1629,7 @@ const MyInformationDetail = ({ onBack }) => {
               onMediaLoaded={onMediaLoaded}
             />
           </div>
-          <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+          <div className="shrink-0 px-8 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-black/50 flex items-center gap-4">
             <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input type="range" min={minZoom} max={3} step={0.05} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1 accent-purple-500" />
             <button

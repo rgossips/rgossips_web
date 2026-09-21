@@ -415,7 +415,7 @@ export default function ProfileStepPopup({ userData }) {
   if (loadingRemote) {
     // You can return a simple spinner or a transparent placeholder here
     return (
-      <div className="fixed inset-0 z-100 flex items-center justify-center bg-white/70">
+      <div data-scroll-lock className="fixed inset-0 z-[300] flex items-center justify-center bg-white/70">
         <p>{t("loadingProfile")}</p>
       </div>
     );
@@ -424,7 +424,7 @@ export default function ProfileStepPopup({ userData }) {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen} className="">
-        <DialogContent className="h-[85vh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 overflow-hidden [&>button]:hidden">
+        <DialogContent className="h-[85dvh] w-[80vw] min-w-[80vw] mx-auto rounded-2xl p-6 overflow-hidden flex flex-col [&>button]:hidden">
           {/* Close button top-right */}
           <div className="absolute right-4 top-4">
             <Button
@@ -442,7 +442,7 @@ export default function ProfileStepPopup({ userData }) {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-4 pb-4 pt-2">
+          <div className="flex-1 min-h-0 flex flex-col px-4 pb-4 pt-2">
             {/* Progress Steps */}
             <div className="flex items-center justify-between my-6">
               {[0, 1, 2, 3, 4].map((s, i) => (
@@ -481,7 +481,7 @@ export default function ProfileStepPopup({ userData }) {
               <div className="flex-1">{t("steps.additional")}</div>
             </div>
 
-            <div className="h-[60vh] overflow-y-auto pr-2">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2">
               {/* STEP 0 */}
               {step === 0 && (
                 <StepForm0

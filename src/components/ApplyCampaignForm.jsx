@@ -218,14 +218,14 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   if (submitted) {
     return (
       <>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-[105] bg-black/40 backdrop-blur-sm" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} data-scroll-lock className="fixed inset-0 z-[305] bg-black/40 backdrop-blur-sm" />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-6"
+          className="fixed inset-0 z-[310] flex items-center justify-center p-6"
         >
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full max-h-[90dvh] overflow-y-auto overscroll-contain text-center shadow-2xl space-y-4">
             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 size={32} className="text-emerald-500" />
             </div>
@@ -239,17 +239,17 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
 
   return (
     <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-[105] bg-black/40 backdrop-blur-sm" />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} data-scroll-lock className="fixed inset-0 z-[305] bg-black/40 backdrop-blur-sm" />
 
       <motion.div
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-0 z-[110] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-2xl lg:max-h-[90vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
+        className="fixed inset-0 z-[310] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-2xl lg:max-h-[90dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-base lg:text-lg font-bold text-slate-900">{t("header.title")}</h2>
             <p className="text-[11px] text-slate-400">{campaignData?.title || t("header.campaignFallback")} &middot; {campaignData?.brandName || t("header.brandFallback")}</p>
@@ -260,7 +260,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         </div>
 
         {/* Scrollable Form */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-6">
           {error && typeof error === "object" && error.kind === "plan_limit_reached" ? (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
               <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
@@ -447,7 +447,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             the panel above, matching FilterModal — and, on notched iPhones,
             the home indicator. The safe-area padding keeps Submit tappable
             on the devices where this form is actually used. */}
-        <div className="flex gap-3 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-100 bg-white sticky bottom-0">
+        <div className="shrink-0 flex gap-3 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-100 bg-white sticky bottom-0">
           <button onClick={onClose} className="flex-1 h-12 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
             {t("actions.cancel")}
           </button>

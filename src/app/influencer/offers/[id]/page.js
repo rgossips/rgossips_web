@@ -610,7 +610,8 @@ function Gallery({ images }) {
 
       {index >= 0 && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center"
+          data-scroll-lock
+          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center"
           onClick={close}
         >
           <button
@@ -652,7 +653,7 @@ function Gallery({ images }) {
           <img
             src={images[index]}
             alt={t("gallery.imageAlt", { index: index + 1 })}
-            className="max-w-[90vw] max-h-[85vh] object-contain"
+            className="max-w-[90vw] max-h-[85dvh] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
 
@@ -2369,9 +2370,9 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[150] bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div data-scroll-lock className="fixed inset-0 z-[350] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="fixed inset-0 z-[151] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
+        className="fixed inset-0 z-[351] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Header — shrink-0 so it doesn't get pushed by the form */}
@@ -2391,7 +2392,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
         </div>
 
         {/* Form */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
 
           {isRevision && revisionNote && (

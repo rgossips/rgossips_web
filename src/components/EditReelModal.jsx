@@ -45,8 +45,8 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/60 backdrop-blur-sm lg:p-6">
-      <div className="bg-white w-full max-w-md lg:max-w-6xl h-[92vh] lg:h-[85vh] rounded-t-[2.5rem] lg:rounded-[3rem] shadow-2xl relative animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
+    <div data-scroll-lock className="fixed inset-0 z-[260] flex items-end lg:items-center justify-center bg-black/60 backdrop-blur-sm lg:p-6">
+      <div className="bg-white w-full max-w-md lg:max-w-6xl h-[92dvh] lg:h-[85dvh] rounded-t-[2.5rem] lg:rounded-[3rem] shadow-2xl relative animate-in slide-in-from-bottom duration-300 flex flex-col overflow-hidden">
         {/* Header - Fixed */}
         <div className="shrink-0 p-5 lg:px-10 lg:py-6 flex justify-between items-center border-b border-gray-50">
           <div className="flex items-center gap-4">
@@ -85,7 +85,7 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
         </div>
 
         {/* Main Content Area - Scrollable on Right Only for Laptop */}
-        <div className="flex-1 overflow-y-auto lg:overflow-hidden no-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden no-scrollbar">
           <div className="flex flex-col lg:flex-row h-full">
             {/* Left Sidebar: Thumbnail - Sticky on Laptop */}
             <div className="w-full lg:w-[380px] p-6 lg:p-10 lg:border-r lg:border-gray-50 bg-gray-50/30 flex flex-col shrink-0">
@@ -304,7 +304,7 @@ const EditReelModal = ({ reel, onClose, onSave, onDeleteTrigger }) => {
         </div>
 
         {/* Mobile Fixed Bottom Actions */}
-        <div className="lg:hidden shrink-0 p-5 bg-white border-t border-gray-100 flex gap-3">
+        <div className="lg:hidden shrink-0 px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-100 flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 py-4 text-xs font-black text-gray-500 bg-gray-50 rounded-2xl"

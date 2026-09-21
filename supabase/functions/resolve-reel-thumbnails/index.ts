@@ -50,7 +50,7 @@ serveWithLogging("resolve-reel-thumbnails", async (req) => {
         caption: "",
       }));
       return new Response(
-        JSON.stringify({ reels }),
+        JSON.stringify({ reels, unresolved: reelLinks, reason: "no_token" }),
         { status: 200, headers: jsonHeaders }
       );
     }
@@ -61,18 +61,27 @@ serveWithLogging("resolve-reel-thumbnails", async (req) => {
     const getShortcode = (url: string) =>
       url.match(/\/(p|reel|reels)\/([^/?&#]+)/)?.[2] || "";
 
-    // Fetch user's recent media (up to 50) with thumbnails
-    const mediaRes = await fetch(
-      `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,thumbnail_url,media_url,permalink,caption,like_count,comments_count&limit=50&access_token=${encodeURIComponent(accessToken)}`
-    );
-    const mediaData = await mediaRes.json();
-    const allMedia = mediaData?.data || [];
-
-    // Build lookup by shortcode
+    // Instagram's API only exposes media owned by the connected account, so a
+    // link can be matched only if it is one of the creator's OWN posts. Page
+    // back through their media (up to MAX_PAGES × 100) until every wanted
+    // shortcode is found — it used to read only the latest 50, so an older
+    // reel of their own failed the same way someone else's reel does.
+    const MAX_PAGES = 5;
+    const wanted = new Set(reelLinks.map(getShortcode).filter(Boolean));
     const mediaByShortcode: Record<string, any> = {};
-    for (const m of allMedia) {
-      const sc = getShortcode(m.permalink || "");
-      if (sc) mediaByShortcode[sc] = m;
+    let username = "";
+    let next: string | null =
+      `https://graph.instagram.com/v22.0/me/media?fields=id,media_type,thumbnail_url,media_url,permalink,caption,like_count,comments_count,username&limit=100&access_token=${encodeURIComponent(accessToken)}`;
+    for (let page = 0; page < MAX_PAGES && next; page++) {
+      const mediaData = await (await fetch(next)).json();
+      if (mediaData?.error) break;
+      for (const m of mediaData?.data || []) {
+        username = username || m.username || "";
+        const sc = getShortcode(m.permalink || "");
+        if (sc) mediaByShortcode[sc] = m;
+      }
+      if ([...wanted].every((sc) => mediaByShortcode[sc])) break;
+      next = mediaData?.paging?.next || null;
     }
 
     // Match each reel link to media data
@@ -92,8 +101,16 @@ serveWithLogging("resolve-reel-thumbnails", async (req) => {
       };
     });
 
+    // Links we could not match: not on this creator's Instagram (someone
+    // else's reel), deleted, or older than MAX_PAGES. The editor refuses to
+    // save these — they would render as blank "❤ 0" tiles for brands.
+    const unresolved = reelLinks.filter((url: string) => {
+      const sc = getShortcode(url);
+      return !sc || !mediaByShortcode[sc];
+    });
+
     return new Response(
-      JSON.stringify({ reels }),
+      JSON.stringify({ reels, unresolved, account: username || null }),
       { status: 200, headers: jsonHeaders }
     );
   } catch (err) {

@@ -81,15 +81,16 @@ export default function FreeCampaignsWelcomeModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          // Above the influencer BottomNav (z-100).
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          // Popups start at z-250, above the influencer BottomNav (z-100).
+          data-scroll-lock
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
         >
           <motion.div
             initial={{ scale: 0.94, y: 12, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ type: "spring", damping: 22, stiffness: 260 }}
-            className="relative w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden"
+            className="relative w-full max-w-sm max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-y-auto overscroll-contain"
           >
             <button
               type="button"

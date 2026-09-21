@@ -73,12 +73,13 @@ export default function EliteWelcomeModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[205] flex items-end sm:items-center justify-center bg-black/60 px-3 sm:px-4 pb-3 sm:pb-0"
+      data-scroll-lock
+      className="fixed inset-0 z-[405] flex items-end sm:items-center justify-center bg-black/60 px-3 sm:px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-0"
       role="dialog"
       aria-modal="true"
       aria-labelledby="elite-welcome-title"
     >
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-lg max-h-[92dvh] sm:max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl bg-white shadow-2xl">
         <div className="relative overflow-hidden rounded-t-3xl bg-gradient-to-br from-[#F59E0B] via-[#E1306C] to-[#833AB4] px-6 pt-7 pb-6 text-white">
           <button
             onClick={() => dismiss()}

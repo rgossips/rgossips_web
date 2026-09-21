@@ -219,8 +219,8 @@ export function FilterDrawer({ filters, onApply, onClear, countForDraft }) {
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
       <DrawerPortal>
-        <DrawerOverlay className="fixed inset-0 bg-black/40 z-50" />
-        <DrawerContent className="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] mb-16 rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none">
+        <DrawerOverlay className="fixed inset-0 bg-black/40 z-[250]" />
+        <DrawerContent className="fixed inset-x-0 bottom-0 z-[250] max-h-[92dvh] data-[vaul-drawer-direction=bottom]:max-h-[92dvh] rounded-t-[32px] bg-white border-none flex flex-col focus:outline-none pb-[env(safe-area-inset-bottom)]">
           {renderHeader("drawer")}
           {content}
           {footer}
@@ -251,8 +251,8 @@ const FilterContent = ({ draft, toggleOption }) => {
   }, [activeTab]);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className="w-1/3 bg-[#F3F5FA] overflow-y-auto border-r">
+    <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="w-1/3 bg-[#F3F5FA] overflow-y-auto overscroll-contain border-r">
         {sidebarItems.map((item) => {
           const count = draft?.[item]?.length || 0;
           return (
@@ -301,7 +301,7 @@ const FilterContent = ({ draft, toggleOption }) => {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 space-y-1">
           {currentOptions.map((option) => (
             <label
               key={`${activeTab}-${option}`}

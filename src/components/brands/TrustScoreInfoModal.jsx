@@ -32,15 +32,16 @@ export default function TrustScoreInfoModal({ open, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90dvh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200"
       >
         {/* Gradient header */}
-        <div className="relative px-6 py-6 bg-gradient-to-br from-[#9333ea] via-[#ec4899] to-[#3b82f6]">
+        <div className="relative shrink-0 px-6 py-6 bg-gradient-to-br from-[#9333ea] via-[#ec4899] to-[#3b82f6]">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm flex items-center justify-center text-white cursor-pointer transition-colors"
@@ -57,7 +58,7 @@ export default function TrustScoreInfoModal({ open, onClose }) {
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto px-6 py-5 space-y-6 bg-white">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 space-y-6 bg-white">
           {/* Scale */}
           <section>
             <p className="text-[10px] font-bold text-[#9C97B8] uppercase tracking-widest mb-3">

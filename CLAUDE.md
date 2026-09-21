@@ -285,6 +285,35 @@ server's message and can set both in the existing profile edit screens.
 - Paid campaigns are still listed to free creators — the refusal is at Apply,
   deliberately, so the campaign is visible as an upsell. No lock badge on the card.
 
+## Popup layering + mobile scrolling (web, 2026-09)
+
+**Every popup is z-[250] or higher.** The mobile bottom navs are fixed at
+`BottomNav` z-[100] (influencer) and `BottomNavBrands` z-[150] (brands); most
+popups used to sit at z-50–150 and the nav covered their footers on phones. All
+popups were shifted +200 (relative order preserved, so nested popups still stack
+over parents): Radix `ui/dialog|drawer|sheet` → z-[250]; `ui/select|popover|
+tooltip` → z-[500] so a dropdown inside a dialog renders above it. Nav bars,
+sticky action bars (`bottom-16`) and global overlays (≥1000) were not moved.
+**New popups: use z-[250]+; never below 200.**
+
+Scrolling recipe applied to every popup: `dvh` caps (`vh` includes iOS Safari's
+hidden URL bar), one `flex-1 min-h-0 overflow-y-auto overscroll-contain` body,
+`shrink-0` header/footer, `pb-[max(1rem,env(safe-area-inset-bottom))]` on
+bottom-sheet footers, and **`data-scroll-lock` on each custom popup root** — one
+rule in `globals.css` (`html:has([data-scroll-lock])…{overflow:hidden}`) stops
+the page behind scrolling. Radix dialogs lock the body themselves. Vaul drawer
+gotcha: the base DrawerContent's `data-[vaul-drawer-direction=bottom]:max-h-[80vh]`
+beats a plain `max-h-*` from the caller — pass the same variant to override.
+Known leftovers: CreateCampaignDialog's banner-crop overlay is inside a
+transformed container (not portalled); full-screen mobile panels have no top
+safe-area padding.
+
+**Top reels only resolve the creator's OWN posts.** Instagram's API returns
+thumbnails/stats only for the connected account's media. `resolve-reel-thumbnails`
+pages back up to 500 posts and returns `unresolved` + `account`; the media-kit
+editors (EditOverlay, TemplateClassic) refuse to save unresolved links and say
+why, instead of saving a blank "❤ 0" tile.
+
 ## Returning-user popups: Instagram reconnect + Welcome to Elite (2026-09)
 
 - **Reconnect popup** — web `InstagramReconnectModal` (mounted by

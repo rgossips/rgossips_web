@@ -218,15 +218,15 @@ export default function CreatorOnboardingForm({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+    <div data-scroll-lock className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
-        className="relative w-full h-full lg:h-auto lg:max-w-2xl bg-white lg:rounded-[32px] overflow-hidden flex flex-col"
+        className="relative w-full h-full lg:h-auto lg:max-h-[90dvh] lg:max-w-2xl bg-white lg:rounded-[32px] overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
+        <div className="shrink-0 p-6 border-b border-slate-50 flex items-center justify-between bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
               {t("header.title")}
@@ -245,7 +245,7 @@ export default function CreatorOnboardingForm({ onClose }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 lg:p-10">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <StepContent title={t("steps.basicInfo")}>
@@ -520,7 +520,7 @@ export default function CreatorOnboardingForm({ onClose }) {
         </div>
 
         {/* Footer Buttons */}
-        <div className="p-6 bg-slate-50/50 flex gap-3">
+        <div className="shrink-0 px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] bg-slate-50/50 flex gap-3">
           {step > 1 && step < totalSteps && (
             <Button
               variant="ghost"

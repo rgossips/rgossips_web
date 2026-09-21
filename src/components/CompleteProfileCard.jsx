@@ -401,17 +401,17 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4">
-        <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] flex flex-col">
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
+      <div data-scroll-lock className="fixed inset-0 z-[280] bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[290] flex items-end sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+        <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+          <div className="shrink-0 flex items-center justify-between p-5 border-b border-gray-100">
             <h3 className="text-lg font-black text-gray-900">{t("modal.title")}</h3>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer">
               <X size={20} className="text-gray-400" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("modal.selectServices")}</p>
             <div className="grid grid-cols-3 gap-2">
               {SERVICE_OPTIONS.map((svc) => {
@@ -460,7 +460,7 @@ function SetRatesModal({ services, rates, onSave, onClose }) {
             )}
           </div>
 
-          <div className="p-5 border-t border-gray-100 flex gap-3">
+          <div className="shrink-0 p-5 border-t border-gray-100 flex gap-3">
             <button onClick={onClose} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-black text-gray-500 active:scale-95 transition-all cursor-pointer">
               {t("modal.cancel")}
             </button>

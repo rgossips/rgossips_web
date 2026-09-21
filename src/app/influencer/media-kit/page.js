@@ -114,6 +114,11 @@ export default function MediaKitPage() {
     [user],
   );
 
+  // Returns { ok: true } or { error: { kind, links?, account? } } so the
+  // editor can stay open and say why. A link is refused when it isn't one of
+  // the creator's own posts: Instagram's API only returns thumbnails and
+  // stats for the connected account's media, so anything else would show to
+  // brands as a blank "❤ 0" tile.
   const handleTopReelsSave = useCallback(
     async (newReels) => {
       try {
@@ -133,11 +138,21 @@ export default function MediaKitPage() {
               body: JSON.stringify({ userId: user.id, reelLinks: links }),
             });
             const resolveData = await resolveRes.json();
+            if (Array.isArray(resolveData?.unresolved) && resolveData.unresolved.length > 0) {
+              return {
+                error: {
+                  kind: "unresolved",
+                  links: resolveData.unresolved,
+                  account: resolveData.account || profile?.instagram_handle || profile?.username || "",
+                },
+              };
+            }
             if (resolveData?.reels) {
               resolvedReels = resolveData.reels;
             }
           } catch (e) {
             console.error("Failed to resolve thumbnails:", e);
+            return { error: { kind: "failed" } };
           }
         }
 
@@ -150,11 +165,16 @@ export default function MediaKitPage() {
             topReels: resolvedReels,
           }),
         });
+        // Show the new reels right away — without this the preview kept the
+        // old list until a reload, which read as "it didn't work".
+        await refreshProfile?.();
+        return { ok: true };
       } catch (err) {
         console.error("Failed to save top reels:", err);
+        return { error: { kind: "failed" } };
       }
     },
-    [user],
+    [user, profile, refreshProfile],
   );
 
   const handlePublish = async () => {
@@ -342,8 +362,8 @@ export default function MediaKitPage() {
 
       {/* Share Modal (fallback for browsers without Web Share API) */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 space-y-4 animate-in slide-in-from-bottom duration-300">
+        <div data-scroll-lock className="fixed inset-0 z-[250] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full sm:w-[400px] max-h-[92dvh] sm:max-h-[90dvh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-6 space-y-4 animate-in slide-in-from-bottom duration-300">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900">{t("share.modalTitle")}</h3>
               <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-slate-100 rounded-xl">

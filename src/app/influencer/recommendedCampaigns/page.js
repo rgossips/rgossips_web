@@ -615,7 +615,7 @@ function FilterDrawer({
           </button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="rounded-t-3xl max-h-[85vh]">
+      <DrawerContent className="rounded-t-3xl data-[vaul-drawer-direction=bottom]:max-h-[92dvh]">
         <DrawerHeader className="pb-2">
           <div className="flex items-center justify-between">
             <DrawerClose asChild>
@@ -628,7 +628,7 @@ function FilterDrawer({
           </div>
         </DrawerHeader>
 
-        <div className="px-5 pb-4 space-y-6 overflow-y-auto">
+        <div className="flex-1 min-h-0 px-5 pb-4 space-y-6 overflow-y-auto overscroll-contain">
           {/* Category */}
           <div>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">

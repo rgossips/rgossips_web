@@ -60,7 +60,7 @@ export default function OfflineGate() {
   if (!offline) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#F8F9FD] flex items-center justify-center p-6">
+    <div data-scroll-lock className="fixed inset-0 z-[9999] bg-[#F8F9FD] flex items-center justify-center p-6">
       <div className="max-w-sm w-full text-center">
         {/* Graphic — broken-signal art */}
         <div className="relative w-32 h-32 mx-auto mb-8">

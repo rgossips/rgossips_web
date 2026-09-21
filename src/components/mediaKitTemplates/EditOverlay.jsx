@@ -43,8 +43,10 @@ export default function MediaKitEditOverlay({ bio, reels, onBioSave, onTopReelsS
           initial={reels || []}
           onClose={() => setOpen(null)}
           onSave={async (next) => {
-            await onTopReelsSave?.(next);
+            const res = await onTopReelsSave?.(next);
+            if (res?.error) return res; // keep the editor open with the reason
             setOpen(null);
+            return res;
           }}
         />
       )}
@@ -69,9 +71,9 @@ function EditPill({ onClick, label }) {
 function ModalShell({ title, subtitle, onClose, children, footer }) {
   const t = useTranslations("MediaKitTemplatesEditOverlay");
   return (
-    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100">
+    <div data-scroll-lock className="fixed inset-0 z-[410] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]">
+        <div className="shrink-0 flex items-start justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <h3 className="text-base font-bold text-slate-900">{title}</h3>
             {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
@@ -80,8 +82,8 @@ function ModalShell({ title, subtitle, onClose, children, footer }) {
             <XIcon size={16} className="text-slate-400" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="border-t border-slate-100 p-4 bg-slate-50">{footer}</div>}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
+        {footer && <div className="shrink-0 border-t border-slate-100 p-4 bg-slate-50">{footer}</div>}
       </div>
     </div>
   );
@@ -152,6 +154,7 @@ function ReelsModal({ initial, onClose, onSave }) {
     initial?.length > 0 ? initial.map((r) => r.permalink || "") : [""]
   );
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const handleAdd = () => setLinks((prev) => [...prev, ""]);
   const handleRemove = (i) => setLinks((prev) => prev.filter((_, idx) => idx !== i));
@@ -172,11 +175,14 @@ function ReelsModal({ initial, onClose, onSave }) {
         comments: 0,
         caption: "",
       }));
-      await onSave(next);
+      setSaveError(null);
+      const res = await onSave(next);
+      if (res?.error) setSaveError(res.error);
     } finally {
       setSaving(false);
     }
   };
+  const unresolved = new Set(saveError?.kind === "unresolved" ? saveError.links : []);
 
   return (
     <ModalShell
@@ -199,8 +205,16 @@ function ReelsModal({ initial, onClose, onSave }) {
       }
     >
       <div className="space-y-3">
+        {saveError && (
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 leading-relaxed">
+            {saveError.kind === "unresolved"
+              ? t("reels.notYours", { account: saveError.account || "—" })
+              : t("reels.saveFailed")}
+          </div>
+        )}
         {links.map((link, i) => {
           const isValid = !link.trim() || INSTAGRAM_LINK_RE.test(link.trim());
+          const notYours = unresolved.has(link.trim());
           return (
             <div key={i}>
               <div className="flex gap-2">
@@ -209,13 +223,14 @@ function ReelsModal({ initial, onClose, onSave }) {
                   value={link}
                   onChange={(e) => handleChange(i, e.target.value)}
                   placeholder="https://www.instagram.com/reel/…"
-                  className={`flex-1 py-2.5 px-3 bg-slate-50 border focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${!isValid ? "border-red-300 focus:border-red-400" : "border-slate-200 focus:border-purple-300"}`}
+                  className={`flex-1 py-2.5 px-3 bg-slate-50 border focus:bg-white rounded-xl text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all ${!isValid || notYours ? "border-red-300 focus:border-red-400" : "border-slate-200 focus:border-purple-300"}`}
                 />
                 <button onClick={() => handleRemove(i)} disabled={links.length === 1} className="w-9 h-9 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center cursor-pointer disabled:opacity-40">
                   <XIcon size={14} />
                 </button>
               </div>
               {!isValid && <p className="text-[10px] text-red-500 mt-1 ml-1">{t("reels.invalidLink")}</p>}
+              {isValid && notYours && <p className="text-[10px] text-red-500 mt-1 ml-1">{t("reels.notYoursShort")}</p>}
             </div>
           );
         })}

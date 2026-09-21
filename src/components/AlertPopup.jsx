@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 // Compact, self-contained replacement for window.alert(). A plain fixed
 // overlay (NOT a Radix portal) at a very high z-index, so it renders above
 // everything — including other modals it may be triggered from inside
-// (e.g. the z-[110] application-journey modal on the brand campaign page).
+// (e.g. the z-[310] application-journey modal on the brand campaign page).
 //
 // Usage:
 //   const [popup, setPopup] = useState(null); // string | {title,message,tone}
@@ -34,7 +34,8 @@ export default function AlertPopup({ popup, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[320] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"
       role="dialog"
       aria-modal="true"
       onClick={(e) => {
@@ -43,7 +44,7 @@ export default function AlertPopup({ popup, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:w-[320px] max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="w-full sm:w-[320px] max-w-sm max-h-[90dvh] rounded-2xl bg-white shadow-2xl overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-150"
       >
         <div className="p-5">
           <div className="flex items-start gap-3">

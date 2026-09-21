@@ -201,7 +201,7 @@ export default function CreatorAuthModal({ open, onClose, onSuccess, redirectTo,
   ];
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div data-scroll-lock className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       {/* Click-outside to dismiss. */}
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
@@ -212,7 +212,7 @@ export default function CreatorAuthModal({ open, onClose, onSuccess, redirectTo,
         transition={{ type: "spring", stiffness: 300, damping: 28 }}
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
       >
         <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
           {step === "intro" ? (
@@ -238,7 +238,7 @@ export default function CreatorAuthModal({ open, onClose, onSuccess, redirectTo,
           </button>
         </div>
 
-        <div className="px-6 pb-7 overflow-y-auto min-h-0">
+        <div className="flex-1 px-6 pb-7 overflow-y-auto overscroll-contain min-h-0">
           {step === "intro" && (
             <div className="space-y-6">
               <div className="text-center space-y-2">

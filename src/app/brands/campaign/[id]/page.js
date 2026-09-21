@@ -885,7 +885,7 @@ const BrandGallery = ({ images }) => {
         ))}
       </div>
       {index >= 0 && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={close}>
+        <div data-scroll-lock className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={close}>
           <button type="button" onClick={close} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white cursor-pointer" aria-label={t("common.close")}>
             <X size={24} />
           </button>
@@ -915,7 +915,7 @@ const BrandGallery = ({ images }) => {
               </button>
             </>
           )}
-          <img src={images[index]} alt={t("gallery.imageAlt", { n: index + 1 })} className="max-w-[90vw] max-h-[85vh] object-contain" onClick={(e) => e.stopPropagation()} />
+          <img src={images[index]} alt={t("gallery.imageAlt", { n: index + 1 })} className="max-w-[90vw] max-h-[85dvh] object-contain" onClick={(e) => e.stopPropagation()} />
           {images.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold">
               {index + 1} / {images.length}
@@ -972,7 +972,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   const [revisionIndexes, setRevisionIndexes] = useState([]);
   const [showRating, setShowRating] = useState(false);
   // Compact popup for escrow / validation errors — replaces window.alert().
-  // Uses AlertPopup (plain fixed z-[120]) so it renders above the z-[110]
+  // Uses AlertPopup (plain fixed z-[320]) so it renders above the z-[310]
   // journey modal this row lives inside.
   const [popup, setPopup] = useState(null);
 
@@ -1589,13 +1589,13 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
   }, [history, app.created_at, app.proposed_rate]);
 
   return (
-    // z-[200], not z-[110]: BottomNavBrands is fixed at z-[150], so the old
-    // value put the mobile nav bar ON TOP of this modal, covering its footer
-    // actions. No backdrop onClick either — this panel holds the review and
+    // z-[400]: every popup sits above the mobile bottom navs (influencer
+    // z-100, BottomNavBrands z-150) — an older z-[110] put the nav bar ON TOP
+    // of this modal, covering its footer actions. No backdrop onClick either — this panel holds the review and
     // approval actions for a campaign application, and a stray tap outside
     // dismissing it mid-review is pure loss. Closing is the X button.
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col">
+    <div data-scroll-lock className="fixed inset-0 z-[400] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="min-w-0">
             <h2 className="text-base font-black text-gray-900 truncate">{displayName}</h2>
@@ -1606,7 +1606,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-5">
           {/* Timeline */}
           <div className="bg-[#F8F9FE] rounded-2xl p-4">
             <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">{t("journeyModal.journey")}</p>
@@ -1672,12 +1672,13 @@ function NotEditableModal({ open, onClose, onPause, onDuplicate, isPaused, appli
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[310] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+        className="w-full max-w-md max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-y-auto overscroll-contain"
       >
         <div className="px-6 pt-6 pb-2 flex items-start gap-3">
           <div className="shrink-0 w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600">
@@ -1725,12 +1726,13 @@ function DeleteCampaignModal({ open, onClose, onConfirm, deleting, title }) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      data-scroll-lock
+      className="fixed inset-0 z-[310] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+        className="w-full max-w-md max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-y-auto overscroll-contain"
       >
         <div className="px-6 pt-6 pb-2 flex items-start gap-3">
           <div className="shrink-0 w-10 h-10 rounded-2xl bg-red-100 flex items-center justify-center text-red-600">

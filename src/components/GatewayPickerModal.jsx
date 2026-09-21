@@ -18,8 +18,8 @@ const SHOW_STRIPE = false;
 export default function GatewayPickerModal({ title, subtitle, onCancel, onPick }) {
   const t = useTranslations("GatewayPickerModal");
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+    <div data-scroll-lock className="fixed inset-0 z-[260] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4">
+      <div className="w-full sm:w-[420px] max-h-[90dvh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-y-auto overscroll-contain">
         <div className="flex items-start justify-between px-5 pt-5 pb-3">
           <div>
             <h3 className="text-base font-black text-slate-900">{title}</h3>

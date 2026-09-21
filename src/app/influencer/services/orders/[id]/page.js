@@ -834,7 +834,7 @@ export default function ServiceOrderDetailPage() {
           in-button spinner — clearer signal that something's happening
           and prevents stray taps on the page underneath. */}
       {paymentBusy && (
-        <div className="fixed inset-0 z-200 bg-[#0F0F1A]/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+        <div data-scroll-lock className="fixed inset-0 z-[400] bg-[#0F0F1A]/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div className="relative">
             <div className="w-16 h-16 rounded-full border-4 border-white/20" />
             <Loader2 size={64} strokeWidth={2.5} className="absolute inset-0 animate-spin text-[#E60076]" />

@@ -729,8 +729,8 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-0 z-[60] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-md lg:max-h-[85vh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+      <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-md lg:max-h-[85dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-base font-black text-gray-900">{t("addPaymentMethod")}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors cursor-pointer">
@@ -738,7 +738,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-6">
           <div className="grid grid-cols-2 gap-3">
             {[
               { key: "upi", label: t("methods.upi"), icon: Smartphone },
@@ -812,7 +812,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
           {error && <p className="text-xs text-rose-500 font-bold">{error}</p>}
         </div>
 
-        <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-white sticky bottom-0">
+        <div className="shrink-0 flex gap-3 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-4 border-t border-gray-100 bg-white sticky bottom-0">
           <button onClick={onClose} disabled={saving} className="flex-1 h-12 rounded-xl border border-gray-200 text-sm font-black text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50">
             {t("cancel")}
           </button>

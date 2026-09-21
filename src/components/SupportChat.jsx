@@ -556,12 +556,12 @@ export default function SupportChat({ open, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:justify-end bg-black/30 backdrop-blur-sm p-0 sm:p-6">
+    <div data-scroll-lock className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center sm:justify-end bg-black/30 backdrop-blur-sm p-0 sm:p-6">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", damping: 22, stiffness: 240 }}
-        className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:w-[420px] h-[85vh] sm:h-[640px] flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:w-[420px] h-[85dvh] sm:h-[640px] sm:max-h-[90dvh] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 shrink-0">
@@ -596,7 +596,7 @@ export default function SupportChat({ open, onClose }) {
         {/* Messages — scroll-smooth keeps the auto-scroll buttery */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/40 scroll-smooth"
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-3 bg-slate-50/40 scroll-smooth"
         >
           <AnimatePresence initial={false}>
             {messages.map((m, i) => (
@@ -656,7 +656,7 @@ export default function SupportChat({ open, onClose }) {
 
         {/* Sticky footer — always-on callback shortcut */}
         {!callbackOpen && (
-          <div className="px-5 py-3 border-t border-slate-100 shrink-0">
+          <div className="px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3 border-t border-slate-100 shrink-0">
             <button
               onClick={() => {
                 setMessages((prev) => [

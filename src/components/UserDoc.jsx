@@ -100,7 +100,8 @@ const UserDoc = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/40 z-[200] backdrop-blur-sm"
+              data-scroll-lock
+              className="lg:hidden fixed inset-0 bg-black/40 z-[400] backdrop-blur-sm"
             />
 
             {/* Sidebar panel */}
@@ -109,7 +110,7 @@ const UserDoc = () => {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[201] flex flex-col shadow-2xl"
+              className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[401] flex flex-col shadow-2xl"
             >
               {/* Sidebar header */}
               <div className="p-5 flex items-center justify-between border-b border-slate-100">
@@ -137,7 +138,7 @@ const UserDoc = () => {
               </div>
 
               {/* Nav links */}
-              <nav className="flex-1 py-3 px-3 overflow-y-auto">
+              <nav className="flex-1 min-h-0 py-3 px-3 overflow-y-auto overscroll-contain">
                 {navLinks.map((item) => {
                   const isActive = pathname === item.path;
                   return (
@@ -190,7 +191,7 @@ const UserDoc = () => {
               </nav>
 
               {/* Sidebar footer */}
-              <div className="p-4 border-t border-slate-100">
+              <div className="shrink-0 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-100">
                 <button
                   onClick={() => {
                     setSidebarOpen(false);

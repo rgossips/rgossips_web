@@ -71,12 +71,13 @@ export default function InstagramReconnectModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[210] flex items-end sm:items-center justify-center bg-black/50 px-4 pb-4 sm:pb-0"
+      data-scroll-lock
+      className="fixed inset-0 z-[410] flex items-end sm:items-center justify-center bg-black/50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0"
       role="dialog"
       aria-modal="true"
       aria-labelledby="ig-reconnect-title"
     >
-      <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl p-6 sm:p-7">
+      <div className="relative w-full max-w-md max-h-[92dvh] sm:max-h-[90dvh] overflow-y-auto overscroll-contain rounded-3xl bg-white shadow-2xl p-6 sm:p-7">
         <button
           onClick={later}
           aria-label={t("later")}

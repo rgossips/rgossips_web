@@ -168,8 +168,8 @@ const ReceiptModal = ({ tx, profile, onClose }) => {
   const t = useTranslations("BrandsTransactions");
   const k = statusKey(tx);
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 p-4 print:bg-white print:p-0">
-      <div className="w-full max-w-lg bg-white rounded-3xl print:rounded-none shadow-2xl print:shadow-none max-h-[90vh] overflow-y-auto">
+    <div data-scroll-lock className="fixed inset-0 z-[350] flex items-center justify-center bg-black/40 p-4 print:bg-white print:p-0">
+      <div className="w-full max-w-lg bg-white rounded-3xl print:rounded-none shadow-2xl print:shadow-none max-h-[90dvh] overflow-y-auto overscroll-contain">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
           <h3 className="text-sm font-black text-gray-900">{t("receipt.title")}</h3>
           <div className="flex items-center gap-2">

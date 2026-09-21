@@ -941,8 +941,8 @@ const DashboardView = ({
 
       {/* Crop Modal */}
       {showCropper && imageSrc && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+        <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-sm flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 bg-black/50">
             <button
               onClick={() => { setShowCropper(false); setImageSrc(null); }}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/10 transition-colors"
@@ -961,7 +961,7 @@ const DashboardView = ({
             </button>
           </div>
 
-          <div ref={cropContainerRef} className="flex-1 relative">
+          <div ref={cropContainerRef} className="flex-1 min-h-0 relative">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -978,7 +978,7 @@ const DashboardView = ({
             />
           </div>
 
-          <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+          <div className="shrink-0 px-8 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-black/50 flex items-center gap-4">
             <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
@@ -1001,8 +1001,8 @@ const DashboardView = ({
       )}
 
       {showLogout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-[90vw] max-w-xs flex flex-col items-center animate-in fade-in zoom-in duration-200">
+        <div data-scroll-lock className="fixed inset-0 z-[250] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-[90vw] max-w-xs max-h-[90dvh] overflow-y-auto overscroll-contain flex flex-col items-center animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 bg-pink-100 text-pink-500 rounded-xl flex items-center justify-center mb-4">
               <LogOut size={28} />
             </div>

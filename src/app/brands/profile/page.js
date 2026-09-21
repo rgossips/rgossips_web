@@ -767,8 +767,8 @@ const BrandProfile = () => {
       {/* Crop logo modal — z must beat the sticky BrandNavbar (z-[100]) or
           the Cancel/Save header row renders underneath it. */}
       {imageSrc && (
-        <div className="fixed inset-0 z-[150] bg-black/85 backdrop-blur-sm flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 bg-black/50">
+        <div data-scroll-lock className="fixed inset-0 z-[350] bg-black/85 backdrop-blur-sm flex flex-col">
+          <div className="shrink-0 flex items-center justify-between px-5 py-4 bg-black/50">
             <button
               onClick={() => {
                 setImageSrc(null);
@@ -790,7 +790,7 @@ const BrandProfile = () => {
               {uploading ? t("crop.saving") : t("actions.save")}
             </button>
           </div>
-          <div ref={cropContainerRef} className="flex-1 relative">
+          <div ref={cropContainerRef} className="flex-1 min-h-0 relative">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -806,7 +806,7 @@ const BrandProfile = () => {
               onMediaLoaded={onMediaLoaded}
             />
           </div>
-          <div className="px-8 py-5 bg-black/50 flex items-center gap-4">
+          <div className="shrink-0 px-8 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-black/50 flex items-center gap-4">
             <span className="text-white/60 text-xs font-bold shrink-0">{t("crop.zoom")}</span>
             <input
               type="range"
@@ -951,9 +951,9 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
     );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end lg:items-center lg:justify-center bg-black/40">
-      <div className="w-full lg:max-w-md bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div data-scroll-lock className="fixed inset-0 z-[250] flex items-end lg:items-center lg:justify-center bg-black/40">
+      <div className="w-full lg:max-w-md bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[92dvh] lg:max-h-[85dvh] flex flex-col overflow-hidden">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h3 className="text-lg font-bold text-gray-900">{t("categoriesModal.title")}</h3>
             <p className="text-[11px] text-gray-400">
@@ -969,7 +969,7 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-4">
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => {
               const on = selected.includes(c);
@@ -991,7 +991,7 @@ const CategoriesModal = ({ initial, onClose, onSave }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100">
+        <div className="shrink-0 grid grid-cols-2 gap-3 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-4 border-t border-gray-100">
           <button
             onClick={onClose}
             disabled={saving}
@@ -1023,9 +1023,9 @@ const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel, canS
   return (
     // z beats the sticky BrandNavbar (z-[100]) so the modal never slides
     // under the page header.
-    <div className="fixed inset-0 z-[150] flex items-end lg:items-center lg:justify-center bg-black/40">
-      <div className="w-full lg:max-w-lg bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div data-scroll-lock className="fixed inset-0 z-[350] flex items-end lg:items-center lg:justify-center bg-black/40">
+      <div className="w-full lg:max-w-lg bg-white rounded-t-[32px] lg:rounded-[32px] max-h-[92dvh] lg:max-h-[85dvh] flex flex-col overflow-hidden">
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h3 className="text-lg font-bold text-gray-900">{title}</h3>
             {subtitle && <p className="text-[11px] text-gray-400">{subtitle}</p>}
@@ -1035,9 +1035,9 @@ const EditModal = ({ title, subtitle, onClose, onSave, children, saveLabel, canS
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">{children}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-5 space-y-4">{children}</div>
 
-        <div className="grid grid-cols-2 gap-3 p-4 border-t border-gray-100">
+        <div className="shrink-0 grid grid-cols-2 gap-3 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-4 border-t border-gray-100">
           <button
             onClick={onClose}
             disabled={saving}

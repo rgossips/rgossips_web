@@ -172,16 +172,17 @@ function ToolModal({ spec, onClose }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
-      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      data-scroll-lock
+      className="fixed inset-0 z-[320] flex items-end sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 bg-black/50 backdrop-blur-sm"
     >
       <motion.div
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 24, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[80vh] flex flex-col"
+        className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden"
       >
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+        <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <spec.Icon className={spec.color} size={20} />
             <h3 className="text-base font-black text-slate-900">{t(`tools.${spec.key}`)}</h3>
@@ -191,7 +192,7 @@ function ToolModal({ spec, onClose }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4">
           {limitReached ? (
             <div className="text-center py-6 space-y-3">
               <p className="text-sm font-bold text-slate-900">{t("limitTitle")}</p>
@@ -237,7 +238,7 @@ function ToolModal({ spec, onClose }) {
         </div>
 
         {!limitReached && (
-          <div className="p-5 border-t border-slate-100 flex items-center gap-3">
+          <div className="shrink-0 p-5 border-t border-slate-100 flex items-center gap-3">
             {result && (
               <button onClick={copy} className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-slate-200 text-sm font-black text-slate-600 hover:bg-slate-50 transition-all">
                 {copied ? <Check size={15} className="text-emerald-500" /> : <Copy size={15} />}
@@ -255,7 +256,7 @@ function ToolModal({ spec, onClose }) {
             </button>
           </div>
         )}
-        {typeof remaining === "number" && !limitReached && <p className="text-[10px] text-center text-slate-400 pb-3 -mt-2">{t("leftThisMonth", { count: remaining })}</p>}
+        {typeof remaining === "number" && !limitReached && <p className="shrink-0 text-[10px] text-center text-slate-400 pb-3 -mt-2">{t("leftThisMonth", { count: remaining })}</p>}
       </motion.div>
     </motion.div>
   );
