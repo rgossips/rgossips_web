@@ -3393,24 +3393,6 @@
       "ADMIN_ADJUSTMENT": "Admin adjustment"
     }
   },
-  "InfluencerResumeId": {
-    "title": "Media Kit / Resume",
-    "insightsFor": "AI-Powered insights for {name}",
-    "downloadPdf": "Download PDF",
-    "scrollHint": "Scroll inside the viewer to see full details",
-    "creatorSnapshot": "Creator Snapshot",
-    "stats": {
-      "followers": "Followers",
-      "engagement": "Engagement"
-    },
-    "preparing": "Preparing…",
-    "privateTitle": "This résumé is private",
-    "privateBody": "A résumé is only visible to the creator it belongs to. Share your media kit instead — it is built for brands and works from a public link.",
-    "openMediaKit": "Open my media kit",
-    "sourceNote": "Built from your Instagram data and rate card. Refresh your Instagram connection to update these numbers.",
-    "shareTitle": "Sharing with a brand?",
-    "shareBody": "Your media kit has a public link, live analytics and your top reels — most brands would rather open that than a PDF."
-  },
   "InfluencerServices": {
     "back": "Back",
     "title": "All Services",
@@ -4537,25 +4519,6 @@
       "pleaseRate": "Please rate \"{label}\" before submitting",
       "submitFailed": "Failed to submit rating"
     }
-  },
-  "ResumeTemplate": {
-    "metrics": {
-      "followers": "Followers",
-      "engagement": "Engagement",
-      "reelViews": "Reel views (30d)"
-    },
-    "creatorSummary": "Creator Summary",
-    "contentPerformance": "Content Performance",
-    "averageLikes": "Average Likes: {value}",
-    "averageComments": "Average Comments: {value}",
-    "contentThemes": "Content Themes",
-    "audienceDemographics": "Audience Demographics",
-    "gender": "Gender: {male}% Male • {female}% Female",
-    "topPerformingContent": "Top Performing Content",
-    "reach30d": "Accounts reached (30 days): {value}",
-    "saves30d": "Saves (30 days): {value}",
-    "likes": "{value} likes",
-    "rateCard": "Rate Card"
   },
   "SearchOverlay": {
     "searchPlaceholder": "Search campaigns...",
