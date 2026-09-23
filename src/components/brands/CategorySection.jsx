@@ -55,7 +55,10 @@ const CategoryIcon = ({ label, emoji, index, onClick }) => (
 
 export const CategorySection = () => {
   const router = useRouter();
-  const { completion } = useBrandTrustScore();
+  // Completion now arrives from the server (brand-campaigns trustScore), so
+  // there IS a first render without it — don't alarm the brand with a red 0%
+  // and an empty checklist while it is still in flight.
+  const { completion, loading: completionLoading } = useBrandTrustScore();
 
   const goToCategory = (label) => {
     router.push(`/brands/search?category=${encodeURIComponent(label)}`);
@@ -65,8 +68,9 @@ export const CategorySection = () => {
   const missing = completion?.missing || [];
   const filled = completion?.filled || [];
   const allFields = [...filled.map((label) => ({ label, done: true })), ...missing.map((label) => ({ label, done: false }))];
-  const completionColor =
-    completionPct >= 100
+  const completionColor = completionLoading
+    ? "text-slate-400 bg-slate-50 border-slate-100"
+    : completionPct >= 100
       ? "text-emerald-500 bg-emerald-50 border-emerald-100"
       : completionPct >= 67
       ? "text-indigo-500 bg-indigo-50 border-indigo-100"
@@ -179,13 +183,15 @@ export const CategorySection = () => {
                 Profile completion
               </h3>
               <span className={`text-sm font-bold px-3 py-1 rounded-full border ${completionColor}`}>
-                {completionPct}%
+                {completionLoading ? "—" : `${completionPct}%`}
               </span>
             </div>
             <p className="text-[#9C97B8] text-sm mb-6 font-medium">
-              {completionPct >= 100
-                ? "All set — your profile is fully complete."
-                : "Complete these to unlock the most trust"}
+              {completionLoading
+                ? "Checking your profile…"
+                : completionPct >= 100
+                  ? "All set — your profile is fully complete."
+                  : "Complete these to unlock the most trust"}
             </p>
 
             {/* Progress bar */}

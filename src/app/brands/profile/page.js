@@ -21,6 +21,7 @@ import {
   RotateCcw,
   UserMinus,
   Trash2,
+  Ban,
   Info,
   Globe,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import { useGlobalLoading } from "@/context/LoadingContext";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import AlertPopup from "@/components/AlertPopup";
 import BrandAccountActionsModal from "@/components/brands/BrandAccountActionsModal";
+import BlockedAccounts from "@/components/BlockedAccounts";
 import TrustScoreInfoModal from "@/components/brands/TrustScoreInfoModal";
 import InfoBadge from "@/components/brands/InfoBadge";
 import { useBrandTrustScore } from "@/hooks/useBrandTrustScore";
@@ -58,6 +60,26 @@ const CATEGORIES = [
   "Pet Care & Animals",
 ];
 
+// Band → chip colour. The server (supabase/functions/_shared/brand-trust.ts)
+// is the only thing that names a band; these are the CURRENT five labels.
+// This map used to key off the retired Excellent / Very Good / Good / Fair /
+// Poor wording, so every brand fell through to the red "Poor" chip.
+const TRUST_BAND_CHIP = {
+  Elite: "bg-emerald-50 text-emerald-600",
+  Trusted: "bg-blue-50 text-blue-600",
+  Established: "bg-indigo-50 text-indigo-600",
+  Emerging: "bg-amber-50 text-amber-600",
+  "Building Trust": "bg-slate-50 text-slate-500",
+};
+
+const TRUST_BAND_KEYS = {
+  Elite: "elite",
+  Trusted: "trusted",
+  Established: "established",
+  Emerging: "emerging",
+  "Building Trust": "buildingTrust",
+};
+
 const BrandProfile = () => {
   const t = useTranslations("BrandsProfile");
   const router = useRouter();
@@ -71,6 +93,8 @@ const BrandProfile = () => {
   const [uploadError, setUploadError] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  // Brands block creators from the search card, so the undo lives here.
+  const [showBlocked, setShowBlocked] = useState(false);
   const [brandInfoOpen, setBrandInfoOpen] = useState(false);
   const [popup, setPopup] = useState(null); // compact popup replacing window.alert()
   const [contactOpen, setContactOpen] = useState(false);
@@ -267,6 +291,14 @@ const BrandProfile = () => {
     }
   };
 
+  if (showBlocked) {
+    return (
+      <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans pt-6">
+        <BlockedAccounts onBack={() => setShowBlocked(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#F8F9FE] min-h-screen pb-10 font-sans">
       <div className="bg-linear-to-b from-[#4C75BE] to-[#4A3996] pt-12 pb-8 px-6 rounded-b-4xl mb-20">
@@ -435,25 +467,23 @@ const BrandProfile = () => {
                 <InfoBadge size={18} />
               </button>
             </div>
-            <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                trust.band === "Excellent" ? "bg-emerald-50 text-emerald-600" :
-                trust.band === "Very Good" ? "bg-blue-50 text-blue-600" :
-                trust.band === "Good"      ? "bg-indigo-50 text-indigo-600" :
-                trust.band === "Fair"      ? "bg-amber-50 text-amber-600" :
-                                             "bg-rose-50 text-rose-600"
-              }`}
-            >
-              {trust.band}
-            </span>
+            {trust?.band && (
+              <span
+                className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  TRUST_BAND_CHIP[trust.band] || "bg-slate-50 text-slate-500"
+                }`}
+              >
+                {t(`trust.bands.${TRUST_BAND_KEYS[trust.band] || "buildingTrust"}`)}
+              </span>
+            )}
           </div>
           <p className="text-2xl font-black text-gray-900 mb-1">
-            {trust.score}
-            <span className="text-sm font-bold text-gray-400 ml-1">/{trust.scaleMax ?? 900}</span>
+            {trust?.score ?? "—"}
+            <span className="text-sm font-bold text-gray-400 ml-1">/{trust?.scaleMax ?? 900}</span>
           </p>
           {/* B13 — same phrasing as BrandHero + TrustSection so the
               cold-start caption reads identically on every surface. */}
-          {trust.coldStart && (
+          {trust?.coldStart && (
             <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">
               {t("trust.coldStart", {
                 cap: trust.coldStartCap,
@@ -714,6 +744,21 @@ const BrandProfile = () => {
         {/* Account */}
         <Section title={t("sections.account")}>
           <div className="bg-white rounded-3xl border border-gray-100/50 shadow-sm overflow-hidden divide-y divide-gray-50">
+            <button
+              onClick={() => setShowBlocked(true)}
+              className="w-full p-5 flex items-start gap-4 text-left active:scale-[0.98] transition-transform cursor-pointer hover:bg-slate-50/60"
+            >
+              <div className="p-2 bg-slate-100 rounded-xl text-slate-500">
+                <Ban size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900">{t("account.blockedAccounts")}</p>
+                <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
+                  {t("account.blockedAccountsDesc")}
+                </p>
+              </div>
+            </button>
+
             <button
               onClick={() => setLogoutOpen(true)}
               className="w-full p-5 flex items-center gap-4 text-red-500 font-bold active:scale-[0.98] transition-transform cursor-pointer"

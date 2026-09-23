@@ -10,6 +10,7 @@ import AnalyticsPage from "@/components/AnalyticsPage";
 import NotificationSettings from "@/components/NotificationSettings";
 import PrivacySecurityPage from "@/components/PrivacySettings";
 import TrustedDevices from "@/components/TrustedDevices";
+import BlockedAccounts from "@/components/BlockedAccounts";
 import DeactivateAccount from "@/components/DeactiveAccount";
 import HelpSupport from "@/components/HelpAndSupport";
 import PaymentMethods from "@/components/PaymentMethods";
@@ -87,9 +88,13 @@ export default function ProfilePage() {
             key="privacy"
             onBack={() => setView("dashboard")}
             onTrustedDevices={() => setView("trusted-devices")}
+            onBlockedAccounts={() => setView("blocked-accounts")}
             onDeactiveAccount={() => setView("deactivate-account")}
             onDeleteAccount={() => setDeleteOpen(true)}
           />
+        )}
+        {view === "blocked-accounts" && (
+          <BlockedAccounts key="blocked" onBack={() => setView("privacy")} />
         )}
         {view === "trusted-devices" && (
           <TrustedDevices

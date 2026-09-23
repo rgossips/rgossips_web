@@ -5,169 +5,17 @@ import {
   resolveViewerId,
   filterBlocked,
 } from "../_shared/blocks.ts";
+import {
+  computeBrandTrustScore,
+  executionFromApplications,
+  historyMetrics,
+} from "../_shared/brand-trust.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-// ─── Trust score helpers (lightweight port of src/lib/brandProfile.js) ──
-// Mirrors the 5-pillar 300–900 CIBIL-style score but uses only signals
-// we can fetch in bulk (no per-application status-history walk). The
-// full per-brand calculation lives on the brand's own dashboard via
-// useBrandTrustScore; this version is just enough for a card preview.
-
-const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
-const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-const NEUTRAL = 50;
-
-const PILLAR_WEIGHTS = {
-  reviews: 0.30,
-  execution: 0.25,
-  verification: 0.20,
-  communication: 0.15,
-  engagement: 0.10,
-};
-
-const BANDS: Array<{ min: number; label: string }> = [
-  { min: 800, label: "Excellent" },
-  { min: 740, label: "Very Good" },
-  { min: 670, label: "Good" },
-  { min: 580, label: "Fair" },
-  { min: 300, label: "Poor" },
-];
-function bandFor(score: number): string {
-  for (const b of BANDS) if (score >= b.min) return b.label;
-  return "Poor";
-}
-
-const COLD_START_CAP = 720;
-const COLD_START_THRESHOLD = 3;
-
-function recencyWeight(createdAtIso: string | null, now: number): number {
-  if (!createdAtIso) return 1;
-  const t = new Date(createdAtIso).getTime();
-  if (!Number.isFinite(t) || t > now) return 1;
-  const days = (now - t) / 86_400_000;
-  return Math.pow(0.5, days / 180);
-}
-
-function reviewsPercent(ratings: any[]): { percent: number; hasData: boolean } {
-  if (!ratings || ratings.length === 0) return { percent: NEUTRAL, hasData: false };
-  const now = Date.now();
-  const sum = { target: 0, brief: 0, fair: 0, feedback: 0 };
-  const wsum = { target: 0, brief: 0, fair: 0, feedback: 0 };
-  for (const r of ratings) {
-    const w = recencyWeight(r.created_at, now);
-    if (Number.isFinite(r.target_rating) && r.target_rating > 0) { sum.target += r.target_rating * w; wsum.target += w; }
-    if (Number.isFinite(r.brief_clarity) && r.brief_clarity > 0) { sum.brief += r.brief_clarity * w; wsum.brief += w; }
-    if (Number.isFinite(r.fairness) && r.fairness > 0) { sum.fair += r.fairness * w; wsum.fair += w; }
-    if (Number.isFinite(r.feedback_quality) && r.feedback_quality > 0) { sum.feedback += r.feedback_quality * w; wsum.feedback += w; }
-  }
-  const ratingPct = (avg: number) => (avg > 0 ? Math.round((Math.min(5, avg) / 5) * 100) : 0);
-  const target = wsum.target ? sum.target / wsum.target : 0;
-  const brief = wsum.brief ? sum.brief / wsum.brief : target;
-  const fair = wsum.fair ? sum.fair / wsum.fair : target;
-  const feedback = wsum.feedback ? sum.feedback / wsum.feedback : target;
-  const blended = ratingPct(target) * 0.25 + ratingPct(brief) * 0.25 + ratingPct(fair) * 0.25 + ratingPct(feedback) * 0.25;
-  return { percent: Math.round(blended), hasData: true };
-}
-
-function executionPercent({ approvedCount, finalAcceptedCount, abandonedAfterApproval, reachedDraftCount }: {
-  approvedCount: number; finalAcceptedCount: number; abandonedAfterApproval: number; reachedDraftCount: number;
-}): number {
-  const denom = finalAcceptedCount + abandonedAfterApproval;
-  const completionRatio = denom > 0 ? finalAcceptedCount / denom : null;
-  const draftRatio = approvedCount > 0 ? reachedDraftCount / approvedCount : null;
-  // Skip revision health (needs history walk); use neutral 80.
-  const revisionScore = 80;
-  const completionPct = completionRatio == null ? NEUTRAL : Math.round(completionRatio * 100);
-  const draftPct = draftRatio == null ? NEUTRAL : Math.round(draftRatio * 100);
-  return Math.round(completionPct * 0.5 + draftPct * 0.3 + revisionScore * 0.2);
-}
-
-function embeddedPanFromGstin(gstinRaw: string | null | undefined): string | null {
-  if (!gstinRaw) return null;
-  const v = String(gstinRaw).toUpperCase().trim();
-  if (!GSTIN_RE.test(v)) return null;
-  const embedded = v.slice(2, 12);
-  return PAN_RE.test(embedded) ? embedded : null;
-}
-
-function verificationPercent({ emailVerified, phoneVerified, pan, gstin }: {
-  emailVerified: boolean; phoneVerified: boolean; pan: string; gstin: string;
-}): number {
-  const gstinValid = GSTIN_RE.test(String(gstin || "").toUpperCase().trim());
-  const standalonePan = PAN_RE.test(String(pan || "").toUpperCase().trim());
-  const panFromGstin = !!embeddedPanFromGstin(gstin);
-  const panOk = standalonePan || panFromGstin;
-  return (emailVerified ? 25 : 0) + (phoneVerified ? 25 : 0) + (panOk ? 25 : 0) + (gstinValid ? 25 : 0);
-}
-
-function engagementPercent({ lastLoginAt, campaignsLast90d, profileCompletionPct }: {
-  lastLoginAt: string | null; campaignsLast90d: number; profileCompletionPct: number;
-}): number {
-  let loginScore = NEUTRAL;
-  if (lastLoginAt) {
-    const days = (Date.now() - new Date(lastLoginAt).getTime()) / 86_400_000;
-    if (Number.isFinite(days) && days >= 0) {
-      if (days <= 7) loginScore = 100;
-      else if (days <= 30) loginScore = 85;
-      else if (days <= 60) loginScore = 65;
-      else if (days <= 90) loginScore = 45;
-      else if (days <= 180) loginScore = 25;
-      else loginScore = 10;
-    }
-  }
-  const activityScore =
-    campaignsLast90d >= 3 ? 100 :
-    campaignsLast90d === 2 ? 80 :
-    campaignsLast90d === 1 ? 60 : 30;
-  return Math.round(loginScore * 0.4 + activityScore * 0.3 + profileCompletionPct * 0.3);
-}
-
-const PROFILE_FIELDS: Array<(p: any) => boolean> = [
-  (p) => Array.isArray(p?.categories) && p.categories.length > 0,
-  (p) => !!(p?.about || p?.description || p?.bio),
-  (p) => !!p?.logo_url,
-  (p) => !!p?.website,
-  (p) => !!p?.contact_email,
-  (p) => !!p?.contact_phone,
-  (p) => !!(p?.instagram_username || p?.facebook_url || p?.linkedin_url || p?.twitter_url),
-];
-function profileCompletionPct(profile: any): number {
-  if (!profile) return 0;
-  const filled = PROFILE_FIELDS.filter((t) => t(profile)).length;
-  return Math.round((filled / PROFILE_FIELDS.length) * 100);
-}
-
-function computeTrust(input: {
-  ratings: any[];
-  execution: { approvedCount: number; finalAcceptedCount: number; abandonedAfterApproval: number; reachedDraftCount: number };
-  verification: { emailVerified: boolean; phoneVerified: boolean; pan: string; gstin: string };
-  engagement: { lastLoginAt: string | null; campaignsLast90d: number; profileCompletionPct: number };
-}): { score: number; band: string } {
-  const p1 = reviewsPercent(input.ratings).percent;
-  const p2 = executionPercent(input.execution);
-  const p3 = verificationPercent(input.verification);
-  const p4 = NEUTRAL; // Communication needs status-history walk — skip for list view
-  const p5 = engagementPercent(input.engagement);
-
-  const overall100 =
-    p1 * PILLAR_WEIGHTS.reviews +
-    p2 * PILLAR_WEIGHTS.execution +
-    p3 * PILLAR_WEIGHTS.verification +
-    p4 * PILLAR_WEIGHTS.communication +
-    p5 * PILLAR_WEIGHTS.engagement;
-
-  let score = Math.round(300 + (overall100 / 100) * 600);
-  score = Math.max(300, Math.min(900, score));
-  const coldStart = input.execution.finalAcceptedCount < COLD_START_THRESHOLD;
-  if (coldStart && score > COLD_START_CAP) score = COLD_START_CAP;
-
-  return { score, band: bandFor(score) };
-}
 
 // ───────────────────────────────────────────────────────────────────────
 
@@ -224,7 +72,7 @@ serveWithLogging("list-brands", async (req) => {
     // eslint-disable-next-line max-len
     const { data: profiles, error: profError } = await supabaseAdmin
       .from("brand_profiles")
-      .select("account_type,brand_id,brand_name,categories,contact_name,followers_count,gstin_trade_name,instagram_username,is_verified,logo_url,status")
+      .select("account_type,brand_id,brand_name,categories,contact_email,contact_name,contact_phone,followers_count,full_description,gstin,gstin_trade_name,instagram_url,instagram_username,is_verified,logo_url,short_description,status,website_url")
       // NOT IN would also drop NULL-status legacy rows — keep those.
       .or("status.is.null,status.not.in.(deactivated,pending_deletion)");
 
@@ -267,7 +115,7 @@ serveWithLogging("list-brands", async (req) => {
         // explicit column list surfaced it.
         followers: Number(p.followers_count || 0),
         trustScore: 0,
-        trustBand: "Poor",
+        trustBand: "Building Trust",
         minBudget: 0,
         maxBudget: 0,
         payout: "On request",
@@ -312,7 +160,7 @@ serveWithLogging("list-brands", async (req) => {
         // Invitations have no behavioural data — show a cold-start neutral
         // (verification-only contribution) so the badge isn't empty.
         trustScore: isVerified ? 600 : 540,
-        trustBand: isVerified ? "Fair" : "Poor",
+        trustBand: isVerified ? "Emerging" : "Building Trust",
         minBudget: 0,
         maxBudget: 0,
         payout: "On request",
@@ -378,36 +226,68 @@ serveWithLogging("list-brands", async (req) => {
       }
     }
 
-    // Application funnel (P2) — bulk fetch all applications, group by brand.
-    const executionByBrand: Record<string, { approvedCount: number; finalAcceptedCount: number; abandonedAfterApproval: number; reachedDraftCount: number }> = {};
-    const DRAFT_REACHED = new Set(["submitted", "revision_needed", "accepted", "live_submitted", "payment", "completed"]);
+    // Application funnel (P2) + communication (P4).
+    //
+    // The old version of this function skipped P4 entirely — it scored every
+    // brand a neutral 50 there because "communication needs a status-history
+    // walk". That is exactly why a card and a dashboard disagreed. The walk
+    // is batched here instead: one applications query and one history query
+    // for the whole page, grouped per brand, using the same helpers the
+    // brand's own dashboard calls.
+    const executionByBrand: Record<string, any> = {};
+    const communicationByBrand: Record<string, any> = {};
     if (campaigns && campaigns.length > 0) {
       const campaignIds = (campaigns as any[]).map((c) => c.campaign_id).filter(Boolean);
       if (campaignIds.length > 0) {
         const { data: apps } = await supabaseAdmin
           .from("campaign_applications")
-          .select("campaign_id, status")
+          .select("id, campaign_id, status")
           .in("campaign_id", campaignIds);
 
         const campaignById: Record<string, any> = {};
         for (const c of campaigns as any[]) campaignById[c.campaign_id] = c;
 
+        // Group applications and campaigns by brand.
+        const appsByBrand: Record<string, any[]> = {};
+        const campaignsByBrand: Record<string, any[]> = {};
+        const brandByApplicationId: Record<string, string> = {};
+        for (const c of campaigns as any[]) {
+          if (!c.brand_id) continue;
+          (campaignsByBrand[c.brand_id] ||= []).push(c);
+        }
         for (const a of apps || []) {
-          const camp = campaignById[a.campaign_id];
-          const brandKey = camp?.brand_id;
+          const brandKey = campaignById[a.campaign_id]?.brand_id;
           if (!brandKey) continue;
-          if (!executionByBrand[brandKey]) {
-            executionByBrand[brandKey] = { approvedCount: 0, finalAcceptedCount: 0, abandonedAfterApproval: 0, reachedDraftCount: 0 };
+          (appsByBrand[brandKey] ||= []).push(a);
+          brandByApplicationId[a.id] = brandKey;
+        }
+
+        // One history query for every application on the page.
+        const appIds = Object.keys(brandByApplicationId);
+        const historyByBrand: Record<string, any[]> = {};
+        if (appIds.length > 0) {
+          const CHUNK = 500;
+          for (let i = 0; i < appIds.length; i += CHUNK) {
+            const { data: hist } = await supabaseAdmin
+              .from("application_status_history")
+              .select("application_id, from_status, to_status, changed_by_role, reason, created_at")
+              .in("application_id", appIds.slice(i, i + CHUNK));
+            for (const h of hist || []) {
+              const brandKey = brandByApplicationId[h.application_id];
+              if (!brandKey) continue;
+              (historyByBrand[brandKey] ||= []).push(h);
+            }
           }
-          const e = executionByBrand[brandKey];
-          const passedApproved = a.status !== "pending" && a.status !== "rejected" && a.status !== "withdrawn";
-          if (passedApproved) e.approvedCount += 1;
-          if (a.status === "completed") e.finalAcceptedCount += 1;
-          if (passedApproved && a.status !== "completed") {
-            const ended = camp.status === "closed" || camp.status === "completed" || camp.status === "archived";
-            if (ended) e.abandonedAfterApproval += 1;
-          }
-          if (DRAFT_REACHED.has(a.status)) e.reachedDraftCount += 1;
+        }
+
+        for (const brandKey of Object.keys(appsByBrand)) {
+          const execution = executionFromApplications(
+            appsByBrand[brandKey] || [],
+            campaignsByBrand[brandKey] || [],
+          );
+          const { totalRevisions, communication } = historyMetrics(historyByBrand[brandKey] || []);
+          executionByBrand[brandKey] = { ...execution, totalRevisions };
+          communicationByBrand[brandKey] = communication;
         }
       }
     }
@@ -433,21 +313,23 @@ serveWithLogging("list-brands", async (req) => {
       if (!brand.isRegistered) continue;
       const profile = brandProfileById[brand.id] || {};
       const auth = verificationByUserId[brand.id] || { emailVerified: false, phoneVerified: false, lastLoginAt: null };
-      const { score, band } = computeTrust({
-        ratings: ratingsByBrand[brand.id] || [],
-        execution: executionByBrand[brand.id] || { approvedCount: 0, finalAcceptedCount: 0, abandonedAfterApproval: 0, reachedDraftCount: 0 },
+      const trust = computeBrandTrustScore({
+        profile,
+        reviews: ratingsByBrand[brand.id] || [],
+        execution: executionByBrand[brand.id] || {},
         verification: {
           emailVerified: auth.emailVerified,
           phoneVerified: auth.phoneVerified,
           pan: profile.pan || "",
           gstin: profile.gstin || "",
         },
+        communication: communicationByBrand[brand.id] || {},
         engagement: {
           lastLoginAt: auth.lastLoginAt,
           campaignsLast90d: campaignsLast90dByBrand[brand.id] || 0,
-          profileCompletionPct: profileCompletionPct(profile),
         },
       });
+      const { score, band } = trust;
       brand.trustScore = score;
       brand.trustBand = band;
     }

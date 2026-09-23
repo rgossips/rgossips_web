@@ -90,7 +90,10 @@ const styles = StyleSheet.create({
 });
 
 const AudienceChart = ({ data }) => {
-  const max = Math.max(...data.map((d) => d.percent));
+  // Guard the empty case: Math.max() of nothing is -Infinity, which made
+  // every bar NaN-wide and crashed the renderer.
+  if (!data?.length) return null;
+  const max = Math.max(...data.map((d) => d.percent)) || 1;
 
   return (
     <Svg width="400" height="120">
@@ -117,19 +120,25 @@ export default function ResumeTemplate({ data }) {
 
   return (
     <Document>
-      {/* PAGE 1 */}
+      {/* PAGE 1 — identity, headline metrics, summary, performance.
+          Every block below is conditional: a creator whose Instagram has not
+          returned a metric gets a shorter résumé, never an invented number. */}
 
       <Page size="A4" style={styles.page}>
         {/* HEADER */}
 
         <View style={styles.header}>
-          <Image alt="user-img" style={styles.avatar} src={data.avatar} />
+          {data.avatar ? (
+            <Image alt="" style={styles.avatar} src={data.avatar} />
+          ) : null}
 
           <View>
             <Text style={styles.name}>{data.name}</Text>
 
             <Text style={styles.subtitle}>
-              @{data.handle} • {data.niche}
+              @{data.handle}
+              {data.niche ? ` • ${data.niche}` : ""}
+              {data.location ? ` • ${data.location}` : ""}
             </Text>
           </View>
         </View>
@@ -142,139 +151,129 @@ export default function ResumeTemplate({ data }) {
             <Text style={styles.metricValue}>{data.followers}</Text>
           </View>
 
-          <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>{t("metrics.engagement")}</Text>
-            <Text style={styles.metricValue}>{data.engagement}</Text>
-          </View>
+          {data.engagement ? (
+            <View style={styles.metricCard}>
+              <Text style={styles.metricTitle}>{t("metrics.engagement")}</Text>
+              <Text style={styles.metricValue}>{data.engagement}</Text>
+            </View>
+          ) : null}
 
-          <View style={styles.metricCard}>
-            <Text style={styles.metricTitle}>{t("metrics.avgReelViews")}</Text>
-            <Text style={styles.metricValue}>{data.avgReelViews}</Text>
-          </View>
+          {data.reelViews ? (
+            <View style={styles.metricCard}>
+              <Text style={styles.metricTitle}>{t("metrics.reelViews")}</Text>
+              <Text style={styles.metricValue}>{data.reelViews}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* SUMMARY */}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("creatorSummary")}</Text>
-          <Text>{data.summary}</Text>
-        </View>
+        {data.summary ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("creatorSummary")}</Text>
+            <Text>{data.summary}</Text>
+          </View>
+        ) : null}
 
         {/* CONTENT PERFORMANCE */}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("contentPerformance")}</Text>
+        {data.avgLikes || data.avgComments || data.saves30d || data.reach30d ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("contentPerformance")}</Text>
 
-          <Text style={styles.row}>
-            {t("averageLikes", { value: data.avgLikes })}
-          </Text>
-          <Text style={styles.row}>
-            {t("averageComments", { value: data.avgComments })}
-          </Text>
-          <Text style={styles.row}>
-            {t("averageSaves", { value: data.avgSaves })}
-          </Text>
-        </View>
+            {data.avgLikes ? (
+              <Text style={styles.row}>
+                {t("averageLikes", { value: data.avgLikes })}
+              </Text>
+            ) : null}
+            {data.avgComments ? (
+              <Text style={styles.row}>
+                {t("averageComments", { value: data.avgComments })}
+              </Text>
+            ) : null}
+            {data.reach30d ? (
+              <Text style={styles.row}>
+                {t("reach30d", { value: data.reach30d })}
+              </Text>
+            ) : null}
+            {data.saves30d ? (
+              <Text style={styles.row}>
+                {t("saves30d", { value: data.saves30d })}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
-        {/* REEL PERFORMANCE */}
+        {/* RATE CARD — what the creator actually charges. */}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("reelPerformance")}</Text>
-
-          <Text style={styles.row}>
-            {t("bestReelViews", { value: data.bestReelViews })}
-          </Text>
-
-          <Text style={styles.row}>
-            {t("watchCompletion", { value: data.watchCompletion })}
-          </Text>
-        </View>
+        {data.rates?.length ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("rateCard")}</Text>
+            {data.rates.map((r, i) => (
+              <View key={i} style={styles.postRow}>
+                <Text>
+                  {r.label} — {r.price}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {/* CONTENT THEMES */}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("contentThemes")}</Text>
+        {data.topics?.length ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("contentThemes")}</Text>
 
-          {data.topics.map((topic, i) => (
-            <Text key={i} style={styles.bullet}>
-              • {topic}
-            </Text>
-          ))}
-        </View>
+            {data.topics.map((topic, i) => (
+              <Text key={i} style={styles.bullet}>
+                • {topic}
+              </Text>
+            ))}
+          </View>
+        ) : null}
       </Page>
 
-      {/* PAGE 2 */}
+      {/* PAGE 2 — audience and top content. Skipped entirely when Instagram
+          has given us neither. */}
 
-      <Page size="A4" style={styles.page}>
-        {/* AUDIENCE */}
+      {data.audience?.length || data.topPosts?.length ? (
+        <Page size="A4" style={styles.page}>
+          {data.audience?.length ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("audienceDemographics")}</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("audienceDemographics")}</Text>
+              <AudienceChart data={data.audience} />
 
-          <AudienceChart data={data.audience} />
+              {data.audience.map((item, i) => (
+                <Text key={i}>
+                  {item.country} — {item.percent}%
+                </Text>
+              ))}
 
-          {data.audience.map((item, i) => (
-            <Text key={i}>
-              {item.country} — {item.percent}%
-            </Text>
-          ))}
-
-          <Text style={{ marginTop: 6 }}>
-            {t("gender", {
-              male: data.gender.male,
-              female: data.gender.female,
-            })}
-          </Text>
-        </View>
-
-        {/* BRAND FIT */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("bestBrandFit")}</Text>
-
-          {data.brandFit.map((item, i) => (
-            <Text key={i}>• {item}</Text>
-          ))}
-        </View>
-
-        {/* TOP POSTS */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("topPerformingContent")}</Text>
-
-          {data.topPosts.map((post, i) => (
-            <View key={i} style={styles.postRow}>
-              <Text>{post.title}</Text>
-              <Text>{t("views", { views: post.views })}</Text>
+              <Text style={{ marginTop: 6 }}>
+                {t("gender", {
+                  male: data.gender.male,
+                  female: data.gender.female,
+                })}
+              </Text>
             </View>
-          ))}
-        </View>
+          ) : null}
 
-        {/* BRAND COLLABS */}
+          {data.topPosts?.length ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t("topPerformingContent")}</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t("pastBrandCollaborations")}
-          </Text>
-
-          {data.collabs.map((brand, i) => (
-            <Text key={i}>• {brand}</Text>
-          ))}
-        </View>
-
-        {/* CAMPAIGN FORECAST */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t("estimatedCampaignPerformance")}
-          </Text>
-
-          <Text>{t("estimatedReach", { value: data.estimatedReach })}</Text>
-          <Text>
-            {t("estimatedEngagement", { value: data.estimatedEngagement })}
-          </Text>
-        </View>
-      </Page>
+              {data.topPosts.map((post, i) => (
+                <View key={i} style={styles.postRow}>
+                  <Text>{post.title}</Text>
+                  <Text>{t("likes", { value: post.likes })}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </Page>
+      ) : null}
     </Document>
   );
 }

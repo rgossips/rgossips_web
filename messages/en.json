@@ -1662,7 +1662,14 @@
       "infoAria": "How is the trust score calculated?",
       "infoTitle": "How is this calculated?",
       "coldStart": "Capped at {cap} · {threshold} campaigns to lift",
-      "blend": "A weighted blend of five pillars — influencer reviews, campaign execution, verification, communication, and platform engagement. Tap the <icon></icon> to see the breakdown."
+      "blend": "A weighted blend of five pillars — influencer reviews, campaign execution, verification, communication, and platform engagement. Tap the <icon></icon> to see the breakdown.",
+      "bands": {
+        "elite": "Elite",
+        "trusted": "Trusted",
+        "established": "Established",
+        "emerging": "Emerging",
+        "buildingTrust": "Building Trust"
+      }
     },
     "trustComponent": {
       "weight": "{percent}% · {weight} weight"
@@ -1707,7 +1714,9 @@
       "deactivate": "Deactivate Account",
       "deactivateDesc": "Temporarily hide your brand. Sign back in to restore.",
       "delete": "Delete Account",
-      "deleteDesc": "Soft delete with a 30-day grace period — admin can restore on request."
+      "deleteDesc": "Soft delete with a 30-day grace period — admin can restore on request.",
+      "blockedAccounts": "Blocked accounts",
+      "blockedAccountsDesc": "See who you've blocked and undo it"
     },
     "crop": {
       "title": "Crop Logo",
@@ -3391,12 +3400,16 @@
     "scrollHint": "Scroll inside the viewer to see full details",
     "creatorSnapshot": "Creator Snapshot",
     "stats": {
-      "reach": "Reach",
+      "followers": "Followers",
       "engagement": "Engagement"
     },
-    "hireCreator": "Hire this Creator",
-    "contactPrompt": "Contact {name} directly for your next campaign.",
-    "sendInquiry": "Send Collaboration Inquiry"
+    "preparing": "Preparing…",
+    "privateTitle": "This résumé is private",
+    "privateBody": "A résumé is only visible to the creator it belongs to. Share your media kit instead — it is built for brands and works from a public link.",
+    "openMediaKit": "Open my media kit",
+    "sourceNote": "Built from your Instagram data and rate card. Refresh your Instagram connection to update these numbers.",
+    "shareTitle": "Sharing with a brand?",
+    "shareBody": "Your media kit has a public link, live analytics and your top reels — most brands would rather open that than a PDF."
   },
   "InfluencerServices": {
     "back": "Back",
@@ -4340,23 +4353,6 @@
       }
     }
   },
-  "OwnerControls": {
-    "heading": "Creator Controls",
-    "editProfile": "Edit Profile",
-    "generating": "Generating...",
-    "regenerate": "Regenerate AI Resume",
-    "limitNote": "Resume generation limit: <b>1 per month</b>",
-    "popup": {
-      "limitReached": {
-        "title": "Monthly limit reached",
-        "message": "You can only generate 1 resume per month."
-      },
-      "generated": {
-        "title": "Resume generated",
-        "message": "Your AI resume has been generated."
-      }
-    }
-  },
   "PaymentMethods": {
     "title": "Subscriptions and Payouts",
     "subtitle": "Manage your subscription and the accounts you use to receive earnings",
@@ -4503,7 +4499,11 @@
     },
     "saved": "Saved ✓",
     "saving": "Saving…",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "blockedAccounts": {
+      "title": "Blocked accounts",
+      "description": "See who you've blocked and undo it"
+    }
   },
   "ProfileStepPopup": {
     "loadingProfile": "Loading Profile...",
@@ -4542,26 +4542,20 @@
     "metrics": {
       "followers": "Followers",
       "engagement": "Engagement",
-      "avgReelViews": "Avg Reel Views"
+      "reelViews": "Reel views (30d)"
     },
     "creatorSummary": "Creator Summary",
     "contentPerformance": "Content Performance",
     "averageLikes": "Average Likes: {value}",
     "averageComments": "Average Comments: {value}",
-    "averageSaves": "Average Saves: {value}",
-    "reelPerformance": "Reel Performance",
-    "bestReelViews": "Best Reel Views: {value}",
-    "watchCompletion": "Watch Completion: {value}%",
     "contentThemes": "Content Themes",
     "audienceDemographics": "Audience Demographics",
     "gender": "Gender: {male}% Male • {female}% Female",
-    "bestBrandFit": "Best Brand Fit",
     "topPerformingContent": "Top Performing Content",
-    "views": "{views} views",
-    "pastBrandCollaborations": "Past Brand Collaborations",
-    "estimatedCampaignPerformance": "Estimated Campaign Performance",
-    "estimatedReach": "Estimated Reach: {value}",
-    "estimatedEngagement": "Estimated Engagement: {value}"
+    "reach30d": "Accounts reached (30 days): {value}",
+    "saves30d": "Saves (30 days): {value}",
+    "likes": "{value} likes",
+    "rateCard": "Rate Card"
   },
   "SearchOverlay": {
     "searchPlaceholder": "Search campaigns...",
@@ -5292,5 +5286,48 @@
   "ProBadge": {
     "label": "Pro",
     "title": "Verified Pro creator"
+  },
+  "ReportBlock": {
+    "menuTitle": "Safety",
+    "reportAction": "Report",
+    "reportSubtitle": "Tell us if something here breaks our rules",
+    "blockAction": "Block",
+    "blockSubtitle": "You won't see each other on RGossips",
+    "reportTitle": "Report",
+    "reportPrompt": "What's wrong with this? Pick the closest reason.",
+    "detailsPlaceholder": "Anything else we should know? (optional)",
+    "submitReport": "Submit report",
+    "reportThanks": "Thanks — our team will review this within 24 hours.",
+    "blockTitle": "Block",
+    "blockConfirmBody": "{name} won't appear in your searches, campaigns or applications, and you won't appear in theirs. You can undo this in Settings.",
+    "confirmBlock": "Block",
+    "blockDone": "Blocked. You won't see each other on RGossips.",
+    "thisUser": "This user",
+    "doneTitle": "Thanks",
+    "done": "Done",
+    "cancel": "Cancel",
+    "close": "Close",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "errorSignedOut": "Please sign in again and retry.",
+    "reasons": {
+      "spam": "Spam or misleading",
+      "harassment": "Harassment or bullying",
+      "hateSpeech": "Hate speech",
+      "sexualContent": "Sexual or explicit content",
+      "violence": "Violence or threats",
+      "scam": "Scam or fraud",
+      "impersonation": "Pretending to be someone else",
+      "ip": "Copyright or trademark",
+      "other": "Something else"
+    }
+  },
+  "BlockedAccounts": {
+    "title": "Blocked Accounts",
+    "back": "Back",
+    "unblock": "Unblock",
+    "emptyTitle": "No blocked accounts",
+    "emptyBody": "People you block won't see you on RGossips, and you won't see them. They'll appear here so you can undo it.",
+    "errorLoad": "Could not load your blocked list.",
+    "errorUnblock": "Could not unblock. Please try again."
   }
 }

@@ -143,9 +143,50 @@ campaigns. Bands renamed 2026-07 to non-punitive labels:
 | 580–669 | Fair | **Emerging** |
 | <580 | Poor | **Building Trust** |
 
-Source of truth: [src/lib/brandProfile.js](src/lib/brandProfile.js). Colour
-maps in `BrandCard.jsx` + `TrustSection.jsx`; border switch in
-`BrandHero.jsx`; scale legend in `TrustScoreInfoModal.jsx`.
+### One implementation, on the server (2026-09)
+
+**Source of truth: `supabase/functions/_shared/brand-trust.ts`.** Nothing
+computes this score on a client any more. Do not start a sixth copy — there
+were four:
+
+| Where | Pillars | Scale | Bands |
+|---|---|---|---|
+| web `lib/brandProfile.js` + hook | 5, full SLA walk | 300–900 | current labels |
+| mobile `lib/brandProfile.ts` + hook | 3 (rating 50 / delivery 25 / completeness 25) | **0–1000** | **LOW/GOOD/HIGH** |
+| `list-brands` "lightweight port" | 5, but communication pinned at neutral 50 | 300–900 | **retired labels** |
+| mobile `BrandCard.tsx` | — | — | its own retired ladder |
+
+A brand could see three different numbers for itself and creators saw a
+fourth. Now: `list-brands` (creator-facing cards) and `brand-campaigns`
+action **`trustScore`** (the brand's own dashboard, with the pillar
+breakdown) both call the same module, so **a card and a dashboard cannot
+disagree** — verified live, both 720/Established for the same brand.
+
+- **`trustScore` is gated**: caller's JWT must equal `brandId`, or service
+  role. brand-campaigns runs `verify_jwt = false` and most actions trust a
+  body `brandId`; the breakdown carries SLA latencies, funnel counts and
+  profile gaps, so a new endpoint does not widen that hole.
+- **list-brands now does the status-history walk** (batched over the page,
+  chunked 500 ids, ~1.2s for 50 brands). It also had to SELECT the columns
+  the score reads — `full_description`, `website_url`, `contact_email`,
+  `contact_phone`, `gstin`, `instagram_url` — which it never did, so
+  completion and GSTIN scored blank for every brand.
+- **`facebook_url` / `linkedin_url` / `twitter_url` / `pan` are NOT columns
+  on `brand_profiles`.** Both copies of the completion check read them; the
+  socials field is `instagram_username || instagram_url`, and PAN credit
+  comes only from the PAN embedded in a valid GSTIN.
+- **Two live display bugs fixed on the way**: the band chip on
+  `/brands/profile` keyed off the retired labels, so **every brand saw its
+  band in the red "poor" chip** whatever the score; and mobile
+  `TrustSection` rendered a hardcoded `840 / HIGH / +12% ★` to creators.
+- Clients keep only presentation: band→colour maps in web `BrandCard.jsx`,
+  `TrustSection.jsx`, `brands/profile/page.js`, `BrandHero.jsx`'s border,
+  `TrustScoreInfoModal.jsx`'s legend, and mobile's `TRUST_BAND_COLORS`.
+  `src/lib/brandProfile.js` keeps only `getProfileCompletion`,
+  `classifyGstPan`, `isValidGstOrPan`.
+- Pinned by `__deno__/brand_trust_test.ts` (11 tests): weights, scale, band
+  cutoffs, cold-start cap, penalty cap, and that a retired label never
+  reappears.
 
 ## Feature: Influencer profile classifier
 

@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText } from "../_shared/text.ts";
+import {
+  computeBrandTrustScore,
+  executionFromApplications,
+  getProfileCompletion,
+  historyMetrics,
+} from "../_shared/brand-trust.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -385,6 +391,102 @@ serveWithLogging("brand-campaigns", async (req) => {
   try {
     const payload = await req.json().catch(() => ({}));
     const action = payload.action;
+
+    // ── TRUST SCORE ──────────────────────────────────────────────────
+    // The brand's own score WITH the pillar breakdown, for the dashboard.
+    //
+    // Both clients used to compute this themselves and disagreed with each
+    // other and with the number creators saw on a brand card. There is now
+    // one implementation (_shared/brand-trust.ts) and list-brands feeds the
+    // cards from it, so a brand and a creator are looking at the same
+    // number computed from the same inputs.
+    if (action === "trustScore") {
+      const { brandId } = payload;
+      if (!brandId) return ok({ error: "brandId is required" });
+
+      // This function runs with verify_jwt = false and most of its actions
+      // trust a body-supplied brandId (a known-open item). A NEW endpoint is
+      // not the place to widen that: the breakdown carries response-time
+      // latencies, review axes, funnel counts and the brand's profile gaps,
+      // none of which are public. The caller must BE the brand — the score
+      // and band alone stay public through list-brands.
+      const bearer = (req.headers.get("authorization") || "").replace("Bearer ", "");
+      if (!(await isServiceRoleCaller(bearer))) {
+        const { data: caller, error: callerErr } = await supabase.auth.getUser(bearer);
+        if (callerErr || !caller?.user || caller.user.id !== brandId) {
+          return ok({ error: "Not authorized" });
+        }
+      }
+
+      const since90 = new Date(Date.now() - 90 * 86_400_000).toISOString();
+      const [profileRes, ratingsRes, campaignsRes, recentRes] = await Promise.all([
+        supabase.from("brand_profiles").select("*").eq("brand_id", brandId).maybeSingle(),
+        supabase
+          .from("campaign_ratings")
+          .select("target_rating, brief_clarity, fairness, feedback_quality, created_at")
+          .eq("brand_id", brandId)
+          .eq("rater_role", "influencer"),
+        supabase
+          .from("campaigns")
+          .select("campaign_id, status, campaign_end_date")
+          .eq("brand_id", brandId),
+        supabase
+          .from("campaigns")
+          .select("campaign_id", { count: "exact", head: true })
+          .eq("brand_id", brandId)
+          .gte("created_at", since90),
+      ]);
+
+      const profile = profileRes.data || null;
+      const campaigns = campaignsRes.data || [];
+      const campaignIds = campaigns.map((c: any) => c.campaign_id).filter(Boolean);
+
+      let apps: any[] = [];
+      let history: any[] = [];
+      if (campaignIds.length > 0) {
+        const { data: appRows } = await supabase
+          .from("campaign_applications")
+          .select("id, campaign_id, status")
+          .in("campaign_id", campaignIds);
+        apps = appRows || [];
+        const appIds = apps.map((a) => a.id);
+        for (let i = 0; i < appIds.length; i += 500) {
+          const { data: hist } = await supabase
+            .from("application_status_history")
+            .select("application_id, from_status, to_status, changed_by_role, reason, created_at")
+            .in("application_id", appIds.slice(i, i + 500));
+          if (hist?.length) history = history.concat(hist);
+        }
+      }
+
+      // email/phone confirmation live on auth.users, not the profile.
+      let emailVerified = false;
+      let phoneVerified = false;
+      let lastLoginAt: string | null = null;
+      try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(brandId);
+        const u: any = authUser?.user;
+        emailVerified = !!u?.email_confirmed_at;
+        phoneVerified = !!u?.phone_confirmed_at;
+        lastLoginAt = u?.last_sign_in_at || null;
+      } catch (e) {
+        console.warn("trustScore: getUserById failed", (e as Error)?.message);
+      }
+
+      const execution = executionFromApplications(apps, campaigns as any);
+      const { totalRevisions, communication } = historyMetrics(history);
+
+      const trust = computeBrandTrustScore({
+        profile,
+        reviews: ratingsRes.data || [],
+        execution: { ...execution, totalRevisions },
+        verification: { emailVerified, phoneVerified, pan: "", gstin: profile?.gstin || "" },
+        communication,
+        engagement: { lastLoginAt, campaignsLast90d: recentRes.count || 0 },
+      });
+
+      return ok({ trust, completion: getProfileCompletion(profile) });
+    }
 
     // ── TRANSACTIONS ─────────────────────────────────────────────────
     // Every escrow payment the brand has made, flattened for the

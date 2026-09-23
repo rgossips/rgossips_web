@@ -2,6 +2,7 @@ import { Instagram, Users, FileText, Languages, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import EliteBadge from "@/components/EliteBadge";
 import ProBadge from "@/components/ProBadge";
+import ReportBlockMenu from "@/components/ReportBlockMenu";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -11,6 +12,7 @@ const formatCount = (n) => {
 };
 
 export const InfluencerCard = ({
+  influencer_id,
   full_name,
   username,
   instagram_handle,
@@ -78,6 +80,14 @@ export const InfluencerCard = ({
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-bold text-[#16224E] truncate">{displayName}</h3>
           {is_elite ? <EliteBadge /> : is_pro ? <ProBadge /> : null}
+          {/* Report / block. Play UGC policy and Apple 1.2 want this where
+              the content is seen, not buried in settings. */}
+          <ReportBlockMenu
+            targetUserId={influencer_id}
+            targetName={displayName}
+            entityType="user"
+            className="ml-auto -mr-1"
+          />
         </div>
         {categoryLabel && (
           <p className="text-[11px] text-[#6B6785] mb-2 truncate">{categoryLabel}</p>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Eye, Shield, Smartphone, UserMinus, Trash2, ChevronRight, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, Shield, Smartphone, UserMinus, Trash2, ChevronRight, ShieldCheck, Loader2, Ban } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +10,7 @@ const DEFAULT_PREFS = {
   showEmail: false,
 };
 
-const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount, onDeleteAccount }) => {
+const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount, onDeleteAccount, onBlockedAccounts }) => {
   const t = useTranslations("PrivacySettings");
   const supabase = createClient();
   const { user } = useAuth();
@@ -106,6 +106,9 @@ const PrivacySecurityPage = ({ onBack, onTrustedDevices, onDeactiveAccount, onDe
 
             <div className="bg-white border border-gray-100 rounded-[2rem] p-8 space-y-6 shadow-sm">
               <SecurityLink onClick={onTrustedDevices} icon={<Smartphone size={18} />} title={t("trustedDevices.title")} description={t("trustedDevices.description")} />
+              {onBlockedAccounts && (
+                <SecurityLink onClick={onBlockedAccounts} icon={<Ban size={18} />} title={t("blockedAccounts.title")} description={t("blockedAccounts.description")} />
+              )}
               <SecurityLink onClick={onDeactiveAccount} icon={<UserMinus size={18} />} title={t("deactivateAccount.title")} description={t("deactivateAccount.description")} isDestructive />
               {onDeleteAccount && (
                 <SecurityLink onClick={onDeleteAccount} icon={<Trash2 size={18} />} title={t("deleteAccount.title")} description={t("deleteAccount.description")} isDestructive />
