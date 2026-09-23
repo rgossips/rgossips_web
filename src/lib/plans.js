@@ -114,6 +114,7 @@ export const FEATURE_MATRIX = {
   discovery_top_placement:    { starter: false, pro: false, elite: true },
   discovery_homepage_spotlight:{starter: false, pro: false, elite: true },
   badge_verified_eligible:    { starter: true,  pro: true,  elite: true },
+  badge_pro_verified:         { starter: false, pro: true,  elite: false },
   badge_elite_verified:       { starter: false, pro: false, elite: true },
 
   // Applications & Outreach
@@ -196,6 +197,7 @@ export const FEATURE_GROUPS = [
       { key: "discovery_top_placement",     label: "Featured in brand search (top placement)" },
       { key: "discovery_homepage_spotlight",label: "Homepage spotlight feature" },
       { key: "badge_verified_eligible",     label: "Verified badge eligibility" },
+      { key: "badge_pro_verified",          label: "Pro verified badge" },
       { key: "badge_elite_verified",        label: "Elite verified badge" },
     ],
   },

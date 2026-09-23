@@ -54,7 +54,7 @@ export default function Pricing() {
       { label: "Payout speed", v: ["7–10 days", "3–5 days", "Instant · 48hr"] },
       { label: "Account manager", v: [null, "Dedicated", "WhatsApp + email"] },
       { label: "Creator Academy", v: ["Community forums", "Full access", "Full + live Q&A"] },
-      { label: "Verified badge", v: ["Eligibility", "✓", "Elite badge"] },
+      { label: "Verified badge", v: ["Eligibility", "Pro badge", "Elite badge"] },
     ];
     return rows.map((r) => {
       if (r.group) return { label: r.group, isGroup: true, isFeature: false };

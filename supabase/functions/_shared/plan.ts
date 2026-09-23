@@ -83,6 +83,17 @@ export function isElite(profile: PlanProfile | null | undefined): boolean {
 }
 
 /**
+ * Pro's public badge. Same rules as `isElite` — date-aware, surfaced as a
+ * boolean (`is_pro`) and never as the plan string.
+ *
+ * Exclusive with Elite by construction: a creator holds one plan, so a
+ * client never has to decide which of two badges wins.
+ */
+export function isPro(profile: PlanProfile | null | undefined): boolean {
+  return effectivePlan(profile) === "pro";
+}
+
+/**
  * Free creators may only apply to barter campaigns. `hybrid` ("paid +
  * product") is NOT barter — it carries cash, so it sits behind a plan.
  */

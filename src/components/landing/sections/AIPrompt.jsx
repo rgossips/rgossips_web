@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import CampaignPickerModal from "@/components/brands/CampaignPickerModal";
 import EliteBadge from "@/components/EliteBadge";
+import ProBadge from "@/components/ProBadge";
 
 const chipsData = [
   { label: "Skincare launch in Mumbai", dot: "#F9A8D4" },
@@ -782,7 +783,7 @@ export default function AIPrompt() {
                           }}
                         >
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{displayName}</span>
-                          {r.isElite && <EliteBadge />}
+                          {r.isElite ? <EliteBadge /> : r.isPro ? <ProBadge /> : null}
                         </div>
                         <div
                           style={{

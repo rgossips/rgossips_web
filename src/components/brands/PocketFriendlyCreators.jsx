@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/carousel";
 import { ChevronDown, Loader2, IndianRupee, Check } from "lucide-react";
 import EliteBadge from "@/components/EliteBadge";
+import ProBadge from "@/components/ProBadge";
 
 // Reel rate buckets. The brand picks one; we filter influencers whose
 // service_rates.reels (rupees per reel) falls in [min, max). Open-ended
@@ -215,7 +216,11 @@ export default function PocketFriendlyCreators() {
                     <h3 className="font-bold text-[#16224E] text-lg leading-tight truncate w-full">
                       {display}
                     </h3>
-                    {inf.is_elite && <EliteBadge className="mt-1" />}
+                    {inf.is_elite ? (
+                      <EliteBadge className="mt-1" />
+                    ) : inf.is_pro ? (
+                      <ProBadge className="mt-1" />
+                    ) : null}
 
                     <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mt-3 truncate max-w-full">
                       {category}

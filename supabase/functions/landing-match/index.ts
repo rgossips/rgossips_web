@@ -229,6 +229,7 @@ serveWithLogging("landing-match", async (req) => {
         city: r.city || "",
         fit,
         isElite: !!r.is_elite,
+        isPro: !!r.is_pro,
       };
     });
 

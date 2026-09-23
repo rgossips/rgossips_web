@@ -471,8 +471,26 @@ All three are now real, driven by **`isElite()` in `_shared/plan.ts`**
   pocket-friendly cards, carousels, AI matcher results (landing, brand home,
   explore hero, mobile matcher) and above the public `/kit/<handle>` page
   (outside the templates, so all five show it).
-- Not done: Pro's `discovery_priority` still has no effect, and the landing
-  pricing table's "✓" verified badge for Pro has no implementation. Mobile
+### Pro badge (2026-09)
+
+Pro's counterpart of the Elite badge, built the same way: `isPro()` in
+`_shared/plan.ts` (date-aware, so a lapsed Pro loses it), surfaced as a
+boolean — `is_pro` on `list-influencers`, `isPro` on `public-media-kit` and
+`landing-match` — never the plan string. The two flags are **mutually
+exclusive server-side** (one plan per creator), so every surface renders
+`elite ? EliteBadge : pro ? ProBadge : null` and never has to pick a winner.
+`ProBadge` (web `components/ProBadge.jsx`, mobile `components/ProBadge.tsx`,
+i18n `ProBadge.*`) mirrors EliteBadge's shape and sizes in indigo→violet→sky.
+Rendered on brand search cards, pocket-friendly cards, the AI matchers
+(landing, brand home, explore hero, mobile matcher) and above the public
+`/kit/<handle>` page. `FEATURE_MATRIX` gained `badge_pro_verified`
+(pro only) in both web and mobile, and the landing pricing table's bare "✓"
+for Pro now reads "Pro badge". Verified live: @theerasinha `is_pro:true`,
+Elite creators unchanged, no response carries `subscription_plan` or
+`plan_expires_at`. **Not on the spotlight carousels** — those are Elite-only
+by design (`list-influencers { eliteOnly: true }`).
+
+- Not done: Pro's `discovery_priority` still has no effect. Mobile
   `BrandSearch` calls list-influencers with `{}` (default limit 50) and filters
   client-side — a pre-existing cap, not changed here.
 

@@ -3838,7 +3838,8 @@
       "loadFailed": "Failed to load media kit",
       "removedOrInvalid": "This media kit may have been removed or the link is invalid."
     },
-    "eliteVerified": "Verified Elite creator on RGossips"
+    "eliteVerified": "Verified Elite creator on RGossips",
+    "proVerified": "Verified Pro creator on RGossips"
   },
   "LogoutConfirmDialog": {
     "title": "Log out?",
@@ -5287,5 +5288,9 @@
       "notReached": "Instagram took too long to respond, so we couldn't check this link. Please save again.",
       "tooOld": "This isn't one of your latest {limit} posts. To show brands only your latest and updated work, we keep top reels to your {limit} most recent posts — please pick a newer one from @{account}."
     }
+  },
+  "ProBadge": {
+    "label": "Pro",
+    "title": "Verified Pro creator"
   }
 }

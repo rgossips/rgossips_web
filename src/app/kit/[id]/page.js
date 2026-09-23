@@ -8,6 +8,7 @@ import { Loader2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo2.png";
 import EliteBadge from "@/components/EliteBadge";
+import ProBadge from "@/components/ProBadge";
 
 export default function PublicMediaKitPage() {
   const t = useTranslations("KitId");
@@ -105,12 +106,12 @@ export default function PublicMediaKitPage() {
 
       {/* Media Kit */}
       <div className="max-w-4xl mx-auto px-0 sm:px-4 py-0 sm:py-6 lg:py-10">
-        {/* Elite verified badge — above the kit so it shows whichever of the
-            five templates the creator picked. */}
-        {profile?.isElite && (
+        {/* Plan badge — above the kit so it shows whichever of the five
+            templates the creator picked. The two flags are exclusive. */}
+        {(profile?.isElite || profile?.isPro) && (
           <div className="flex items-center justify-center gap-2 px-4 py-3 sm:pt-0 sm:pb-4 text-xs font-semibold text-slate-600">
-            <EliteBadge size="md" />
-            <span>{t("eliteVerified")}</span>
+            {profile.isElite ? <EliteBadge size="md" /> : <ProBadge size="md" />}
+            <span>{profile.isElite ? t("eliteVerified") : t("proVerified")}</span>
           </div>
         )}
         <div className="bg-white sm:rounded-3xl shadow-xl sm:border border-slate-100 overflow-hidden">

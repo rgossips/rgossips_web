@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText } from "../_shared/text.ts";
-import { isElite } from "../_shared/plan.ts";
+import { isElite, isPro } from "../_shared/plan.ts";
 import { isCuratedReels, refreshReels } from "../_shared/ig-media.ts";
 
 const corsHeaders = {
@@ -143,6 +143,8 @@ serveWithLogging("public-media-kit", async (req) => {
         media_kit_template: influencer.media_kit_template || "classic",
         // Elite verified badge. The boolean only — plan and expiry stay here.
         isElite: isElite(influencer),
+        // Pro badge. Same contract as isElite.
+        isPro: isPro(influencer),
         // 30-day account totals + when they were fetched, so the kit can show
         // its date range and flag data that has gone stale.
         instagramInsights: influencer.instagram_insights || null,

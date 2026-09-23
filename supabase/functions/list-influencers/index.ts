@@ -5,7 +5,7 @@ import {
   resolveViewerId,
   filterBlocked,
 } from "../_shared/blocks.ts";
-import { isElite } from "../_shared/plan.ts";
+import { isElite, isPro } from "../_shared/plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -221,6 +221,8 @@ serveWithLogging("list-influencers", async (req) => {
       // Elite perks (top placement, spotlight, badge). A boolean only — the
       // plan and its expiry are read here but never leave the function.
       is_elite: isElite(r),
+      // Pro's badge. Same rule: a boolean, never the plan.
+      is_pro: isPro(r),
     }));
 
     // The admin form packs the extras (categories, city, gender, languages,

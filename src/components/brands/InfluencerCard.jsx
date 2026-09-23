@@ -1,6 +1,7 @@
 import { Instagram, Users, FileText, Languages, Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import EliteBadge from "@/components/EliteBadge";
+import ProBadge from "@/components/ProBadge";
 
 const formatCount = (n) => {
   if (!n) return "0";
@@ -19,6 +20,7 @@ export const InfluencerCard = ({
   languages,
   media_kit_published,
   is_elite = false,
+  is_pro = false,
   // Selection mode (additive — off by default). When `selectable`, the whole
   // row toggles selection instead of the action buttons being the only affordance.
   selectable = false,
@@ -75,7 +77,7 @@ export const InfluencerCard = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-bold text-[#16224E] truncate">{displayName}</h3>
-          {is_elite && <EliteBadge />}
+          {is_elite ? <EliteBadge /> : is_pro ? <ProBadge /> : null}
         </div>
         {categoryLabel && (
           <p className="text-[11px] text-[#6B6785] mb-2 truncate">{categoryLabel}</p>
