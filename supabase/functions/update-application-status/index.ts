@@ -153,6 +153,9 @@ serveWithLogging("update-application-status", async (req) => {
     if (appErr || !app) return ok({ error: "Application not found" });
 
     const isInfluencerAction = !brandId && !!influencerId;
+    // Barter campaigns pay nothing, so their approval skips the whole
+    // offer → accept → escrow chain below. Resolved on the brand path.
+    let isBarter = false;
 
     if (isInfluencerAction) {
       // Influencer path — only their own application, only the offer
@@ -205,12 +208,13 @@ serveWithLogging("update-application-status", async (req) => {
       // Brand path — verify the brand owns the campaign
       const { data: campaign, error: campErr } = await supabase
         .from("campaigns")
-        .select("brand_id")
+        .select("brand_id, campaign_type")
         .eq("campaign_id", app.campaign_id)
         .single();
 
       if (campErr || !campaign) return ok({ error: "Campaign not found" });
       if (campaign.brand_id !== brandId) return ok({ error: "Not authorized" });
+      isBarter = isBarterCampaign(campaign.campaign_type);
     }
 
     // Build update payload
@@ -231,7 +235,13 @@ serveWithLogging("update-application-status", async (req) => {
       updates.brand_offered_rate = agreedRate;
     }
 
-    if (status === "approved") {
+    // Barter: nothing is priced and nothing is paid, so the brand approves
+    // straight from pending — no rate, no escrow, no Razorpay signature.
+    if (status === "approved" && isBarter) {
+      if (previousStatus !== "pending" && previousStatus !== "offer_accepted") {
+        return ok({ error: `Cannot approve a '${previousStatus}' application` });
+      }
+    } else if (status === "approved") {
       // B15: approval (= escrow funding) only happens after the
       // influencer accepted the offer. The agreed rate is the offer
       // they accepted — the brand can't change it at payment time.
@@ -384,6 +394,37 @@ serveWithLogging("update-application-status", async (req) => {
         }
       } catch (e) {
         console.error("offer-lifecycle notification failed:", e);
+      }
+    }
+
+    // Barter approval — no escrow, so the escrow-funded notice below never
+    // fires. The creator still needs to hear they're in and can start.
+    if (status === "approved" && isBarter) {
+      try {
+        const { data: full } = await supabase
+          .from("campaign_applications")
+          .select("influencer_id, campaign_id, campaigns(title, brand_profiles:brand_id(brand_name, gstin_trade_name))")
+          .eq("id", applicationId)
+          .single();
+        // deno-lint-ignore no-explicit-any
+        const f = full as any;
+        const campaignTitle = f?.campaigns?.title || "the campaign";
+        const brandRow = f?.campaigns?.brand_profiles || {};
+        const brandName = brandRow.brand_name || brandRow.gstin_trade_name || "The brand";
+        await supabase.from("notifications").insert({
+          user_id: f?.influencer_id,
+          type: "app_approved",
+          title: "Application approved",
+          body: JSON.stringify({
+            text: `${brandName} approved you for "${campaignTitle}". It's a barter collaboration — you can start on your deliverables.`,
+            link: `/influencer/offers/${f?.campaign_id}`,
+            campaignId: f?.campaign_id,
+            applicationId,
+          }),
+          is_read: false,
+        });
+      } catch (e) {
+        console.error("barter approval notification failed:", e);
       }
     }
 

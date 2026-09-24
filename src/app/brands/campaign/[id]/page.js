@@ -709,6 +709,7 @@ const CampaignDetailPage = () => {
             app={selApp}
             brandId={user?.id}
             defaultRate={campaign.budgetPerInfluencer || 0}
+            campaignType={campaign.campaignType}
             rating={ratingsByApp[selApp.id] || null}
             onRated={(r) => upsertRating(selApp.id, r)}
             onRefresh={load}
@@ -954,7 +955,7 @@ const DetailRow = ({ icon, label, value, capitalize }) => (
   </div>
 );
 
-const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated, onRefresh, alwaysExpanded = false }) => {
+const ApplicationRow = ({ app, brandId, defaultRate = 0, campaignType = "", rating = null, onRated, onRefresh, alwaysExpanded = false }) => {
   const t = useTranslations("BrandsCampaignId");
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
@@ -976,6 +977,9 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
   // journey modal this row lives inside.
   const [popup, setPopup] = useState(null);
 
+  // Barter pays nothing: no priced offer, no escrow. The brand just approves,
+  // and update-application-status allows approved straight from pending.
+  const isBarter = String(campaignType || "").toLowerCase() === "barter";
   const inf = app.influencer_profiles || {};
   const st = appStatusConfig[app.status] || appStatusConfig.pending;
   const displayName = inf.full_name || inf.username || inf.instagram_handle || t("common.creator");
@@ -1331,9 +1335,16 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
             <div className="mt-3 flex flex-wrap gap-1.5">
               {app.status === "pending" && (
                 <>
-                  <button onClick={() => setMode("offer")} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
-                    <Check size={12} /> {t("actions.approveWithPrice")}
-                  </button>
+                  {isBarter ? (
+                    <button onClick={() => updateStatus("approved")} disabled={loading} className={`${btn} bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500`}>
+                      {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                      {t("actions.approveBarter")}
+                    </button>
+                  ) : (
+                    <button onClick={() => setMode("offer")} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
+                      <Check size={12} /> {t("actions.approveWithPrice")}
+                    </button>
+                  )}
                   <button onClick={() => setMode("reject")} className={`${btn} bg-red-50 text-red-700 border-red-200 hover:bg-red-100`}>
                     <X size={12} /> {t("actions.reject")}
                   </button>
@@ -1406,7 +1417,7 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, rating = null, onRated,
               The creator's proposed rate seeds the input; the brand can
               counter with a different number. One shot: the creator can
               only accept or withdraw, not counter back. */}
-          {mode === "offer" && (
+          {mode === "offer" && !isBarter && (
             <div className="mt-3 space-y-2 p-3 bg-emerald-50/40 rounded-lg border border-emerald-100">
               <label className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{t("offerForm.label")}</label>
               <input
@@ -1540,7 +1551,7 @@ const JOURNEY_LABELS = {
   rejected: "rejected",
 };
 
-function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, onRefresh, onClose }) {
+function ApplicationJourneyModal({ app, brandId, defaultRate, campaignType, rating, onRated, onRefresh, onClose }) {
   const t = useTranslations("BrandsCampaignId");
   const supabase = createClient();
   const [history, setHistory] = useState([]);
@@ -1650,6 +1661,7 @@ function ApplicationJourneyModal({ app, brandId, defaultRate, rating, onRated, o
             app={app}
             brandId={brandId}
             defaultRate={defaultRate}
+            campaignType={campaignType}
             rating={rating}
             onRated={onRated}
             onRefresh={() => {
