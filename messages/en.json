@@ -131,6 +131,7 @@
     "copied": "Copied!",
     "leftThisMonth": "{count} left this month",
     "unlimited": "Unlimited",
+    "notInPlan": "AI tools are not part of the free plan",
     "limitTitle": "You've used your AI generations for this month",
     "limitBody": "Upgrade to Pro for 150 generations a month, or Elite for unlimited — plus the pitch assistant, match coach and more.",
     "upgradeCta": "See plans",

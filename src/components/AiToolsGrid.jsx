@@ -63,6 +63,17 @@ export function AiToolsGrid() {
           <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
             <Sparkles size={13} /> {t("unlimited")}
           </div>
+        ) : usage.limit === 0 ? (
+          // A zero allowance is not a spent quota. The meter read "3 / 0 used"
+          // with an exhausted rose bar and "you've used your AI generations",
+          // which is wrong for a free creator — the tools are not part of the
+          // tier, so they never had any to spend.
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+            <span>{t("notInPlan")}</span>
+            <Link href="/influencer/pricing" className="text-[11px] font-black text-[#9810FA] hover:underline">
+              {t("upgradeCta")}
+            </Link>
+          </div>
         ) : (
           <>
             <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-1.5">

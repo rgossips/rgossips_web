@@ -25,8 +25,18 @@ export function useAiTool() {
           body: { tool, campaignId, inputs },
         });
         if (fnErr) throw new Error(fnErr.message || "AI request failed");
-        if (data?.error === "ai_limit_reached") {
-          setLimitReached({ upgrade: data.upgrade || "pro" });
+        // `subscription_required` is ai-generate's answer for a FREE creator:
+        // the tool is not part of that tier at all, as opposed to
+        // `ai_limit_reached`, which is a paid allowance that ran out. It was
+        // unmapped, so it fell through to the generic "Couldn't generate right
+        // now. Please try again." — telling a free creator to retry something
+        // that can never succeed. Both mean "you need a plan", and callers
+        // already render an upgrade prompt off limitReached.
+        if (data?.error === "ai_limit_reached" || data?.error === "subscription_required") {
+          setLimitReached({
+            upgrade:
+              data.upgrade || (data.error === "subscription_required" ? "starter" : "pro"),
+          });
           return null;
         }
         if (data?.error) {
