@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText, wellFormed } from "../_shared/text.ts";
+import { ensureBucket } from "../_shared/storage.ts";
 import { log } from "../_shared/log.ts";
 import { isCuratedReels, refreshReels } from "../_shared/ig-media.ts";
 
@@ -60,9 +61,13 @@ serveWithLogging("refresh-instagram", async (req) => {
     // Fetch stored token from DB
     const { data: profile, error: dbError } = await supabaseAdmin
       .from("influencer_profiles")
-      .select("instagram_access_token, instagram_token_expires_at, instagram_refreshed_at, top_reels")
+      .select("instagram_access_token, instagram_token_expires_at, instagram_refreshed_at, top_reels, instagram_token_invalid_at")
       .eq("influencer_id", userId)
       .maybeSingle();
+    // Already known to be dead? Then a repeat rejection is not news — the flag
+    // is what the banner and the admin badge read. Without this, every app
+    // open by the same creator wrote another token_rejected row.
+    const tokenInvalidSince: string | null = profile?.instagram_token_invalid_at ?? null;
 
     if (dbError || !profile) {
       return new Response(
@@ -136,14 +141,21 @@ serveWithLogging("refresh-instagram", async (req) => {
       // say its analytics are out of date. Not cleared here, and the token is
       // left in place — the Instagram-required gate would otherwise lock the
       // creator out of the whole dashboard.
-      if (Number(igProfile.error?.code) === 190) {
+      const deadToken = Number(igProfile.error?.code) === 190;
+      if (deadToken) {
         await supabaseAdmin
           .from("influencer_profiles")
           .update({ instagram_token_invalid_at: new Date().toISOString() })
           .eq("influencer_id", userId)
           .is("instagram_token_invalid_at", null);
       }
-      log.persistWarn("instagram.refresh.token_rejected", { fn: "refresh-instagram", userId, igCode: igProfile.error?.code }, igProfile.error?.message);
+      // Log the first rejection only. The creator's app retries on every open,
+      // and a second row says nothing the flag (set above, cleared by the next
+      // good refresh) doesn't already say. Any OTHER error still logs each
+      // time — those are not a known, already-recorded state.
+      if (!deadToken || !tokenInvalidSince) {
+        log.persistWarn("instagram.refresh.token_rejected", { fn: "refresh-instagram", userId, igCode: igProfile.error?.code }, igProfile.error?.message);
+      }
       return new Response(
         JSON.stringify({ error: "Instagram token expired. Please reconnect Instagram.", igError: igProfile.error.message }),
         { status: 200, headers: jsonHeaders }
@@ -607,7 +619,7 @@ serveWithLogging("refresh-instagram", async (req) => {
     if (igCdnUrl && (igCdnUrl.includes("cdninstagram.com") || igCdnUrl.includes("fbcdn.net"))) {
       try {
         const bucket = "influencer-photos";
-        await supabaseAdmin.storage.createBucket(bucket, {
+        await ensureBucket(supabaseAdmin, bucket, {
           public: true,
           fileSizeLimit: 5 * 1024 * 1024,
           allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
@@ -650,8 +662,12 @@ serveWithLogging("refresh-instagram", async (req) => {
       avg_comments: avgComments,
       total_impressions: totalImpressions,
       total_reach: totalReach,
-      total_interactions: totalInteractions,
-      accounts_engaged: accountsEngaged,
+      // total_interactions / accounts_engaged are NOT columns on
+      // influencer_profiles and never were — their migration never ran. Every
+      // refresh used to send them, eat two 400s, and let the retry loop below
+      // drop them one at a time. The numbers live in instagram_insights
+      // (migration 071) as `interactions` and `accountsEngaged`, and the
+      // response still reports them from the variables above.
       // A successful refresh means the token works again.
       instagram_token_invalid_at: null,
       updated_at: new Date().toISOString(),
