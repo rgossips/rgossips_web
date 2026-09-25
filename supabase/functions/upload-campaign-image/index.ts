@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { ensureBucket } from "../_shared/storage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,14 +45,13 @@ serveWithLogging("upload-campaign-image", async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Ensure bucket exists (idempotent — ignore error if it already exists)
-    try {
-      await supabaseAdmin.storage.createBucket("campaign-images", {
-        public: true,
-        fileSizeLimit: 3 * 1024 * 1024,
-        allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
-      });
-    } catch {}
+    // Create the bucket only when it is actually missing. Calling
+    // createBucket every time logged a duplicate-key error on every upload.
+    await ensureBucket(supabaseAdmin, "campaign-images", {
+      public: true,
+      fileSizeLimit: 3 * 1024 * 1024,
+      allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+    });
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
     const timestamp = Date.now();

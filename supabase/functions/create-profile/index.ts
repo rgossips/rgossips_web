@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { rewardsEnabled } from "../_shared/rewards.ts";
+import { ensureBucket } from "../_shared/storage.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
 
 const corsHeaders = {
@@ -264,7 +265,7 @@ serveWithLogging("create-profile", async (req) => {
     if (profilePictureUrl && (profilePictureUrl.includes("cdninstagram.com") || profilePictureUrl.includes("fbcdn.net"))) {
       try {
         const bucket = table === "influencer_profiles" ? "influencer-photos" : "brand-icons";
-        await supabaseAdmin.storage.createBucket(bucket, { public: true, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"] });
+        await ensureBucket(supabaseAdmin, bucket, { public: true, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"] });
 
         const imgRes = await fetch(profilePictureUrl);
         if (imgRes.ok) {
