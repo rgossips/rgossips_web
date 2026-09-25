@@ -805,14 +805,14 @@ const LoginInner = () => {
   // between signing in and landing on the dashboard.
   if (!loading && (authLoading || redirectingAuthed)) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-svh">
         <Loader2 size={28} className="animate-spin text-pink-500" />
       </div>
     );
   }
 
   return (
-    <div className="relative h-screen w-full bg-[#F8FAFC] overflow-hidden flex items-center justify-center">
+    <div className="relative h-svh w-full bg-[#F8FAFC] overflow-hidden flex items-center justify-center">
       {/* On phones, offer the mobile app before the web flow (once per
           session; "Continue on web" dismisses). */}
       {/* Back to landing — visible across onboarding + auth flows so the
@@ -955,7 +955,7 @@ const LoginInner = () => {
 const Login = () => (
   <Suspense
     fallback={
-      <div className="flex items-center justify-center h-screen bg-[#F8FAFC]">
+      <div className="flex items-center justify-center h-svh bg-[#F8FAFC]">
         <Loader2 size={28} className="animate-spin text-pink-500" />
       </div>
     }
