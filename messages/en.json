@@ -3174,8 +3174,7 @@
     },
     "price": {
       "perMonthShort": "mo",
-      "perYearShort": "yr",
-      "monthEquiv": "≈ ₹{amount}/mo"
+      "perYearShort": "yr"
     },
     "gatewayPicker": {
       "payFor": "Pay for <plan>{name}</plan>",

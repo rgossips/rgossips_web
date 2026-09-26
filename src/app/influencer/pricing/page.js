@@ -799,8 +799,9 @@ export default function PricingPage() {
           {PLAN_ORDER.map((planId) => {
             const meta = PLAN_META[planId];
             const pricing = PLAN_PRICING[planId];
+            // The card shows what will actually be charged for the chosen
+            // cycle. No per-month equivalent under an annual price.
             const price = billing === "annual" ? pricing.annual : pricing.monthly;
-            const monthEquiv = billing === "annual" ? pricing.monthlyEquivalent : pricing.monthly;
             // Must match the CYCLE as well as the tier. There are six plans
             // (3 tiers x 2 cycles) but this only compared the tier, so someone
             // on Starter monthly saw the Starter ANNUAL card marked "Current
@@ -830,7 +831,6 @@ export default function PricingPage() {
                     <span className="text-3xl font-black text-slate-900">₹{price}</span>
                     <span className="text-sm text-slate-400 font-medium">/{billing === "annual" ? t("price.perYearShort") : t("price.perMonthShort")}</span>
                   </div>
-                  {billing === "annual" && <p className="text-[11px] text-emerald-600 font-semibold mt-1">{t("price.monthEquiv", { amount: monthEquiv })}</p>}
                 </div>
 
                 <button

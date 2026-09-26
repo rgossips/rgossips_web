@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PLAN_PRICING } from "@/lib/plans";
 
 export default function Pricing() {
   const [annual, setAnnual] = useState(false);
@@ -12,15 +13,27 @@ export default function Pricing() {
   const annualBg = annual ? "linear-gradient(95deg, #8B5CF6, #A855F7)" : "transparent";
   const annualFg = annual ? "#FFFFFF" : "#6B7280";
 
+  // An annual card shows the ANNUAL total, not a per-month equivalent —
+  // the price on the card is the amount that gets charged.
+  //
+  // These used to be hardcoded as ₹79/₹239/₹559 "per month, annual", which
+  // matched neither the real annual prices nor PLAN_PRICING's own monthly
+  // equivalents (₹75/₹225/₹525), and ₹79 × 12 is not ₹899. Reading the
+  // shared table means the landing page and the pricing page cannot quote
+  // different numbers again.
+  const fmt = (n) => `₹${n.toLocaleString("en-IN")}`;
+  const priceFor = (planId) =>
+    annual ? fmt(PLAN_PRICING[planId].annual) : fmt(PLAN_PRICING[planId].monthly);
+
   const plans = [
-    { name: "STARTER", price: annual ? "₹79" : "₹99", who: "Nano & micro · 1K–25K followers", cta: "Get started", popular: false },
-    { name: "PRO", price: annual ? "₹239" : "₹299", who: "Micro to mid-tier · 10K–200K", cta: "Start free trial", popular: true },
-    { name: "ELITE", price: annual ? "₹559" : "₹699", who: "Macro & mega · 200K+ & full-time pros", cta: "Go Elite", popular: false },
+    { name: "STARTER", price: priceFor("starter"), who: "Nano & micro · 1K–25K followers", cta: "Get started", popular: false },
+    { name: "PRO", price: priceFor("pro"), who: "Micro to mid-tier · 10K–200K", cta: "Start free trial", popular: true },
+    { name: "ELITE", price: priceFor("elite"), who: "Macro & mega · 200K+ & full-time pros", cta: "Go Elite", popular: false },
   ].map((p, i) => {
     const sel = selectedPlan === i;
     return {
       ...p,
-      per: annual ? "/mo · annual" : "/mo",
+      per: annual ? "/yr" : "/mo",
       select: () => setSelectedPlan(i),
       headBg: sel ? "linear-gradient(180deg, #FAF7FE, #FEF5FA)" : "#FFFFFF",
       nameColor: sel ? "#7C3AED" : "#9CA3AF",
