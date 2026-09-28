@@ -37,15 +37,26 @@ serveWithLogging("public-media-kit", async (req) => {
 
     let influencer = null;
 
-    if (username) {
-      // Try username first
+    // A shared /kit/<handle> link is typed, pasted and re-shared by hand, so
+    // it arrives with a leading @, a trailing slash or space, or different
+    // capitalisation. The lookup used to be an exact, case-sensitive match,
+    // so every one of those 404'd on a creator who exists — 12 of these in
+    // the logs, all from visitors with no session (i.e. brands opening a
+    // shared link). Normalise, then try the stored value AND its lowercase
+    // form. `.in()` rather than `ilike`, because handles contain `_`, which
+    // ilike treats as a wildcard.
+    const requested = String(username || "").trim().replace(/^@+/, "").replace(/\/+$/, "").trim();
+    if (requested) {
+      const candidates = [...new Set([requested, requested.toLowerCase()])];
+
       const { data: byUsername, error: err1 } = await supabaseAdmin
         .from("influencer_profiles")
         .select(selectFields)
-        .eq("username", username)
+        .in("username", candidates)
+        .limit(1)
         .maybeSingle();
 
-      console.log("Lookup by username:", username, "result:", !!byUsername, "error:", err1?.message);
+      console.log("Lookup by username:", requested, "result:", !!byUsername, "error:", err1?.message);
 
       if (byUsername) {
         influencer = byUsername;
@@ -54,9 +65,10 @@ serveWithLogging("public-media-kit", async (req) => {
         const { data: byHandle, error: err2 } = await supabaseAdmin
           .from("influencer_profiles")
           .select(selectFields)
-          .eq("instagram_handle", username)
+          .in("instagram_handle", candidates)
+          .limit(1)
           .maybeSingle();
-        console.log("Lookup by instagram_handle:", username, "result:", !!byHandle, "error:", err2?.message);
+        console.log("Lookup by instagram_handle:", requested, "result:", !!byHandle, "error:", err2?.message);
         influencer = byHandle;
       }
     } else {
@@ -181,8 +193,11 @@ serveWithLogging("public-media-kit", async (req) => {
       );
     }
 
+    // `requested` rides along so the error row says WHICH link failed —
+    // serveWithLogging stores the response body, and a bare "Profile not
+    // found" told us nothing about the handle that was opened.
     return new Response(
-      JSON.stringify({ error: "Profile not found" }),
+      JSON.stringify({ error: "Profile not found", requested: requested || userId || null }),
       { status: 404, headers: jsonHeaders }
     );
   } catch (err) {
