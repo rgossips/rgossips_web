@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Star, X, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 const StarRow = ({ value, onChange, max = 5 }) => {
   const t = useTranslations("RatingModal");
@@ -72,6 +73,8 @@ export default function RatingModal({
   const [submitting, setSubmitting] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   // Reset every time the modal is reopened — stale values from a previous
   // session would otherwise carry over.
@@ -112,7 +115,7 @@ export default function RatingModal({
   const handleSubmit = async () => {
     const missing = (sections || []).find((s) => !values[s.key]);
     if (missing) {
-      setError(t("errors.pleaseRate", { label: missing.label }));
+      fail(t("errors.pleaseRate", { label: missing.label }));
       return;
     }
     setSubmitting(true);
@@ -137,7 +140,7 @@ export default function RatingModal({
       reset();
       onClose?.();
     } catch (e) {
-      setError(e.message || t("errors.submitFailed"));
+      fail(e.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +185,7 @@ export default function RatingModal({
         </div>
 
         {error && (
-          <p className="text-xs text-red-500 font-semibold mt-3">{error}</p>
+          <p ref={errorRef} tabIndex={-1} role="alert" className="text-xs text-red-500 font-semibold mt-3">{error}</p>
         )}
 
         <div className="flex gap-3 mt-6">

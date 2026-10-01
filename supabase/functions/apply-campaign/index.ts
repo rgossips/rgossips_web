@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { shippingMode } from "../_shared/campaign-meta.ts";
 
 // Deliberately loose: one @, something on each side, a dot in the domain.
 const isValidEmail = (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
@@ -25,7 +26,7 @@ serveWithLogging("apply-campaign", async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { campaignId, influencerId, proposedRate, pitch } = await req.json();
+    const { campaignId, influencerId, proposedRate, pitch, shippingAddress } = await req.json();
     // Creator's "why choose you" note (draftable via the AI Pitch Assistant).
     const pitchClean = pitch ? truncateText(String(pitch).trim(), 800) : null;
 
@@ -40,6 +41,29 @@ serveWithLogging("apply-campaign", async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // A campaign that ships a product cannot be applied to without somewhere
+    // to send it. The form asks, but the form is not the boundary: this is.
+    // Read the mode from the description trailer, the same place every other
+    // campaign field lives.
+    const { data: shipCampaign } = await supabaseAdmin
+      .from("campaigns")
+      .select("description")
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+    const shipsToCreator = shippingMode(shipCampaign?.description) === "yes";
+
+    // 600 matches the admin portal's field and the column is plain text.
+    const addressClean = shippingAddress ? truncateText(String(shippingAddress).trim(), 600) : "";
+    if (shipsToCreator && !addressClean) {
+      return new Response(
+        JSON.stringify({
+          error: "address_required",
+          message: "This campaign posts the product to you, so we need a delivery address before you can apply.",
+        }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     // Check if already applied. A withdrawn or rejected application sends
     // the campaign back to the influencer's Active tab (see list-campaigns),
@@ -222,6 +246,10 @@ serveWithLogging("apply-campaign", async (req) => {
           final_agreed_rate: null,
           rejection_reason: null,
           updated_at: new Date().toISOString(),
+          // Re-applying: keep whatever they gave this time round. The
+          // migration-076 trigger blocks this once anything has shipped, but
+          // a withdrawn/rejected row never shipped.
+          ...(addressClean ? { shipping_address: addressClean, shipping_address_updated_at: new Date().toISOString() } : {}),
         })
         .eq("id", existing.id)
         .select()
@@ -238,6 +266,7 @@ serveWithLogging("apply-campaign", async (req) => {
           status: "pending",
           proposed_rate: proposedRate || null,
           pitch: pitchClean,
+          ...(addressClean ? { shipping_address: addressClean, shipping_address_updated_at: new Date().toISOString() } : {}),
         })
         .select()
         .single();

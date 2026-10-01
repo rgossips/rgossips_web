@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Check, Megaphone, Send } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 // A campaign is invitable if it's LIVE — active status and not past its end
 // date. A direct brand invite is a private channel, so it's NOT bound by the
@@ -33,6 +34,8 @@ export default function CampaignPickerModal({
   const [picked, setPicked] = useState(campaignId || null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   const count = influencerIds.length;
   const skipPicker = !!campaignId;
@@ -72,11 +75,11 @@ export default function CampaignPickerModal({
   const send = async () => {
     const targetCampaign = campaignId || picked;
     if (!targetCampaign) {
-      setError("Pick a campaign first.");
+      fail("Pick a campaign first.");
       return;
     }
     if (count === 0) {
-      setError("No creators selected.");
+      fail("No creators selected.");
       return;
     }
     setSending(true);
@@ -86,7 +89,7 @@ export default function CampaignPickerModal({
         body: { action: "inviteInfluencers", brandId, campaignId: targetCampaign, influencerIds },
       });
       if (data?.error) {
-        setError(
+        fail(
           data.error === "brand_not_verified"
             ? "Your brand is still under review. You can invite creators once verified."
             : data.error === "campaign_not_active"
@@ -99,7 +102,7 @@ export default function CampaignPickerModal({
       onDone?.(data || {});
       onClose?.();
     } catch {
-      setError("Couldn't send invites. Please try again.");
+      fail("Couldn't send invites. Please try again.");
     } finally {
       setSending(false);
     }
@@ -197,7 +200,7 @@ export default function CampaignPickerModal({
           )}
         </div>
 
-        {error && <p className="px-5 text-[12px] text-red-600 pb-2">{error}</p>}
+        {error && <p ref={errorRef} tabIndex={-1} role="alert" className="px-5 text-[12px] text-red-600 pb-2">{error}</p>}
 
         <div className="shrink-0 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[#E4E9F4]">
           <button

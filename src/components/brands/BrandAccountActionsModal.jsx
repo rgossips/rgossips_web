@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 // Two flavours of "I want to leave" that share one shell so we don't ship two
 // near-identical modals. `variant="deactivate"` is the soft, self-restorable
@@ -41,6 +42,8 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
   const [confirmText, setConfirmText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   if (!open) return null;
   if (typeof window === "undefined") return null;
@@ -104,7 +107,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
       await signOut();
       router.replace("/login");
     } catch (e) {
-      setError(e.message || t("errors.failedToSubmit"));
+      fail(e.message || t("errors.failedToSubmit"));
       setSubmitting(false);
     }
   };
@@ -218,7 +221,7 @@ export default function BrandAccountActionsModal({ variant, open, onClose }) {
           )}
 
           {error && (
-            <p className="text-[12px] text-red-600 font-bold bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>
+            <p ref={errorRef} tabIndex={-1} role="alert" className="text-[12px] text-red-600 font-bold bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>
           )}
         </div>
 

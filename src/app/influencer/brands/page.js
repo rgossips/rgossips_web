@@ -11,6 +11,7 @@ import FilterModal, { FilterSidebar, matchesBrandType } from "@/components/Filte
 import { useAuth } from "@/context/AuthContext";
 import { calculateBrandMatchScore } from "@/utils/matchScore";
 import { useTranslations } from "next-intl";
+import { scrollToTop } from "@/lib/scrollToTop";
 
 export default function DiscoverBrands() {
   const t = useTranslations("InfluencerBrands");
@@ -117,7 +118,7 @@ export default function DiscoverBrands() {
   const pagedBrands = filteredBrands.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const goToPage = (p) => {
     setPage(Math.min(Math.max(1, p), pageCount));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop(); // instant: iOS drops a smooth scroll mid-momentum
   };
 
   const resetFilters = () => {

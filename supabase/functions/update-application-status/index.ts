@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { effectivePlan, isBarterCampaign } from "../_shared/plan.ts";
+import { sendApplicationStatusEmails } from "../_shared/application-emails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -431,6 +432,10 @@ serveWithLogging("update-application-status", async (req) => {
     // Creator notification + email on escrow funded (status flipped to
     // approved with escrow paid). This is what tells the creator the
     // brand has skin in the game and they can start working.
+    // Tracks whether the creator has already been emailed about this change,
+    // so the generic catalogue below doesn't send a second one.
+    let creatorEmailed = false;
+
     if (status === "approved" && updates.escrow_status === "held") {
       try {
         const { data: full } = await supabase
@@ -478,6 +483,7 @@ serveWithLogging("update-application-status", async (req) => {
             }),
           });
         }
+        creatorEmailed = true;
       } catch (e) {
         console.error("escrow-funded notification failed:", e);
       }
@@ -513,6 +519,14 @@ serveWithLogging("update-application-status", async (req) => {
           rejected: {
             title: "Application rejected",
             text: `Your application for "${campaignTitle}" was rejected${rejectionReason ? `: ${rejectionReason}` : "."}`,
+          },
+          // Ported off the campaign_status_notification trigger, which
+          // migration 080 drops. That trigger sent the creator a SECOND copy
+          // of approved / accepted / revision / rejected on top of the ones
+          // here, and "completed" was the only status it alone covered.
+          completed: {
+            title: "Campaign completed",
+            text: `"${campaignTitle}" is complete. Nice work — the brand has closed it out.`,
           },
         };
         const copy = COPY[status];
@@ -604,6 +618,47 @@ serveWithLogging("update-application-status", async (req) => {
       }
     } catch (e) {
       console.error("Failed to create brand notification:", e);
+    }
+
+    // Email whoever didn't do this. The in-app notification above only lands
+    // if they open the app, and a status change is the thing both sides are
+    // waiting on. Best-effort, after the write has committed — see
+    // _shared/application-emails.ts for the catalogue and the direction rule.
+    try {
+      const { data: forMail } = await supabase
+        .from("campaign_applications")
+        .select("id, campaign_id, influencer_id, final_agreed_rate, brand_offered_rate, campaigns(title, brand_id, brand_profiles(brand_name))")
+        .eq("id", applicationId)
+        .single();
+
+      const camp = (forMail as any)?.campaigns;
+      if (forMail && camp) {
+        const { data: creator } = await supabase
+          .from("influencer_profiles")
+          .select("full_name, username, instagram_handle")
+          .eq("influencer_id", (forMail as any).influencer_id)
+          .maybeSingle();
+
+        await sendApplicationStatusEmails(supabase, {
+          actor: isInfluencerAction ? "influencer" : "brand",
+          skipCreator: creatorEmailed,
+          status,
+          applicationId,
+          campaignId: (forMail as any).campaign_id,
+          creatorUserId: (forMail as any).influencer_id,
+          brandUserId: camp.brand_id || null,
+          campaignTitle: camp.title || "your campaign",
+          creatorName:
+            creator?.full_name ||
+            creator?.username ||
+            (creator?.instagram_handle ? `@${creator.instagram_handle}` : "A creator"),
+          brandName: camp.brand_profiles?.brand_name || "The brand",
+          amountInr: (forMail as any).final_agreed_rate ?? (forMail as any).brand_offered_rate ?? null,
+          reason: status === "revision_needed" ? revisionNote || null : rejectionReason || null,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to send application status email:", e);
     }
 
     return ok({ success: true });

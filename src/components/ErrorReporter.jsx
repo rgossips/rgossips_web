@@ -33,6 +33,15 @@ function fromBrowserExtension(file, stack) {
   return EXTENSION_SCHEME.test(firstFrame);
 }
 
+// A WebView's injected JS bridge, complaining that the WebView it talks to no
+// longer exists. Thrown while an in-app browser tears down mid-navigation, on
+// both platforms: Android (Instagram/Facebook, "Java object is gone") and iOS
+// (Chrome/Safari and the Meta apps, "WKWebView was deallocated"). The teardown
+// is the user leaving the page, so there is nothing to act on, and it can
+// arrive either synchronously or as a rejected bridge promise.
+const WEBVIEW_TEARDOWN =
+  /(Error invoking postMessage: Java (object is gone|exception was raised))|(WKWebView was deallocated before the message was delivered)/i;
+
 function isIgnorableWindowError(e) {
   const file = String(e?.filename || "");
   const message = String(e?.message || e?.error?.message || "");
@@ -41,7 +50,7 @@ function isIgnorableWindowError(e) {
   // (iabjs://navigation_performance_logger_android, …) whose bridge throws
   // "Java object is gone" when the WebView tears down mid-navigation.
   if (file.startsWith("iabjs://")) return true;
-  if (/Error invoking postMessage: Java (object is gone|exception was raised)/i.test(message)) return true;
+  if (WEBVIEW_TEARDOWN.test(message)) return true;
   // A cross-origin script (extension, third-party embed) failed. The browser
   // strips everything — no file, line 0 — so there is nothing to act on.
   if (message === "Script error." && !file && !e?.lineno) return true;
@@ -53,7 +62,9 @@ function isIgnorableRejection(reason) {
   // request. That is the intended outcome, not a failure.
   if (reason?.name === "AbortError") return true;
   if (fromBrowserExtension(null, reason?.stack)) return true;
-  return /signal is aborted|the (user|operation) aborted/i.test(String(reason?.message || reason || ""));
+  const message = String(reason?.message || reason || "");
+  if (WEBVIEW_TEARDOWN.test(message)) return true;
+  return /signal is aborted|the (user|operation) aborted/i.test(message);
 }
 
 export default function ErrorReporter() {

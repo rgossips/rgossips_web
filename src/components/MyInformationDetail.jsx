@@ -1573,7 +1573,7 @@ const MyInformationDetail = ({ onBack }) => {
       {showEditModal && (
         <>
           <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[90dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+          <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-[calc(50%+2.5rem)] lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-xl lg:max-h-[calc(100dvh-7rem)] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h2 className="text-base lg:text-lg font-black text-gray-900">{t("profileCard.editProfile")}</h2>

@@ -25,6 +25,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import ListPagination from "@/components/ListPagination";
 import { matchesAnyCity } from "@/utils/indianCities";
+import { scrollToTop } from "@/lib/scrollToTop";
 
 export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
@@ -220,7 +221,7 @@ export default function CampaignsPage() {
   const pagedCampaigns = filteredCampaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const goToPage = (p) => {
     setPage(Math.min(Math.max(1, p), pageCount));
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop(); // instant: iOS drops a smooth scroll mid-momentum
   };
 
   // Filtered-state header: "N out of M campaigns" + a Show-all reset. The

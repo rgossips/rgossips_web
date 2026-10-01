@@ -735,6 +735,15 @@
       "genderRequired": "Select your gender to apply.",
       "required": "Add your email and gender to apply.",
       "saveFailed": "Couldn't save your details. Please try again."
+    },
+    "address": {
+      "heading": "Where should we send the product?",
+      "subtitle": "This brand posts the product to you, so we need a full delivery address before you can apply.",
+      "subtitleDays": "This brand posts the product to you — usually within {days} days of approval — so we need a full delivery address before you can apply.",
+      "label": "Delivery address",
+      "placeholder": "Name\nFlat / house number, building, street\nArea and a nearby landmark\nCity, State, PIN code\nPhone number for the delivery partner",
+      "privacy": "Shared with this brand only, for this delivery.",
+      "required": "Add a complete delivery address — include the building, area, city, PIN code and a phone number."
     }
   },
   "ApplyCampaignNotLoggedIn": {
@@ -1111,7 +1120,8 @@
       "accept": "Accept",
       "revision": "Revision",
       "payToEscrow": "Pay ₹{amount} to Escrow",
-      "approveRelease": "Approve & Release Payment"
+      "approveRelease": "Approve & Release Payment",
+      "approveComplete": "Approve & complete"
     },
     "tooltips": {
       "editLocked": "Editing locked — see options",
@@ -1204,7 +1214,13 @@
       "categories": "Categories",
       "rejectionReason": "Rejection Reason",
       "submissions": "Submissions",
-      "pitch": "Their Pitch"
+      "pitch": "Their Pitch",
+      "delivery": "Delivery address",
+      "copyAddress": "Copy address",
+      "addressHiddenUntilApproved": "This creator has given a delivery address. It becomes visible once you approve them.",
+      "trackShipment": "Track shipment",
+      "creatorConfirmed": "creator confirmed delivery",
+      "creatorNotReceived": "creator says it never arrived"
     },
     "facts": {
       "fullName": "Full Name",
@@ -3022,7 +3038,8 @@
       "accepted": "Work Accepted",
       "live_submitted": "Live Links Submitted",
       "payment": "Payment in Progress",
-      "completed": "Completed"
+      "completed": "Completed",
+      "approved_barter": "Approved"
     },
     "specialStatus": {
       "revision_needed": "Revision Requested",
@@ -3113,6 +3130,11 @@
       "paidCampaign": "This is a {kind} campaign — subscribers only. Your free applications cover barter campaigns.",
       "remaining": "{remaining, plural, one {# free barter application left} other {# free barter applications left}}",
       "exhausted": "You have used all your free applications. Subscribe to keep applying."
+    },
+    "campaignKind": {
+      "barter": "Barter",
+      "paid": "Paid",
+      "hybrid": "Paid + Product"
     }
   },
   "InfluencerPricing": {
@@ -5293,5 +5315,32 @@
     "emptyBody": "People you block won't see you on RGossips, and you won't see them. They'll appear here so you can undo it.",
     "errorLoad": "Could not load your blocked list.",
     "errorUnblock": "Could not unblock. Please try again."
+  },
+  "DeliveryCard": {
+    "heading": "Your product delivery",
+    "addressLabel": "Delivery address",
+    "addressPlaceholder": "Name\nFlat / house number, building, street\nArea and a nearby landmark\nCity, State, PIN code\nPhone number for the delivery partner",
+    "addressTooShort": "Add a complete address — building, area, city, PIN code and a phone number.",
+    "noAddressYet": "We don’t have a delivery address for you yet. Add one so the brand can send your product.",
+    "add": "Add address",
+    "change": "Change",
+    "cancel": "Cancel",
+    "saveAddress": "Save address",
+    "lockedAfterShipping": "Your parcel is on its way, so the address can’t be changed now. Reply to our email if something is wrong.",
+    "pickup": "You collect this one yourself — the pickup address and timings are in the campaign brief above.",
+    "trackDelivery": "Track your delivery",
+    "shippedOn": "Dispatched {date}",
+    "shippedViaOn": "Dispatched {date} via {carrier}",
+    "expectedBy": "expected by {date}",
+    "didItArrive": "Has your product arrived?",
+    "feedbackPlaceholder": "Anything you want to tell us or the brand about the product or the delivery (optional)",
+    "feedbackNote": "Your note is shared with the brand along with your answer.",
+    "yesReceived": "Yes, it arrived",
+    "notReceived": "No, it hasn’t",
+    "overdueToday": "Your product was due to arrive today. Let us know below whether it turned up.",
+    "overdueDays": "Your product was due {days} days ago and you haven’t told us whether it arrived. Let us know below — if it’s missing we’ll chase the brand.",
+    "confirmedOn": "You confirmed this arrived on {date}.",
+    "reportedMissingOn": "You reported this as not received on {date}. We’re on it.",
+    "saveFailed": "Couldn’t save that. Please try again."
   }
 }

@@ -54,6 +54,76 @@ interface SendEmailBody {
   fromName?: string;
 }
 
+// Header-safe subject line.
+//
+// denomailer 1.6.0 mangles any subject containing a non-ASCII character. It
+// quoted-printable-encodes it into an RFC 2047 encoded-word but leaves literal
+// spaces inside (illegal - they must be _ or =20) and then wraps the result
+// with a body-style soft break instead of folding it as a header. That breaks
+// the header block: the mail client shows a raw "=?utf-8?Q?..." string as the
+// subject, and every header after it - From, To, Date, Content-Type - lands in
+// the body as plain text. One rupee sign, or a curly apostrophe out of a
+// campaign title, is enough; escrow receipts, payment confirmations and the
+// subscribe nudges have all been going out unreadable.
+//
+// We never need an encoded-word: transliterate to ASCII and denomailer emits
+// the subject verbatim. "Rs" for the rupee sign, straight quotes, hyphens for
+// dashes, accents flattened, anything left over dropped.
+//
+// Stripping CR/LF is the important half. Subjects interpolate campaign titles
+// and brand names that somebody typed, and a newline in a header is header
+// injection - the corruption above is what that looks like by accident.
+//
+// Character classes are built from strings rather than regex literals so the
+// code points stay legible and survive an editor normalising the file.
+const SMART_QUOTES = new RegExp("[‘’‚‛]", "g");
+const SMART_DQUOTES = new RegExp("[“”„‟]", "g");
+const DASHES = new RegExp("[–—―]", "g");
+const ELLIPSIS = new RegExp("…", "g");
+const RUPEE = new RegExp("₹", "g");
+// nbsp, the en/em quad family, hair space, zero-width space, narrow nbsp.
+const EXOTIC_SPACE = new RegExp("[  -​  ]", "g");
+// Combining accents left behind by NFKD.
+const COMBINING = new RegExp("[̀-ͯ]", "g");
+
+function headerSafe(value: string | undefined, max = 200): string {
+  return String(value ?? "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(SMART_QUOTES, "'")
+    .replace(SMART_DQUOTES, '"')
+    .replace(DASHES, "-")
+    .replace(ELLIPSIS, "...")
+    .replace(RUPEE, "Rs ")
+    .replace(EXOTIC_SPACE, " ")
+    // Flatten accented Latin (Jose with an acute -> Jose) before dropping
+    // whatever is still not ASCII.
+    .normalize("NFKD")
+    .replace(COMBINING, "")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+// Strip trailing whitespace from every line of a body.
+//
+// Quoted-printable must escape a space that ends a line, so a line holding
+// nothing but template indentation encodes as "=20" - and denomailer leaves
+// that visible in the delivered mail. Any template with a conditional block
+// on its own indented line hits this the moment the block is empty: the
+// approval email shipped a stray "=20" above its button exactly that way,
+// and renderUserStatusEmail in the admin portal has the same shape.
+//
+// Trailing whitespace is meaningless in HTML and noise in plain text, so
+// removing it here costs nothing and fixes every caller at once.
+function tidyBody(value: string | undefined): string | undefined {
+  if (!value) return value;
+  const TRAILING = new RegExp("[ \\t]+$");
+  return value
+    .split("\n")
+    .map((line) => line.replace(TRAILING, ""))
+    .join("\n");
+}
+
 function asList(v: string | string[] | undefined): string[] | undefined {
   if (!v) return undefined;
   return Array.isArray(v) ? v.filter(Boolean) : [v];
@@ -108,7 +178,7 @@ serveWithLogging("send-email", async (req) => {
   const useImplicitTls = port === 465 || Deno.env.get("SMTP_TLS") !== "1";
 
   const fromEmail = Deno.env.get("SMTP_FROM_EMAIL") || user;
-  const fromDisplay = fromName || Deno.env.get("SMTP_FROM_NAME") || "RGossips";
+  const fromDisplay = headerSafe(fromName || Deno.env.get("SMTP_FROM_NAME") || "RGossips", 64) || "RGossips";
 
   const client = new SMTPClient({
     connection: {
@@ -126,13 +196,15 @@ serveWithLogging("send-email", async (req) => {
       cc: asList(cc),
       bcc: asList(bcc),
       replyTo: replyTo || undefined,
-      subject,
+      // Headers only — the HTML/text bodies below keep their rupee signs and
+      // smart quotes, which encode fine.
+      subject: headerSafe(subject),
       // denomailer treats html + content as two separate alternatives.
       // If we only have HTML and no plain-text fallback, derive a
       // crude text version so non-HTML clients (and spam filters that
       // penalise HTML-only) still get something readable.
-      content: text || (html ? stripHtml(html) : ""),
-      html: html || undefined,
+      content: tidyBody(text || (html ? stripHtml(html) : "")) || "",
+      html: tidyBody(html) || undefined,
     });
     return new Response(
       JSON.stringify({ success: true }),

@@ -6,6 +6,7 @@ import {
   detectInstagramLinkType,
   labelForLinkType,
   expectedLinkType,
+  isInstagramUrl,
   normaliseInstagramUrl,
 } from "@/utils/instagram-url";
 import {
@@ -47,6 +48,7 @@ import { ApplyCampaignForm } from "@/components/ApplyCampaignForm";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { useAiTool } from "@/hooks/useAiTool";
+import { useScrollToError } from "@/hooks/useScrollToError";
 import { AiMarkdown } from "@/components/AiMarkdown";
 import RatingModal from "@/components/RatingModal";
 import AlertPopup from "@/components/AlertPopup";
@@ -55,6 +57,7 @@ import UpgradeRequiredModal from "@/components/UpgradeRequiredModal";
 import { useFreeApplications } from "@/hooks/useFreeApplications";
 import { FREE_BARTER_APPLICATIONS, isSubscribed } from "@/lib/plans";
 import { campaignBudgetDisplay } from "@/utils/campaignBudget";
+import { DeliveryCard } from "@/components/DeliveryCard";
 
 /* ─── Fetch campaign from DB ─── */
 function useCampaign(id, userId) {
@@ -877,6 +880,13 @@ export default function CampaignDetailsPage() {
   // Free applications cover barter only. `hybrid` is NOT barter — it
   // carries cash — and apply-campaign draws the line in the same place.
   const isBarter = String(campaign.campaignType || "").toLowerCase() === "barter";
+  // hybrid carries cash AND product, so it is neither "Barter" nor plain
+  // "Paid" — say so rather than rounding it to one of the two.
+  const campaignKind = isBarter
+    ? "barter"
+    : String(campaign.campaignType || "").toLowerCase() === "hybrid"
+      ? "hybrid"
+      : "paid";
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] font-sans lg:mt-20">
@@ -968,14 +978,27 @@ export default function CampaignDetailsPage() {
               <img src={campaign.heroImg} alt={campaign.title} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-              {/* Status badge on image */}
-              {isCompleted && (
-                <div className="absolute top-4 right-4">
+              {/* What kind of deal this is, before anything else. A barter
+                  campaign pays in product and a paid one in cash, and the
+                  difference changes what the creator is agreeing to — it
+                  should not have to be inferred from the budget chip. Sits
+                  beside the completed badge rather than replacing it. */}
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                {isCompleted && (
                   <span className="bg-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-1.5">
                     <CheckCircle size={12} /> {t("completed")}
                   </span>
-                </div>
-              )}
+                )}
+                <span
+                  className={`text-[10px] font-bold px-3 py-2 rounded-xl shadow-lg backdrop-blur-sm ${
+                    isBarter
+                      ? "bg-amber-500/95 text-white"
+                      : "bg-white/95 text-slate-800"
+                  }`}
+                >
+                  {t(`campaignKind.${campaignKind}`)}
+                </span>
+              </div>
 
               {/* Brand logo badge */}
               <div className="absolute bottom-4 left-4 w-14 h-14 lg:w-16 lg:h-16 bg-white rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border-2 border-white/20">
@@ -1374,6 +1397,17 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
           <ApplicationStatusBar status={appliedStatus} campaign={campaign} refetch={refetch} />
         </div>
       ) : null}
+
+      {/* Barter delivery. Renders itself away unless this campaign moves a
+          product and the creator has a live application on it. */}
+      {campaign.fulfilment && campaign.applicationId && (
+        <DeliveryCard
+          applicationId={campaign.applicationId}
+          fulfilment={campaign.fulfilment}
+          shippingMode={campaign.shippingRequired || "no"}
+          onChanged={refetch}
+        />
+      )}
 
       {/* About Brand */}
       <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
@@ -1835,6 +1869,28 @@ const STATUS_STEPS = [
   { key: "completed", label: "Completed" },
 ];
 
+// Barter pays in product: there is no priced offer, no escrow and no
+// payout, so three of the steps above can never happen on one. Showing them
+// greyed out is bad enough; showing "Offer Received" and "Offer Accepted"
+// ticked green — which is what happened, because everything before the
+// current step renders as done — told the creator about an offer that never
+// existed.
+//
+// A step is still kept when the application is actually sitting on it, so a
+// row that took the paid path before barter had its own (or any row we have
+// not thought of) can never land on a status that is missing from the list
+// and fall back to "Applied".
+const BARTER_SKIPPED = new Set(["offer_sent", "offer_accepted", "payment"]);
+
+function stepsFor(isBarter, status) {
+  if (!isBarter) return STATUS_STEPS;
+  return STATUS_STEPS.filter((s) => !BARTER_SKIPPED.has(s.key) || s.key === status).map((s) =>
+    // "Escrow Funded" is the paid-flow name for `approved`. On barter the
+    // brand simply approved you.
+    s.key === "approved" ? { ...s, labelKey: "approved_barter" } : s,
+  );
+}
+
 // These statuses branch off the main flow
 const SPECIAL_STATUSES = {
   revision_needed: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
@@ -1970,16 +2026,19 @@ function OfferResponseCard({ campaign, refetch }) {
 function ApplicationStatusBar({ status = "pending", campaign, refetch, compact = false }) {
   const t = useTranslations("InfluencerOffersId");
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const isBarterCampaign = String(campaign?.campaignType || "").toLowerCase() === "barter";
+  const steps = stepsFor(isBarterCampaign, status);
+  const stepLabel = (step) => t(`statusSteps.${step.labelKey || step.key}`);
   const isSpecial = SPECIAL_STATUSES[status];
   const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
   // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
   const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
-  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === effectiveStatus);
-  const currentStep = isSpecial ? { label: isSpecial.label } : STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0];
+  const currentStepIndex = steps.findIndex((s) => s.key === effectiveStatus);
+  const currentStep = isSpecial ? { label: isSpecial.label } : steps[Math.max(currentStepIndex, 0)] || steps[0];
   const currentStepLabel = isSpecial
     ? t(`specialStatus.${status}`)
-    : t(`statusSteps.${(STATUS_STEPS[Math.max(currentStepIndex, 0)] || STATUS_STEPS[0]).key}`);
+    : stepLabel(steps[Math.max(currentStepIndex, 0)] || steps[0]);
   const canUpload = status === "approved" || status === "revision_needed" || status === "accepted";
   const hasOffer = status === "offer_sent";
   const waitingEscrow = status === "offer_accepted";
@@ -2044,10 +2103,10 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           <div className="w-full bg-slate-200 h-full" />
           <div
             className="w-full bg-emerald-500 absolute top-0 left-0 transition-all duration-500"
-            style={{ height: `${Math.max(0, currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
+            style={{ height: `${Math.max(0, currentStepIndex / Math.max(1, steps.length - 1)) * 100}%` }}
           />
         </div>
-        {STATUS_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const isDone = i < currentStepIndex;
           const isCurrent = i === currentStepIndex;
           return (
@@ -2071,7 +2130,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
               <p className={`text-sm font-bold ${
                 isDone ? "text-emerald-600" : isCurrent ? "text-slate-900" : "text-slate-400"
               }`}>
-                {t(`statusSteps.${step.key}`)}
+                {stepLabel(step)}
               </p>
             </div>
           );
@@ -2264,6 +2323,9 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // The banner sits above seven link fields; the submit button is in the
+  // footer. Without this a refusal renders off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   // AI compliance pre-check — runs the draft caption against the campaign's
   // requirements (brand tag, required hashtags, ASCI #ad/#collab disclosure,
@@ -2334,7 +2396,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const handleSubmit = async () => {
     if (!allFilled || submitting) return;
     if (hasDuplicates) {
-      setError(t("modal.duplicateError"));
+      fail(t("modal.duplicateError"));
       return;
     }
     setSubmitting(true);
@@ -2356,10 +2418,10 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
       });
 
       const data = await res.json();
-      if (data?.error) { setError(data.error); return; }
+      if (data?.error) { fail(data.error); return; }
       if (data?.success) onSuccess();
     } catch (err) {
-      setError(err.message || t("modal.failedToSubmit"));
+      fail(err.message || t("modal.failedToSubmit"));
     } finally {
       setSubmitting(false);
     }
@@ -2372,7 +2434,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     <>
       <div data-scroll-lock className="fixed inset-0 z-[350] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="fixed inset-0 z-[351] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[85dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
+        className="fixed inset-0 z-[351] lg:inset-auto lg:top-[calc(50%+2.5rem)] lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-lg lg:max-h-[calc(100dvh-7rem)] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Header — shrink-0 so it doesn't get pushed by the form */}
@@ -2393,7 +2455,16 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
 
         {/* Form */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>}
+          {error && (
+            <div
+              ref={errorRef}
+              tabIndex={-1}
+              role="alert"
+              className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 outline-none"
+            >
+              {error}
+            </div>
+          )}
 
           {isRevision && revisionNote && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
@@ -2418,7 +2489,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
             // an mp4, etc.) — NOT the live post. If the creator pastes an
             // Instagram link here, gently tell them it isn't needed yet.
             const isDraftInstagramLink =
-              !isLiveLinksFlow && hasUrl && !!normaliseInstagramUrl(links[d.key]);
+              !isLiveLinksFlow && hasUrl && isInstagramUrl(links[d.key]);
             const placeholder = !isLiveLinksFlow
               ? t("modal.placeholderAnyMedia")
               : expected === "story"

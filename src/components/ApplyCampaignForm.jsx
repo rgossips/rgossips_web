@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { isNetworkError, reportError } from "@/lib/reportError";
 import {
@@ -26,6 +26,7 @@ import { isSubscribed } from "@/lib/plans";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useAiTool } from "@/hooks/useAiTool";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 // Same allow-list update-profile accepts and the brand-side Gender filter reads.
 const GENDER_OPTIONS = ["female", "male", "non_binary", "prefer_not_to_say"];
@@ -37,6 +38,8 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
   const [proposedRate, setProposedRate] = useState("");
   const [whyChooseYou, setWhyChooseYou] = useState("");
   const { generate: draftPitch, loading: drafting, error: draftError, limitReached: draftLimit } = useAiTool();
@@ -65,6 +68,14 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   );
   const [detailsEmail, setDetailsEmail] = useState(profile?.email || user?.email || "");
   const [detailsGender, setDetailsGender] = useState(profile?.gender || "");
+
+  // A campaign that posts the product needs somewhere to send it, so the
+  // address is part of applying rather than something we chase afterwards —
+  // chasing is what left six approved creators unreachable on the Vega
+  // campaign. apply-campaign refuses without it, so this is UX, not the
+  // boundary. Prefilled from the profile: most creators have given it before.
+  const shipsToCreator = campaignData?.shippingRequired === "yes";
+  const [shippingAddress, setShippingAddress] = useState(profile?.address || "");
 
   // Auto-populated from profile
   const fullName = profile?.full_name || "";
@@ -101,16 +112,22 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
     // Guardrail: a personalised pitch is mandatory — keeps brands from drowning
     // in one-click AI-spam applications, so they see better applications.
     if (!whyChooseYou.trim()) {
-      setError(t("why.required"));
+      fail(t("why.required"));
+      return;
+    }
+    if (shipsToCreator && shippingAddress.trim().length < 15) {
+      // Length rather than presence: "home" is not an address a courier can
+      // use, and a rejected delivery costs the brand the product.
+      fail(t("address.required"));
       return;
     }
     if (needsDetails) {
       if (!EMAIL_RE.test(detailsEmail.trim())) {
-        setError(t("details.emailInvalid"));
+        fail(t("details.emailInvalid"));
         return;
       }
       if (!detailsGender) {
-        setError(t("details.genderRequired"));
+        fail(t("details.genderRequired"));
         return;
       }
     }
@@ -135,7 +152,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         });
         const saved = await saveRes.json().catch(() => ({}));
         if (saved?.error) {
-          setError(saved.message || t("details.saveFailed"));
+          fail(saved.message || t("details.saveFailed"));
           return;
         }
         refreshProfile?.();
@@ -153,6 +170,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
           influencerId: user?.id,
           proposedRate: proposedRate ? Number(proposedRate) : null,
           pitch: whyChooseYou.trim(),
+          shippingAddress: shipsToCreator ? shippingAddress.trim() : undefined,
         }),
       });
 
@@ -160,12 +178,17 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
 
       if (data?.error === "profile_incomplete") {
         setNeedsDetails(true);
-        setError(data.message || t("details.required"));
+        fail(data.message || t("details.required"));
+        return;
+      }
+
+      if (data?.error === "address_required") {
+        fail(data.message || t("address.required"));
         return;
       }
 
       if (data?.error === "already_applied") {
-        setError(t("errors.alreadyApplied"));
+        fail(t("errors.alreadyApplied"));
         return;
       }
 
@@ -173,7 +196,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       // applications are gone. Same inline-Upgrade treatment as the paid
       // caps — the only useful next step is a plan.
       if (data?.error === "subscription_required" || data?.error === "free_quota_exhausted") {
-        setError({
+        fail({
           kind: "plan_limit_reached",
           message: data.message || t("errors.planLimitDefault"),
         });
@@ -184,7 +207,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         // Surface a structured marker so the renderer can show an inline
         // Upgrade button next to the message instead of asking the user
         // to copy a path.
-        setError({
+        fail({
           kind: "plan_limit_reached",
           message: data.message || t("errors.planLimitDefault"),
         });
@@ -192,7 +215,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       }
 
       if (data?.error) {
-        setError(data.error);
+        fail(data.error);
         return;
       }
 
@@ -209,7 +232,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
       });
       // Safari reports a dropped connection as a bare "Load failed". Retrying
       // is safe: a duplicate comes back as "already_applied".
-      setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.submitFailed"));
+      fail(isNetworkError(err) ? t("errors.network") : err.message || t("errors.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -246,7 +269,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-0 z-[310] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-2xl lg:max-h-[90dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
+        className="fixed inset-0 z-[310] lg:inset-auto lg:top-[calc(50%+2.5rem)] lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-2xl lg:max-h-[calc(100dvh-7rem)] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl"
       >
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
@@ -262,7 +285,7 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         {/* Scrollable Form */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-6">
           {error && typeof error === "object" && error.kind === "plan_limit_reached" ? (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+            <div ref={errorRef} tabIndex={-1} role="alert" className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 scroll-mt-4 outline-none">
               <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-amber-800">{error.message}</p>
@@ -278,10 +301,39 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
               </div>
             </div>
           ) : error ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            <div ref={errorRef} tabIndex={-1} role="alert" className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 scroll-mt-4 outline-none">
               {typeof error === "string" ? error : error.message}
             </div>
           ) : null}
+
+          {/* Delivery address — only when the brand posts the product. */}
+          {shipsToCreator && (
+            <section className="space-y-3 p-4 rounded-xl border border-purple-200 bg-purple-50/60">
+              <div className="flex items-start gap-2">
+                <Truck size={16} className="text-purple-500 mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">{t("address.heading")}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {campaignData?.shippingTimelineDays
+                      ? t("address.subtitleDays", { days: campaignData.shippingTimelineDays })
+                      : t("address.subtitle")}
+                  </p>
+                </div>
+              </div>
+              <label className="block">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{t("address.label")}</span>
+                <textarea
+                  rows={5}
+                  maxLength={600}
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  placeholder={t("address.placeholder")}
+                  className="mt-1 w-full py-2.5 px-3 bg-white border border-slate-200 focus:border-pink-300 rounded-xl text-sm text-slate-700 outline-none resize-y"
+                />
+              </label>
+              <p className="text-[10px] text-slate-400">{t("address.privacy")}</p>
+            </section>
+          )}
 
           {needsDetails && (
             <section className="space-y-3 p-4 rounded-xl border border-amber-200 bg-amber-50/60">

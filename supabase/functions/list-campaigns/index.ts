@@ -104,7 +104,11 @@ serveWithLogging("list-campaigns", async (req) => {
       let applications: any[] = [];
       const { data: appsData, error: appErr } = await supabaseAdmin
         .from("campaign_applications")
-        .select("campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at, brand_offered_rate, proposed_rate, final_agreed_rate, escrow_amount")
+        .select(
+          "campaign_id, status, id, submission_links, rejection_reason, metrics, metrics_refreshed_at, brand_offered_rate, proposed_rate, final_agreed_rate, escrow_amount, " +
+            // Barter fulfilment (migration 076) — the creator's own delivery.
+            "shipping_address, shipping_tracking_url, shipping_carrier, shipping_tracking_added_at, shipping_expected_at, product_received, product_received_at, product_feedback",
+        )
         .eq("influencer_id", influencerId);
 
       if (appErr) {
@@ -130,6 +134,20 @@ serveWithLogging("list-campaigns", async (req) => {
           // render the Accept / Withdraw card on offer_sent.
           brandOfferedRate: app.brand_offered_rate || 0,
           proposedRate: app.proposed_rate || 0,
+          // Delivery of the barter product. Passed through raw (snake_case)
+          // because lib/barterFulfilment.js derives the stage from the row
+          // shape the admin portal also uses — one rule, two clients.
+          fulfilment: {
+            status: app.status,
+            shipping_address: app.shipping_address || null,
+            shipping_tracking_url: app.shipping_tracking_url || null,
+            shipping_carrier: app.shipping_carrier || null,
+            shipping_tracking_added_at: app.shipping_tracking_added_at || null,
+            shipping_expected_at: app.shipping_expected_at || null,
+            product_received: typeof app.product_received === "boolean" ? app.product_received : null,
+            product_received_at: app.product_received_at || null,
+            product_feedback: app.product_feedback || null,
+          },
           // Authoritative "what the creator actually earned" for a
           // completed/paid campaign: the rate stamped at escrow time
           // (falls back to the escrow_amount in paise ÷ 100). The campaign's
@@ -344,6 +362,7 @@ serveWithLogging("list-campaigns", async (req) => {
       let brandOfferedRate = 0;
       let proposedRate = 0;
       let finalAgreedRate = 0;
+      let fulfilment: any = null;
 
       if (appStatus) {
         applicationStatus = appStatus;
@@ -355,6 +374,7 @@ serveWithLogging("list-campaigns", async (req) => {
         brandOfferedRate = Number(appData.brandOfferedRate || 0);
         proposedRate = Number(appData.proposedRate || 0);
         finalAgreedRate = Number(appData.finalAgreedRate || 0);
+        fulfilment = appData.fulfilment || null;
 
         if (appStatus === "completed") {
           status = "Completed";
@@ -437,6 +457,7 @@ serveWithLogging("list-campaigns", async (req) => {
         targetInfluencerTier: c.target_influencer_tier || "all",
         applicationStatus,
         applicationId,
+        fulfilment,
         submissionLinks,
         rejectionReason,
         applicationMetrics,

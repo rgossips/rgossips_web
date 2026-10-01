@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Instagram, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 // Full-screen interstitial shown when a logged-in user has no Instagram
 // access token on their profile. Blocks the dashboard until they connect
@@ -18,6 +19,8 @@ export default function InstagramRequiredGate() {
   const supabase = createClient();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   useEffect(() => {
     const handleMessage = async (event) => {
@@ -25,7 +28,7 @@ export default function InstagramRequiredGate() {
       if (event.data?.type !== "instagram-oauth") return;
 
       if (event.data.error) {
-        setError(event.data.error || "Instagram connection was denied");
+        fail(event.data.error || "Instagram connection was denied");
         setConnecting(false);
         return;
       }
@@ -90,7 +93,7 @@ export default function InstagramRequiredGate() {
         }
       }
     } catch (err) {
-      setError(err.message || "Failed to connect Instagram");
+      fail(err.message || "Failed to connect Instagram");
     } finally {
       // Always clear the spinner — on success the gate unmounts when
       // profile.instagram_access_token populates; on failure the user
@@ -155,7 +158,7 @@ export default function InstagramRequiredGate() {
         </button>
 
         {error && (
-          <p className="text-xs text-red-600 text-center leading-snug">{error}</p>
+          <p ref={errorRef} tabIndex={-1} role="alert" className="text-xs text-red-600 text-center leading-snug">{error}</p>
         )}
 
         <p className="text-[11px] text-slate-400 text-center leading-snug">

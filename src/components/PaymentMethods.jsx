@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { invokeAuthed } from "@/lib/invokeAuthed";
 import { PLAN_PRICING } from "@/lib/plans";
 import { useTranslations } from "next-intl";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 const labelForMethod = (m, t) => {
   if (m.type === "upi") return m.upi_id || t("methods.upi");
@@ -693,6 +694,8 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
   const [holderName, setHolderName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
 
   // For UPI we run the full VPA check so the user sees a meaningful
   // reason inline (not just a disabled button). Bank still uses the
@@ -721,7 +724,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
           };
     const res = await onAdd(payload);
     if (!res?.ok) {
-      setError(res?.error || t("failedToSaveRetry"));
+      fail(res?.error || t("failedToSaveRetry"));
       setSaving(false);
     }
     // On success the parent closes the modal — no further state to set.
@@ -730,7 +733,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
   return (
     <>
       <div data-scroll-lock className="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-md lg:max-h-[85dvh] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
+      <div className="fixed inset-0 z-[260] lg:inset-auto lg:top-[calc(50%+2.5rem)] lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[95%] lg:max-w-md lg:max-h-[calc(100dvh-7rem)] lg:rounded-2xl bg-white flex flex-col overflow-hidden lg:shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-base font-black text-gray-900">{t("addPaymentMethod")}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors cursor-pointer">
@@ -809,7 +812,7 @@ const AddPaymentModal = ({ onClose, onAdd }) => {
             </div>
           )}
 
-          {error && <p className="text-xs text-rose-500 font-bold">{error}</p>}
+          {error && <p ref={errorRef} tabIndex={-1} role="alert" className="text-xs text-rose-500 font-bold">{error}</p>}
         </div>
 
         <div className="shrink-0 flex gap-3 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-4 border-t border-gray-100 bg-white sticky bottom-0">

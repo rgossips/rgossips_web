@@ -1,5 +1,6 @@
 "use client";
 import React, { Suspense, useEffect, useState } from "react";
+import { scrollToTopAfterPaint } from "@/lib/scrollToTop";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import AddReelFlow from "@/components/AddReelFlow";
@@ -34,9 +35,11 @@ export default function ProfilePage() {
   const [view, setView] = useState("dashboard"); // dashboard | my-info | add-reel
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [view]);
+  // Back to the top whenever the view swaps. Instant, not smooth: iOS Safari
+  // drops a smooth scrollTo requested mid-momentum or during AnimatePresence's
+  // exit, which left the page where it was and made a tap on the lowest
+  // settings row ("Subscriptions and Payouts") look like nothing happened.
+  useEffect(() => scrollToTopAfterPaint(), [view]);
 
   return (
     <div className="bg-[#F3F4F9] min-h-screen pb-20 lg:pb-0 font-sans text-slate-900 antialiased overflow-x-hidden">

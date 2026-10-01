@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { invokeAuthed } from "@/lib/invokeAuthed";
+import { useScrollToError } from "@/hooks/useScrollToError";
 
 // Must stay in step with the reason CHECK constraint in migration 059 and the
 // REASONS set in the report-content edge function.
@@ -56,6 +57,8 @@ export default function ReportBlockMenu({
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Scrolls the banner into view so a refusal is never off-screen.
+  const { errorRef, fail } = useScrollToError(setError);
   const [doneMessage, setDoneMessage] = useState("");
   const [mounted, setMounted] = useState(false);
 
@@ -110,18 +113,18 @@ export default function ReportBlockMenu({
         details: details.trim() || undefined,
       });
       if (res?.needsLogin) {
-        setError(t("errorSignedOut"));
+        fail(t("errorSignedOut"));
         return;
       }
       const { data, error: fnErr } = res;
       if (fnErr || !data?.success) {
-        setError(data?.error || fnErr?.message || t("errorGeneric"));
+        fail(data?.error || fnErr?.message || t("errorGeneric"));
         return;
       }
       setDoneMessage(data.message || t("reportThanks"));
       setStage("done");
     } catch (e) {
-      setError(e?.message || t("errorGeneric"));
+      fail(e?.message || t("errorGeneric"));
     } finally {
       setBusy(false);
     }
@@ -136,19 +139,19 @@ export default function ReportBlockMenu({
         targetUserId,
       });
       if (res?.needsLogin) {
-        setError(t("errorSignedOut"));
+        fail(t("errorSignedOut"));
         return;
       }
       const { data, error: fnErr } = res;
       if (fnErr || !data?.success) {
-        setError(data?.error || fnErr?.message || t("errorGeneric"));
+        fail(data?.error || fnErr?.message || t("errorGeneric"));
         return;
       }
       setDoneMessage(t("blockDone", { name }));
       setStage("done");
       onBlocked?.(targetUserId);
     } catch (e) {
-      setError(e?.message || t("errorGeneric"));
+      fail(e?.message || t("errorGeneric"));
     } finally {
       setBusy(false);
     }
@@ -191,7 +194,7 @@ export default function ReportBlockMenu({
 
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {error ? (
-            <p role="alert" className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            <p ref={errorRef} tabIndex={-1} role="alert" className="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 outline-none">
               {error}
             </p>
           ) : null}

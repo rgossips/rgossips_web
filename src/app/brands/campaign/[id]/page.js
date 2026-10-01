@@ -1288,6 +1288,41 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, campaignType = "", rati
               </div>
             )}
 
+            {/* Delivery. The address itself only arrives from the API once
+                this creator is approved — before that we get a flag, so the
+                brand can tell "they gave one" apart from "they didn't". */}
+            {(app.shipping_address || app.has_shipping_address || app.shipping_tracking_url) && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider mb-1">{t("panel.delivery")}</p>
+                {app.shipping_address ? (
+                  <>
+                    <p className="text-[11px] text-gray-800 leading-relaxed whitespace-pre-wrap bg-emerald-50 rounded-lg p-2.5">{app.shipping_address}</p>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard?.writeText(app.shipping_address)}
+                      className="mt-1.5 text-[10px] font-bold text-[#5851DB] hover:underline"
+                    >
+                      {t("panel.copyAddress")}
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-gray-500 italic">{t("panel.addressHiddenUntilApproved")}</p>
+                )}
+                {app.shipping_tracking_url && (
+                  <p className="mt-1.5 text-[10px] text-gray-500">
+                    <a href={app.shipping_tracking_url} target="_blank" rel="noopener noreferrer" className="font-bold text-[#5851DB] hover:underline">
+                      {t("panel.trackShipment")}
+                    </a>
+                    {app.product_received === true ? " · " + t("panel.creatorConfirmed") : null}
+                    {app.product_received === false ? " · " + t("panel.creatorNotReceived") : null}
+                  </p>
+                )}
+                {app.product_feedback && (
+                  <p className="mt-1.5 text-[11px] italic text-gray-600 bg-gray-50 rounded-lg p-2">{app.product_feedback}</p>
+                )}
+              </div>
+            )}
+
             {inf.bio && (
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-1">{t("panel.bio")}</p>
@@ -1396,9 +1431,12 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, campaignType = "", rati
               )}
               {app.status === "live_submitted" && (
                 <>
+                  {/* Barter holds no escrow, so there is nothing to release:
+                      approving the links IS the completion. What the creator
+                      is owed next is the product, not a payout. */}
                   <button onClick={() => setShowRating(true)} disabled={loading} className={`${btn} bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100`}>
                     {loading ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                    {t("actions.approveRelease")}
+                    {isBarter ? t("actions.approveComplete") : t("actions.approveRelease")}
                   </button>
                   <button onClick={() => setMode("revision")} className={`${btn} bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100`}>
                     <RotateCcw size={12} /> {t("actions.revision")}
@@ -1524,8 +1562,8 @@ const ApplicationRow = ({ app, brandId, defaultRate = 0, campaignType = "", rati
         primaryCta={t("rating.primaryCta")}
         secondaryCta={t("rating.secondaryCta")}
         onSaved={(saved) => onRated?.(saved)}
-        onPrimary={() => releaseEscrow()}
-        onSkip={() => releaseEscrow()}
+        onPrimary={() => (isBarter ? updateStatus("completed") : releaseEscrow())}
+        onSkip={() => (isBarter ? updateStatus("completed") : releaseEscrow())}
       />
       <AlertPopup popup={popup} onClose={() => setPopup(null)} />
     </div>

@@ -1,0 +1,74 @@
+{
+  "_comment": "The contract for normaliseSubmissionUrl / isInstagramUrl. Web and the edge functions import the implementation directly; React Native keeps a mirror and runs these same vectors, so a change made in one repo and not the other fails a test instead of reaching a creator. Copy this file to the mobile repo whenever it changes.",
+  "sameLink": [
+    {
+      "why": "the same Drive file pasted twice",
+      "a": "https://drive.google.com/open?id=ABC123",
+      "b": "https://drive.google.com/open?id=ABC123"
+    },
+    {
+      "why": "a share param is not identity",
+      "a": "https://drive.google.com/open?id=ABC123&usp=sharing",
+      "b": "https://drive.google.com/open?id=ABC123"
+    },
+    {
+      "why": "param order is not identity",
+      "a": "https://example.com/f?b=2&a=1",
+      "b": "https://example.com/f?a=1&b=2"
+    },
+    {
+      "why": "instagram: the query is junk, the path is the media",
+      "a": "https://www.instagram.com/reel/Cxyz/?igsh=123",
+      "b": "https://instagram.com/reel/Cxyz"
+    },
+    {
+      "why": "instagram: trailing slash and www do not matter",
+      "a": "https://www.instagram.com/p/ABC/",
+      "b": "https://instagram.com/p/ABC"
+    },
+    {
+      "why": "not a URL: identical text still matches",
+      "a": "  my draft file  ",
+      "b": "My Draft File"
+    }
+  ],
+  "differentLinks": [
+    {
+      "why": "THE BUG: two Drive files whose ids differ only at the tail",
+      "a": "https://drive.google.com/open?id=1YY23O0LK676kNRvwI-bdd8R6FybShTxM",
+      "b": "https://drive.google.com/open?id=1YY23O0LK676kNRvwI-bdd8R6FybShT"
+    },
+    {
+      "why": "Drive ids are case-sensitive",
+      "a": "https://drive.google.com/open?id=abc",
+      "b": "https://drive.google.com/open?id=ABC"
+    },
+    {
+      "why": "different WeTransfer downloads",
+      "a": "https://wetransfer.com/downloads/aaa",
+      "b": "https://wetransfer.com/downloads/bbb"
+    },
+    {
+      "why": "different reels",
+      "a": "https://www.instagram.com/reel/Cxyz/",
+      "b": "https://www.instagram.com/reel/Cabc/"
+    },
+    {
+      "why": "same Dropbox path, different query — fails safe as distinct",
+      "a": "https://www.dropbox.com/s/xyz/clip.mp4?dl=0",
+      "b": "https://www.dropbox.com/s/xyz/clip.mp4?dl=1"
+    }
+  ],
+  "isInstagram": [
+    { "url": "https://www.instagram.com/reel/DY9VbsiS0lr/", "expected": true },
+    { "url": "https://instagram.com/p/ABC", "expected": true },
+    { "url": "https://instagr.am/p/ABC", "expected": true },
+    { "url": "https://www.instagram.com/stories/someone/123/", "expected": true },
+    { "url": "https://drive.google.com/open?id=ABC", "expected": false },
+    { "url": "https://wetransfer.com/downloads/abc", "expected": false },
+    { "url": "https://notinstagram.com/p/ABC", "expected": false },
+    { "url": "https://instagram.com.evil.io/p/x", "expected": false },
+    { "url": "not a url", "expected": false },
+    { "url": "", "expected": false }
+  ]
+}

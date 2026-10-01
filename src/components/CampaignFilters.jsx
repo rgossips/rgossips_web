@@ -28,7 +28,7 @@ export function CampaignFilters({ onClose, filterData }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-0 z-[260] bg-white flex flex-col overflow-y-auto overscroll-contain scrollbar-hide lg:inset-auto lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-2xl lg:max-h-[90dvh] lg:rounded-[40px] lg:shadow-2xl"
+        className="fixed inset-0 z-[260] bg-white flex flex-col overflow-y-auto overscroll-contain scrollbar-hide lg:inset-auto lg:left-1/2 lg:top-[calc(50%+2.5rem)] lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[90%] lg:max-w-2xl lg:max-h-[calc(100dvh-7rem)] lg:rounded-[40px] lg:shadow-2xl"
       >
         <div className="p-6 space-y-8">
           {/* Header */}

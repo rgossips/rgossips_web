@@ -654,18 +654,48 @@ serveWithLogging("brand-campaigns", async (req) => {
       const { data: apps } = await supabase
         .from("campaign_applications")
         .select(
-          "id, campaign_id, influencer_id, initiated_by, proposed_rate, pitch, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
+          "id, campaign_id, influencer_id, initiated_by, proposed_rate, pitch, brand_offered_rate, final_agreed_rate, status, rejection_reason, submission_links, created_at, " +
+            // Barter fulfilment (migration 076). shipping_address is withheld
+            // below for anyone the brand has not committed to.
+            "shipping_address, shipping_tracking_url, shipping_carrier, shipping_tracking_added_at, shipping_expected_at, product_received, product_received_at, product_feedback, " +
+            "influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
         )
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
 
+      // A delivery address is a creator's home address. The brand gets it
+      // when it needs it — once it has approved them and something is
+      // actually being sent — and not a moment before. A campaign with 134
+      // pending applicants would otherwise hand over 134 home addresses to
+      // anyone who posted a brief.
+      //
+      // Statuses match DISPATCHABLE in the clients' barterFulfilment modules.
+      const CAN_SEE_ADDRESS = new Set([
+        "approved",
+        "submitted",
+        "revision_needed",
+        "accepted",
+        "live_submitted",
+        "payment",
+        "completed",
+      ]);
+
       // Coalesce custom upload over Instagram photo so downstream
       // consumers can keep reading inf.profile_photo_url unchanged.
       const appsWithPhoto = (apps || []).map((a: any) => {
-        const p = a.influencer_profiles;
-        if (!p) return a;
-        return {
+        const committed = CAN_SEE_ADDRESS.has(a.status);
+        const base = {
           ...a,
+          shipping_address: committed ? a.shipping_address || null : null,
+          // So the UI can say "they've given one, approve to see it" rather
+          // than "no address" — two very different things to a brand
+          // deciding whether to approve.
+          has_shipping_address: !!(a.shipping_address && String(a.shipping_address).trim()),
+        };
+        const p = a.influencer_profiles;
+        if (!p) return base;
+        return {
+          ...base,
           influencer_profiles: {
             ...p,
             profile_photo_url: p.custom_profile_photo_url || p.profile_photo_url || "",

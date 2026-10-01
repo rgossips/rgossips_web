@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { normaliseSubmissionUrl } from "../_shared/submission-url.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,20 +52,6 @@ serveWithLogging("submit-deliverables", async (req) => {
       );
     }
 
-    // Normalise URLs the same way the client does so /reel/X/ and /reel/X
-    // and protocol differences don't slip through the dup check.
-    const normalise = (raw: string): string => {
-      if (!raw) return "";
-      try {
-        const u = new URL(String(raw).trim());
-        const host = u.hostname.toLowerCase().replace(/^www\./, "");
-        const path = u.pathname.replace(/\/+$/, "").toLowerCase();
-        return `${host}${path}`;
-      } catch {
-        return String(raw).trim().toLowerCase();
-      }
-    };
-
     // Figure out the flow up front so the duplicate rules can branch:
     //  - submitted: initial drafts — any media URL is fine, only dup check.
     //  - live_submitted: published Instagram posts — also enforces a
@@ -88,7 +75,7 @@ serveWithLogging("submit-deliverables", async (req) => {
     // re-check server-side in case the request was crafted manually. Always
     // enforced regardless of flow.
     const incoming = (Array.isArray(submissionLinks) ? submissionLinks : [])
-      .map((s: any) => ({ ...s, _norm: normalise(s?.url) }))
+      .map((s: any) => ({ ...s, _norm: normaliseSubmissionUrl(s?.url) }))
       .filter((s: any) => s._norm);
 
     const seen = new Set<string>();
@@ -144,7 +131,7 @@ serveWithLogging("submit-deliverables", async (req) => {
       for (const row of priorApps || []) {
         const links = Array.isArray(row.submission_links) ? row.submission_links : [];
         for (const l of links) {
-          const norm = normalise(l?.url);
+          const norm = normaliseSubmissionUrl(l?.url);
           if (!norm) continue;
           if (seen.has(norm)) {
             reused.push({ url: l.url, campaignId: row.campaign_id });

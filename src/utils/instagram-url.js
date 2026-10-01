@@ -48,20 +48,16 @@ export const expectedLinkType = (deliverableType) => {
   if (t === "igtv" || t === "tv") return "igtv";
   return null;
 };
-
-// Strip trailing slashes, query params, and the leading protocol so two
-// links pointing at the same media compare equal regardless of small
-// formatting differences (mobile share URLs often differ from desktop ones).
-export const normaliseInstagramUrl = (raw) => {
-  if (!raw) return "";
-  let url;
-  try {
-    url = new URL(raw.trim());
-  } catch {
-    return raw.trim().toLowerCase();
-  }
-  const host = url.hostname.toLowerCase().replace(/^www\./, "");
-  // Stripping a trailing slash makes /reel/X and /reel/X/ identical.
-  const path = url.pathname.replace(/\/+$/, "").toLowerCase();
-  return `${host}${path}`;
-};
+// URL identity lives in ONE place, imported by BOTH this app and the edge
+// functions: supabase/functions/_shared/submission-url.js. It used to be
+// duplicated here and in submit-deliverables, and the copies drifted into the
+// same bug twice — fixing the client only moved the refusal to the server.
+//
+// `normaliseInstagramUrl` keeps its old name because that is what the
+// deliverables form imports; it normalises ANY submission link, which is why
+// `isInstagramUrl` exists separately.
+export {
+  isInstagramUrl,
+  normaliseSubmissionUrl,
+  normaliseSubmissionUrl as normaliseInstagramUrl,
+} from "../../supabase/functions/_shared/submission-url.js";
