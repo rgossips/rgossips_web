@@ -79,6 +79,9 @@ const LoginInner = () => {
   );
   const { setType } = useGlobal();
   const { user, role, loading: authLoading } = useAuth();
+  // See `redirectingAuthed` below: a signed-in user whose role never resolves
+  // would otherwise sit on the splash forever. This bounds the wait.
+  const [roleWaitExpired, setRoleWaitExpired] = useState(false);
   const t = useTranslations("Auth");
   // Role → localized label helpers. `indefinite` = "a Brand" / "an Influencer";
   // plain = "Brand" / "Influencer".
@@ -99,6 +102,22 @@ const LoginInner = () => {
     }
     router.replace(resolvePostAuthTarget(role));
   }, [authLoading, user, role, router, resolvePostAuthTarget]);
+
+  // fetchProfile() in AuthContext clears `role` and returns on ANY failure —
+  // a dropped request, a cold edge function, check-profile 500ing — without
+  // retrying. The session survives, so `user` stays set and `role` stays
+  // null. The redirect above bails on `!role` and the splash below waits for
+  // the redirect: a deadlock with no way out but clearing site data.
+  //
+  // Waiting a few seconds still buys what the splash is for (no flash of the
+  // login UI while the role is in flight), then gives up and renders the
+  // login screen, from which signing in re-runs the profile fetch.
+  useEffect(() => {
+    setRoleWaitExpired(false);
+    if (authLoading || !user || role) return undefined;
+    const id = setTimeout(() => setRoleWaitExpired(true), 6000);
+    return () => clearTimeout(id);
+  }, [authLoading, user, role]);
 
   // A /login?ref=CODE referral link (influencer-only) drops the visitor
   // straight into the influencer sign-up flow with the code prefilled. We
@@ -797,7 +816,14 @@ const LoginInner = () => {
 
   // While we resolve auth or redirect an authenticated user, show a minimal
   // splash so the login UI doesn't flash.
-  const redirectingAuthed = !authLoading && user && !(typeof window !== "undefined" && (localStorage.getItem("instagram_oauth_code") || localStorage.getItem("instagram_oauth_error")));
+  // `role` is part of the condition on purpose: the redirect effect refuses
+  // to move until it has one, so a splash that does not require it waits for
+  // a navigation that will never happen. `roleWaitExpired` is the escape.
+  const redirectingAuthed =
+    !authLoading &&
+    user &&
+    (role || !roleWaitExpired) &&
+    !(typeof window !== "undefined" && (localStorage.getItem("instagram_oauth_code") || localStorage.getItem("instagram_oauth_error")));
 
   // While a user-initiated action is mid-flight (loading), keep the drawer
   // visible so its in-card spinner stays on screen — otherwise the dark
