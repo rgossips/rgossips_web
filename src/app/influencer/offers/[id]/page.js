@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   detectInstagramLinkType,
   labelForLinkType,
@@ -2463,7 +2464,19 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
   const isLiveSubmit = isLiveLinksFlow;
   const heading = isLiveSubmit ? t("modal.submitLiveLinksHeading") : t("modal.uploadSubmissions");
 
-  return (
+  // Portalled to <body>, and it has to be. On phones this modal is rendered
+  // from inside the fixed bottom action bar, which carries backdrop-blur-xl —
+  // and backdrop-filter makes an element a containing block for `position:
+  // fixed` descendants. So `fixed inset-0` resolved against that ~90px strip
+  // at the bottom of the screen instead of against the viewport: the modal
+  // came out squashed under the nav with the page footer still visible above
+  // it. No ancestor can do that to a child of <body>.
+  //
+  // Never rendered on the server — the parent only mounts it from a click —
+  // so there is no hydration to mismatch.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <>
       <div data-scroll-lock className="fixed inset-0 z-[350] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div
@@ -2698,6 +2711,7 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }

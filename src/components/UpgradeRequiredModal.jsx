@@ -18,6 +18,7 @@
 // why the button did nothing, and a stray tap must not remove it.
 
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Crown, Lock, X, Sparkles } from "lucide-react";
 import { FREE_BARTER_APPLICATIONS, PLAN_PRICING, PLAN_IDS } from "@/lib/plans";
@@ -34,7 +35,18 @@ export function UpgradeRequiredModal({ reason, remaining = 0, campaignType, onCl
   const isPaidCampaign = reason === "paid_campaign" || isContinue;
   const from = PLAN_PRICING?.[PLAN_IDS.STARTER]?.monthly;
 
-  return (
+  // Portalled to <body>. One of the callers renders this from inside the
+  // fixed bottom action bar on the offer page, which carries backdrop-blur —
+  // and backdrop-filter makes an element a containing block for `position:
+  // fixed` descendants, so `fixed inset-0` would resolve against that strip
+  // instead of the viewport and the paywall would come out squashed under the
+  // nav. Nothing can do that to a child of <body>.
+  //
+  // reason is null until the creator clicks, so this never renders on the
+  // server and there is no hydration to mismatch.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     // Popups start at z-250, above the influencer BottomNav (z-100) and the
     // sticky apply bar (z-50).
     <div data-scroll-lock className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -115,7 +127,8 @@ export function UpgradeRequiredModal({ reason, remaining = 0, campaignType, onCl
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
