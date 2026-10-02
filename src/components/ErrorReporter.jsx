@@ -42,6 +42,34 @@ function fromBrowserExtension(file, stack) {
 const WEBVIEW_TEARDOWN =
   /(Error invoking postMessage: Java (object is gone|exception was raised))|(WKWebView was deallocated before the message was delivered)/i;
 
+// A deploy replaced the hashed chunks under a page that was already open, so
+// the next navigation asks for a file that now 404s and the screen stops
+// working. The user's only way out is a manual refresh they have no reason to
+// think of — four of these in the last three weeks, three of them on /login
+// during a deploy.
+//
+// One reload picks up the new build. Guarded by a session-scoped timestamp so
+// a chunk that is genuinely missing (a broken build, an ad blocker) reloads
+// once and then reports normally instead of looping forever.
+const CHUNK_ERROR =
+  /Loading chunk [\w-]+ failed|ChunkLoadError|Failed to load chunk|Importing a module script failed|error loading dynamically imported module/i;
+const RELOAD_KEY = "rg:chunk-reload-at";
+const RELOAD_COOLDOWN_MS = 60_000;
+
+function recoverFromStaleChunk() {
+  try {
+    const last = Number(window.sessionStorage.getItem(RELOAD_KEY) || 0);
+    if (Date.now() - last < RELOAD_COOLDOWN_MS) return false;
+    window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  } catch {
+    // Private mode or blocked storage: without somewhere to record the
+    // attempt there is no loop guard, so do nothing rather than risk one.
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 function isIgnorableWindowError(e) {
   const file = String(e?.filename || "");
   const message = String(e?.message || e?.error?.message || "");
@@ -79,6 +107,7 @@ export default function ErrorReporter() {
   useEffect(() => {
     const onError = (e) => {
       if (isIgnorableWindowError(e)) return;
+      const message = String(e?.message || e?.error?.message || "");
       reportError("client", "window.onerror", e?.error || new Error(e?.message || "Unknown error"), {
         userRole: role || null,
         context: {
@@ -88,6 +117,9 @@ export default function ErrorReporter() {
           col: e?.colno ?? null,
         },
       });
+      // Reported first, reloaded second: reportError posts with keepalive so
+      // the row still lands.
+      if (CHUNK_ERROR.test(message)) recoverFromStaleChunk();
     };
 
     const onRejection = (e) => {
