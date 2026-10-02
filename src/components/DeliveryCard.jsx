@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, MapPin, PackageCheck, PackageX, AlertTriangle, Loader2, Pencil } from "lucide-react";
+import { Truck, MapPin, PackageCheck, AlertTriangle, Loader2, Pencil, LifeBuoy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createClient } from "@/utils/supabase/client";
 import { fulfilmentState, CREATOR_STAGE_LABEL } from "@/lib/barterFulfilment";
 import { reportError } from "@/lib/reportError";
+import SupportChat from "@/components/SupportChat";
 
 // The creator's side of a barter delivery: where it's going, where it is, and
 // whether it arrived.
@@ -40,6 +41,7 @@ export function DeliveryCard({ applicationId, fulfilment, shippingMode, onChange
   const [editing, setEditing] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [error, setError] = useState("");
 
   if (!fulfilment || shippingMode === "no") return null;
@@ -95,6 +97,7 @@ export function DeliveryCard({ applicationId, fulfilment, shippingMode, onChange
   };
 
   return (
+    <>
     <section className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
       <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center gap-2">
         <Truck size={16} className="text-purple-500" />
@@ -227,13 +230,17 @@ export function DeliveryCard({ applicationId, fulfilment, shippingMode, onChange
                 {busy ? <Loader2 size={12} className="animate-spin" /> : <PackageCheck size={13} />}
                 {t("yesReceived")}
               </button>
+              {/* "No, it hasn't" only set a flag and left the creator
+                  waiting with nothing to do. A missing parcel needs a person:
+                  this opens support on the delivery branch, where each answer
+                  can raise a callback. */}
               <button
                 type="button"
-                onClick={() => answerReceipt(false)}
+                onClick={() => setSupportOpen(true)}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 disabled:opacity-60"
               >
-                <PackageX size={13} /> {t("notReceived")}
+                <LifeBuoy size={13} /> {t("getHelp")}
               </button>
             </div>
             <p className="text-[10px] text-slate-400">{t("feedbackNote")}</p>
@@ -259,5 +266,14 @@ export function DeliveryCard({ applicationId, fulfilment, shippingMode, onChange
         {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
     </section>
+
+      {/* Its own instance: this card can sit on a page that never mounts the
+          navbar chat. Only one is open at a time either way. */}
+      <SupportChat
+        open={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        startTopic="deliveries"
+      />
+    </>
   );
 }

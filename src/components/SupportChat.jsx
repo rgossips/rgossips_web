@@ -73,6 +73,52 @@ const TREE = {
       ],
     },
     {
+      id: "deliveries",
+      label: "Product delivery",
+      children: [
+        {
+          id: "delivery_not_arrived",
+          label: "My product hasn't arrived",
+          response:
+            "Sorry about that. Tell us a bit about it and we'll chase the brand for you — it helps if you mention the campaign and when it was dispatched.",
+          action: "callback",
+        },
+        {
+          id: "delivery_when",
+          label: "When will my product be sent?",
+          response:
+            "Brands dispatch after they approve your application — the campaign brief says how many days they aim for. Once it is sent, a tracking link appears on the campaign page under 'Your product delivery'.",
+          link: { href: "/influencer/campaigns", label: "Open Campaigns" },
+        },
+        {
+          id: "delivery_tracking",
+          label: "My tracking link doesn't work",
+          response:
+            "Tracking numbers can take a day to show up on the carrier's site after dispatch. If it still fails tomorrow, request a callback and we'll get the brand to confirm the details.",
+          action: "callback",
+        },
+        {
+          id: "delivery_wrong_address",
+          label: "My delivery address is wrong",
+          response:
+            "You can edit the address on the campaign page until the brand marks it dispatched. After that it is locked — request a callback and we'll try to catch it with the brand.",
+          link: { href: "/influencer/campaigns", label: "Open Campaigns" },
+        },
+        {
+          id: "delivery_damaged",
+          label: "It arrived damaged or it's the wrong item",
+          response:
+            "Confirm it arrived on the campaign page so the record is straight, then tell us what is wrong in the note — we will raise it with the brand.",
+          action: "callback",
+        },
+        {
+          id: "delivery_other",
+          label: "Something else about my delivery",
+          action: "callback",
+        },
+      ],
+    },
+    {
       id: "profile",
       label: "Profile & Account",
       children: [
@@ -288,7 +334,9 @@ const ISSUE_LINK_IDS = new Set(["issue_deliverables", "issue_rejected"]);
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export default function SupportChat({ open, onClose }) {
+// `startTopic` opens the chat already inside a branch — the delivery card
+// uses it so "Get help" lands on delivery questions instead of the root menu.
+export default function SupportChat({ open, onClose, startTopic = null }) {
   const t = useTranslations("SupportChat");
   const router = useRouter();
   const { user, profile, role } = useAuth();
@@ -303,18 +351,29 @@ export default function SupportChat({ open, onClose }) {
   // Reset on open
   useEffect(() => {
     if (open) {
-      setPath([]);
       setCallbackOpen(false);
       setCallbackContext("");
+      const branch = startTopic
+        ? TREE.children.find((c) => c.id === startTopic)
+        : null;
+      setPath(branch ? [branch.id] : []);
       setMessages([
         {
           role: "bot",
           text: greeting(profile, t),
           options: TREE.children,
         },
+        // Opening on a branch shows the user what was picked for them, so the
+        // back button and the breadcrumb still make sense.
+        ...(branch
+          ? [
+              { role: "user", text: branch.label },
+              { role: "bot", text: branch.label, options: branch.children },
+            ]
+          : []),
       ]);
     }
-  }, [open, profile]);
+  }, [open, profile, startTopic]);
 
   // Smooth-scroll to bottom whenever the message list grows
   useEffect(() => {

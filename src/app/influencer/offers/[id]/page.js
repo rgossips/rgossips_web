@@ -1098,9 +1098,14 @@ export default function CampaignDetailsPage() {
             <ActiveContent campaign={campaign} />
           </div>
 
-          {/* ── RIGHT SIDEBAR ── */}
+          {/* ── RIGHT SIDEBAR ──
+              Scrolls with the page. It used to be lg:sticky, which pinned the
+              status timeline while the brief moved beside it — and once the
+              column grew past the viewport (status + submissions + delivery)
+              a sticky block cannot scroll to its own end, so the bottom of it
+              was unreachable. */}
           <div className="space-y-5">
-            <div className="lg:sticky lg:top-8 space-y-5">
+            <div className="space-y-5">
               <ActiveSidebar
                 campaign={campaign}
                 onApply={isActive && !hasLiveApplication ? requestApply : null}
@@ -1882,13 +1887,29 @@ const STATUS_STEPS = [
 // and fall back to "Applied".
 const BARTER_SKIPPED = new Set(["offer_sent", "offer_accepted", "payment"]);
 
-function stepsFor(isBarter, status) {
+function stepsFor(isBarter, status, shipsProduct = false) {
   if (!isBarter) return STATUS_STEPS;
-  return STATUS_STEPS.filter((s) => !BARTER_SKIPPED.has(s.key) || s.key === status).map((s) =>
+  const steps = STATUS_STEPS.filter((s) => !BARTER_SKIPPED.has(s.key) || s.key === status).map((s) =>
     // "Escrow Funded" is the paid-flow name for `approved`. On barter the
     // brand simply approved you.
     s.key === "approved" ? { ...s, labelKey: "approved_barter" } : s,
   );
+  // On a barter campaign that sends something, "Completed" is not the end of
+  // the creator's story — the product still has to arrive. This trailing step
+  // is NOT a status: nothing writes "delivery" to the row. It is derived from
+  // the fulfilment columns, so the ladder keeps moving after the brand has
+  // signed off and the creator is not left staring at "Completed" wondering
+  // where their parcel is.
+  return shipsProduct ? [...steps, { key: "delivery" }] : steps;
+}
+
+// Which delivery wording to show, from the application row alone.
+function deliveryLabelKey(fulfilment) {
+  if (!fulfilment) return "deliveryAwaiting";
+  if (fulfilment.product_received === true) return "deliveryDelivered";
+  if (fulfilment.product_received === false) return "deliveryMissing";
+  if (fulfilment.shipping_tracking_url) return "deliveryShipped";
+  return "deliveryAwaiting";
 }
 
 // These statuses branch off the main flow
@@ -2027,14 +2048,22 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const t = useTranslations("InfluencerOffersId");
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const isBarterCampaign = String(campaign?.campaignType || "").toLowerCase() === "barter";
-  const steps = stepsFor(isBarterCampaign, status);
-  const stepLabel = (step) => t(`statusSteps.${step.labelKey || step.key}`);
+  // Only a campaign that actually moves a product gets the delivery tail; a
+  // barter stay or service has nothing to ship.
+  const shipsProduct = campaign?.shippingRequired === "yes" || campaign?.shippingRequired === "pickup";
+  const steps = stepsFor(isBarterCampaign, status, shipsProduct);
+  const deliveryKey = deliveryLabelKey(campaign?.fulfilment);
+  const stepLabel = (step) =>
+    step.key === "delivery" ? t(`statusSteps.${deliveryKey}`) : t(`statusSteps.${step.labelKey || step.key}`);
   const isSpecial = SPECIAL_STATUSES[status];
   const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
   // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
   const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
-  const currentStepIndex = steps.findIndex((s) => s.key === effectiveStatus);
+  const currentStepIndex =
+    effectiveStatus === "completed" && shipsProduct && isBarterCampaign
+      ? steps.findIndex((s) => s.key === "delivery")
+      : steps.findIndex((s) => s.key === effectiveStatus);
   const currentStep = isSpecial ? { label: isSpecial.label } : steps[Math.max(currentStepIndex, 0)] || steps[0];
   const currentStepLabel = isSpecial
     ? t(`specialStatus.${status}`)

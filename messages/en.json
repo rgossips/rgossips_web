@@ -3039,7 +3039,12 @@
       "live_submitted": "Live Links Submitted",
       "payment": "Payment in Progress",
       "completed": "Completed",
-      "approved_barter": "Approved"
+      "approved_barter": "Approved",
+      "delivery": "Delivery",
+      "deliveryAwaiting": "Waiting for delivery details",
+      "deliveryShipped": "Product on its way",
+      "deliveryDelivered": "Product delivered",
+      "deliveryMissing": "Product not received"
     },
     "specialStatus": {
       "revision_needed": "Revision Requested",
@@ -5336,11 +5341,11 @@
     "feedbackPlaceholder": "Anything you want to tell us or the brand about the product or the delivery (optional)",
     "feedbackNote": "Your note is shared with the brand along with your answer.",
     "yesReceived": "Yes, it arrived",
-    "notReceived": "No, it hasn’t",
     "overdueToday": "Your product was due to arrive today. Let us know below whether it turned up.",
     "overdueDays": "Your product was due {days} days ago and you haven’t told us whether it arrived. Let us know below — if it’s missing we’ll chase the brand.",
     "confirmedOn": "You confirmed this arrived on {date}.",
     "reportedMissingOn": "You reported this as not received on {date}. We’re on it.",
-    "saveFailed": "Couldn’t save that. Please try again."
+    "saveFailed": "Couldn’t save that. Please try again.",
+    "getHelp": "Get help"
   }
 }
