@@ -4765,7 +4765,14 @@
       "issue_payment": "Payment is delayed",
       "issue_deliverables": "Submit / update deliverables",
       "issue_rejected": "Why was I rejected / removed?",
-      "issue_callback": "Talk to a human about this"
+      "issue_callback": "Talk to a human about this",
+      "deliveries": "Product delivery",
+      "delivery_not_arrived": "My product hasn’t arrived",
+      "delivery_when": "When will my product be sent?",
+      "delivery_tracking": "My tracking link doesn’t work",
+      "delivery_wrong_address": "My delivery address is wrong",
+      "delivery_damaged": "It arrived damaged or it’s the wrong item",
+      "delivery_other": "Something else about my delivery"
     },
     "responses": {
       "campaign_apply_how": "Browse open campaigns from the Campaigns tab, open one you like, and tap Apply. Brands review applications within a few days.",
@@ -4788,7 +4795,12 @@
       "plans_cancel": "Subscriptions can be cancelled directly from Stripe's billing portal. If you can't access it, request a callback and we'll cancel it for you.",
       "tech_slow": "Hard-refresh the page (Ctrl/Cmd+Shift+R). If it persists, log out and back in. Still broken? Request a callback with what you were doing when it happened.",
       "tech_login": "Use the same Instagram account you signed up with. If OTP isn't arriving, double-check the country code — we send to +91 numbers only right now.",
-      "tech_ig_token": "IG tokens expire every 60 days. Profile → Reconnect Instagram refreshes it without losing any data."
+      "tech_ig_token": "IG tokens expire every 60 days. Profile → Reconnect Instagram refreshes it without losing any data.",
+      "delivery_not_arrived": "Sorry about that. Tell us a bit about it and we’ll chase the brand for you — it helps if you mention the campaign and when it was dispatched.",
+      "delivery_when": "Brands dispatch after they approve your application — the campaign brief says how many days they aim for. Once it is sent, a tracking link appears on the campaign page under “Your product delivery”.",
+      "delivery_tracking": "Tracking numbers can take a day to show up on the carrier’s site after dispatch. If it still fails tomorrow, request a callback and we’ll get the brand to confirm the details.",
+      "delivery_wrong_address": "You can edit the address on the campaign page until the brand marks it dispatched. After that it is locked — request a callback and we’ll try to catch it with the brand.",
+      "delivery_damaged": "Confirm it arrived on the campaign page so the record is straight, then tell us what is wrong in the note — we’ll raise it with the brand."
     },
     "links": {
       "campaign_apply_how": "Open Campaigns",
@@ -4807,7 +4819,9 @@
       "tech_ig_token": "Go to Profile",
       "openThisCampaign": "Open this campaign",
       "openCampaigns": "Open Campaigns",
-      "browseCampaigns": "Browse Campaigns"
+      "browseCampaigns": "Browse Campaigns",
+      "delivery_when": "Open Campaigns",
+      "delivery_wrong_address": "Open Campaigns"
     },
     "issues": {
       "brandFallback": "the brand",

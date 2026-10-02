@@ -367,13 +367,16 @@ export default function SupportChat({ open, onClose, startTopic = null }) {
         // back button and the breadcrumb still make sense.
         ...(branch
           ? [
-              { role: "user", text: branch.label },
-              { role: "bot", text: branch.label, options: branch.children },
+              // Every other label in this tree comes from the catalog, via
+              // t(`labels.<id>`) — branch.label is the dead literal left on
+              // the TREE object and would drift the moment one is translated.
+              { role: "user", text: t(`labels.${branch.id}`) },
+              { role: "bot", text: t("pickClosest"), options: branch.children },
             ]
           : []),
       ]);
     }
-  }, [open, profile, startTopic]);
+  }, [open, profile, startTopic, t]);
 
   // Smooth-scroll to bottom whenever the message list grows
   useEffect(() => {
@@ -529,6 +532,11 @@ export default function SupportChat({ open, onClose, startTopic = null }) {
   const handlePick = (node) => {
     if (node.action === "callback") {
       setMessages((prev) => [...prev, { role: "user", text: t(`labels.${node.id}`) }]);
+      // A callback node can still have something useful to say first — the
+      // delivery answers explain what we will do before asking for a number.
+      if (node.response) {
+        setMessages((prev) => [...prev, { role: "bot", text: t(`responses.${node.id}`) }]);
+      }
       openCallback();
       return;
     }
