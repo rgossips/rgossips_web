@@ -4690,7 +4690,7 @@
       "phonePlaceholder": "+91 98765 43210",
       "phoneHint": "Include country code (e.g. +91 for India)",
       "bestTime": "Best time to call",
-      "notesLabel": "Anything we should know? (optional)",
+      "notesLabel": "Anything we should know?",
       "notesPlaceholder": "What's the issue?",
       "cancel": "Cancel",
       "sending": "Sending…",
@@ -4702,7 +4702,8 @@
       "errors": {
         "signIn": "Please sign in first.",
         "invalidPhone": "Enter a valid phone number with country code.",
-        "submitFailed": "Failed to submit"
+        "submitFailed": "Failed to submit",
+        "notesRequired": "Please tell us what the issue is."
       }
     },
     "times": {
@@ -4998,7 +4999,7 @@
       "phonePlaceholder": "+91 98765 43210",
       "phoneHint": "Include country code (e.g. +91 for India)",
       "bestTime": "Best time to call",
-      "notesLabel": "Anything we should know? (optional)",
+      "notesLabel": "Anything we should know?",
       "notesPlaceholder": "What's the issue?",
       "cancel": "Cancel",
       "sending": "Sending…",
@@ -5010,7 +5011,8 @@
       "errors": {
         "signIn": "Please sign in first.",
         "invalidPhone": "Enter a valid phone number with country code.",
-        "submitFailed": "Failed to submit"
+        "submitFailed": "Failed to submit",
+        "notesRequired": "Please tell us what the issue is."
       }
     },
     "times": {

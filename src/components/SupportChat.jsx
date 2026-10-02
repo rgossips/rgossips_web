@@ -949,6 +949,7 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
   const [phone, setPhone] = useState(defaultPhone);
   const [time, setTime] = useState("Today afternoon");
   const [notes, setNotes] = useState("");
+  const notesRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
@@ -980,6 +981,15 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
     // E.164 numbers are 8–15 digits including country code.
     if (digitsOnly.length < 8 || digitsOnly.length > 15) {
       setError(t("callback.errors.invalidPhone"));
+      return;
+    }
+    // The note is what makes a callback actionable — without it support
+    // rings someone back with nothing but a topic breadcrumb and has to
+    // start the conversation from scratch.
+    if (!notes.trim()) {
+      setError(t("callback.errors.notesRequired"));
+      notesRef.current?.focus();
+      notesRef.current?.scrollIntoView({ block: "nearest" });
       return;
     }
     setSubmitting(true);
@@ -1067,6 +1077,7 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
           {t("callback.notesLabel")}
         </p>
         <textarea
+          ref={notesRef}
           rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
