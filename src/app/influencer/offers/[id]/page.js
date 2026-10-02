@@ -1404,8 +1404,12 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
       ) : null}
 
       {/* Barter delivery. Renders itself away unless this campaign moves a
-          product and the creator has a live application on it. */}
-      {campaign.fulfilment && campaign.applicationId && (
+          product and the creator has a LIVE application on it — `appliedStatus`
+          is already null for withdrawn/rejected, which is the case that leaked:
+          the row and its fulfilment survive a withdrawal, so a creator looking
+          at a campaign they can re-apply to was being asked for a delivery
+          address for a parcel nobody is sending. */}
+      {appliedStatus && campaign.fulfilment && campaign.applicationId && (
         <DeliveryCard
           applicationId={campaign.applicationId}
           fulfilment={campaign.fulfilment}
