@@ -42,10 +42,20 @@ serveWithLogging("apply-campaign", async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // A campaign that ships a product cannot be applied to without somewhere
-    // to send it. The form asks, but the form is not the boundary: this is.
-    // Read the mode from the description trailer, the same place every other
-    // campaign field lives.
+    // A campaign that ships a product needs somewhere to send it, so the
+    // apply forms collect an address up front.
+    //
+    // This USED to REFUSE the application when one was missing, and that was
+    // wrong. The web form shipped with the address field; the mobile app did
+    // not, and a store release takes weeks. A real creator hit a wall her app
+    // could not get over — six attempts in six minutes, then she gave up.
+    //
+    // A server requirement only the newest client can satisfy breaks every
+    // older client. So the address is taken when offered and chased when it
+    // is not, down the path that already exists for applications predating
+    // the field: approval sends a "we need your address" email, and an admin
+    // can type it into the booking. The collection point moves; nobody is
+    // locked out of applying.
     const { data: shipCampaign } = await supabaseAdmin
       .from("campaigns")
       .select("description")
@@ -56,12 +66,8 @@ serveWithLogging("apply-campaign", async (req) => {
     // 600 matches the admin portal's field and the column is plain text.
     const addressClean = shippingAddress ? truncateText(String(shippingAddress).trim(), 600) : "";
     if (shipsToCreator && !addressClean) {
-      return new Response(
-        JSON.stringify({
-          error: "address_required",
-          message: "This campaign posts the product to you, so we need a delivery address before you can apply.",
-        }),
-        { status: 200, headers: jsonHeaders }
+      console.log(
+        `apply-campaign: no address for shipping campaign ${campaignId} — accepted, to be chased on approval`,
       );
     }
 
