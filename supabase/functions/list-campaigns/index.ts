@@ -6,6 +6,7 @@ import {
   resolveViewerId,
   filterBlocked,
 } from "../_shared/blocks.ts";
+import { genderAllowsVisibility } from "../_shared/gender-match.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -86,6 +87,10 @@ serveWithLogging("list-campaigns", async (req) => {
     // Campaigns this influencer was invited to by the brand — powers the
     // "Invited by {brand}" banner on the campaign apply view.
     const invitedCampaignIds = new Set<string>();
+    // Null for an anonymous caller (the shared-link crawler) and for a
+    // creator who never filled the field in — 245 of 492 of them. Either
+    // way nothing is hidden; only a KNOWN mismatch is.
+    let creatorGender: string | null = null;
 
     // Free-tier standing, computed here because this function already
     // loads the creator's whole application history. Every influencer
@@ -159,11 +164,15 @@ serveWithLogging("list-campaigns", async (req) => {
         };
       }
 
+      // Gender rides along on the plan lookup rather than costing a second
+      // round trip: it decides whether gender-restricted campaigns are
+      // visible to this creator at all (see the `visible` filter below).
       const { data: planRow } = await supabaseAdmin
         .from("influencer_profiles")
-        .select("subscription_plan")
+        .select("subscription_plan, gender")
         .eq("influencer_id", influencerId)
         .maybeSingle();
+      creatorGender = planRow?.gender ?? null;
       const plan = effectivePlan(planRow);
       const subscribed = plan !== "free";
       // Lifetime, matching apply-campaign's count — a withdrawn
@@ -503,11 +512,33 @@ serveWithLogging("list-campaigns", async (req) => {
     // past its public application deadline (the invite is a private channel) —
     // as long as the campaign itself hasn't ended (isExpired). Otherwise the
     // usual open-window + already-applied rules apply.
-    const visible = formatted.filter(
+    const openToThem = formatted.filter(
       (c: any) =>
         (!c.isExpired && !c.applicationDeadlinePassed) ||
         c.applicationStatus ||
         (c.invited && !c.isExpired),
+    );
+
+    // Gender brief. A male-only campaign must not appear to a creator we know
+    // to be female, or the other way round: before this, target_gender was
+    // sent to the client and rendered as a "Preferred" chip but never
+    // filtered on anywhere, so 28 applications had already been filed
+    // against the opposite gender's brief.
+    //
+    // Two carve-outs, both deliberate:
+    //   - already applied — hiding it would make an in-flight application
+    //     vanish from their list, which is the same reason the deadline
+    //     rules above keep applied rows.
+    //   - brand-invited — the brand picked this person by hand, which
+    //     overrides its own brief.
+    // Unknown gender is never hidden: half the creator base has the field
+    // empty, and apply-campaign already demands it before accepting
+    // anything, so it resolves the moment they try.
+    const visible = openToThem.filter(
+      (c: any) =>
+        c.applicationStatus ||
+        c.invited ||
+        genderAllowsVisibility(c.targetGender, creatorGender),
     );
 
     return new Response(

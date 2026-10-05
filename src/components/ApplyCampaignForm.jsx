@@ -214,8 +214,13 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         return;
       }
 
+      // Catch-all for a code this client doesn't know yet. Prefer the
+      // server's human message over the code itself: an unhandled error
+      // used to render its raw slug, so a creator refused by a new guard
+      // read "gender_mismatch" rather than a sentence. Every refusal from
+      // apply-campaign carries a `message`.
       if (data?.error) {
-        fail(data.error);
+        fail(data.message || data.error);
         return;
       }
 

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serveWithLogging } from "../_shared/serve.ts";
-import { shippingMode } from "../_shared/campaign-meta.ts";
+import { parseCampaignMeta, shippingMode } from "../_shared/campaign-meta.ts";
+import { genderDecision, genderRefusalMessage, requiredGender } from "../_shared/gender-match.ts";
 
 // Deliberately loose: one @, something on each side, a dot in the domain.
 const isValidEmail = (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
@@ -122,6 +123,27 @@ serveWithLogging("apply-campaign", async (req) => {
             error: "profile_incomplete",
             missing,
             message: "Add your email and gender to your profile before applying to campaigns.",
+          }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+
+      // The gender brief, enforced. list-campaigns already hides a campaign
+      // whose brief names the other gender, so nobody reaching this line
+      // through the app should fail here — it is the backstop for a deep
+      // link, a stale client still holding the old list, and a direct call.
+      //
+      // Reuses the description already fetched above for the shipping rule,
+      // so this costs no extra query. Re-applying to a campaign the creator
+      // was previously ON is still refused: the brief is the brand's, and a
+      // withdrawn application does not grandfather a mismatch.
+      const required = requiredGender(parseCampaignMeta(shipCampaign?.description).target_gender);
+      if (required && genderDecision([required], basics?.gender) === "blocked") {
+        return new Response(
+          JSON.stringify({
+            error: "gender_mismatch",
+            requiredGender: required,
+            message: genderRefusalMessage(required),
           }),
           { status: 200, headers: jsonHeaders }
         );
