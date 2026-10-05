@@ -62,6 +62,12 @@ serveWithLogging("send-push", async (req) => {
 
     let sent = 0;
     const dead: string[] = [];
+    // Per-device outcome. "sent: 9 of 15" with no further detail cannot tell
+    // an operator whether the six failures are dead installs or a broken
+    // credential, which is exactly the question when a push does not arrive.
+    // Only the last 8 characters of a token are reported — the whole thing is
+    // effectively a credential for addressing that device.
+    const detail: { device: string; platform: string; ok: boolean; gone?: boolean; error?: string }[] = [];
     await Promise.all(
       subs.map(async (s: any) => {
         const res =
@@ -70,13 +76,21 @@ serveWithLogging("send-push", async (req) => {
             : await sendFcm(s.token, payload);
         if (res.ok) sent++;
         else if (res.gone) dead.push(s.id);
+        detail.push({
+          device: String(s.token || s.endpoint || "").slice(-8),
+          platform: s.platform || "?",
+          ok: !!res.ok,
+          ...(res.ok ? {} : { gone: !!res.gone, error: String((res as any).error || "").slice(0, 200) }),
+        });
       }),
     );
 
     // Prune dead devices so we don't keep retrying them.
     if (dead.length) await admin.from("push_subscriptions").delete().in("id", dead);
 
-    return json({ sent, pruned: dead.length });
+    // The trigger ignores the response; this detail is for a human calling
+    // the function by hand to work out why a phone stayed silent.
+    return json({ sent, pruned: dead.length, devices: subs.length, detail });
   } catch (e) {
     return json({ error: "send_failed", message: String((e as any)?.message || e) });
   }
