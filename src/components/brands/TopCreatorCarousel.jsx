@@ -13,6 +13,43 @@ import { createClient } from "@/utils/supabase/client";
 import EliteBadge from "@/components/EliteBadge";
 import { fetchEliteSpotlight, mergeSpotlight } from "@/lib/spotlight";
 
+// Instagram's Login API returns a 206x206 profile picture and
+// refresh-instagram mirrors exactly that into storage, so most spotlight
+// photos are tiny. Stretched across the card they were visibly soft.
+//
+// The width was doing the damage, not the height: object-cover scales by the
+// LARGER ratio, so a ~430px-wide card upscaled a 206px photo 2.1x however
+// short the card became. Shrinking the image area therefore means capping the
+// photo at its own size, not just lowering the box — a small photo renders
+// centred at 1:1 over a soft wash, while a real upload (the profile cropper
+// allows up to 1600px) still fills the card edge to edge.
+const FULL_BLEED_MIN_WIDTH = 640;
+
+function CreatorPhoto({ src, alt }) {
+  // 0 until the browser reports the real size. Held hidden until then so the
+  // card does not flash one treatment and snap to the other.
+  const [naturalWidth, setNaturalWidth] = useState(0);
+  const fullBleed = naturalWidth >= FULL_BLEED_MIN_WIDTH;
+
+  return (
+    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 85vw"
+        onLoad={(e) => setNaturalWidth(e.currentTarget.naturalWidth || 0)}
+        className={`transition-opacity duration-200 ${naturalWidth ? "opacity-100" : "opacity-0"} ${
+          fullBleed
+            ? "object-cover group-hover:scale-105 transition-transform duration-500"
+            : // Contained and centred: never drawn larger than it really is.
+              "object-contain p-6"
+        }`}
+      />
+    </div>
+  );
+}
+
 // Hand-curated fallback shown when the admin hasn't published any rows in
 // public.featured_creators yet. As soon as admin adds entries, those take
 // over via the useEffect query below.
@@ -203,14 +240,9 @@ export const TopCreatorsCarousel = () => {
               >
                 <div className="bg-white rounded-4xl border border-[#E4E9F4] shadow-sm overflow-hidden group">
                   {/* Image Container */}
-                  <div className="relative h-64 w-full">
+                  <div className="relative h-44 w-full">
                     {creator.image ? (
-                      <Image
-                        src={creator.image}
-                        alt={creator.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                      <CreatorPhoto src={creator.image} alt={creator.name} />
                     ) : (
                       // next/image throws on an empty src — an Elite creator
                       // may not have a photo yet.
