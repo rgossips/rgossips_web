@@ -3074,7 +3074,9 @@
       "revisionRequested": "Revision Requested",
       "deliverablesToRevise": "Deliverables to revise:",
       "applicationRejected": "Application Rejected",
-      "yourSubmissions": "Your Submissions"
+      "yourSubmissions": "Your Submissions",
+      "shortlistedTitle": "You've been shortlisted",
+      "shortlistedNote": "The final selection hasn't been made yet. There's nothing to do right now — we'll let you know either way, and you don't need to apply again."
     },
     "modal": {
       "duplicateError": "You've pasted the same link more than once. Each deliverable needs a unique URL.",

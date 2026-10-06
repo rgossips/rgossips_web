@@ -2072,8 +2072,13 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const isSpecial = SPECIAL_STATUSES[status];
   const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
+  const isOnHold = status === "on_hold";
   // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
-  const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : status;
+  // on_hold is not a rung on the ladder, so findIndex() returns -1 and the
+  // tracker renders every step inactive with nothing marked current. Hold it
+  // at "pending": the creator HAS applied and is waiting on a decision, which
+  // is exactly where the ladder should sit. The banner below carries the news.
+  const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : isOnHold ? "pending" : status;
   const currentStepIndex =
     effectiveStatus === "completed" && shipsProduct && isBarterCampaign
       ? steps.findIndex((s) => s.key === "delivery")
@@ -2096,9 +2101,17 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           <OfferResponseCard campaign={campaign} refetch={refetch} />
         ) : (
         <div className={`w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold ${
-          isRejected ? "bg-red-500 text-white" : isRevision ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
+          isRejected
+            ? "bg-red-500 text-white"
+            : isRevision
+              ? "bg-amber-500 text-white"
+              // Shortlisted is not an approval. The green tick this used to
+              // fall through to told the creator they were in.
+              : isOnHold
+                ? "bg-violet-500 text-white"
+                : "bg-emerald-500 text-white"
         }`}>
-          {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStepLabel}
+          {isRejected ? <X size={16} /> : isRevision ? <Clock size={16} /> : isOnHold ? <Clock size={16} /> : <CheckCircle size={16} />} {currentStepLabel}
         </div>
         )}
         {waitingEscrow && (
@@ -2211,6 +2224,20 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           </div>
         );
       })()}
+
+      {/* Shortlisted banner. The non-compact tracker renders only the
+          ladder plus these per-status blocks — currentStepLabel is never
+          shown here — so without this an on-hold application produced a
+          tracker with nothing highlighted and no explanation at all. */}
+      {isOnHold && (
+        <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-sm font-bold shrink-0">★</div>
+            <p className="text-sm font-bold text-violet-700">{t("statusBar.shortlistedTitle")}</p>
+          </div>
+          <p className="text-xs text-violet-700 leading-relaxed pl-9">{t("statusBar.shortlistedNote")}</p>
+        </div>
+      )}
 
       {/* Rejected banner */}
       {isRejected && (() => {
