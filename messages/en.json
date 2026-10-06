@@ -3049,7 +3049,8 @@
     "specialStatus": {
       "revision_needed": "Revision Requested",
       "rejected": "Rejected",
-      "withdrawn": "Withdrawn"
+      "withdrawn": "Withdrawn",
+      "on_hold": "Shortlisted"
     },
     "offer": {
       "updateError": "Could not update the application.",

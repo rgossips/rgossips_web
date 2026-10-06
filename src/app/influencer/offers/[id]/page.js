@@ -1919,6 +1919,15 @@ function deliveryLabelKey(fulfilment) {
 
 // These statuses branch off the main flow
 const SPECIAL_STATUSES = {
+  // Parked by an admin for a decision later. Shown to the creator as
+  // SHORTLISTED, not "on hold": it is good news so far, and the admin-side
+  // wording would read as a rejection with extra steps. Violet, so it does
+  // not sit in the warning palette next to revision/rejected.
+  //
+  // It belongs here rather than in STATUS_STEPS because it is not a rung on
+  // the ladder — the application has not moved past applying. Being in this
+  // map is also what stops the ladder clamp rendering it as "Applied".
+  on_hold: { label: "Shortlisted", color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", icon: "★" },
   revision_needed: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
   rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: "✕" },
   withdrawn: { label: "Withdrawn", color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200", icon: "✕" },

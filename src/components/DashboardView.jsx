@@ -38,8 +38,12 @@ import { useProfileCompletion } from "./CompleteProfileCard";
 import { useTranslations } from "next-intl";
 
 
+// on_hold counts as ACTIVE: the creator is still in the running and the
+// application still occupies one of their applications. Leaving it out made
+// a shortlisted creator look like they had nothing in flight.
 const ACTIVE_APP_STATUSES = new Set([
   "pending",
+  "on_hold",
   "approved",
   "accepted",
   "submitted",
