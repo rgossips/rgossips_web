@@ -39,7 +39,10 @@ async function fetchCampaign(id) {
       // the function ignores the unknown key and returns everything, which
       // the find() below still handles — so this degrades rather than breaks
       // if the function hasn't been redeployed yet.
-      body: JSON.stringify({ campaignId: id }),
+      // includeClosed: a shared link outlives the application window, and a
+      // link preview that renders nothing because the deadline passed looks
+      // like a dead link rather than a finished campaign.
+      body: JSON.stringify({ campaignId: id, includeClosed: true }),
       // Re-fetch every 5 minutes so an edited brief or a swapped banner
       // reaches the OG cache reasonably quickly, without one edge-function
       // call per crawler hit.

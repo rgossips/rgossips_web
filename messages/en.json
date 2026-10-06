@@ -3052,7 +3052,8 @@
       "revision_needed": "Revision Requested",
       "rejected": "Rejected",
       "withdrawn": "Withdrawn",
-      "on_hold": "Shortlisted"
+      "on_hold": "Shortlisted",
+      "closed": "Campaign Closed"
     },
     "offer": {
       "updateError": "Could not update the application.",
@@ -3150,6 +3151,15 @@
     "comingSoon": {
       "title": "Opening soon",
       "note": "This campaign isn't open for applications yet. Have a read of the brief — we'll let you know the moment it goes live."
+    },
+    "closed": {
+      "title": "This campaign has closed",
+      "note": "It finished before a decision was made on every application. That's on us, not on your work — have a look at what's open now."
+    },
+    "windowClosed": {
+      "title": "Applications are closed",
+      "note": "This campaign’s window has passed, so it is no longer taking applications. The brief is below if you want to see what the brand was after.",
+      "browse": "Browse open campaigns"
     }
   },
   "InfluencerPricing": {

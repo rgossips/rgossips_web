@@ -92,7 +92,12 @@ serveWithLogging("apply-campaign", async (req) => {
     // UNIQUE(campaign_id, influencer_id) index, so we must RE-ACTIVATE that
     // row rather than insert a new one. Any other (still-live) status really
     // is "already applied" and stays blocked.
-    const REAPPLIABLE = new Set(["withdrawn", "rejected"]);
+    // `closed` joins these: it is what an application becomes when its
+    // campaign ends undecided, or when a coming-soon campaign reopens and
+    // everyone is asked to apply again. Without it here, reopening a
+    // campaign would email every parked creator "apply now" and then refuse
+    // them with "you have already applied".
+    const REAPPLIABLE = new Set(["withdrawn", "rejected", "closed"]);
     const { data: existing } = await supabaseAdmin
       .from("campaign_applications")
       .select("id, status")

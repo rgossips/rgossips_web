@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import {
   detectInstagramLinkType,
   labelForLinkType,
@@ -86,10 +87,33 @@ function useCampaign(id, userId) {
         });
 
         const data = await res.json();
-        const found = data?.campaigns?.find((c) => c.id === id);
+        let found = data?.campaigns?.find((c) => c.id === id);
+
+        // The marketplace list hides a campaign once its end date or
+        // application deadline has passed — right for a feed, wrong for
+        // someone who followed a link straight to it. "Campaign not found"
+        // reads as a broken link and hides the one thing that would explain
+        // what happened. Ask again for just this campaign, allowing closed
+        // ones; the row comes back with status "Closed" and the page says so.
+        //
+        // Only on the miss, so the normal path still costs one request.
+        if (!found) {
+          const closedRes = await fetch(`${supabaseUrl}/functions/v1/list-campaigns`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({ influencerId: userId, campaignId: id, includeClosed: true }),
+          });
+          const closedData = await closedRes.json();
+          found = closedData?.campaigns?.find((c) => c.id === id);
+        }
+
         if (found) {
           // Count campaigns by this brand
-          const brandCampaigns = data.campaigns.filter(
+          const brandCampaigns = (data?.campaigns || []).filter(
             (c) => c.brandName === found.brandName
           );
           const activeBrandCampaigns = brandCampaigns.filter((c) => c.status === "Active").length;
@@ -871,6 +895,10 @@ export default function CampaignDetailsPage() {
   // affordance is hidden — but hidden with no explanation reads as a bug,
   // so the sidebar says what is happening instead.
   const isComingSoon = campaign.status === "Coming Soon";
+  // Reached by link after the end date or the application deadline passed.
+  // isActive is already false, so every apply affordance is hidden — but
+  // hidden with no explanation reads as a bug, so the sidebar says so.
+  const isClosed = campaign.status === "Closed";
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   // A withdrawn/rejected application sends the campaign back to Active and is
@@ -880,7 +908,11 @@ export default function CampaignDetailsPage() {
   const hasLiveApplication =
     !!campaign.applicationStatus &&
     campaign.applicationStatus !== "withdrawn" &&
-    campaign.applicationStatus !== "rejected";
+    campaign.applicationStatus !== "rejected" &&
+    // A closed application is over: it must not count as in-flight, or the
+    // dead tracker shows and the apply button stays hidden on a campaign
+    // that may well reopen.
+    campaign.applicationStatus !== "closed";
 
   // Free applications cover barter only. `hybrid` is NOT barter — it
   // carries cash — and apply-campaign draws the line in the same place.
@@ -1114,6 +1146,7 @@ export default function CampaignDetailsPage() {
               <ActiveSidebar
                 campaign={campaign}
                 comingSoon={isComingSoon}
+                closed={isClosed}
                 onApply={isActive && !hasLiveApplication ? requestApply : null}
                 appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
@@ -1145,7 +1178,11 @@ export default function CampaignDetailsPage() {
           </button>
         </div>
       )}
-      {hasLiveApplication && (
+      {/* Not on a coming-soon campaign. The desktop sidebar already
+          suppresses the tracker there; without the same guard here a phone
+          still pinned a status bar to the bottom of a campaign that has not
+          opened, which is the one place it is most in the way. */}
+      {hasLiveApplication && !isComingSoon && (
         <div className={`lg:hidden fixed ${user ? "bottom-16" : "bottom-0"} left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50`}>
           <ApplicationStatusBar status={campaign.applicationStatus} campaign={campaign} refetch={refetch} compact />
         </div>
@@ -1370,7 +1407,7 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon }) {
+function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon, closed }) {
   const t = useTranslations("InfluencerOffersId");
   return (
     <>
@@ -1390,6 +1427,25 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon }
             <p className="text-[15px] font-black leading-tight">{t("comingSoon.title")}</p>
           </div>
           <p className="text-[12px] text-white/90 leading-relaxed mt-2.5">{t("comingSoon.note")}</p>
+        </div>
+      ) : closed ? (
+        // Reached by link after the window shut. Muted rather than alarming —
+        // nothing went wrong, they are just late — and it still shows the
+        // brief below so the creator can see what the brand was after.
+        <div className="rounded-2xl p-4 bg-slate-100 border border-slate-200">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0 text-slate-500">
+              <Clock size={16} />
+            </div>
+            <p className="text-[15px] font-black leading-tight text-slate-700">{t("windowClosed.title")}</p>
+          </div>
+          <p className="text-[12px] text-slate-500 leading-relaxed mt-2.5">{t("windowClosed.note")}</p>
+          <Link
+            href="/influencer/campaigns"
+            className="mt-3 inline-flex items-center justify-center w-full h-10 rounded-xl bg-white border border-slate-200 text-[12px] font-bold text-slate-700 hover:border-slate-300 transition-colors"
+          >
+            {t("windowClosed.browse")}
+          </Link>
         </div>
       ) : onApply ? (
         <>
@@ -1431,7 +1487,8 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon }
           the row and its fulfilment survive a withdrawal, so a creator looking
           at a campaign they can re-apply to was being asked for a delivery
           address for a parcel nobody is sending. */}
-      {appliedStatus && campaign.fulfilment && campaign.applicationId && (
+      {/* Nothing ships on a campaign that has not opened. */}
+      {appliedStatus && !comingSoon && campaign.fulfilment && campaign.applicationId && (
         <DeliveryCard
           applicationId={campaign.applicationId}
           fulfilment={campaign.fulfilment}
@@ -1951,6 +2008,10 @@ const SPECIAL_STATUSES = {
   on_hold: { label: "Shortlisted", color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", icon: "★" },
   revision_needed: { label: "Revision Requested", color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", icon: "⟳" },
   rejected: { label: "Rejected", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: "✕" },
+  // The campaign ended before anyone decided. Slate, NOT red: this creator
+  // was never assessed, and dressing it as a rejection would tell them
+  // something untrue about their own work.
+  closed: { label: "Campaign Closed", color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200", icon: "—" },
   withdrawn: { label: "Withdrawn", color: "text-gray-600", bg: "bg-gray-50", border: "border-gray-200", icon: "✕" },
 };
 
@@ -2092,6 +2153,7 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
   const isOnHold = status === "on_hold";
+  const isClosed = status === "closed";
   const stepLabel = (step) =>
     step.key === "delivery"
       ? t(`statusSteps.${deliveryKey}`)
@@ -2106,7 +2168,9 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   // tracker renders every step inactive with nothing marked current. Hold it
   // at "pending": the creator HAS applied and is waiting on a decision, which
   // is exactly where the ladder should sit. The banner below carries the news.
-  const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : isOnHold ? "pending" : status;
+  // `closed` sits where the application actually got to — they applied and
+  // nothing more happened — so the ladder holds at pending, like on_hold.
+  const effectiveStatus = isRevision ? "submitted" : isRejected ? "submitted" : isOnHold || isClosed ? "pending" : status;
   const currentStepIndex =
     effectiveStatus === "completed" && shipsProduct && isBarterCampaign
       ? steps.findIndex((s) => s.key === "delivery")
@@ -2269,6 +2333,18 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           </div>
         );
       })()}
+
+      {/* Campaign closed. Its own banner rather than the rejected one,
+          because the two mean opposite things to the person reading it. */}
+      {isClosed && (
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 text-sm font-bold shrink-0">—</div>
+            <p className="text-sm font-bold text-slate-700">{t("closed.title")}</p>
+          </div>
+          <p className="text-xs text-slate-600 leading-relaxed pl-9">{t("closed.note")}</p>
+        </div>
+      )}
 
       {/* Rejected banner */}
       {isRejected && (() => {

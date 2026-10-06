@@ -50,7 +50,7 @@ serveWithLogging("list-campaigns", async (req) => {
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
   try {
-    const { influencerId, campaignId } = await req.json().catch(() => ({}));
+    const { influencerId, campaignId, includeClosed } = await req.json().catch(() => ({}));
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -387,6 +387,11 @@ serveWithLogging("list-campaigns", async (req) => {
 
         if (appStatus === "completed") {
           status = "Completed";
+        } else if (appStatus === "closed") {
+          // The campaign ended without a decision. The CARD goes back to
+          // whatever the campaign is now, so a reopened campaign is
+          // appliable again rather than frozen on "Applied".
+          status = c.status === "active" ? "Active" : status;
         } else if (appStatus === "rejected" || appStatus === "withdrawn") {
           status = "Active"; // Rejected/withdrawn go back to Active (can re-apply if needed)
         } else {
@@ -400,6 +405,20 @@ serveWithLogging("list-campaigns", async (req) => {
         // Needs its own branch: the fallback below would title-case the raw
         // value into "Coming_soon".
         status = "Coming Soon";
+      } else if (
+        (c.status === "open" || c.status === "active") &&
+        (isExpired || applicationDeadlinePassed) &&
+        !invitedCampaignIds.has(String(c.campaign_id))
+      ) {
+        // The row is still "active" in the table — campaigns are not swept to
+        // a closed status when their dates pass — but the window this creator
+        // could apply in has gone. Saying "Active" here would put an Apply
+        // button on a campaign apply-campaign will refuse.
+        //
+        // Not for an INVITED creator: the invite is a private channel that
+        // outlives the public deadline, which is the same carve-out the
+        // visibility filter below makes.
+        status = "Closed";
       } else if (c.status === "open" || c.status === "active") {
         status = "Active";
       } else if (c.status === "closed" || c.status === "completed") {
@@ -518,10 +537,38 @@ serveWithLogging("list-campaigns", async (req) => {
     // past its public application deadline (the invite is a private channel) —
     // as long as the campaign itself hasn't ended (isExpired). Otherwise the
     // usual open-window + already-applied rules apply.
+    // `includeClosed` is for a DIRECT LINK to one campaign — the detail page
+    // and the share-link Open Graph layout. Those are not the marketplace
+    // list: someone followed a URL to a specific campaign, and answering
+    // "Campaign not found" for one that merely closed is wrong twice over —
+    // it reads as a broken link, and it hides the very thing that would
+    // explain the situation. The row comes back carrying isExpired /
+    // applicationDeadlinePassed and a "Closed" status, and the page says so.
+    //
+    // Only this filter is relaxed. Blocks and the gender brief above still
+    // apply: a direct link is not a way around them.
+    // The carve-outs below exist so an IN-FLIGHT application does not vanish
+    // from the creator's list. They were never meant to grant permanent
+    // visibility to a campaign the creator is not eligible for — but
+    // `c.applicationStatus` is truthy for "withdrawn" and "rejected" too, and
+    // those are over. A male creator who applied to a female-only brief, then
+    // withdrew, kept seeing it for good, with an Apply button that
+    // apply-campaign refuses on the same gender rule. Seen live on
+    // @deep13111993 and the Vega hair-styler campaign.
+    //
+    // "completed" is also terminal but stays: it belongs in their Completed
+    // tab. This is the same distinction the detail page draws with
+    // `hasLiveApplication`.
+    const stillTheirs = (st: unknown) => {
+      const v = String(st ?? "");
+      return !!v && v !== "withdrawn" && v !== "rejected";
+    };
+
     const openToThem = formatted.filter(
       (c: any) =>
+        includeClosed ||
         (!c.isExpired && !c.applicationDeadlinePassed) ||
-        c.applicationStatus ||
+        stillTheirs(c.applicationStatus) ||
         (c.invited && !c.isExpired),
     );
 
@@ -542,7 +589,7 @@ serveWithLogging("list-campaigns", async (req) => {
     // anything, so it resolves the moment they try.
     const visible = openToThem.filter(
       (c: any) =>
-        c.applicationStatus ||
+        stillTheirs(c.applicationStatus) ||
         c.invited ||
         genderAllowsVisibility(c.targetGender, creatorGender),
     );

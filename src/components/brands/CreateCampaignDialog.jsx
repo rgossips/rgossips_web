@@ -390,6 +390,9 @@ export function CreateCampaignDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode]);
 
+  // "total" | "per" — which budget box the brand typed in last. See
+  // applyBudget below.
+  const [budgetSource, setBudgetSource] = useState("total");
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSetItem = (setter) => (item) => setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
   const toggleCategory = toggleSetItem(setCategories);
@@ -422,18 +425,40 @@ export function CreateCampaignDialog({
   const showProductValue = isBarter || isHybrid; // product value shown when barter/hybrid
   const showBarterCompensation = isBarter || isHybrid;
 
-  // Auto-calc Budget / Influencer = Budget Total / Slots
-  useEffect(() => {
-    const total = Number(form.budget_total) || 0;
-    const slots = Number(form.max_influencers) || 0;
-    if (total > 0 && slots > 0) {
-      const perInf = Math.round(total / slots);
-      // Only update if different to avoid render loop
-      if (String(perInf) !== form.budget_per_influencer) {
-        setForm((p) => ({ ...p, budget_per_influencer: String(perInf) }));
-      }
+  // Budget total and budget per influencer derive from each other, in BOTH
+  // directions: a brand who knows their total divides it by the slots, and a
+  // brand who knows the rate they want to pay multiplies it up. Whichever box
+  // they typed in last is the authority, so changing the slot count after
+  // that keeps their number and recomputes the other one.
+  //
+  // Done in the change handlers rather than an effect: deriving one piece of
+  // state from another inside useEffect is what react-hooks/set-state-in-effect
+  // warns about, and the old version needed a guard against its own render
+  // loop for exactly that reason.
+  const applyBudget = (next, source) => {
+    const slots = Number(next.max_influencers) || 0;
+    const total = Number(next.budget_total) || 0;
+    const per = Number(next.budget_per_influencer) || 0;
+    if (slots <= 0) return next;
+    if (source === "per") {
+      return per > 0 ? { ...next, budget_total: String(per * slots) } : next;
     }
-  }, [form.budget_total, form.max_influencers, form.budget_per_influencer]);
+    return total > 0 ? { ...next, budget_per_influencer: String(Math.round(total / slots)) } : next;
+  };
+
+  const updateBudgetTotal = (v) => {
+    setBudgetSource("total");
+    setForm((p) => applyBudget({ ...p, budget_total: v }, "total"));
+  };
+
+  const updateBudgetPerInfluencer = (v) => {
+    setBudgetSource("per");
+    setForm((p) => applyBudget({ ...p, budget_per_influencer: v }, "per"));
+  };
+
+  // Changing the slots recomputes whichever figure the brand did NOT type.
+  const updateSlots = (v) =>
+    setForm((p) => applyBudget({ ...p, max_influencers: v }, budgetSource));
 
   // Auto-fill follower min/max when tier changes
   useEffect(() => {
@@ -682,7 +707,7 @@ export function CreateCampaignDialog({
               </select>
             </Field>
             <Field label={t("fields.slots")} hint={t("fields.slotsHint")}>
-              <input type="number" min="1" value={form.max_influencers} onChange={(e) => update("max_influencers", e.target.value)} placeholder="10" className="input" />
+              <input type="number" min="1" value={form.max_influencers} onChange={(e) => updateSlots(e.target.value)} placeholder="10" className="input" />
             </Field>
           </div>
 
@@ -690,10 +715,10 @@ export function CreateCampaignDialog({
           {showBudget && (
             <div className="grid grid-cols-2 gap-4">
               <Field label={t("fields.budgetTotal")}>
-                <input type="number" min="0" value={form.budget_total} onChange={(e) => update("budget_total", e.target.value)} placeholder="50000" className="input" />
+                <input type="number" min="0" value={form.budget_total} onChange={(e) => updateBudgetTotal(e.target.value)} placeholder="50000" className="input" />
               </Field>
               <Field label={t("fields.budgetPerInfluencer")} hint={t("fields.budgetPerInfluencerHint")}>
-                <input type="number" min="0" value={form.budget_per_influencer} readOnly placeholder="—" className="input bg-gray-100 cursor-not-allowed" />
+                <input type="number" min="0" value={form.budget_per_influencer} onChange={(e) => updateBudgetPerInfluencer(e.target.value)} placeholder="—" className="input" />
               </Field>
             </div>
           )}
