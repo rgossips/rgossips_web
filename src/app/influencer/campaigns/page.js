@@ -136,7 +136,12 @@ export default function CampaignsPage() {
   const tabMatches = (campaign, tab) => {
     if (tab === "Completed") return campaign.applicationStatus === "completed";
     if (tab === "Invites") return !!campaign.invited && campaign.status === "Active";
-    if (tab === "Active") return campaign.status === "Active" && !campaign.invited;
+    // Coming-soon campaigns show in Active too, badged and without an apply
+    // button. Hiding them until a creator finds the dedicated tab would
+    // defeat the point of publishing a teaser at all.
+    if (tab === "Active")
+      return (campaign.status === "Active" || campaign.status === "Coming Soon") && !campaign.invited;
+    if (tab === "ComingSoon") return campaign.status === "Coming Soon";
     if (tab === "Approved") return isApproved(campaign);
     return campaign.status === tab && !isApproved(campaign); // Applied
   };
@@ -181,10 +186,24 @@ export default function CampaignsPage() {
   );
   // Lifecycle order. Approved sits between Applied and Completed because that
   // is where it falls in the application state machine.
-  const TABS = hasInvites
-    ? ["Invites", "Active", "Applied", "Approved", "Completed"]
-    : ["Active", "Applied", "Approved", "Completed"];
+  // Coming Soon sits right after Active: it is the same "things I could
+  // take" part of the list, just not open yet. The tab only appears when
+  // there is something in it — an empty tab teaches a creator to ignore it.
+  const hasComingSoon = useMemo(
+    () => campaigns.some((c) => c.status === "Coming Soon"),
+    [campaigns],
+  );
+  const TABS = [
+    ...(hasInvites ? ["Invites"] : []),
+    "Active",
+    ...(hasComingSoon ? ["ComingSoon"] : []),
+    "Applied",
+    "Approved",
+    "Completed",
+  ];
   const tabLabel = (tab) => (tab === "Invites" ? "Invites" : t(`tabs.${tab}`));
+  // If the last coming-soon campaign goes live while the creator is on that
+  // tab, move them to Active — where it just went — rather than an empty view.
   const tabLabelLower = (tab) => (tab === "Invites" ? "invites" : t(`tabsLower.${tab}`));
 
   // If the last invite gets applied while the user is on the Invites tab, move
@@ -192,6 +211,9 @@ export default function CampaignsPage() {
   useEffect(() => {
     if (!hasInvites && activeTab === "Invites") setActiveTab("Applied");
   }, [hasInvites, activeTab]);
+  useEffect(() => {
+    if (!hasComingSoon && activeTab === "ComingSoon") setActiveTab("Active");
+  }, [hasComingSoon, activeTab]);
 
   const filteredCampaigns = useMemo(() => {
     const passed = campaigns.filter(

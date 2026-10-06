@@ -116,6 +116,10 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   const isActive = campaign.status === "Active";
+  // Listed so creators can see what is coming, but not open: no apply
+  // anywhere, and the badge has to say so on the card itself because these
+  // sit in the Active tab alongside campaigns that ARE open.
+  const isComingSoon = campaign.status === "Coming Soon";
   const router = useRouter();
   const { profile } = useAuth();
   const [coachOpen, setCoachOpen] = useState(false);
@@ -166,6 +170,13 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
         {/* Status over banner — the match % moved to a full button in the
             action row (it was too tiny to discover up here). */}
         <div className="absolute top-3 right-3 flex items-center gap-2">
+          {/* Leads the badge row: whether they can act on this card at all
+              matters more than what kind of campaign it is. */}
+          {isComingSoon && (
+            <span className="px-3 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider shadow-sm text-white" style={{ background: "linear-gradient(135deg, #7C3AED 0%, #9810FA 100%)" }}>
+              Coming Soon
+            </span>
+          )}
           {/* Campaign type when known; the status otherwise, so the demo rows
               on (home)/offers — which carry a status but no type — render as
               they always have. */}
@@ -277,6 +288,17 @@ export function CampaignCard({ campaign, onApply, matchScore }) {
               }`}
             >
               <Zap size={15} className="mr-1" /> {match.score}% <Sparkles size={12} className="ml-1 opacity-70" />
+            </Button>
+          )}
+          {/* Coming-soon cards open too — the brief is worth reading before
+              it goes live. The detail page is where applying is gated. */}
+          {isComingSoon && (
+            <Button
+              onClick={() => router.push("/influencer/offers/" + campaign.id)}
+              className="flex-1 cursor-pointer h-12 rounded-2xl text-white font-bold text-sm shadow-lg shadow-violet-100"
+              style={{ background: "linear-gradient(135deg, #7C3AED 0%, #9810FA 100%)" }}
+            >
+              <Eye size={16} className="mr-2" /> Take a look <ChevronRight size={16} className="ml-1" />
             </Button>
           )}
           {isActive && (

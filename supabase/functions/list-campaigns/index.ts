@@ -394,6 +394,12 @@ serveWithLogging("list-campaigns", async (req) => {
           // accepted, live_submitted, payment all stay in Applied
           status = "Applied";
         }
+      } else if (c.status === "coming_soon") {
+        // Listed in the creator feed so it can build anticipation, but not
+        // applicable — apply-campaign refuses it and the UI offers no button.
+        // Needs its own branch: the fallback below would title-case the raw
+        // value into "Coming_soon".
+        status = "Coming Soon";
       } else if (c.status === "open" || c.status === "active") {
         status = "Active";
       } else if (c.status === "closed" || c.status === "completed") {

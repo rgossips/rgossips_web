@@ -867,6 +867,10 @@ export default function CampaignDetailsPage() {
   }
 
   const isActive = campaign.status === "Active";
+  // Not open yet. isActive is already false for it, so every apply
+  // affordance is hidden — but hidden with no explanation reads as a bug,
+  // so the sidebar says what is happening instead.
+  const isComingSoon = campaign.status === "Coming Soon";
   const isApplied = campaign.status === "Applied";
   const isCompleted = campaign.status === "Completed";
   // A withdrawn/rejected application sends the campaign back to Active and is
@@ -1109,6 +1113,7 @@ export default function CampaignDetailsPage() {
             <div className="space-y-5">
               <ActiveSidebar
                 campaign={campaign}
+                comingSoon={isComingSoon}
                 onApply={isActive && !hasLiveApplication ? requestApply : null}
                 appliedStatus={hasLiveApplication ? campaign.applicationStatus : null}
                 refetch={refetch}
@@ -1365,12 +1370,28 @@ function ActiveContent({ campaign }) {
 /* ═══════════════════════════════════════════════════
    ACTIVE — Right Sidebar
    ═══════════════════════════════════════════════════ */
-function ActiveSidebar({ campaign, onApply, appliedStatus, refetch }) {
+function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon }) {
   const t = useTranslations("InfluencerOffersId");
   return (
     <>
       {/* Apply button or Status tracker */}
-      {onApply ? (
+      {comingSoon ? (
+        // The campaign is listed so creators can see it coming, but it is
+        // not open. Without this the sidebar renders nothing at all here
+        // and the missing button looks like a bug rather than a state.
+        <div
+          className="rounded-2xl p-4 text-white shadow-lg shadow-violet-200"
+          style={{ background: "linear-gradient(135deg, #7C3AED 0%, #9810FA 100%)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center shrink-0">
+              <Clock size={16} />
+            </div>
+            <p className="text-[15px] font-black leading-tight">{t("comingSoon.title")}</p>
+          </div>
+          <p className="text-[12px] text-white/90 leading-relaxed mt-2.5">{t("comingSoon.note")}</p>
+        </div>
+      ) : onApply ? (
         <>
           {/* Brand-sent invite — highlighted, right above the Apply button.
               onApply is only set while the creator can still apply, so this

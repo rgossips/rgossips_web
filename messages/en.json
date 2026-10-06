@@ -1481,7 +1481,7 @@
       "slotsHint": "Number of creators",
       "budgetTotal": "Budget (Total)",
       "budgetPerInfluencer": "Budget / Influencer",
-      "budgetPerInfluencerHint": "Auto-calculated",
+      "budgetPerInfluencerHint": "Or set this and the total fills in",
       "productValue": "Product value (approx.)",
       "productValueHint": "Helps creators evaluate the offer",
       "whatPromoting": "What are you promoting?",
@@ -2715,13 +2715,15 @@
       "Active": "Active",
       "Applied": "Applied",
       "Approved": "Approved",
-      "Completed": "Completed"
+      "Completed": "Completed",
+      "ComingSoon": "Coming Soon"
     },
     "tabsLower": {
       "Active": "active",
       "Applied": "applied",
       "Approved": "approved",
-      "Completed": "completed"
+      "Completed": "completed",
+      "ComingSoon": "coming soon"
     },
     "headerCampaigns": "{tab} Campaigns",
     "campaignCount": "{count, plural, one {# campaign} other {# campaigns}}",
@@ -3144,6 +3146,10 @@
       "barter": "Barter",
       "paid": "Paid",
       "hybrid": "Paid + Product"
+    },
+    "comingSoon": {
+      "title": "Opening soon",
+      "note": "This campaign isn't open for applications yet. Have a read of the brief — we'll let you know the moment it goes live."
     }
   },
   "InfluencerPricing": {

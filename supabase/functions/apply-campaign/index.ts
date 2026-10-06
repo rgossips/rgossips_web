@@ -59,10 +59,24 @@ serveWithLogging("apply-campaign", async (req) => {
     // locked out of applying.
     const { data: shipCampaign } = await supabaseAdmin
       .from("campaigns")
-      .select("description")
+      .select("description, status")
       .eq("campaign_id", campaignId)
       .maybeSingle();
     const shipsToCreator = shippingMode(shipCampaign?.description) === "yes";
+
+    // A coming-soon campaign is a teaser: it appears in the feed so creators
+    // can see what is on the way, but it is not open yet. The clients hide
+    // the apply button, so nobody reaching here came through the UI — this
+    // is the backstop for a deep link, a stale client and a direct call.
+    if (shipCampaign?.status === "coming_soon") {
+      return new Response(
+        JSON.stringify({
+          error: "not_open_yet",
+          message: "This campaign isn't open for applications yet. We'll let you know the moment it goes live.",
+        }),
+        { status: 200, headers: jsonHeaders }
+      );
+    }
 
     // 600 matches the admin portal's field and the column is plain text.
     const addressClean = shippingAddress ? truncateText(String(shippingAddress).trim(), 600) : "";
