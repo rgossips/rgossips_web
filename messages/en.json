@@ -3076,7 +3076,8 @@
       "applicationRejected": "Application Rejected",
       "yourSubmissions": "Your Submissions",
       "shortlistedTitle": "You've been shortlisted",
-      "shortlistedNote": "The final selection hasn't been made yet. There's nothing to do right now — we'll let you know either way, and you don't need to apply again."
+      "shortlistedNote": "The final selection hasn't been made yet. There's nothing to do right now — we'll let you know either way, and you don't need to apply again.",
+      "shortlistedStep": "Shortlisted"
     },
     "modal": {
       "duplicateError": "You've pasted the same link more than once. Each deliverable needs a unique URL.",

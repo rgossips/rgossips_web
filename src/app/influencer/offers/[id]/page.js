@@ -2067,12 +2067,19 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   const shipsProduct = campaign?.shippingRequired === "yes" || campaign?.shippingRequired === "pickup";
   const steps = stepsFor(isBarterCampaign, status, shipsProduct);
   const deliveryKey = deliveryLabelKey(campaign?.fulfilment);
-  const stepLabel = (step) =>
-    step.key === "delivery" ? t(`statusSteps.${deliveryKey}`) : t(`statusSteps.${step.labelKey || step.key}`);
   const isSpecial = SPECIAL_STATUSES[status];
   const isRevision = status === "revision_needed";
   const isRejected = status === "rejected";
   const isOnHold = status === "on_hold";
+  const stepLabel = (step) =>
+    step.key === "delivery"
+      ? t(`statusSteps.${deliveryKey}`)
+      // On hold sits on the "pending" rung, so without this the current
+      // step reads "Applied" — the old news, in the first place the eye
+      // lands. Name the rung for what actually happened.
+      : isOnHold && step.key === "pending"
+        ? t("statusBar.shortlistedStep")
+        : t(`statusSteps.${step.labelKey || step.key}`);
   // For revision, show progress up to "submitted" level (index 2) since they need to resubmit
   // on_hold is not a rung on the ladder, so findIndex() returns -1 and the
   // tracker renders every step inactive with nothing marked current. Hold it
@@ -2142,6 +2149,23 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
   return (
     <div className="bg-[#F8F9FD] rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
       <h4 className="text-base font-black text-slate-800">{t("statusBar.applicationStatus")}</h4>
+
+      {/* Shortlisted leads the card. The ladder below it says "Applied",
+          which is where this application has been since they applied — the
+          NEWS is that they made the cut, so it goes first and in solid
+          colour. A violet-50 wash under nine grey steps was a footnote. */}
+      {isOnHold && (
+        <div
+          className="rounded-2xl p-4 text-white shadow-lg shadow-violet-200"
+          style={{ background: "linear-gradient(135deg, #7C3AED 0%, #9810FA 100%)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center text-base shrink-0">★</div>
+            <p className="text-[15px] font-black leading-tight">{t("statusBar.shortlistedTitle")}</p>
+          </div>
+          <p className="text-[12px] text-white/90 leading-relaxed mt-2.5">{t("statusBar.shortlistedNote")}</p>
+        </div>
+      )}
 
       {/* B15 — offer response card sits above the step tracker so the
           Accept CTA is impossible to miss. */}
@@ -2224,20 +2248,6 @@ function ApplicationStatusBar({ status = "pending", campaign, refetch, compact =
           </div>
         );
       })()}
-
-      {/* Shortlisted banner. The non-compact tracker renders only the
-          ladder plus these per-status blocks — currentStepLabel is never
-          shown here — so without this an on-hold application produced a
-          tracker with nothing highlighted and no explanation at all. */}
-      {isOnHold && (
-        <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-violet-100 rounded-full flex items-center justify-center text-violet-600 text-sm font-bold shrink-0">★</div>
-            <p className="text-sm font-bold text-violet-700">{t("statusBar.shortlistedTitle")}</p>
-          </div>
-          <p className="text-xs text-violet-700 leading-relaxed pl-9">{t("statusBar.shortlistedNote")}</p>
-        </div>
-      )}
 
       {/* Rejected banner */}
       {isRejected && (() => {
