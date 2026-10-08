@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { rankApplications, scoreApplicant, creatorFromApplication, targetFromCampaign, matchTone } from "@/lib/applicationMatch";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -115,6 +116,26 @@ const statusStyles = {
   under_review: "bg-purple-50 text-purple-700 border-purple-200",
   rejected: "bg-red-50 text-red-700 border-red-200",
 };
+
+// Match-badge styling. Tailwind classes cannot live in the shared scorer
+// because the admin portal has its own palette, so each app keeps its own
+// map and the scorer stays presentation-free.
+const MATCH_TONE_CLASS = {
+  strong: "bg-emerald-50 text-emerald-700",
+  fair: "bg-amber-50 text-amber-700",
+  weak: "bg-gray-100 text-gray-500",
+  none: "bg-gray-100 text-gray-400",
+};
+
+// The native title tooltip is deliberate: the applicant row is a <button>,
+// so a hover panel inside it would nest interactive elements. The reasons
+// still have to be legible — a score a brand cannot interrogate is one they
+// will not trust — so they ride in the title, middot-separated.
+//
+// "?" is the one that matters: it means we do not hold that field for this
+// creator, not that they failed it. Most profiles are missing categories and
+// location, and a brand reading a middling score needs to know which it is.
+const VERDICT_MARK = { match: "✓", miss: "✗", unknown: "?" };
 
 const appStatusConfig = {
   pending: { bg: "bg-amber-50 text-amber-700", labelKey: "applied" },
@@ -366,6 +387,16 @@ const CampaignDetailPage = () => {
       stopLoading();
     }
   };
+
+  // Best fit first, rather than newest first. Newest tells a brand nothing
+  // about who is worth reading; this ranks against the campaign’s own
+  // targeting. See lib/applicationMatch.js — it is hand-synced with the
+  // admin portal so both sides show the same order and the same reasons.
+  const rankedApplications = useMemo(
+    () => (campaign ? rankApplications(applications, campaign) : applications),
+    [applications, campaign],
+  );
+  const matchTarget = useMemo(() => targetFromCampaign(campaign), [campaign]);
 
   const parsedContent = useMemo(() => {
     const out = { reels: 0, posts: 0, stories: 0, videos: 0 };
@@ -670,8 +701,9 @@ const CampaignDetailPage = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {applications.map((a) => {
+                {rankedApplications.map((a) => {
                   const inf = a.influencer_profiles || {};
+                  const match = scoreApplicant(creatorFromApplication(a), matchTarget);
                   const name = inf.full_name || inf.username || inf.instagram_handle || t("common.creator");
                   const st = appStatusConfig[a.status] || appStatusConfig.pending;
                   return (
@@ -686,7 +718,14 @@ const CampaignDetailPage = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
-                        {inf.instagram_handle && <p className="text-[11px] text-gray-400 truncate">@{inf.instagram_handle}</p>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {inf.instagram_handle && <p className="text-[11px] text-gray-400 truncate">@{inf.instagram_handle}</p>}
+                          {match.percent !== null && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${MATCH_TONE_CLASS[matchTone(match.percent)]}`} title={match.dimensions.map((d) => `${VERDICT_MARK[d.verdict]} ${d.label}`).join(" · ")}>
+                              {match.percent}% match
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} shrink-0`}>{t(`appStatus.${st.labelKey}`)}</span>
                       <ChevronRight size={14} className="text-gray-300 shrink-0" />
