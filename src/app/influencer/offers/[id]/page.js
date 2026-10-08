@@ -1473,7 +1473,6 @@ function ActiveSidebar({ campaign, onApply, appliedStatus, refetch, comingSoon, 
           >
             {t("applyForCampaign")} <ChevronRight size={16} />
           </button>
-          <p className="hidden lg:block text-center text-[10px] text-slate-400">{t("sidebar.applyViaAgent")}</p>
         </>
       ) : appliedStatus ? (
         <div className="hidden lg:block">

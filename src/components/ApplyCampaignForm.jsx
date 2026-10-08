@@ -40,6 +40,9 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const [error, setError] = useState("");
   // Scrolls the banner into view so a refusal is never off-screen.
   const { errorRef, fail } = useScrollToError(setError);
+  // Acknowledged the "you are under the follower brief" warning. See the
+  // gate below the submitted screen.
+  const [followerWarningAck, setFollowerWarningAck] = useState(false);
   const [proposedRate, setProposedRate] = useState("");
   const [whyChooseYou, setWhyChooseYou] = useState("");
   const { generate: draftPitch, loading: drafting, error: draftError, limitReached: draftLimit } = useAiTool();
@@ -84,6 +87,17 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const instagramHandle = profile?.instagram_handle || profile?.username || "";
   const followersCount = profile?.followers_count || 0;
   const engagementRate = profile?.engagement_rate || 0;
+  // The brand's follower floor. Shown as a warning, never a block: brands
+  // reject on far more than reach, and a creator who wants to make their
+  // case should be allowed to — apply-campaign does not refuse on this
+  // either, so blocking here would invent a rule the server does not have.
+  //
+  // Both numbers must be KNOWN. followers_count is 0 for a creator who has
+  // not connected Instagram or whose sync has not landed, and warning
+  // someone that their unknown number is too small is just noise.
+  const minFollowers = Number(campaignData?.targetFollowerMin) || 0;
+  const belowFollowerMin =
+    minFollowers > 0 && followersCount > 0 && followersCount < minFollowers;
   // The media kit is a subscriber feature, so a free creator has nothing
   // to link to. They can still submit — the kit raises their odds, it is
   // not a requirement — so this section becomes a nudge, never a block.
@@ -259,6 +273,66 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
             </div>
             <h3 className="text-xl font-black text-slate-900">{t("success.title")}</h3>
             <p className="text-sm text-slate-500">{t("success.body")}</p>
+          </div>
+        </motion.div>
+      </>
+    );
+  }
+
+  // Under the brand's follower brief — say so BEFORE they write a pitch.
+  // Learning it after the effort is the worst moment, and a creator who
+  // knows the odds may still want to apply, so this asks rather than
+  // refuses. Lives inside the form so every entry point gets it: the
+  // campaign detail page and the brand profile list both mount this
+  // component.
+  if (belowFollowerMin && !followerWarningAck) {
+    return (
+      <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          data-scroll-lock
+          className="fixed inset-0 z-[305] bg-black/40 backdrop-blur-sm"
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 24, scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[310] w-[92%] max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden"
+        >
+          <div className="p-6">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-500 grid place-items-center shrink-0">
+                <AlertCircle size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-slate-900">{t("followerWarning.title")}</h2>
+                <p className="text-[13px] text-slate-500 leading-relaxed mt-1.5">
+                  {t("followerWarning.body", {
+                    required: minFollowers.toLocaleString("en-IN"),
+                    yours: followersCount.toLocaleString("en-IN"),
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2.5 mt-5">
+              <button
+                onClick={onClose}
+                className="flex-1 h-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                {t("followerWarning.cancel")}
+              </button>
+              <button
+                onClick={() => setFollowerWarningAck(true)}
+                className="flex-1 h-11 rounded-xl text-white text-sm font-bold cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+              >
+                {t("followerWarning.continue")}
+              </button>
+            </div>
           </div>
         </motion.div>
       </>
