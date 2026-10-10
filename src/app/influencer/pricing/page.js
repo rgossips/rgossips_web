@@ -470,6 +470,19 @@ export default function PricingPage() {
           "Checkout"
         );
         if (error) throw new Error(error.message);
+        // A store is already billing this creator. Razorpay is the one rail
+        // that can refuse before money moves — an App Store or Play purchase
+        // is only verified after the charge. Neither store lets us cancel on
+        // the user's behalf, so say where to do it.
+        if (data?.error === "subscription_on_other_rail") {
+          throw new Error(
+            data.rail === "apple_iap"
+              ? t("errors.subscribedOnApple")
+              : data.rail === "google_play"
+                ? t("errors.subscribedOnGoogle")
+                : t("errors.subscribedElsewhere"),
+          );
+        }
         if (data?.error) throw new Error(data.error);
         if (!data?.subscription_id || !data?.key_id) {
           throw new Error(t("errors.razorpayNoSub"));

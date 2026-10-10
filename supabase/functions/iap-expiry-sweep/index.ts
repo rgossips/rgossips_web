@@ -137,9 +137,19 @@ serveWithLogging("iap-expiry-sweep", async (req) => {
         // downgrade when this subscription is the one backing the profile.
         const { data: profile } = await supabase
           .from("influencer_profiles")
-          .select("iap_subscription_id")
+          .select("iap_subscription_id, payment_gateway")
           .eq("influencer_id", userId)
           .maybeSingle();
+
+        // Somebody else is billing them now. A creator who bought on Apple
+        // and later subscribed on the web is paying Razorpay; when the old
+        // Apple subscription finally lapses this would have dropped them to
+        // the free tier while their card was still being charged. The
+        // gateway, not the id, is the authority on who bills today.
+        const storeGateway = platform === "ios" ? "apple_iap" : "google_play";
+        if (profile?.payment_gateway && profile.payment_gateway !== storeGateway) {
+          continue;
+        }
 
         if (profile?.iap_subscription_id && profile.iap_subscription_id !== storeId) {
           continue;

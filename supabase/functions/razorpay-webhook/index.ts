@@ -267,6 +267,11 @@ async function setUserPlan(userId: string, plan: string, extras: Record<string, 
     .update({
       subscription_plan: plan,
       payment_gateway: "razorpay",
+      // Razorpay is billing them now, so the profile must stop pointing at
+      // an App Store / Play subscription. Left set, iap-expiry-sweep matched
+      // that id when the old store subscription lapsed and dropped a paying
+      // Razorpay customer to the free tier.
+      iap_subscription_id: null,
       // Granting a plan retires any earlier cancellation. Without this a
       // creator who cancelled and then resubscribed would keep
       // auto_renew=false and a past plan_expires_at, which getEffectivePlan

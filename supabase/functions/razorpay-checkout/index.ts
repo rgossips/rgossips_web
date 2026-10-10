@@ -15,6 +15,8 @@
 import { rewardsEnabled } from "../_shared/rewards.ts";
 import { razorpayCreds, testPlanId } from "../_shared/razorpay.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { canSellOn } from "../_shared/subscription-rail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,6 +83,37 @@ serveWithLogging("razorpay-checkout", async (req) => {
         JSON.stringify({ error: "userId and planId are required" }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // Refuse if a store is already billing this creator.
+    //
+    // Razorpay is the one rail that can say no before money moves: an App
+    // Store or Play purchase is only verified AFTER the charge, so there the
+    // block has to live in the paywall. Without this, somebody who
+    // subscribed in the iOS app and later opened the website was sold a
+    // second subscription and charged twice, with no way for us to cancel
+    // the first — Apple forbids that, and only the user can do it.
+    {
+      const supaUrlRail = Deno.env.get("SUPABASE_URL")!;
+      const supaKeyRail = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supaRail = createClient(supaUrlRail, supaKeyRail);
+      const { data: railProfile } = await supaRail
+        .from("influencer_profiles")
+        .select("subscription_plan, payment_gateway, plan_expires_at")
+        .eq("influencer_id", userId)
+        .maybeSingle();
+
+      const verdict = canSellOn("web", railProfile);
+      if (!verdict.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "subscription_on_other_rail",
+            rail: verdict.blockedBy,
+            plan: verdict.plan,
+          }),
+          { status: 200, headers: jsonHeaders },
+        );
+      }
     }
 
     // Credentials follow the SUBSCRIBER, so an enrolled developer account
