@@ -961,10 +961,17 @@ function ErrorModal({ title, message, onClose }) {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 id="error-modal-title" className="text-base font-black text-slate-900 leading-snug">
+            <h3 id="error-modal-title" className="text-lg font-black text-slate-900 leading-snug">
               {title}
             </h3>
-            <p className="text-[12px] text-slate-500 font-semibold mt-1 leading-relaxed">
+            {/* Body copy, not a caption. At 12px / slate-500 / semibold this
+                had three strikes against being read: too small, too low in
+                contrast, and bolded — which tightens letterforms and hurts
+                legibility at small sizes rather than helping. Several of
+                these messages are multi-sentence instructions (cancel on the
+                App Store, come back, pick a plan), so they have to be read
+                rather than glanced at. */}
+            <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
               {message}
             </p>
           </div>
