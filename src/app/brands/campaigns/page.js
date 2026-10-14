@@ -14,13 +14,6 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslations } from "next-intl";
-import { CampaignUnderReviewModal } from "@/components/brands/CampaignUnderReviewModal";
-
-// Heavy create form — code-split so list view loads fast
-const CreateCampaignDialog = dynamic(
-  () => import("@/components/brands/CreateCampaignDialog").then((m) => m.CreateCampaignDialog),
-  { ssr: false }
-);
 
 const STATUS_TABS = [
   { key: "all", label: "All" },
@@ -44,18 +37,17 @@ const CampaignsPage = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [createOpen, setCreateOpen] = useState(() => searchParams?.get("new") === "1");
   // Set to the new campaign id when a publish landed in the review queue —
   // the modal has to be acknowledged before we navigate away.
-  const [reviewNoticeId, setReviewNoticeId] = useState(null);
   const loadRef = useRef(0);
 
-  // Auto-open create dialog when arriving with ?new=1 (e.g. from sidebar CTA)
+  // ?new=1 used to auto-open the create dialog here. Creating is its own
+  // page now (/brands/campaigns/new) because the brief is far too long to
+  // fill in through a box with an inner scrollbar. Old links, bookmarks and
+  // the FAQ copy still say ?new=1, so forward them rather than break them.
   useEffect(() => {
     if (searchParams?.get("new") === "1") {
-      setCreateOpen(true);
-      // Clean the query string so refreshing doesn't re-open the dialog
-      router.replace("/brands/campaigns", { scroll: false });
+      router.replace("/brands/campaigns/new");
     }
   }, [searchParams, router]);
 
@@ -123,7 +115,7 @@ const CampaignsPage = () => {
             <p className="text-purple-100 text-xs">{t("subtitle")}</p>
           </div>
           <button
-            onClick={() => setCreateOpen(true)}
+            onClick={() => router.push("/brands/campaigns/new")}
             disabled={!brandVerified}
             title={!brandVerified ? t("verifyGate.tooltip") : undefined}
             className="hidden lg:flex items-center gap-2 bg-white text-[#5851DB] px-4 py-2 rounded-2xl font-bold text-sm shadow-lg shadow-purple-900/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
@@ -198,7 +190,7 @@ const CampaignsPage = () => {
             </p>
             {!(searchText || activeTab !== "all") && (
               <button
-                onClick={() => setCreateOpen(true)}
+                onClick={() => router.push("/brands/campaigns/new")}
                 disabled={!brandVerified}
                 className="mt-8 bg-[#5851DB] text-white px-8 py-4 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
@@ -217,46 +209,13 @@ const CampaignsPage = () => {
 
       {/* Floating FAB (mobile) */}
       <button
-        onClick={() => setCreateOpen(true)}
+        onClick={() => router.push("/brands/campaigns/new")}
         disabled={!brandVerified}
         className="lg:hidden fixed cursor-pointer bottom-24 right-6 bg-[#5851DB] text-white px-6 py-3 rounded-2xl shadow-lg shadow-purple-200 flex items-center gap-2 font-bold text-sm z-40 active:scale-95 disabled:opacity-60"
       >
         <Plus size={20} /> {t("create")}
       </button>
 
-      {createOpen && (
-        <CreateCampaignDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          brandId={user?.id}
-          onCreated={(newId, info) => {
-            setCreateOpen(false);
-            // A published campaign that went to the review queue gets the
-            // explanation first; navigation waits for the acknowledgement.
-            if (info?.underReview) {
-              setReviewNoticeId(newId || "");
-              return;
-            }
-            // Land the brand on the new campaign's detail page. Fall back to
-            // reloading the list if the id didn't come back for some reason.
-            if (newId) {
-              router.push(`/brands/campaign/${newId}`);
-            } else {
-              loadCampaigns();
-            }
-          }}
-        />
-      )}
-
-      <CampaignUnderReviewModal
-        open={reviewNoticeId !== null}
-        onClose={() => {
-          const id = reviewNoticeId;
-          setReviewNoticeId(null);
-          if (id) router.push(`/brands/campaign/${id}`);
-          else loadCampaigns();
-        }}
-      />
     </div>
   );
 };

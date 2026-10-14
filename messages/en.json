@@ -1046,7 +1046,14 @@
         }
       }
     },
-    "liveChatValue": "Chat with support now"
+    "liveChatValue": "Chat with support now",
+    "previousRequests": {
+      "title": "Your previous requests",
+      "loading": "Checking your past requests…",
+      "open": "Open",
+      "resolved": "Resolved",
+      "generalTopic": "Support request"
+    }
   },
   "BrandsBrandHero": {
     "welcomeBack": "Welcome back",
@@ -1137,7 +1144,8 @@
     },
     "statusBadge": {
       "deadlinePassed": "DEADLINE PASSED",
-      "applicationsClosed": "APPLICATIONS CLOSED"
+      "applicationsClosed": "APPLICATIONS CLOSED",
+      "closed": "CLOSED"
     },
     "match": {
       "perfect": "{count, plural, one {# influencer match perfectly to your needs.} other {# influencers match perfectly to your needs.}}",
@@ -1337,10 +1345,11 @@
     "tabs": {
       "all": "All",
       "active": "Live",
+      "under_review": "Under Review",
+      "rejected": "Rejected",
       "draft": "Drafts",
       "paused": "Paused",
-      "completed": "Completed",
-      "under_review": "Under Review"
+      "completed": "Completed"
     },
     "empty": {
       "noMatch": "No campaigns match",
@@ -1454,7 +1463,11 @@
       "bannerTooLarge": "Banner image too large — please pick a file under 15MB.",
       "gallerySkipped": "{count, plural, one {# image} other {# images}} skipped — each file must be under 15MB.",
       "endBeforeDeadline": "Delivery End Date must be after the Application Deadline.",
-      "bannerNotImage": "That file is not an image. Please use a JPG or PNG."
+      "bannerNotImage": "That file is not an image. Please use a JPG or PNG.",
+      "deadlineInPast": "Pick today or a later date — creators cannot apply to a deadline that has passed.",
+      "endDateInPast": "Pick today or a later date — a campaign cannot end in the past.",
+      "startDateInPast": "Pick today or a later date for a new campaign.",
+      "deadlineBeforeStart": "The application deadline cannot be before the campaign start date."
     },
     "busy": {
       "saving": "Saving changes...",
@@ -1602,7 +1615,8 @@
       "cancel": "Cancel",
       "save": "Done",
       "close": "Close"
-    }
+    },
+    "onlyPlatformNote": "Instagram is the only platform right now — more are coming."
   },
   "BrandsCreatorCTASection": {
     "heading": "Home of creator collaborations.",
@@ -1689,7 +1703,8 @@
       "title": "Profile completion",
       "addPrefix": "Add",
       "completeSuffix": "to complete your profile.",
-      "complete": "Your brand profile is fully complete."
+      "complete": "Your brand profile is fully complete.",
+      "unavailable": "Profile completion is unavailable right now. Refresh to try again."
     },
     "trust": {
       "title": "Trust score",
@@ -2460,7 +2475,8 @@
     "applyFilters": "Apply Filters",
     "location": "Location",
     "searchCity": "Search a city",
-    "noCityMatch": "No matching city"
+    "noCityMatch": "No matching city",
+    "filtersCleared": "All filters cleared"
   },
   "GalleryCarousel": {
     "title": "Gallery",

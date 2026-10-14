@@ -7,6 +7,7 @@ import {
   filterBlocked,
 } from "../_shared/blocks.ts";
 import { genderAllowsVisibility } from "../_shared/gender-match.ts";
+import { applicationDeadlinePassed as deadlineShut } from "../_shared/campaign-dates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -309,11 +310,13 @@ serveWithLogging("list-campaigns", async (req) => {
       // what the Active-list visibility filter below actually checks so
       // late-deadline campaigns disappear from Active while the user's
       // in-flight applications (Applied / Completed tabs) still show them.
-      let applicationDeadlinePassed = false;
-      if (c.application_deadline) {
-        applicationDeadlinePassed =
-          new Date(c.application_deadline).getTime() < Date.now();
-      }
+      // End-of-day, via _shared/campaign-dates.ts. This was a raw
+      // `< Date.now()` against a column that stores midnight, so a campaign
+      // whose applications closed TODAY was hidden from the moment the day
+      // began — while countdown() above called the same date "Today" and not
+      // past. A brand would publish, an admin would approve, and it reached
+      // nobody.
+      const applicationDeadlinePassed = deadlineShut(c.application_deadline);
 
       // Format both dates the same way.
       const fmtDate = (v: string | null) =>

@@ -199,7 +199,10 @@ export const TopCreatorsCarousel = () => {
           ? data.map((r) => ({
               name: r.username,
               verified: r.verified,
-              rating: r.rating ? String(r.rating) : "—",
+              // Null, not "—". An admin row with no rating used to render a
+              // star next to an em-dash, which reads as a broken value
+              // rather than an absent one; the chip is now hidden instead.
+              rating: r.rating ? String(r.rating) : null,
               image: r.avatar_url || "",
               followers: r.followers_label || "",
               bio: r.display_name || "",
@@ -254,17 +257,14 @@ export const TopCreatorsCarousel = () => {
                         rating — there is no rating on a live profile. */}
                     {creator.elite ? (
                       <EliteBadge size="md" className="absolute top-4 right-4 shadow-sm" />
-                    ) : (
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-xl flex items-center gap-1 shadow-sm">
-                      <Star
-                        size={14}
-                        className="fill-orange-400 text-orange-400"
-                      />
-                      <span className="text-xs font-black text-[#16224E]">
-                        {creator.rating}
-                      </span>
-                    </div>
-                    )}
+                    ) : creator.rating ? (
+                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-xl flex items-center gap-1 shadow-sm">
+                        <Star size={14} className="fill-orange-400 text-orange-400" />
+                        <span className="text-xs font-black text-[#16224E]">
+                          {creator.rating}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Content Container */}

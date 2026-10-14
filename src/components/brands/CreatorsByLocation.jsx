@@ -2,6 +2,7 @@
 import Image from "next/image";
 import React from "react";
 import { useRouter } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import mumbai from "@/assets/states/mumbai.jpg";
 import banglore from "@/assets/states/banglore.jpg";
 import chennai from "@/assets/states/chennai.jpg";
@@ -67,13 +68,26 @@ export const CreatorsByLocation = () => {
   const router = useRouter();
   return (
     <section className="w-full px-4 md:px-6 py-8 bg-white mt-8 mb-10 overflow-hidden">
-      <div className="mb-6">
-        <h2 className="bx-h2">
-          Creators by Location
-        </h2>
-        <p className="text-[#6B6785] text-sm">
-          Discover local talent right now
-        </p>
+      {/* Header. The eight tiles are a shortcut into a handful of metros —
+          "See more" is the way out to the full creator list for anyone whose
+          city is not one of them. Same shape and destination as the View All
+          on Creator Categories, so the two sections behave alike. */}
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="bx-h2">
+            Creators by Location
+          </h2>
+          <p className="text-[#6B6785] text-sm">
+            Discover local talent right now
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/brands/search")}
+          className="shrink-0 text-sm font-bold text-[#6A66C9] flex items-center gap-1 hover:opacity-70 cursor-pointer"
+        >
+          See more <ChevronRight size={14} />
+        </button>
       </div>
 
       {/* 2x2 Grid */}
@@ -94,12 +108,25 @@ export const CreatorsByLocation = () => {
               className="absolute inset-0 w-full h-full object-cover grayscale-25 opacity-80 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 ease-in-out"
             />
 
-            {/* Subtle Gradient Overlay for Text Contrast */}
-            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent z-0 group-hover:from-black/80 transition-all duration-300" />
+            {/* Scrim for text contrast.
+                This used to be a bottom-half gradient (`bottom-0 h-1/2`)
+                while the label is vertically CENTRED — so the text sat in
+                the one band of the card that was never darkened. Over a pale
+                photo (Chennai, Kolkata, Pune) white-on-white was unreadable.
+                A full-card wash now sits under the label, with the bottom
+                gradient kept for depth. */}
+            <div className="absolute inset-0 bg-black/35 group-hover:bg-black/45 transition-colors duration-300 z-0" />
+            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent z-0 transition-all duration-300" />
 
             {/* Centered White Text */}
             <div className="absolute inset-0 flex items-center justify-center z-10 px-2 text-center">
-              <h3 className="text-white text-base md:text-lg font-black tracking-tight uppercase group-hover:scale-110 transition-transform duration-300">
+              <h3
+                className="text-white text-base md:text-lg font-black tracking-tight uppercase group-hover:scale-110 transition-transform duration-300"
+                /* Belt and braces: the wash handles the usual case, the
+                   shadow covers a photo that is bright right behind the
+                   glyphs. */
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
+              >
                 {location.name}
               </h3>
             </div>

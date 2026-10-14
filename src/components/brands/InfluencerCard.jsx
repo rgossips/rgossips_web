@@ -1,4 +1,6 @@
-import { Instagram, Users, FileText, Languages, Check } from "lucide-react";
+import { Instagram, Users, Languages, Check } from "lucide-react";
+import Image from "next/image";
+import mediaKitIcon from "@/assets/media-kit-icon.png";
 import { useTranslations } from "next-intl";
 import EliteBadge from "@/components/EliteBadge";
 import ProBadge from "@/components/ProBadge";
@@ -80,14 +82,6 @@ export const InfluencerCard = ({
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-bold text-[#16224E] truncate">{displayName}</h3>
           {is_elite ? <EliteBadge /> : is_pro ? <ProBadge /> : null}
-          {/* Report / block. Play UGC policy and Apple 1.2 want this where
-              the content is seen, not buried in settings. */}
-          <ReportBlockMenu
-            targetUserId={influencer_id}
-            targetName={displayName}
-            entityType="user"
-            className="ml-auto -mr-1"
-          />
         </div>
         {categoryLabel && (
           <p className="text-[11px] text-[#6B6785] mb-2 truncate">{categoryLabel}</p>
@@ -119,28 +113,59 @@ export const InfluencerCard = ({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+      {/* Actions — all three on ONE vertically centred line.
+          The report menu used to live up in the name row, which left it
+          sitting above and apart from the two round buttons. It belongs
+          with them.
+
+          Every slot is a FIXED width whether or not it is filled: the
+          report menu is absent for `inv_*` invitation stubs (no account to
+          report) and the media kit only exists once published, so without
+          reserved space the Instagram button — the one icon everybody has
+          — landed in a different column on every row. */}
+      <div
+        className="flex items-center gap-2 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="w-6 shrink-0 flex items-center justify-center">
+          <ReportBlockMenu
+            targetUserId={influencer_id}
+            targetName={displayName}
+            entityType="user"
+          />
+        </span>
+        {mediaKitUrl ? (
+          <a
+            href={mediaKitUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-[34px] h-[34px] grid place-items-center rounded-full hover:opacity-80 transition-opacity cursor-pointer"
+            title={t("openMediaKit")}
+          >
+            {/* Supplied artwork, which carries its own lilac disc — so no
+                pill behind it, unlike the Instagram button. Source is
+                1337px; src/assets/media-kit-icon.png is the trimmed 128px
+                copy (827KB -> 8.6KB) since it only ever renders at 34. */}
+            <Image
+              src={mediaKitIcon}
+              alt=""
+              width={34}
+              height={34}
+              className="w-[34px] h-[34px] object-contain"
+            />
+          </a>
+        ) : (
+          <span className="w-[34px] h-[34px]" aria-hidden="true" />
+        )}
         {instagramUrl && (
           <a
             href={instagramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-full transition-colors cursor-pointer"
+            className="w-[34px] h-[34px] grid place-items-center text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-full transition-colors cursor-pointer"
             title={t("openInstagram")}
           >
             <Instagram size={18} strokeWidth={1.75} />
-          </a>
-        )}
-        {mediaKitUrl && (
-          <a
-            href={mediaKitUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 text-[#6A66C9] bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
-            title={t("openMediaKit")}
-          >
-            <FileText size={18} strokeWidth={1.75} />
           </a>
         )}
       </div>

@@ -43,6 +43,16 @@ const PLATFORMS = ["Instagram"];
 // INDIAN_CITIES is now reachable through the search box below the chips.
 // This list used to be the only option, which meant Dehradun — the launch
 // city — could not be targeted at all.
+// True when a yyyy-mm-dd date is before today. End-of-day semantics: today
+// is NOT past, matching _shared/campaign-dates.ts on the server.
+function isPastDay(value) {
+  if (!value) return false;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return false;
+  d.setHours(23, 59, 59, 999);
+  return d.getTime() < Date.now();
+}
+
 const CITIES = ["Dehradun", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad", "Jaipur", "Lucknow", "Chandigarh", "Indore", "Bhopal", "Kochi", "Remote"];
 
 const LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Marathi", "Kannada", "Bengali", "Gujarati", "Punjabi", "Malayalam"];
@@ -359,6 +369,14 @@ export function CreateCampaignDialog({
   // already fetched via brand-campaigns(get). When undefined we're in
   // create mode (default behaviour).
   mode = "create",
+  // Render as a full page instead of a modal. Creating a campaign is a long
+  // form — brief, banner, targeting, budget, deliverables, guidelines,
+  // schedule — and a 720px dialog with its own inner scrollbar hid most of
+  // it behind a scroll, which is how required fields got missed. The create
+  // route uses this; edit and duplicate stay modal, because both are opened
+  // from a campaign already on screen and prefilled from an object in
+  // memory.
+  asPage = false,
   campaignId = null,
   initialCampaign = null,
   // Fired when the server refuses an update because the campaign
@@ -485,7 +503,16 @@ export function CreateCampaignDialog({
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSetItem = (setter) => (item) => setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
   const toggleCategory = toggleSetItem(setCategories);
-  const togglePlatform = toggleSetItem(setPlatforms);
+  // Platforms is required and Instagram is currently the ONLY option, so
+  // deselecting it cannot lead anywhere except a validation error on submit.
+  // While there is a single choice it stays locked on; the moment a second
+  // platform is added to PLATFORMS this reverts to a normal multi-select
+  // with no further change here.
+  const onlyPlatform = PLATFORMS.length === 1 ? PLATFORMS[0] : null;
+  const togglePlatform = (value) => {
+    if (onlyPlatform && value === onlyPlatform) return;
+    toggleSetItem(setPlatforms)(value);
+  };
   const toggleCity = toggleSetItem(setCities);
 
   // Single entry point for a picked OR dropped banner, so the size guard and
@@ -507,6 +534,29 @@ export function CreateCampaignDialog({
   };
   const toggleGender = toggleSetItem(setGenders);
   const toggleLanguage = toggleSetItem(setLanguages);
+
+  // Date floors for the three pickers. The browser greys out everything
+  // earlier, so a past campaign cannot be assembled in the first place —
+  // previously the only date rule was deadline-before-end-date, which two
+  // past dates satisfy happily.
+  //
+  // The START floor relaxes in edit mode when the campaign already began:
+  // pinning it to today would make a running campaign's own start date
+  // invalid and unsavable. The deadline and end date are always floored at
+  // today, because leaving either in the past is what makes a campaign
+  // unreachable.
+  const today = todayDateInput();
+  const startDateMin =
+    mode === "edit" && form.campaign_start_date && form.campaign_start_date < today
+      ? form.campaign_start_date
+      : today;
+  // The deadline cannot precede the campaign start, so its floor is the
+  // LATER of today and the start date — and it moves when the start date
+  // does. Plain string compare is safe: yyyy-mm-dd sorts chronologically.
+  const deadlineMin =
+    form.campaign_start_date && form.campaign_start_date > today
+      ? form.campaign_start_date
+      : today;
 
   const isBarter = form.campaign_type === "barter";
   const isHybrid = form.campaign_type === "hybrid";
@@ -640,6 +690,34 @@ export function CreateCampaignDialog({
     if (!form.campaign_start_date) errs.campaign_start_date = t("errors.startDateRequired");
     if (!form.application_deadline) errs.application_deadline = t("errors.deadlineRequired");
     if (!form.campaign_end_date) errs.campaign_end_date = t("errors.endDateRequired");
+    // A deadline already in the past makes the campaign dead on arrival: it
+    // publishes, an admin approves it, and no creator can ever apply. The
+    // only date rule here was deadline-before-end-date, which a pair of past
+    // dates satisfies. End-of-day, so choosing today is allowed —
+    // applications close when the day does, which is what the server now
+    // enforces too (_shared/campaign-dates.ts).
+    if (form.application_deadline && isPastDay(form.application_deadline)) {
+      errs.application_deadline = t("errors.deadlineInPast");
+    }
+    // min= on a date input is a hint: it greys the calendar out but a typed
+    // or pasted value still submits, and Firefox will not block it. Same
+    // reason the server checks too.
+    if (form.campaign_end_date && isPastDay(form.campaign_end_date)) {
+      errs.campaign_end_date = t("errors.endDateInPast");
+    }
+    // A start date already gone is only wrong for a NEW campaign; a running
+    // one legitimately started last week.
+    if (mode !== "edit" && form.campaign_start_date && isPastDay(form.campaign_start_date)) {
+      errs.campaign_start_date = t("errors.startDateInPast");
+    }
+    // Applications must not close before the campaign has begun.
+    if (
+      form.campaign_start_date &&
+      form.application_deadline &&
+      form.application_deadline < form.campaign_start_date
+    ) {
+      errs.application_deadline = t("errors.deadlineBeforeStart");
+    }
     // Strictly before, not "not after". This was `>`, so setting the
     // application deadline EQUAL to the delivery end date passed validation —
     // and that leaves a campaign where applications close on the same day the
@@ -1057,6 +1135,9 @@ export function CreateCampaignDialog({
         {/* Platforms */}
         <Section title={t("sections.platforms")} required fieldKey="platforms" error={fieldErrors.platforms} right={platforms.length > 0 && <span className="text-[10px] text-[#9C97B8]">{t("platformsSelected", { count: platforms.length })}</span>}>
           <ChipGroup options={PLATFORMS} selected={platforms} onToggle={togglePlatform} />
+          {onlyPlatform && (
+            <p className="text-[10px] text-[#9C97B8]">{t("onlyPlatformNote")}</p>
+          )}
         </Section>
 
         {/* Deliverables */}
@@ -1259,13 +1340,13 @@ export function CreateCampaignDialog({
         <Section title={t("sections.schedule")}>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label={t("fields.startDate")} required fieldKey="campaign_start_date" error={fieldErrors.campaign_start_date}>
-              <input type="date" value={form.campaign_start_date} onChange={(e) => update("campaign_start_date", e.target.value)} className="input" />
+              <input type="date" min={startDateMin} value={form.campaign_start_date} onChange={(e) => update("campaign_start_date", e.target.value)} className="input" />
             </Field>
             <Field label={t("fields.applicationDeadline")} required fieldKey="application_deadline" error={fieldErrors.application_deadline}>
-              <input type="date" value={form.application_deadline} onChange={(e) => update("application_deadline", e.target.value)} className="input" />
+              <input type="date" min={deadlineMin} value={form.application_deadline} onChange={(e) => update("application_deadline", e.target.value)} className="input" />
             </Field>
             <Field label={t("fields.campaignEndDate")} required fieldKey="campaign_end_date" error={fieldErrors.campaign_end_date}>
-              <input type="date" value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
+              <input type="date" min={today} value={form.campaign_end_date} onChange={(e) => update("campaign_end_date", e.target.value)} className="input" />
             </Field>
           </div>
           <p className="text-[10px] text-[#9C97B8]">{t("scheduleNote")}</p>
@@ -1378,6 +1459,33 @@ export function CreateCampaignDialog({
       )}
     </div>
   );
+
+  if (asPage) {
+    // No Dialog/Drawer: a plain document-flow page. min-h-0 on the form's
+    // scroll container is pointless here — the PAGE scrolls, so the inner
+    // overflow is released and the whole brief is one continuous column.
+    return (
+      <div className="bg-white min-h-screen pb-24 lg:pb-10 [&_form]:min-h-0 [&_form>div:first-child]:overflow-visible [&_form>div:first-child]:max-h-none">
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-[#E4E9F4]">
+          <div className="max-w-4xl mx-auto flex items-center justify-between px-6 py-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#16224E]">{titleText}</h2>
+              <p className="text-[11px] text-[#9C97B8]">{subheadText}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              aria-label={t("footer.cancel")}
+              className="p-2 -mr-2 cursor-pointer"
+            >
+              <X size={20} className="text-[#9C97B8]" />
+            </button>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto">{content}</div>
+      </div>
+    );
+  }
 
   if (isDesktop) {
     return (

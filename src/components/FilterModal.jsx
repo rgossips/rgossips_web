@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
   Briefcase,
+  Check,
   Camera,
   Car,
   ChevronLeft,
@@ -321,18 +322,28 @@ export const FilterContent = ({
         </section>
       )}
 
-      {/* Verified Only */}
-      <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">{t("verifiedOnly")}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">{t("verifiedOnlyHint")}</p>
-        </div>
-        <Switch
-          checked={isVerifiedOnly}
-          onCheckedChange={setIsVerifiedOnly}
-          className="data-[state=checked]:bg-[#E60076]"
-        />
-      </section>
+      {/* Verified Only — only where the page actually owns the state.
+          This used to render unconditionally. On the campaigns filter, which
+          passes neither `isVerifiedOnly` nor its setter, that handed Switch
+          `checked={undefined}`, making it UNCONTROLLED: it flipped on click,
+          filtered nothing, and neither Clear All nor anything else could
+          turn it back off — the two symptoms reported together as "Clear all
+          cannot clear this, also no effect of button click".
+          Guarded like `brandTypes` above. Both handleReset copies already
+          clear it when the setter exists. */}
+      {setIsVerifiedOnly && (
+        <section className="flex items-center justify-between p-4 rounded-2xl bg-slate-50">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">{t("verifiedOnly")}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{t("verifiedOnlyHint")}</p>
+          </div>
+          <Switch
+            checked={!!isVerifiedOnly}
+            onCheckedChange={setIsVerifiedOnly}
+            className="data-[state=checked]:bg-[#E60076]"
+          />
+        </section>
+      )}
     </div>
   );
 };
@@ -568,15 +579,18 @@ export const FilterSidebar = ({
         </div>
       )}
 
-      {/* Verified Toggle */}
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-slate-500">{t("verifiedOnly")}</span>
-        <Switch
-          checked={isVerifiedOnly}
-          onCheckedChange={setIsVerifiedOnly}
-          className="data-[state=checked]:bg-[#E60076] scale-90"
-        />
-      </div>
+      {/* Verified Toggle — same guard as the full panel: without the setter
+          this Switch is uncontrolled and does nothing. */}
+      {setIsVerifiedOnly && (
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-slate-500">{t("verifiedOnly")}</span>
+          <Switch
+            checked={!!isVerifiedOnly}
+            onCheckedChange={setIsVerifiedOnly}
+            className="data-[state=checked]:bg-[#E60076] scale-90"
+          />
+        </div>
+      )}
 
       {/* Expand Button */}
       <button
@@ -617,6 +631,17 @@ const FilterModal = ({
 }) => {
   const t = useTranslations("FilterModal");
   const resolvedTitle = title || t("filters");
+  // Clear All gave no feedback at all: on a long filter list the controls
+  // it empties are usually scrolled out of view, so pressing it looked like
+  // nothing happened — which is how it got reported as "doesn't clear".
+  // `cleared` drives a short inline confirmation next to the buttons.
+  const [cleared, setCleared] = useState(false);
+  useEffect(() => {
+    if (!cleared) return undefined;
+    const id = setTimeout(() => setCleared(false), 1800);
+    return () => clearTimeout(id);
+  }, [cleared]);
+
   const handleReset = () => {
     setSelectedCategories([]);
     setBudgetRange({ min: 0, max: 10000 });
@@ -624,7 +649,10 @@ const FilterModal = ({
     if (setSelectedBrands) setSelectedBrands([]);
     if (setSelectedLocations) setSelectedLocations([]);
     if (setBrandTypes) setBrandTypes([]);
+    // Belt and braces on the toggle: `false` rather than a falsy-guarded
+    // call, so a parent that passes the setter can never be left on.
     if (setIsVerifiedOnly) setIsVerifiedOnly(false);
+    setCleared(true);
   };
 
   const handleApply = () => {
@@ -683,6 +711,12 @@ const FilterModal = ({
               setBrandTypes={setBrandTypes}
             />
           </div>
+
+          {cleared && (
+            <p className="px-6 pb-2 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+              <Check size={12} /> {t("filtersCleared")}
+            </p>
+          )}
 
           {/* Mobile Footer Buttons */}
           <div className="shrink-0 bg-white border-t border-slate-100 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex gap-3">
@@ -747,6 +781,12 @@ const FilterModal = ({
               setBrandTypes={setBrandTypes}
             />
           </div>
+
+          {cleared && (
+            <p className="px-8 pb-1 text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+              <Check size={13} /> {t("filtersCleared")}
+            </p>
+          )}
 
           {/* Desktop Footer Buttons */}
           <div className="bg-white border-t border-slate-100 p-8 flex gap-4 rounded-b-4xl">

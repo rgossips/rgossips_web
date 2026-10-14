@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { Suspense, useState, useMemo, useEffect } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -27,6 +27,43 @@ import ListPagination from "@/components/ListPagination";
 import { matchesAnyCity } from "@/utils/indianCities";
 import { scrollToTop } from "@/lib/scrollToTop";
 
+// useSearchParams is isolated in a Suspense-wrapped child, the same shape
+// /influencer/profile uses.
+//
+// THE BUG THIS FIXES: the three filter states below used to read
+// searchParams inside their useState INITIALISERS, so they ran during the
+// first render. On the server there is no query string, on the client there
+// is — so /influencer/campaigns?categories=Beauty rendered a different set
+// of filter chips on each side and React threw a hydration mismatch
+// (minified error #418) on every visit from a "View all" deep link.
+//
+// Reading them in an effect instead means the first client render matches
+// the server exactly; the prefill lands a tick later, which is invisible and
+// is what the profile page already does.
+function FiltersFromQuery({ onPrefill }) {
+  const qs = searchParams?.toString();
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const list = (multi, single) => {
+      const m = searchParams.get(multi);
+      if (m) return m.split(",").map((v) => v.trim()).filter(Boolean);
+      const one = searchParams.get(single);
+      return one ? [one] : [];
+    };
+    const brand = searchParams.get("brand");
+    onPrefill({
+      categories: list("categories", "category"),
+      locations: list("cities", "city"),
+      brands: brand ? [brand] : [],
+    });
+    // onPrefill is a stable useCallback from the parent; qs covers the params.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qs]);
+
+  return null;
+}
+
 export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
   const { profile, user } = useAuth();
@@ -39,28 +76,20 @@ export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState("Active");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  // Accept either ?category=Beauty (single, legacy) or
-  // ?categories=Beauty,Fashion (multi, used by Recommended Campaigns'
-  // "View all" link) — both pre-fill the category filter on load.
-  const [selectedCategories, setSelectedCategories] = useState(() => {
-    const single = searchParams?.get("category");
-    const multi = searchParams?.get("categories");
-    if (multi) return multi.split(",").map((c) => c.trim()).filter(Boolean);
-    return single ? [single] : [];
-  });
+  // Prefilled from the query string by <FiltersFromQuery> after mount —
+  // ?category= / ?categories=, ?brand=, ?city= / ?cities=. They start empty
+  // so the first client render matches the server; see the note on that
+  // component.
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [budgetRange, setBudgetRange] = useState({ min: 0, max: 200000 });
-  const [selectedBrands, setSelectedBrands] = useState(() => {
-    const b = searchParams?.get("brand");
-    return b ? [b] : [];
-  });
-  // ?city=Dehradun (single) or ?cities=Dehradun,Mumbai (multi) pre-fill the
-  // location filter, mirroring the category params above.
-  const [selectedLocations, setSelectedLocations] = useState(() => {
-    const single = searchParams?.get("city");
-    const multi = searchParams?.get("cities");
-    if (multi) return multi.split(",").map((c) => c.trim()).filter(Boolean);
-    return single ? [single] : [];
-  });
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]);
+
+  const applyQueryPrefill = React.useCallback(({ categories, locations, brands }) => {
+    if (categories.length) setSelectedCategories(categories);
+    if (locations.length) setSelectedLocations(locations);
+    if (brands.length) setSelectedBrands(brands);
+  }, []);
   // Brand / agency checkboxes — [] or both ticked = everyone.
   const [brandTypes, setBrandTypes] = useState([]);
 
@@ -266,6 +295,11 @@ export default function CampaignsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FD] p-4 pb-24 lg:p-8 lg:pt-24 lg:pb-8 font-sans relative">
+      {/* Deep-link prefill. Renders nothing; isolated so useSearchParams
+          cannot bail the whole page out of SSR. */}
+      <Suspense fallback={null}>
+        <FiltersFromQuery onPrefill={applyQueryPrefill} />
+      </Suspense>
       <div className="max-w-[1440px] mx-auto space-y-8">
         {/* Header - Mobile Only */}
         <div className="lg:hidden space-y-4 mb-2">

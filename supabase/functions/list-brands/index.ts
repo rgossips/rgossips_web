@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { openForApplications } from "../_shared/campaign-dates.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
 import {
   getBlockedIds,
@@ -182,19 +183,19 @@ serveWithLogging("list-brands", async (req) => {
     // as "active" on the brand card if the creator could still actually
     // apply. Counting deadline-passed campaigns produced "1 active campaign"
     // cards that opened onto an empty list.
-    const openForApplications = (c: any) => {
-      if (c.application_deadline && new Date(c.application_deadline).getTime() < now) return false;
-      const endSource = c.campaign_end_date || c.application_deadline;
-      if (endSource && new Date(endSource).getTime() < now) return false;
-      return true;
-    };
+    //
+    // The predicate itself now lives in _shared/campaign-dates.ts, shared
+    // with list-campaigns, so a brand card and the creator feed can never
+    // disagree. Both used to compare a midnight timestamp with Date.now(),
+    // which closed a campaign on the morning of its own deadline.
+    const stillOpen = (c: any) => openForApplications(c, now);
 
     if (campaigns) {
       for (const c of campaigns as any[]) {
         const brandKey = c.brand_id || c.brand_invitation_id;
         if (brandKey && c.campaign_id) campaignIdToBrandId[c.campaign_id] = brandKey;
 
-        if ((c.status === "active" || c.status === "open") && openForApplications(c)) {
+        if ((c.status === "active" || c.status === "open") && stillOpen(c)) {
           if (c.brand_invitation_id) campaignCounts[c.brand_invitation_id] = (campaignCounts[c.brand_invitation_id] || 0) + 1;
           if (c.brand_id) campaignCounts[c.brand_id] = (campaignCounts[c.brand_id] || 0) + 1;
         }

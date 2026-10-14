@@ -17,6 +17,16 @@ export const ProfileCompletionSection = () => {
   const total = (filled?.length || 0) + (missing?.length || 0);
   const complete = pct >= 100 && total > 0;
 
+  // Once the profile is done the card has nothing left to say, so it comes
+  // off Find Creators and gives the space back to the results.
+  //
+  // Also hidden while the figure is unknown — `completion` is null until the
+  // hook's fetch lands, and null again if it fails. Rendering during that
+  // window showed a hard "0%" with an empty bar to a brand who had filled
+  // everything in, and then snapped to DONE or vanished. Nothing is better
+  // than a wrong number.
+  const showCard = !loading && !!completion && !complete;
+
   return (
     <div className="flex items-center flex-col lg:flex-row w-full px-3 lg:px-0 gap-3 lg:gap-5">
       {/* Floating Search (mobile) */}
@@ -29,7 +39,8 @@ export const ProfileCompletionSection = () => {
         </button>
       </div>
 
-      {/* Profile Completion Card */}
+      {/* Profile Completion Card — see `showCard` above. */}
+      {showCard && (
       <Link
         href="/brands/profile"
         className="bg-[#1F1F1F] w-full lg:min-w-[280px] rounded-4xl p-6 flex justify-between items-center text-white cursor-pointer hover:bg-[#2A2A2A] transition-colors"
@@ -70,6 +81,7 @@ export const ProfileCompletionSection = () => {
           {complete ? "DONE" : `${filled.length}/${total || 3}`}
         </span>
       </Link>
+      )}
     </div>
   );
 };

@@ -87,6 +87,17 @@ const BrandProfile = () => {
   const supabase = createClient();
   const { startLoading, stopLoading } = useGlobalLoading();
   const { trust, completion } = useBrandTrustScore();
+  // useBrandTrustScore returns BOTH of these as null until the fetch lands,
+  // and leaves them null if it fails — its own docstring says to guard with
+  // optional chaining. The trust card did; this one read completion.percent
+  // straight and crashed the whole page with "Cannot read properties of null (reading
+  // 'percent')". It is the first thing a brand sees after Profile Completion
+  // → DONE, so the blank "Application error" looked like the button broke.
+  const completionPercent =
+    typeof completion?.percent === "number" ? completion.percent : null;
+  const completionMissing = Array.isArray(completion?.missing)
+    ? completion.missing
+    : [];
   const fileInputRef = useRef(null);
 
   const [uploading, setUploading] = useState(false);
@@ -405,32 +416,38 @@ const BrandProfile = () => {
             </p>
             <span
               className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                completion.percent >= 100
+                completionPercent === null
+                  ? "bg-slate-50 text-slate-400"
+                  : completionPercent >= 100
                   ? "bg-emerald-50 text-emerald-600"
-                  : completion.percent >= 67
+                  : completionPercent >= 67
                   ? "bg-indigo-50 text-indigo-600"
                   : "bg-orange-50 text-orange-600"
               }`}
             >
-              {completion.percent}%
+              {completionPercent === null ? "—" : `${completionPercent}%`}
             </span>
           </div>
           <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-3">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                completion.percent >= 100
+                completionPercent !== null && completionPercent >= 100
                   ? "bg-emerald-500"
-                  : completion.percent >= 67
+                  : completionPercent !== null && completionPercent >= 67
                   ? "bg-indigo-500"
                   : "bg-orange-500"
               }`}
-              style={{ width: `${completion.percent}%` }}
+              style={{ width: `${completionPercent ?? 0}%` }}
             />
           </div>
-          {completion.missing.length > 0 ? (
+          {completion === null ? (
+            <p className="text-[11px] text-gray-400 leading-snug">
+              {t("completion.unavailable")}
+            </p>
+          ) : completionMissing.length > 0 ? (
             <p className="text-[11px] text-gray-500 leading-snug">
               {t("completion.addPrefix")}{" "}
-              {completion.missing.map((label, i) => (
+              {completionMissing.map((label, i) => (
                 <React.Fragment key={label}>
                   {i > 0 && ", "}
                   <button

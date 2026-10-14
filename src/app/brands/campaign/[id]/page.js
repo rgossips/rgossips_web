@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { applicationDeadlinePassed, campaignEnded } from "@/lib/campaignDates";
 import { rankApplications, scoreApplicant, creatorFromApplication, targetFromCampaign, matchTone } from "@/lib/applicationMatch";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
@@ -435,12 +436,18 @@ const CampaignDetailPage = () => {
           <ArrowLeft size={22} />
         </button>
         <div className="flex items-center gap-2">
-          {/* Derived display status: DB-status "active" with a lapsed
-              application deadline reads as "Applications Closed", not
-              a misleading ACTIVE. */}
+          {/* Derived display status. A finished campaign says CLOSED;
+              one whose applications have shut while delivery continues says
+              APPLICATIONS CLOSED, where that wording is literally true.
+              See the note in CampaignCard. */}
           {campaign.status === "active" &&
-          campaign.applicationDeadline &&
-          new Date(campaign.applicationDeadline).getTime() < Date.now() ? (
+          campaignEnded(campaign.endDate, campaign.applicationDeadline) ? (
+            <span className="px-3 py-1 rounded-full text-[11px] font-bold border bg-slate-50 text-slate-600 border-slate-200">
+              {t("statusBadge.closed")}
+            </span>
+          ) : campaign.status === "active" &&
+            campaign.applicationDeadline &&
+            applicationDeadlinePassed(campaign.applicationDeadline) ? (
             <span className="px-3 py-1 rounded-full text-[11px] font-bold border bg-amber-50 text-amber-700 border-amber-200">
               {t("statusBadge.applicationsClosed")}
             </span>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { applicationDeadlinePassed, campaignEnded } from "@/lib/campaignDates";
 import { ArrowUpRight, Calendar, Users, IndianRupee, Briefcase } from "lucide-react";
 
 const statusStyles = {
@@ -41,6 +42,9 @@ export const CampaignCard = ({
   budgetTotal,
   budgetPerInfluencer,
   applicationDeadline,
+  // The delivery end date, so a finished campaign can be told apart from
+  // one whose applications merely shut. brand-campaigns list returns it.
+  endDate,
   applicationsTotal = 0,
   applicationsPending = 0,
   categories = [],
@@ -60,12 +64,24 @@ export const CampaignCard = ({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            {/* A campaign can be DB-status "active" with its application
-                deadline already past — creators can't apply anymore, so it
-                gets its own display status instead of a misleading Active. */}
-            {status === "active" &&
-            applicationDeadline &&
-            new Date(applicationDeadline).getTime() < Date.now() ? (
+            {/* A campaign can be DB-status "active" with its dates behind
+                it, so the chip is derived rather than read off the row.
+                End-of-day via lib/campaignDates: the raw comparison this
+                replaces closed a campaign on the MORNING of its deadline.
+
+                TWO states, not one. "Applications Closed" on a campaign that
+                is wholly finished reads as though only the applications part
+                stopped, so a brand assumes work is still running — but 28 of
+                the 69 past-deadline campaigns ARE still running (apps shut,
+                creators mid-delivery), so collapsing both into "Closed"
+                would lie to those instead. Finished says Closed; still
+                delivering says Applications Closed, which is then literally
+                true. */}
+            {status === "active" && campaignEnded(endDate, applicationDeadline) ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                Closed
+              </span>
+            ) : status === "active" && applicationDeadlinePassed(applicationDeadline) ? (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
                 Applications Closed
               </span>

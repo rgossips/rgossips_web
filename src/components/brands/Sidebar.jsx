@@ -169,10 +169,10 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Navigates to the campaigns list with ?new=1, which auto-opens the
-            create dialog. */}
+        {/* The campaign brief is its own page, not a modal — it is far too
+            long to work in a box with an inner scrollbar. */}
         <button
-          onClick={() => router.push("/brands/campaigns?new=1")}
+          onClick={() => router.push("/brands/campaigns/new")}
           className="flex cursor-pointer items-center justify-center gap-2 w-full text-white text-[13.5px] font-semibold py-3.5 rounded-[13px] hover:brightness-[1.06] transition shadow-[0_10px_24px_rgba(106,102,201,.32)]"
           style={{ background: "var(--bx-grad)" }}
         >

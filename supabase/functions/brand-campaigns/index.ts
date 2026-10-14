@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  applicationDeadlinePassed,
+  campaignEnded,
+} from "../_shared/campaign-dates.ts";
+import { genderAllowsVisibility } from "../_shared/gender-match.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { truncateText } from "../_shared/text.ts";
 import {
@@ -168,6 +173,9 @@ async function findMatchingInfluencers(
     target_follower_min?: number | null;
     target_follower_max?: number | null;
     target_cities?: string[] | null;
+    // Lives in the description metadata trailer, not a column — callers
+    // unpack it with parseCampaignMeta before calling.
+    target_gender?: unknown;
   },
 ): Promise<MatchResult> {
   const wantedCats = new Set(
@@ -198,6 +206,19 @@ async function findMatchingInfluencers(
     if (!city) return false;
     return cityList.some((c) => city.includes(c) || c.includes(city));
   };
+  // The gender brief, which this matcher ignored entirely — it never even
+  // selected the column. Two consequences, the second much worse than the
+  // first: the "N influencers match perfectly" callout counted creators who
+  // could never apply, and publishing NOTIFIED them. A male-only brief was
+  // pushed to female creators who would then be refused by apply-campaign.
+  //
+  // Same predicate as list-campaigns (visibility) and apply-campaign
+  // (acceptance), from _shared/gender-match.ts, so all three agree. It
+  // excludes only a KNOWN mismatch: a creator with no gender on file still
+  // matches, because roughly half the base has the field empty and
+  // apply-campaign asks for it before accepting anything anyway.
+  const matchesGender = (g: unknown): boolean =>
+    genderAllowsVisibility(campaignRow.target_gender, g);
 
   // ── Registered profiles ────────────────────────────────────────
   // NOTE: `city` is not a column on influencer_profiles — only
@@ -215,7 +236,7 @@ async function findMatchingInfluencers(
   for (let from = 0; from < HARD_CAP; from += PAGE) {
     const { data, error } = await supabase
       .from("influencer_profiles")
-      .select("influencer_id, instagram_handle, username, categories, followers_count, location, status")
+      .select("influencer_id, instagram_handle, username, categories, followers_count, location, status, gender")
       .eq("status", "active")
       .gt("followers_count", 0)
       .gte("followers_count", minFollowers)
@@ -256,6 +277,7 @@ async function findMatchingInfluencers(
     if (!matchesCategory(inf.categories)) continue;
     if (!matchesFollowers(Number(inf.followers_count || 0))) continue;
     if (!matchesCity(inf.location)) continue;
+    if (!matchesGender(inf.gender)) continue;
     matches.push(inf.influencer_id);
   }
 
@@ -292,6 +314,9 @@ async function findMatchingInfluencers(
     if (!matchesFollowers(fc)) continue;
     const loc = String((meta as any).city ?? "");
     if (!matchesCity(loc)) continue;
+    // Gender rides in the same notes blob as categories and city when the
+    // admin bulk-invite sheet carried it; absent, the row still matches.
+    if (!matchesGender((meta as any).gender)) continue;
     invitationCount += 1;
   }
 
@@ -719,6 +744,7 @@ serveWithLogging("brand-campaigns", async (req) => {
           target_follower_min: c.target_follower_min,
           target_follower_max: c.target_follower_max,
           target_cities: c.target_cities,
+          target_gender: (meta as any)?.target_gender,
         });
         matchingCount = match.profileIds.length + match.invitationCount;
       } catch (e) {
@@ -798,6 +824,53 @@ serveWithLogging("brand-campaigns", async (req) => {
     }
 
     // ── CREATE ───────────────────────────────────────────────────────
+    // A campaign whose application deadline is already past can never be
+    // applied to: it is published, approved, and dead on arrival. Nothing
+    // stopped a brand setting one — the only date rule was deadline-before-
+    // end-date, which a pair of past dates satisfies happily.
+    //
+    // Checked against the NEW value, not the stored one, so extending a
+    // lapsed campaign still works; only leaving it in the past is refused.
+    const pastDeadline = (deadlineValue: unknown) =>
+      applicationDeadlinePassed(
+        typeof deadlineValue === "string" ? deadlineValue : null,
+      );
+
+    const DEADLINE_IN_PAST = {
+      error: "deadline_in_past",
+      message:
+        "The application deadline has already passed. Pick a date from today onwards, or creators will never be able to apply.",
+    };
+
+    const END_DATE_IN_PAST = {
+      error: "end_date_in_past",
+      message:
+        "The delivery end date has already passed. Pick a date from today onwards.",
+    };
+
+    const START_DATE_IN_PAST = {
+      error: "start_date_in_past",
+      message: "Pick a start date from today onwards for a new campaign.",
+    };
+
+    // The pickers floor all three fields at today, but min= on a date input
+    // is a hint, not a constraint: a typed or pasted value still submits.
+    // These are the boundary.
+    //
+    const DEADLINE_BEFORE_START = {
+      error: "deadline_before_start",
+      message:
+        "The application deadline cannot be before the campaign start date.",
+    };
+
+    // yyyy-mm-dd sorts chronologically, so a string compare is enough — and
+    // avoids Date parsing, which has no timezone on these values.
+    const deadlineBeforeStart = (start: unknown, deadline: unknown) => {
+      const s = typeof start === "string" ? start.slice(0, 10) : "";
+      const d = typeof deadline === "string" ? deadline.slice(0, 10) : "";
+      return !!s && !!d && d < s;
+    };
+
     if (action === "create") {
       const { brandId, campaign } = payload;
       if (!brandId) return ok({ error: "brandId is required" });
@@ -805,6 +878,14 @@ serveWithLogging("brand-campaigns", async (req) => {
       if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
       if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
       if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
+      if (pastDeadline(campaign.application_deadline)) return ok(DEADLINE_IN_PAST);
+      if (pastDeadline(campaign.campaign_end_date)) return ok(END_DATE_IN_PAST);
+      // Only on create. A campaign that is already running legitimately
+      // started last week, so update() below checks the other two only.
+      if (pastDeadline(campaign.campaign_start_date)) return ok(START_DATE_IN_PAST);
+      if (deadlineBeforeStart(campaign.campaign_start_date, campaign.application_deadline)) {
+        return ok(DEADLINE_BEFORE_START);
+      }
       const deadline = campaign.application_deadline;
 
       const contentTypes = buildContentTypes(campaign);
@@ -895,6 +976,8 @@ serveWithLogging("brand-campaigns", async (req) => {
             target_follower_min: row.target_follower_min as number,
             target_follower_max: row.target_follower_max as number,
             target_cities: row.target_cities as string[],
+            target_gender: unpackDescription(row.description as string).meta
+              ?.target_gender,
           });
           matchingCount = match.profileIds.length + match.invitationCount;
           // Resolve the brand's public name for the notification copy.
@@ -936,6 +1019,11 @@ serveWithLogging("brand-campaigns", async (req) => {
       if (!campaign?.campaign_start_date) return ok({ error: "Start date is required" });
       if (!campaign?.application_deadline) return ok({ error: "Application deadline is required" });
       if (!campaign?.campaign_end_date) return ok({ error: "Campaign end date is required" });
+      if (pastDeadline(campaign.application_deadline)) return ok(DEADLINE_IN_PAST);
+      if (pastDeadline(campaign.campaign_end_date)) return ok(END_DATE_IN_PAST);
+      if (deadlineBeforeStart(campaign.campaign_start_date, campaign.application_deadline)) {
+        return ok(DEADLINE_BEFORE_START);
+      }
 
       // Ownership.
       const { data: existing, error: findErr } = await supabase
@@ -1201,7 +1289,10 @@ serveWithLogging("brand-campaigns", async (req) => {
 
       const { data: c, error: findErr } = await supabase
         .from("campaigns")
-        .select("campaign_id, brand_id, title, status, target_categories, target_follower_min, target_follower_max, target_cities")
+        // description carries the metadata trailer, which is where
+        // target_gender lives — without it the publish fan-out would
+        // notify creators the brief excludes.
+        .select("campaign_id, brand_id, title, status, target_categories, target_follower_min, target_follower_max, target_cities, description")
         .eq("campaign_id", campaignId)
         .single();
       if (findErr || !c) return ok({ error: "Campaign not found" });
@@ -1241,6 +1332,8 @@ serveWithLogging("brand-campaigns", async (req) => {
           target_follower_min: (c.target_follower_min as number) || 0,
           target_follower_max: (c.target_follower_max as number) || 1000000,
           target_cities: (c.target_cities as string[]) || [],
+          target_gender: unpackDescription(c.description as string).meta
+            ?.target_gender,
         });
         matchingCount = match.profileIds.length + match.invitationCount;
         let brandName = "A brand";
@@ -1322,12 +1415,31 @@ serveWithLogging("brand-campaigns", async (req) => {
         return ok({ error: "campaign_not_active", message: "You can only invite creators to a live (active) campaign." });
       }
       // …and only while it's still LIVE (not past its end date). A direct invite
-      // is a private channel, so it's NOT bound by the public application
-      // deadline — invited creators can still apply (list-campaigns keeps an
-      // invited campaign visible to them). Only a genuinely ended campaign blocks.
-      const endPassed = c.campaign_end_date && new Date(c.campaign_end_date as string).getTime() < Date.now();
-      if (endPassed) {
+      // …and only while it is genuinely open.
+      //
+      // This used to block an ENDED campaign but deliberately allow invites
+      // past the application deadline, on the reasoning that a direct invite
+      // is a private channel. In practice that let a brand invite creators
+      // to a campaign its own page was labelling Closed — the invited
+      // creator got a notification for something they could not act on in
+      // any obvious way. Both gates now close invites.
+      //
+      // Existing invitations are untouched: list-campaigns still keeps an
+      // invited campaign visible to the creator who already has one, and
+      // apply-campaign still accepts their application. Only NEW invites
+      // stop.
+      //
+      // End-of-day via _shared/campaign-dates.ts — the raw comparison this
+      // replaced treated a campaign ending today as ended from midnight.
+      if (campaignEnded(c.campaign_end_date as string, null)) {
         return ok({ error: "campaign_expired", message: "This campaign has ended — you can only invite creators to a live campaign." });
+      }
+      if (applicationDeadlinePassed(c.application_deadline as string)) {
+        return ok({
+          error: "applications_closed",
+          message:
+            "Applications for this campaign have closed, so new creators can no longer be invited. Extend the application deadline to reopen it.",
+        });
       }
       const brandName = bp?.brand_name || "A brand";
 

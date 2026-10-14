@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Loader2, Receipt, X, Printer, IndianRupee, Lock, CheckCircle2, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -167,9 +168,18 @@ export default function BrandTransactionsPage() {
 const ReceiptModal = ({ tx, profile, onClose }) => {
   const t = useTranslations("BrandsTransactions");
   const k = statusKey(tx);
-  return (
-    <div data-scroll-lock className="fixed inset-0 z-[350] flex items-center justify-center bg-black/40 p-4 print:bg-white print:p-0">
-      <div className="w-full max-w-lg bg-white rounded-3xl print:rounded-none shadow-2xl print:shadow-none max-h-[90dvh] overflow-y-auto overscroll-contain">
+
+  // Portalled to <body> so the print rule below can switch off every OTHER
+  // top-level child by itself, with no ancestor chain to keep alive.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      data-scroll-lock
+      data-print-root
+      className="fixed inset-0 z-[350] flex items-center justify-center bg-black/40 p-4 print:static print:bg-white print:p-0 print:block"
+    >
+      <div className="w-full max-w-lg bg-white rounded-3xl print:rounded-none shadow-2xl print:shadow-none max-h-[90dvh] overflow-y-auto overscroll-contain print:max-h-none print:overflow-visible print:max-w-none">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
           <h3 className="text-sm font-black text-gray-900">{t("receipt.title")}</h3>
           <div className="flex items-center gap-2">
@@ -232,14 +242,29 @@ const ReceiptModal = ({ tx, profile, onClose }) => {
         </div>
       </div>
 
-      {/* Print isolation: everything except the receipt is display:none'd */}
+      {/* Print isolation.
+          This used to be the visibility:hidden trick, which was the bug: a
+          hidden element still OCCUPIES ITS LAYOUT BOX, so the whole invisible
+          app — navbar, page, bottom nav — was still laid out behind the
+          receipt and spilled onto a second sheet. The brand saw a 2-page
+          receipt with the header stranded on page 2.
+          display:none removes the boxes entirely, which is only simple
+          because the modal is portalled straight to <body>: every other
+          top-level child can be switched off without walking an ancestor
+          chain. */}
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #receipt-print-area, #receipt-print-area * { visibility: visible; }
-          #receipt-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          body > *:not([data-print-root]) { display: none !important; }
+          [data-print-root] {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+          }
+          html, body { height: auto !important; background: #fff !important; }
+          @page { margin: 12mm; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body,
   );
 };

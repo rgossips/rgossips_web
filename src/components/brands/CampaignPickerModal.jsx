@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { X, Loader2, Check, Megaphone, Send } from "lucide-react";
+import { X, Loader2, Check, Megaphone, Send, Plus } from "lucide-react";
+import Link from "next/link";
+import { campaignEnded } from "@/lib/campaignDates";
 import { createClient } from "@/utils/supabase/client";
 import { useScrollToError } from "@/hooks/useScrollToError";
 
@@ -11,7 +13,9 @@ import { useScrollToError } from "@/hooks/useScrollToError";
 // completed / paused / draft campaigns are excluded.
 function isInvitable(c) {
   if (c?.status !== "active") return false;
-  if (c.endDate && new Date(c.endDate).getTime() < Date.now()) return false;
+  // End-of-day via lib/campaignDates — a raw compare against a stored
+  // midnight excluded a campaign on its own final day.
+  if (campaignEnded(c.endDate, null)) return false;
   return true;
 }
 
@@ -153,11 +157,23 @@ export default function CampaignPickerModal({
               <Loader2 size={24} className="animate-spin text-[#6A66C9]" />
             </div>
           ) : invitableCampaigns.length === 0 ? (
+            /* A dead end otherwise: the brand has picked the creators they
+               want and the only way forward is to close this, find the
+               campaigns page, create one, get it approved, then start the
+               selection again. Offer the next step here instead. */
             <div className="text-center py-10 px-4">
               <p className="text-sm font-semibold text-gray-700">No live campaigns</p>
               <p className="text-xs text-[#9C97B8] mt-1">
                 Publish and get a campaign approved (live) before inviting creators to it.
               </p>
+              <Link
+                href="/brands/campaigns/new"
+                onClick={onClose}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-xs font-bold cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+              >
+                <Plus size={14} /> Create a campaign
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">

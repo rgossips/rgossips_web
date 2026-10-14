@@ -11,7 +11,130 @@ import {
   ChevronRight,
   ChevronDown,
   HelpCircle,
+  Clock,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+
+// Previously raised requests.
+//
+// Asking for a callback was write-only: the brand filled the form, got a
+// confirmation, and then had no way to see whether anyone had picked it up
+// — so the only way to check was to raise another one. support_callbacks
+// already carries the status an admin sets from /dashboard/callbacks, and
+// RLS policy support_callbacks_read_own (migration 008) lets a brand read
+// exactly their own rows, so this needs no new table and no new endpoint.
+function PreviousRequests() {
+  const t = useTranslations("BrandsBrandHelpAndSupport");
+  const [rows, setRows] = useState(null); // null = loading
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth?.user?.id;
+        if (!uid) {
+          if (!cancelled) setRows([]);
+          return;
+        }
+        const { data, error: err } = await supabase
+          .from("support_callbacks")
+          .select("id, topic, status, created_at, notes")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (cancelled) return;
+        if (err) {
+          setError(true);
+          setRows([]);
+          return;
+        }
+        setRows(data || []);
+      } catch {
+        if (!cancelled) {
+          setError(true);
+          setRows([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Nothing raised yet, or we could not read them — say nothing rather than
+  // show an empty box on a help page the brand opened for another reason.
+  if (rows === null) {
+    return (
+      <div className="flex items-center gap-2 p-4 text-[11px] text-[#9C97B8]">
+        <Loader2 size={13} className="animate-spin" />
+        {t("previousRequests.loading")}
+      </div>
+    );
+  }
+  if (error || rows.length === 0) return null;
+
+  const fmt = (iso) => {
+    try {
+      return new Date(iso).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  return (
+    <section className="space-y-3">
+      <h3 className="text-[11px] font-black text-[#9C97B8] uppercase tracking-[0.15em] ml-1">
+        {t("previousRequests.title")}
+      </h3>
+      <div className="space-y-2">
+        {rows.map((r) => {
+          const done = r.status === "done" || r.status === "closed";
+          return (
+            <div
+              key={r.id}
+              className="flex items-start gap-3 p-4 bg-white border border-[#E4E9F4] rounded-2xl"
+            >
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  done ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                }`}
+              >
+                {done ? <CheckCircle2 size={16} /> : <Clock size={16} />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800 truncate">
+                  {r.topic || t("previousRequests.generalTopic")}
+                </p>
+                {r.notes && (
+                  <p className="text-[11px] text-[#6B6785] mt-0.5 line-clamp-2">{r.notes}</p>
+                )}
+                <p className="text-[10px] text-[#9C97B8] mt-1">{fmt(r.created_at)}</p>
+              </div>
+              <span
+                className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${
+                  done
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "bg-amber-50 text-amber-600"
+                }`}
+              >
+                {done ? t("previousRequests.resolved") : t("previousRequests.open")}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 const SUPPORT_EMAIL = "grievance@rgossips.com";
 const SUPPORT_WHATSAPP = "https://wa.me/918802907907";
@@ -139,6 +262,8 @@ export default function BrandHelpAndSupport({ open, onClose, onOpenChat }) {
               className="w-full bg-slate-50 border border-[#E4E9F4] rounded-xl py-4 pl-11 pr-5 text-sm font-bold focus:outline-none focus:ring-4 focus:ring-purple-50 transition-all placeholder:text-gray-300"
             />
           </div>
+
+          <PreviousRequests />
 
           {/* Contact options */}
           <section className="space-y-3">
