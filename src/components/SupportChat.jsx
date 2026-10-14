@@ -998,6 +998,13 @@ function CallbackForm({ user, role, profile, path, context, onSubmitted, onCance
       const { error: dbErr } = await supabase.from("support_callbacks").insert({
         user_id: user.id,
         user_role: role || "",
+        // Which device this was sent from. The native app overrides
+        // navigator.userAgent with "RGossipsApp/<os>-<ver>", so this one
+        // value tells app from web and names in-app webviews too — and
+        // "iOS, Android or web?" is support's first question on every
+        // one of these. Optional chaining because this also renders
+        // server-side in dev, where there is no navigator.
+        user_agent: typeof window === "undefined" ? null : window.navigator?.userAgent || null,
         topic: topicLabel,
         topic_path: topicPath,
         preferred_time: time,
