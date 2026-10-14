@@ -9,6 +9,7 @@ const Cropper = dynamic(() => import("react-easy-crop"), { ssr: false });
 import { Drawer, DrawerContent, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogClose, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { X, Upload, Loader2, Trash2, Image as ImageIcon, Check, Plus } from "lucide-react";
+import { createPortal } from "react-dom";
 import { createClient } from "@/utils/supabase/client";
 import { useGlobalLoading } from "@/context/LoadingContext";
 import { useTranslations } from "next-intl";
@@ -161,6 +162,93 @@ const parseContentTypes = (arr) => {
   }
   return out;
 };
+
+// Browse the WHOLE canonical list, the same way the influencer profile does
+// (LocationModal in MyInformationDetail.jsx). The quick-pick chips plus the
+// type-ahead below technically reached every city, but only if you already
+// knew the name and typed two letters of it — brands reported that the list
+// "doesn't have all the cities" because nothing on screen said otherwise.
+//
+// Portalled to <body> on purpose: the parent is a Vaul drawer on phones, and
+// a drawer animates with a transform, which makes it the containing block for
+// any `fixed` child. Rendered in place, this would be trapped inside the
+// drawer instead of covering the screen. z-[400] clears the parent's z-[250].
+function CityPickerModal({ selected, onSave, onClose }) {
+  const t = useTranslations("BrandsCreateCampaignDialog");
+  const [local, setLocal] = useState([...selected]);
+  const [search, setSearch] = useState("");
+  const options = useMemo(() => ["Remote", ...INDIAN_CITIES_SORTED], []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+  }, [options, search]);
+
+  const toggle = (city) =>
+    setLocal((prev) => (prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]));
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      data-scroll-lock
+      className="fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4"
+    >
+      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-[#E4E9F4]">
+          <h3 className="text-base font-bold text-[#16224E]">{t("cityPicker.title")}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("cityPicker.close")}
+            className="w-8 h-8 rounded-full bg-gray-100 grid place-items-center text-gray-400 hover:bg-gray-200 cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="shrink-0 px-5 pt-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("cityPicker.searchPlaceholder")}
+            aria-label={t("cityPicker.searchPlaceholder")}
+            className="input"
+          />
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5">
+          <ChipGroup options={filtered} selected={local} onToggle={toggle} />
+          {filtered.length === 0 && (
+            <p className="text-[11px] text-[#6B6785] italic">{t("cityPicker.noMatch")}</p>
+          )}
+        </div>
+
+        <div className="shrink-0 p-5 border-t border-[#E4E9F4] flex items-center gap-3">
+          <p className="flex-1 text-[11px] font-semibold text-[#6B6785]">
+            {t("cityPicker.selectedCount", { count: local.length })}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-[#E4E9F4] text-xs font-bold text-gray-500 cursor-pointer"
+          >
+            {t("cityPicker.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={() => { onSave(local); onClose(); }}
+            className="px-5 py-2.5 rounded-xl text-white text-xs font-bold cursor-pointer"
+            style={{ background: "linear-gradient(135deg, #9810fa 0%, #e60076 100%)" }}
+          >
+            {t("cityPicker.save")}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 // Search across the full canonical city list. The quick-pick chips above
 // cover the usual suspects; this is how every OTHER city becomes targetable.
@@ -393,6 +481,7 @@ export function CreateCampaignDialog({
   // "total" | "per" — which budget box the brand typed in last. See
   // applyBudget below.
   const [budgetSource, setBudgetSource] = useState("total");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSetItem = (setter) => (item) => setter((p) => (p.includes(item) ? p.filter((x) => x !== item) : [...p, item]));
   const toggleCategory = toggleSetItem(setCategories);
@@ -1060,7 +1149,27 @@ export function CreateCampaignDialog({
                   onToggle={toggleCity}
                 />
               )}
-              <CitySearch selected={cities} onToggle={toggleCity} />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <CitySearch selected={cities} onToggle={toggleCity} />
+                </div>
+                {/* The chips are a shortcut, not the list. Without this the
+                    other ~600 cities are only findable by guessing a name. */}
+                <button
+                  type="button"
+                  onClick={() => setCityPickerOpen(true)}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E4E9F4] bg-white text-[11px] font-bold text-[#6A66C9] hover:bg-[#F3ECFB] transition-colors cursor-pointer"
+                >
+                  <Plus size={13} /> {t("cityPicker.browseAll")}
+                </button>
+              </div>
+              {cityPickerOpen && (
+                <CityPickerModal
+                  selected={cities}
+                  onSave={setCities}
+                  onClose={() => setCityPickerOpen(false)}
+                />
+              )}
             </div>
           )}
           {allIndia && <p className="text-[11px] text-[#6B6785] italic">{t("allIndiaNote")}</p>}
