@@ -1489,7 +1489,8 @@
       "audiencePreferences": "Audience preferences",
       "contentGuidelines": "Content guidelines",
       "termsRights": "Terms & rights",
-      "schedule": "Schedule"
+      "schedule": "Schedule",
+      "reimbursement": "Product reimbursement"
     },
     "fields": {
       "title": "Title",
@@ -1529,7 +1530,9 @@
       "startDate": "Start Date",
       "applicationDeadline": "Application Deadline",
       "campaignEndDate": "Delivery End Date",
-      "campaignEndDateHint": "Last date for the creator to deliver content. Must be after the application deadline."
+      "campaignEndDateHint": "Last date for the creator to deliver content. Must be after the application deadline.",
+      "includeReimbursement": "Include product reimbursement",
+      "includeReimbursementHint": "The creator buys the product themselves, submits the order ID and confirms delivery. You verify it and reimburse them before they start on deliverables."
     },
     "campaignTypeOptions": {
       "barter": "Barter",
@@ -2748,14 +2751,16 @@
       "Applied": "Applied",
       "Approved": "Approved",
       "Completed": "Completed",
-      "ComingSoon": "Coming Soon"
+      "ComingSoon": "Coming Soon",
+      "Featured": "Featured"
     },
     "tabsLower": {
       "Active": "active",
       "Applied": "applied",
       "Approved": "approved",
       "Completed": "completed",
-      "ComingSoon": "coming soon"
+      "ComingSoon": "coming soon",
+      "Featured": "featured"
     },
     "headerCampaigns": "{tab} Campaigns",
     "campaignCount": "{count, plural, one {# campaign} other {# campaigns}}",
@@ -3139,7 +3144,8 @@
       "resubmitLiveLinks": "Resubmit {count, plural, one {# Live Link} other {# Live Links}}",
       "submitLiveLinks": "Submit {count, plural, one {# Live Link} other {# Live Links}}",
       "resubmitDeliverables": "Resubmit {count, plural, one {# Deliverable} other {# Deliverables}}",
-      "submitDeliverables": "Submit {count, plural, one {# Deliverable} other {# Deliverables}}"
+      "submitDeliverables": "Submit {count, plural, one {# Deliverable} other {# Deliverables}}",
+      "optional": "Optional"
     },
     "compliance": {
       "title": "AI Compliance Pre-Check",

@@ -73,8 +73,26 @@ serveWithLogging("list-campaigns", async (req) => {
     // shape you filter on — `.eq("id", …)` fails with
     // "column campaigns.id does not exist".
     if (campaignId) campaignQuery = campaignQuery.eq("campaign_id", campaignId);
+    // Admin-curated picks (public.featured_campaigns, migration 019). The
+    // same list already drives the influencer home carousels; this surfaces
+    // it as a tab on the campaigns list so a creator can find those
+    // campaigns on purpose instead of only stumbling on them on the home
+    // page. Read once for the whole response, not per row.
+    const featuredCampaignIds = new Set<string>();
     const { data: campaignRows, error: campError } = await campaignQuery;
     let campaigns = campaignRows;
+
+    // Best-effort: a failed read just means no campaign is badged featured,
+    // which is strictly better than failing the whole list.
+    try {
+      const { data: feat } = await supabaseAdmin
+        .from("featured_campaigns")
+        .select("campaign_id")
+        .eq("is_active", true);
+      for (const f of feat || []) featuredCampaignIds.add(String(f.campaign_id));
+    } catch (e) {
+      console.error("featured_campaigns read failed:", (e as any)?.message || e);
+    }
 
     // Hide campaigns from brands this creator has blocked (or who blocked
     // them). Required by Play's UGC policy / Apple 1.2 — a block has to
@@ -527,6 +545,7 @@ serveWithLogging("list-campaigns", async (req) => {
         applicationDeadlinePassed,
         // Brand-sent invite (the invite is from this campaign's brand).
         invited: invitedCampaignIds.has(String(c.campaign_id)),
+        featured: featuredCampaignIds.has(String(c.campaign_id)),
         inviteBrandName: invitedCampaignIds.has(String(c.campaign_id)) ? brand.name : "",
       };
     });

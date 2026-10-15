@@ -164,6 +164,11 @@ export default function CampaignsPage() {
 
   const tabMatches = (campaign, tab) => {
     if (tab === "Completed") return campaign.applicationStatus === "completed";
+    // Admin's picks (public.featured_campaigns), flagged by list-campaigns.
+    // Open campaigns only — a featured campaign the creator can no longer
+    // apply to is not a recommendation, it is a dead end.
+    if (tab === "Featured")
+      return !!campaign.featured && (campaign.status === "Active" || campaign.status === "Coming Soon");
     if (tab === "Invites") return !!campaign.invited && campaign.status === "Active";
     // Coming-soon campaigns show in Active too, badged and without an apply
     // button. Hiding them until a creator finds the dedicated tab would
@@ -222,8 +227,19 @@ export default function CampaignsPage() {
     () => campaigns.some((c) => c.status === "Coming Soon"),
     [campaigns],
   );
+  // Same rule as Invites and Coming Soon: the tab appears only when there
+  // is something in it, so an empty tab never teaches a creator to ignore
+  // the row.
+  const hasFeatured = useMemo(
+    () =>
+      campaigns.some(
+        (c) => c.featured && (c.status === "Active" || c.status === "Coming Soon"),
+      ),
+    [campaigns],
+  );
   const TABS = [
     ...(hasInvites ? ["Invites"] : []),
+    ...(hasFeatured ? ["Featured"] : []),
     "Active",
     ...(hasComingSoon ? ["ComingSoon"] : []),
     "Applied",
