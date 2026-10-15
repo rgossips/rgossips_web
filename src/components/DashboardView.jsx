@@ -877,6 +877,7 @@ const DashboardView = ({
             />
             <SettingsItem
               icon={CreditCard}
+              onClick={onPaymentClick}
               title={t("settings.payment.title")}
               sub={t("settings.payment.sub")}
               color="bg-[#F97316]"
@@ -1132,9 +1133,15 @@ function PlanCard({ profile }) {
 }
 
 // Internal Helper for Settings Rows
+// The desktop and mobile layouts each render their own copy of these rows,
+// and a copy that was given no handler still read as tappable — chevron,
+// pointer, press state — so the row looked broken rather than absent. Only
+// dress it as a control when it actually is one.
 const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
   <div
-    className="flex items-center gap-4 p-5 border-b border-gray-50 last:border-none active:bg-gray-50 transition-colors cursor-pointer"
+    className={`flex items-center gap-4 p-5 border-b border-gray-50 last:border-none transition-colors ${
+      onClick ? "active:bg-gray-50 cursor-pointer" : ""
+    }`}
     onClick={onClick}
   >
     <div
@@ -1146,7 +1153,7 @@ const SettingsItem = ({ icon: Icon, title, sub, color, onClick }) => (
       <h4 className="font-bold text-sm text-[#1A1A1A]">{title}</h4>
       <p className="text-[11px] text-gray-400 font-medium">{sub}</p>
     </div>
-    <ChevronRight size={18} className="text-gray-300" />
+    {onClick ? <ChevronRight size={18} className="text-gray-300" /> : null}
   </div>
 );
 
