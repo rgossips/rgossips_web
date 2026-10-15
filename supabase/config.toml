@@ -25,6 +25,11 @@ verify_jwt = true
 [functions.ai-generate]
 verify_jwt = false
 
+# Creator-and-brand reimbursement sub-flow. Caller JWT: both sides act on
+# their own application, and the function checks ownership either way.
+[functions.application-reimbursement]
+verify_jwt = true
+
 [functions.apply-campaign]
 verify_jwt = false
 

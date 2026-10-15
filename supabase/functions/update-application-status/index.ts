@@ -1,6 +1,11 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// TEMPORARY PIN — see the note in application-reimbursement/index.ts.
+// esm.sh resolved @2 to 2.118.0 on 2026-10-15 and that version's
+// auth-js denonext build 404s, so no function in this project could
+// bundle. Revert to @2 once esm.sh has healed.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.0";
 import { razorpayCreds } from "../_shared/razorpay.ts";
 import { serveWithLogging } from "../_shared/serve.ts";
+import { requiresReimbursement } from "../_shared/reimbursement.ts";
 import { effectivePlan, isBarterCampaign } from "../_shared/plan.ts";
 import { sendApplicationStatusEmails } from "../_shared/application-emails.ts";
 
@@ -234,6 +239,26 @@ serveWithLogging("update-application-status", async (req) => {
         return ok({ error: `Offer can only be sent on a pending application (currently '${previousStatus}')` });
       }
       updates.brand_offered_rate = agreedRate;
+    }
+
+    // Approval is where the reimbursement step opens, if the campaign has
+    // one. Nothing else can set awaiting_purchase: before approval there is
+    // no agreement to buy anything against.
+    if (status === "approved") {
+      try {
+        const { data: c } = await supabase
+          .from("campaigns")
+          .select("description")
+          .eq("campaign_id", app.campaign_id)
+          .single();
+        if (requiresReimbursement(c?.description as string)) {
+          updates.reimbursement_status = "awaiting_purchase";
+        }
+      } catch (e) {
+        // Non-fatal: the approval itself must not fail over this. The
+        // creator sees no reimbursement card and the brand can re-approve.
+        console.error("reimbursement stage on approve failed:", (e as any)?.message || e);
+      }
     }
 
     // Barter: nothing is priced and nothing is paid, so the brand approves

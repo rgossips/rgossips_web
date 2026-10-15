@@ -114,6 +114,7 @@ const emptyForm = {
   budget_per_influencer: "",
   product_name: "",
   product_value: "",
+  include_product_reimbursement: false,
   shipping_required: "no",
   shipping_timeline_days: "",
   service_location: "",
@@ -328,6 +329,7 @@ function campaignToForm(c) {
       budget_per_influencer: c.budgetPerInfluencer ? String(c.budgetPerInfluencer) : "",
       product_name: c.productName || "",
       product_value: c.productValue ? String(c.productValue) : "",
+      include_product_reimbursement: !!c.includeProductReimbursement,
       shipping_required: c.shippingRequired || "no",
       shipping_timeline_days: c.shippingTimelineDays ? String(c.shippingTimelineDays) : "",
       service_location: c.serviceLocation || "",
@@ -890,7 +892,28 @@ export function CreateCampaignDialog({
             </div>
           )}
 
-          {/* Product value — when barter or hybrid */}
+          {/* Product reimbursement — the creator buys it, the brand pays
+            them back before deliverables start. */}
+        <Section title={t("sections.reimbursement")}>
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!form.include_product_reimbursement}
+              onChange={(e) => update("include_product_reimbursement", e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-[#6A66C9] cursor-pointer"
+            />
+            <span>
+              <span className="block text-[13px] font-semibold text-[#16224E]">
+                {t("fields.includeReimbursement")}
+              </span>
+              <span className="block text-[11px] text-[#9C97B8] leading-relaxed mt-0.5">
+                {t("fields.includeReimbursementHint")}
+              </span>
+            </span>
+          </label>
+        </Section>
+
+        {/* Product value — when barter or hybrid */}
           {showProductValue && (
             <Field label={t("fields.productValue")} hint={t("fields.productValueHint")}>
               <input type="number" min="0" value={form.product_value} onChange={(e) => update("product_value", e.target.value)} placeholder="3500" className="input" />

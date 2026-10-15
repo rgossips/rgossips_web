@@ -1,4 +1,8 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// TEMPORARY PIN — see the note in application-reimbursement/index.ts.
+// esm.sh resolved @2 to 2.118.0 on 2026-10-15 and that version's
+// auth-js denonext build 404s, so no function in this project could
+// bundle. Revert to @2 once esm.sh has healed.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.0";
 import {
   applicationDeadlinePassed,
   campaignEnded,
@@ -120,6 +124,10 @@ function pickExtras(c: any) {
     "payment_timeline",
     "target_gender",
     "target_languages",
+    // Opens the buy-it-yourself-and-get-paid-back step on every application
+    // to this campaign. Per-application state lives in migration 087; this
+    // is just the brief saying the step exists.
+    "include_product_reimbursement",
   ];
   for (const k of keys) {
     const v = (c as any)[k];
@@ -635,6 +643,7 @@ serveWithLogging("brand-campaigns", async (req) => {
           serviceLocation: m.service_location || "",
           productName: m.product_name || "",
           productValue: m.product_value || 0,
+          includeProductReimbursement: m.include_product_reimbursement === true,
           shippingRequired: m.shipping_required || "no",
           shippingTimelineDays: m.shipping_timeline_days || 0,
           barterCompensation: m.barter_compensation || "",
@@ -683,9 +692,23 @@ serveWithLogging("brand-campaigns", async (req) => {
             // Barter fulfilment (migration 076). shipping_address is withheld
             // below for anyone the brand has not committed to.
             "shipping_address, shipping_tracking_url, shipping_carrier, shipping_tracking_added_at, shipping_expected_at, product_received, product_received_at, product_feedback, " +
+            // Product reimbursement (migration 087) — the inverse flow: the
+            // creator buys it and the brand pays them back. The brand needs
+            // the order id and amount to verify against their own records.
+            "reimbursement_status, reimbursement_order_id, reimbursement_amount_paise, reimbursement_submitted_at, reimbursement_delivered_at, reimbursement_reject_reason, reimbursement_reference, reimbursement_paid_at, " +
             "influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
         )
         .eq("campaign_id", campaignId)
+        // Applications that belong to an INVITATION rather than a profile
+        // (migration 088 — an outreach creator approved before they ever
+        // signed up) are withheld for now. The embed above returns no
+        // influencer_profiles for them, so the brand would get a row with
+        // no name, no handle and no followers, and nothing here can invent
+        // one. Showing them properly means reading the invitation for a
+        // name and photo, which is a deliberate piece of work rather than a
+        // side effect of the tracker handing a creator over. Until then the
+        // brand sees exactly what it saw before 088.
+        .not("influencer_id", "is", null)
         .order("created_at", { ascending: false });
 
       // A delivery address is a creator's home address. The brand gets it
@@ -803,6 +826,7 @@ serveWithLogging("brand-campaigns", async (req) => {
           serviceLocation: m.service_location || "",
           productName: m.product_name || "",
           productValue: m.product_value || 0,
+          includeProductReimbursement: m.include_product_reimbursement === true,
           shippingRequired: m.shipping_required || "no",
           shippingTimelineDays: m.shipping_timeline_days || 0,
           barterCompensation: m.barter_compensation || "",

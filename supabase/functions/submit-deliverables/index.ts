@@ -1,6 +1,11 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// TEMPORARY PIN — see the note in application-reimbursement/index.ts.
+// esm.sh resolved @2 to 2.118.0 on 2026-10-15 and that version's
+// auth-js denonext build 404s, so no function in this project could
+// bundle. Revert to @2 once esm.sh has healed.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.117.0";
 import { serveWithLogging } from "../_shared/serve.ts";
 import { normaliseSubmissionUrl } from "../_shared/submission-url.js";
+import { reimbursementBlocksDeliverables } from "../_shared/reimbursement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +38,7 @@ serveWithLogging("submit-deliverables", async (req) => {
     // Verify the application exists and is in an allowed status
     const { data: app, error: fetchErr } = await supabaseAdmin
       .from("campaign_applications")
-      .select("id, status, campaign_id, influencer_id, rejection_reason")
+      .select("id, status, campaign_id, influencer_id, rejection_reason, reimbursement_status")
       .eq("id", applicationId)
       .single();
 
@@ -42,6 +47,27 @@ serveWithLogging("submit-deliverables", async (req) => {
         JSON.stringify({ error: "Application not found" }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    // On a reimbursement campaign the creator buys the product first and
+    // the brand pays them back; deliverables come after. The UI hides the
+    // submit button until then, but this is the boundary.
+    {
+      const { data: c } = await supabaseAdmin
+        .from("campaigns")
+        .select("description")
+        .eq("campaign_id", app.campaign_id)
+        .single();
+      if (reimbursementBlocksDeliverables(c?.description as string, app.reimbursement_status)) {
+        return new Response(
+          JSON.stringify({
+            error: "reimbursement_pending",
+            message:
+              "Your product reimbursement has not been completed yet. Submit your order and wait for the brand to reimburse you before uploading deliverables.",
+          }),
+          { status: 200, headers: jsonHeaders },
+        );
+      }
     }
 
     const allowedStatuses = ["approved", "revision_needed", "accepted"];
