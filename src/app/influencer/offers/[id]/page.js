@@ -2527,8 +2527,22 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
     });
   };
 
-  // All deliverables must have links — non-revision ones are prefilled so they pass
-  const allFilled = deliverables.length > 0 && deliverables.every((d) => links[d.key]?.trim());
+  // An Instagram story is gone in 24 hours and its link dies with it, so on
+  // the LIVE LINKS stage a story may be left blank — a creator who posted it
+  // on time should not be blocked from submitting their reels because the
+  // story URL no longer resolves. Drafts are unaffected: a draft story is a
+  // file the brand has to review, so it is still required.
+  const isOptionalLink = (d) =>
+    isLiveLinksFlow && String(d.type || "").toLowerCase().startsWith("stor");
+
+  // Everything that is still required must be filled...
+  const requiredFilled =
+    deliverables.length > 0 &&
+    deliverables.every((d) => isOptionalLink(d) || links[d.key]?.trim());
+  // ...and at least one link overall, so "submit" can never mean "submit
+  // nothing" on a campaign whose deliverables are all stories.
+  const anyFilled = deliverables.some((d) => links[d.key]?.trim());
+  const allFilled = requiredFilled && anyFilled;
 
   // Per-input link analysis. We split it into two passes:
   //   - Duplicates always count (any flow): two deliverables can't share a URL.
@@ -2581,11 +2595,16 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-      const submissionLinks = deliverables.map((d) => ({
-        type: d.type,
-        label: d.label,
-        url: links[d.key],
-      }));
+      // Blank optional stories are omitted rather than sent as empty
+      // strings — the server stores what it is given, and a row with no URL
+      // would show the brand an empty link to click.
+      const submissionLinks = deliverables
+        .filter((d) => links[d.key]?.trim())
+        .map((d) => ({
+          type: d.type,
+          label: d.label,
+          url: links[d.key].trim(),
+        }));
 
       const res = await fetch(`${supabaseUrl}/functions/v1/submit-deliverables`, {
         method: "POST",
@@ -2693,6 +2712,11 @@ function SubmitDeliverablesModal({ campaign, onClose, onSuccess }) {
                   {expected && (
                     <span className="text-[9px] font-bold text-slate-400 normal-case">
                       {t("modal.expectingUrl", { type: labelForLinkType(expected) })}
+                    </span>
+                  )}
+                  {isOptionalLink(d) && (
+                    <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-black uppercase">
+                      {t("modal.optional")}
                     </span>
                   )}
                   {isRevision && d.needsRevision && <span className="text-[8px] bg-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-black">{t("modal.revise")}</span>}
