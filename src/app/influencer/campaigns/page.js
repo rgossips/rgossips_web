@@ -41,6 +41,7 @@ import { scrollToTop } from "@/lib/scrollToTop";
 // the server exactly; the prefill lands a tick later, which is invisible and
 // is what the profile page already does.
 function FiltersFromQuery({ onPrefill }) {
+  const searchParams = useSearchParams();
   const qs = searchParams?.toString();
 
   useEffect(() => {
@@ -68,7 +69,6 @@ export default function CampaignsPage() {
   const t = useTranslations("InfluencerCampaigns");
   const { profile, user } = useAuth();
   const freeApps = useFreeApplications();
-  const searchParams = useSearchParams();
 
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
