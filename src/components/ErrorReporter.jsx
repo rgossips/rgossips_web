@@ -33,6 +33,24 @@ function fromBrowserExtension(file, stack) {
   return EXTENSION_SCHEME.test(firstFrame);
 }
 
+// Globals that something ELSE injected into our page, blowing up in its own
+// code.
+//
+// fromBrowserExtension cannot catch these. An extension that injects a
+// script into the page context has it attributed to the DOCUMENT, so
+// `filename` is our own URL and the stack has no extension frame — the
+// four that prompted this were filed against /login and an offers page.
+//
+// Matched on the GLOBAL being touched rather than on the wording, because
+// the wording differs per engine ("undefined is not an object (evaluating
+// 'window.ethereum.selectedAddress')" on WebKit vs "Cannot read properties
+// of undefined" on Chromium) while the name does not. Every name here is
+// one WE never reference — crypto wallets (ethereum/solana/tronWeb/evmAsk),
+// Firefox iOS content scripts (__firefox__), Chrome iOS (__gCrWeb) — so a
+// real bug of ours cannot hide behind this. Grep before adding to it.
+const INJECTED_GLOBAL =
+  /\b(window\.)?(ethereum|solana|tronWeb|tronLink|evmAsk|__firefox__|__gCrWeb|__REACT_DEVTOOLS_GLOBAL_HOOK__)\b/;
+
 // A WebView's injected JS bridge, complaining that the WebView it talks to no
 // longer exists. Thrown while an in-app browser tears down mid-navigation, on
 // both platforms: Android (Instagram/Facebook, "Java object is gone") and iOS
@@ -79,6 +97,7 @@ function isIgnorableWindowError(e) {
   // "Java object is gone" when the WebView tears down mid-navigation.
   if (file.startsWith("iabjs://")) return true;
   if (WEBVIEW_TEARDOWN.test(message)) return true;
+  if (INJECTED_GLOBAL.test(message)) return true;
   // A cross-origin script (extension, third-party embed) failed. The browser
   // strips everything — no file, line 0 — so there is nothing to act on.
   if (message === "Script error." && !file && !e?.lineno) return true;
@@ -92,6 +111,7 @@ function isIgnorableRejection(reason) {
   if (fromBrowserExtension(null, reason?.stack)) return true;
   const message = String(reason?.message || reason || "");
   if (WEBVIEW_TEARDOWN.test(message)) return true;
+  if (INJECTED_GLOBAL.test(message)) return true;
   return /signal is aborted|the (user|operation) aborted/i.test(message);
 }
 
