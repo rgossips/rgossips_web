@@ -6,6 +6,7 @@ import { genderDecision, genderRefusalMessage, requiredGender } from "../_shared
 // Deliberately loose: one @, something on each side, a dot in the domain.
 const isValidEmail = (v: unknown) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
 import { truncateText } from "../_shared/text.ts";
+import { isServiceRoleCaller } from "../_shared/jwt.ts";
 import {
   APPLICATION_LIMITS,
   FREE_BARTER_APPLICATIONS,
@@ -42,6 +43,34 @@ serveWithLogging("apply-campaign", async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Prove the caller IS the creator they are applying as.
+    //
+    // This function runs with verify_jwt = false and a service-role client,
+    // and took influencerId straight from the body. Every check below it —
+    // already-applied, entitlement, profile completeness — is a business
+    // rule about that id, not evidence that the caller owns it. Anyone with
+    // the publishable key could therefore submit an application in another
+    // creator's name, and the comment on the web page claiming the server
+    // was the real boundary was simply wrong.
+    //
+    // The app has sent a session token here since 6ee98f0 (apply-campaign is
+    // in REQUIRES_SESSION), and the web form sends one as of this change.
+    // Service-role callers (admin tooling) still pass.
+    const bearer = (req.headers.get("authorization") || "").replace("Bearer ", "");
+    const isAdmin = await isServiceRoleCaller(bearer, createClient, {
+      url: Deno.env.get("SUPABASE_URL")!,
+      serviceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    });
+    if (!isAdmin) {
+      const { data: caller, error: callerErr } = await supabaseAdmin.auth.getUser(bearer);
+      if (callerErr || !caller?.user || caller.user.id !== influencerId) {
+        return new Response(
+          JSON.stringify({ error: "Not authorized" }),
+          { status: 200, headers: jsonHeaders }
+        );
+      }
+    }
 
     // A campaign that ships a product needs somewhere to send it, so the
     // apply forms collect an address up front.

@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { isNetworkError, reportError } from "@/lib/reportError";
+import { createClient } from "@/utils/supabase/client";
+import { invokeAuthed } from "@/lib/invokeAuthed";
 import {
   X,
   Instagram,
@@ -34,6 +36,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
   const t = useTranslations("ApplyCampaignForm");
+  const supabase = createClient();
   const { profile, user, refreshProfile } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -172,23 +175,27 @@ export function ApplyCampaignForm({ onClose, campaignData, onSubmitSuccess }) {
         refreshProfile?.();
       }
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/apply-campaign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify({
-          campaignId: campaignData?.id,
-          influencerId: user?.id,
-          proposedRate: proposedRate ? Number(proposedRate) : null,
-          pitch: whyChooseYou.trim(),
-          shippingAddress: shipsToCreator ? shippingAddress.trim() : undefined,
-        }),
+      // The caller's SESSION, not the publishable key: apply-campaign now
+      // proves the caller is the creator named in influencerId before it
+      // records anything, so a publishable-key call is refused as "Not
+      // authorized". invokeAuthed also refreshes once if the stored token has
+      // expired — a tab left open long enough would otherwise look to the
+      // user like being signed out.
+      const authed = await invokeAuthed(supabase, "apply-campaign", {
+        campaignId: campaignData?.id,
+        influencerId: user?.id,
+        proposedRate: proposedRate ? Number(proposedRate) : null,
+        pitch: whyChooseYou.trim(),
+        shippingAddress: shipsToCreator ? shippingAddress.trim() : undefined,
       });
 
-      const data = await res.json();
+      // No live session even after a refresh — they have to sign in again.
+      if (authed?.needsLogin) {
+        fail(t("errors.signInAgain"));
+        return;
+      }
+      if (authed?.error) throw new Error(authed.error.message || "apply failed");
+      const data = authed?.data || {};
 
       if (data?.error === "profile_incomplete") {
         setNeedsDetails(true);

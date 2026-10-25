@@ -628,7 +628,8 @@
       "alreadyApplied": "You have already applied to this campaign.",
       "planLimitDefault": "You've reached your plan's monthly application limit.",
       "submitFailed": "Failed to submit application",
-      "network": "We couldn't reach RGossips to confirm your application. Check your connection and tap Apply again — you won't be applied twice."
+      "network": "We couldn't reach RGossips to confirm your application. Check your connection and tap Apply again — you won't be applied twice.",
+      "signInAgain": "Your session has expired. Please sign in again and retry."
     },
     "success": {
       "title": "Application Submitted!",

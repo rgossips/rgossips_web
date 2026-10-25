@@ -28,3 +28,39 @@ export function unverifiedJwtRole(token: string | null | undefined): string | nu
     return null;
   }
 }
+
+/**
+ * Is this bearer a REAL service-role key for this project?
+ *
+ * A service-role JWT cannot be told apart from a forged one by reading its
+ * claims, so this proves possession instead: use the token for a
+ * service-role-only operation (listUsers) and see whether the API accepts
+ * it. Anon, publishable, expired and forged tokens all fail.
+ *
+ * The role peek first means an ordinary signed-in creator does not pay for a
+ * failing admin call before their normal getUser path runs.
+ *
+ * Lifted from brand-campaigns, which still has its own copy; shared here
+ * because apply-campaign needs the same check to verify the applicant.
+ */
+export async function isServiceRoleCaller(
+  bearer: string,
+  createClient: (url: string, key: string, opts?: any) => any,
+  env: { url: string; serviceRoleKey: string },
+): Promise<boolean> {
+  if (!bearer) return false;
+  if (bearer === env.serviceRoleKey) return true;
+  // Only a service-role token can pass below; skip the round trip for the
+  // publishable key and for ordinary user sessions.
+  const role = unverifiedJwtRole(bearer);
+  if (role && role !== "service_role") return false;
+  try {
+    const probe = createClient(env.url, bearer, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 });
+    return !error;
+  } catch {
+    return false;
+  }
+}
