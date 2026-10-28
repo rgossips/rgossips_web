@@ -184,7 +184,14 @@ const InstagramConnect = ({ onNext, mode = "signup", role = "influencer", loadin
     } catch (err) {
       reportError("instagram", "instagram.verify.failed", err);
       if (mountedRef.current) {
-        setError(err.message || t("errors.verifyFailed"));
+        // Same treatment as the connect handler above. Without the
+        // isNetworkError check, a dropped request showed the creator
+        // supabase-js's own words — "Failed to send a request to the Edge
+        // Function" — inside a box styled `break-all`, which reads as the
+        // site being broken rather than their connection dropping. Logged
+        // three times on /login, all with navigator.onLine true: the
+        // browser had an interface, the packets just never arrived.
+        setError(isNetworkError(err) ? t("errors.network") : err.message || t("errors.verifyFailed"));
         setChecking(false);
       }
     }
