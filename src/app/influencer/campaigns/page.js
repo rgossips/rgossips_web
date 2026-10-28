@@ -163,6 +163,13 @@ export default function CampaignsPage() {
   const isApproved = (campaign) => campaign.applicationStatus === "approved";
 
   const tabMatches = (campaign, tab) => {
+    // Everything still open to the creator, in one view: live campaigns and
+    // the ones not open yet. Unlike Active it does NOT carve out invited
+    // campaigns, so "All" is genuinely every browsable campaign rather than
+    // Active under another name. Applied/Approved/Completed are excluded —
+    // those are the creator's own history, not the catalogue.
+    if (tab === "All")
+      return campaign.status === "Active" || campaign.status === "Coming Soon";
     if (tab === "Completed") return campaign.applicationStatus === "completed";
     // Admin's picks (public.featured_campaigns), flagged by list-campaigns.
     // Open campaigns only — a featured campaign the creator can no longer
@@ -238,6 +245,10 @@ export default function CampaignsPage() {
     [campaigns],
   );
   const TABS = [
+    // Always present, unlike the conditional tabs below it: a browse-
+    // everything entry that comes and goes is worse than one that is
+    // occasionally the same size as Active.
+    "All",
     ...(hasInvites ? ["Invites"] : []),
     ...(hasFeatured ? ["Featured"] : []),
     "Active",

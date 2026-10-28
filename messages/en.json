@@ -2748,6 +2748,7 @@
     "searchPlaceholder": "Search...",
     "statusHeading": "Status",
     "tabs": {
+      "All": "All",
       "Active": "Active",
       "Applied": "Applied",
       "Approved": "Approved",
@@ -2756,6 +2757,7 @@
       "Featured": "Featured"
     },
     "tabsLower": {
+      "All": "open",
       "Active": "active",
       "Applied": "applied",
       "Approved": "approved",
