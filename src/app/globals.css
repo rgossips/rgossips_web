@@ -256,3 +256,15 @@ html body {
    it so touch scrolling moves the popup, not the page. Radix dialogs lock
    the body themselves. */
 html:has([data-scroll-lock]), body:has([data-scroll-lock]) { overflow: hidden; }
+
+/* A horizontally scrollable strip — tab rows, chip rails — with the bar
+   itself hidden. Three call sites (brands campaigns list, the campaign
+   applications tabs, AddReelFlow) already asked for this class; nothing
+   ever defined it, so the bar showed through a one-line row. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

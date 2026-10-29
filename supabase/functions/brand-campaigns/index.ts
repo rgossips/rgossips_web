@@ -696,7 +696,11 @@ serveWithLogging("brand-campaigns", async (req) => {
             // creator buys it and the brand pays them back. The brand needs
             // the order id and amount to verify against their own records.
             "reimbursement_status, reimbursement_order_id, reimbursement_amount_paise, reimbursement_submitted_at, reimbursement_delivered_at, reimbursement_reject_reason, reimbursement_reference, reimbursement_paid_at, " +
-            "influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, media_kit_published )"
+            // gender is read ONLY by the applicant match score (lib/applicationMatch.js),
+            // which cannot say why a creator half-fits a gender-restricted brief
+            // without it. The brand set that requirement, so this is the brief
+            // being reported back, not profile data being widened for its own sake.
+            "influencer_profiles ( full_name, username, profile_photo_url, custom_profile_photo_url, followers_count, follows_count, media_count, instagram_handle, categories, bio, engagement_rate, email, location, gender, media_kit_published )"
         )
         .eq("campaign_id", campaignId)
         // Applications that belong to an INVITATION rather than a profile

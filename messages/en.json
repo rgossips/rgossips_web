@@ -1188,7 +1188,9 @@
     "applications": {
       "heading": "Applications",
       "empty": "No applications yet.",
-      "emptyHint": "Creators will appear here once they apply."
+      "emptyHint": "Creators will appear here once they apply.",
+      "viewAll": "View all {count} applications",
+      "showingTop": "Top {count} by fit"
     },
     "appStatus": {
       "applied": "Applied",
@@ -1246,7 +1248,8 @@
       "email": "Email",
       "proposedRate": "Proposed Rate",
       "yourOffer": "Your Offer",
-      "agreedRate": "Agreed Rate"
+      "agreedRate": "Agreed Rate",
+      "escrowHeld": "In Escrow"
     },
     "actionMsgs": {
       "offerSent": "Offer of ₹{amount} sent — waiting for the creator to accept.",
@@ -1254,7 +1257,9 @@
       "waitingSubmission": "Waiting for submission…",
       "waitingResubmit": "Waiting for creator to re-submit…",
       "draftsAccepted": "Drafts accepted — waiting for the creator to post live.",
-      "paymentReleased": "Campaign completed. Payment released to the creator."
+      "paymentReleased": "Campaign completed. Payment released to the creator.",
+      "completed": "Campaign completed.",
+      "rejected": "This application was rejected."
     },
     "offerForm": {
       "label": "Your Offer (₹)",
@@ -1334,6 +1339,49 @@
       "title": "This campaign was not approved",
       "noReason": "Our team sent it back without a note. Check the brief against our campaign guidelines and resubmit.",
       "next": "Edit the campaign to address this, then hit Resubmit for review."
+    },
+    "allApplications": {
+      "eyebrow": "All applications",
+      "tabAll": "All",
+      "filters": "Filters",
+      "clear": "Clear",
+      "searchPlaceholder": "Name or @handle",
+      "groupMatch": "Match",
+      "groupFollowers": "Followers",
+      "groupCategories": "Categories",
+      "groupLocation": "Location",
+      "band": {
+        "strong": "Strong fit",
+        "fair": "Fair fit",
+        "weak": "Weak fit"
+      },
+      "bucket": {
+        "nano": "Under 10K",
+        "micro": "10K – 100K",
+        "macro": "100K – 1M",
+        "mega": "1M+"
+      },
+      "mediaKitOnly": "Has a media kit",
+      "sortBy": "Sort",
+      "sort": {
+        "match": "Best match",
+        "followers": "Most followers",
+        "engagement": "Highest engagement",
+        "newest": "Newest first",
+        "rateAsc": "Lowest quote"
+      },
+      "showing": "Showing {shown} of {total} applicants",
+      "matchBadge": "{percent}% match",
+      "noneMatch": "No applicants match these filters.",
+      "noneMatchHint": "Loosen a filter or clear them all to see everyone who applied.",
+      "money": {
+        "quoted": "Quoted",
+        "offered": "Offered",
+        "agreed": "Agreed"
+      },
+      "applicantNotFound": "That applicant is not on this campaign.",
+      "backToList": "Back to all applications",
+      "appliedOn": "Applied {date}"
     }
   },
   "BrandsCampaigns": {
